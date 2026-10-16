@@ -464,12 +464,13 @@ async function ndAssign(id) {
 async function ndFixAction(id) {
   var r = null; try { r = await scDialog({ title: 'Mark fixed', icon: '✅', message: ndCpText(id), fields: [{ key: 'note', label: 'What was done? (optional)', type: 'textarea', maxLength: 300, value: '' }], okLabel: 'Mark fixed' }); } catch (e) { r = null; }
   if (!r) return; var me = ndMob(), fx = { at: new Date().toISOString(), by: me }; if (String(r.note || '').trim()) fx.note = String(r.note).trim().slice(0, 300);
-  try { await db.ref('sc_dactions/' + _nd.code + '/' + id).update({ status: 'fixed', fixed: fx }); var a = _nd.actions[id]; a.status = 'fixed'; a.fixed = fx; ndToast('Marked fixed — re-score it on the next card.', 'ok'); ndRender(); }
+  var base = 'sc_dactions/' + _nd.code + '/' + id, up = {}; up[base + '/status'] = 'fixed'; up[base + '/fixed'] = fx;   // separate field writes
+  try { await db.ref().update(up); var a = _nd.actions[id]; a.status = 'fixed'; a.fixed = fx; ndToast('Marked fixed — re-score it on the next card.', 'ok'); ndRender(); }
   catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
 }
 async function ndSetAction(id, st) {
-  var up = { status: st }; if (st === 'open') up.fixed = null;
-  try { await db.ref('sc_dactions/' + _nd.code + '/' + id).update(up); var a = _nd.actions[id]; a.status = st; if (st === 'open') delete a.fixed; ndToast(st === 'closed' ? 'Closed.' : 'Reopened.', 'ok'); ndRender(); }
+  var base = 'sc_dactions/' + _nd.code + '/' + id, up = {}; up[base + '/status'] = st; if (st === 'open') up[base + '/fixed'] = null;
+  try { await db.ref().update(up); var a = _nd.actions[id]; a.status = st; if (st === 'open') delete a.fixed; ndToast(st === 'closed' ? 'Closed.' : 'Reopened.', 'ok'); ndRender(); }
   catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
 }
 
