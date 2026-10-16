@@ -113,6 +113,8 @@ var NF_LEVELS={
       LHV:['MH','NB','FP','OR'], Pharmacist:['PH'], LabTech:['LAB'], OutreachSup:['OR'], SupportStaff:['GA','ER'], USHA:['OR']
     },
     seeAll:['Coordinator','MOIC'],
+    // USHA cards are cross-checked: the in-charge names a cross-checker per department; new staff of these roles become it by default
+    xcheckDepts:['OR'], xcheckRoles:['OutreachSup','LHV','ANM'],
     roles:[
       {id:'Coordinator',  label:'UPHC Coordinator',      icon:'🗂️', requireName:false},
       {id:'MOIC',         label:'Medical Officer In-charge', icon:'🩺', requireName:false},
@@ -20899,6 +20901,9 @@ body.nd-on > *:not(#nf-dept-app):not(.scx-ov):not(#nf-toast):not([id$="-ov"]):no
 /* staging ribbon sits at the very bottom: lift the bottom bars above it */
 body.nf-stage #nf-dept-app .nd-nav,body.nf-stage #nf-dept-app .nd-ft{bottom:22px;}
 body.nf-stage #nf-dept-app{padding-bottom:110px;}
+#nf-dept-app .nd-how{display:flex;gap:6px;font-size:13px;margin-top:8px;background:#F0FDF4;border-radius:10px;padding:8px 10px;color:#14532D;} #nf-dept-app .nd-how i{color:#16A34A;}
+#nf-dept-app .nd-am{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;color:var(--t2,#475569);margin-top:8px;} #nf-dept-app .nd-am .over{color:#B91C1C;font-weight:700;}
+#nf-dept-app .nd-ft{flex-wrap:wrap;}
 </style>
 <script id="nf-dept-plan">// ══════════════════════════════════════════════════════════════
 // DEPARTMENT CORE — day plan (UPHC now; PHC / CHC later). Plain functions, no screen code.
@@ -21024,9 +21029,16 @@ function ndDeptDefs() { return (_nd.cfg.departments || []).filter(function (d) {
 function ndDeptSet(id) { return ((_nd.fac.depts || {})[id]) || {}; }
 function ndLead(id) { return ndDeptSet(id).lead || ''; }
 function ndTeam(id) { return ndDeptSet(id).team || {}; }
+function ndXcheck(id) { return ndDeptSet(id).xcheck || ''; }
+function ndDeptDef(id) { return (_nd.cfg.departments || []).find(function (x) { return x.id === id; }) || { id: id, name: id }; }
+// a dispute goes to the MO in-charge for a clinical department, to the in-charge (Coordinator) otherwise
+function ndDisputeTo(id) { return ndDeptDef(id).clinical ? (_nd.cfg.clinicalInCharge || 'MOIC') : _nd.cfg.inCharge; }
+function ndCanResolve(to, mob) { var r = ndRole(mob); return !!mob && (r === to || ndIsInCharge(mob)); }
+function ndNeedsXc(c) { return !!(c.done && c.done.role === 'USHA' && !c.xc); }
+function ndOpenDispute(c) { return c.dispute && !c.dispute.resolved ? c.dispute : null; }
 function ndIsMember(id, mob) { return !!(ndTeam(id)[mob] || ndLead(id) === mob || ndIsInCharge(mob) || ndRole(mob) === 'MOIC'); }
 function ndCanVerify(id, mob) { return !!(ndLead(id) === mob || ndIsInCharge(mob) || ndRole(mob) === 'MOIC'); }
-function ndMyDepts() { var me = ndMob(); return ndDeptDefs().filter(function (d) { return ndSeesAll(me) || ndIsMember(d.id, me); }); }
+function ndMyDepts() { var me = ndMob(); return ndDeptDefs().filter(function (d) { return _nd.view || ndSeesAll(me) || ndIsMember(d.id, me) || ndXcheck(d.id) === me; }); }
 function ndName(mob) { var st = ndStaff()[mob]; return (st && st.name) || mob || ''; }
 function ndRoleLabel(r) { var x = (_nd.cfg.roles || []).find(function (y) { return y.id === r; }); return x ? x.label : r; }
 // the default leads and teams from the settings, for departments the in-charge has not set up yet
@@ -21036,7 +21048,8 @@ function ndDefaults() {
   (_nd.cfg.departments || []).forEach(function (d) {
     var lead = byName.find(function (m) { return (staff[m].role || _nd.cfg.inCharge) === d.lead; }) || byName.find(function (m) { return ndIsInCharge(m); }) || '';
     var team = {}; byName.forEach(function (m) { var r = staff[m].role || _nd.cfg.inCharge; if (((_nd.cfg.defaultTeams || {})[r] || []).indexOf(d.id) >= 0) team[m] = true; });
-    out[d.id] = { lead: lead || null, team: team };
+    var xr = (_nd.cfg.xcheckDepts || []).indexOf(d.id) >= 0 ? byName.find(function (m) { return (_nd.cfg.xcheckRoles || []).indexOf(staff[m].role) >= 0; }) : null;
+    out[d.id] = { lead: lead || null, team: team }; if (xr) out[d.id].xcheck = xr;
   });
   return out;
 }
@@ -21057,6 +21070,7 @@ async function ndOpen(acc) {
     try { await db.ref(scFacilityPath(code) + '/depts').set(def); _nd.fac.depts = def; } catch (e) { console.warn('[dept] defaults not saved', e); }
   }
   try { _nd.cards = (await fbGet(ndPath())) || {}; } catch (e) { _nd.cards = {}; }
+  try { _nd.actions = (await fbGet('sc_dactions/' + code)) || {}; } catch (e) { _nd.actions = {}; }
   var ls = document.getElementById('login-screen'); if (ls) ls.style.display = 'none';
   ndShow(); return '';
 }
@@ -21070,7 +21084,7 @@ async function ndLogout() {
   ndClose(); _nd = null; var ls = document.getElementById('login-screen'); if (ls) ls.style.display = '';
   try { await nfSecureSignOut(); } catch (e) {} try { nfBack(); } catch (e) {}
 }
-async function ndReload() { if (!_nd) return; _nd.fac = (await fbGet(scFacilityPath(_nd.code))) || _nd.fac; _nd.cards = (await fbGet(ndPath())) || {}; ndRender(); }
+async function ndReload() { if (!_nd) return; _nd.fac = (await fbGet(scFacilityPath(_nd.code))) || _nd.fac; _nd.cards = (await fbGet(ndPath())) || {}; try { _nd.actions = (await fbGet('sc_dactions/' + _nd.code)) || {}; } catch (e) {} ndRender(); }
 
 // ── programme day ──
 function ndDay() { return nfDeptDayNo(_nd.fac.startDate); }
@@ -21079,6 +21093,8 @@ function ndCard(dept, day) { return ((_nd.cards[dept] || {})['day_' + day]) || {
 function ndStatus(dept, day) {
   var c = ndCard(dept, day), ids = ndDayInfo(dept, day).ids, n = ids.filter(function (id) { return c.s && c.s[id] !== undefined; }).length;
   if (c.verified) return { k: 'ok', t: 'Verified', n: n, of: ids.length };
+  if (ndOpenDispute(c)) return { k: 'back', t: 'Disputed → ' + ndRoleLabel(c.dispute.to), n: n, of: ids.length };
+  if (ndNeedsXc(c)) return { k: 'done', t: 'Waiting for cross-check', n: n, of: ids.length };
   if (c.done) return { k: 'done', t: 'Waiting for the lead', n: n, of: ids.length };
   if (c.sentBack) return { k: 'back', t: 'Sent back', n: n, of: ids.length };
   return n ? { k: 'prog', t: n + ' of ' + ids.length + ' scored', n: n, of: ids.length } : { k: 'new', t: 'Not started', n: 0, of: ids.length };
@@ -21098,14 +21114,14 @@ function ndLatest() {
 function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
   if (_nd.card) { app.innerHTML = ndCardHTML(); return; }
-  var me = ndMob(), tabs = [['today', 'ti-calendar-check', 'Today'], ['ready', 'ti-chart-bar', 'Readiness']];
-  if (ndIsInCharge(me)) tabs.push(['setup', 'ti-settings', 'Set-up']);
-  tabs.push(['me', 'ti-user', 'Me']);
+  var me = ndMob(), tabs = [['today', 'ti-calendar-check', 'Today'], ['ready', 'ti-chart-bar', 'Readiness'], ['actions', 'ti-checklist', 'Actions']];
+  if (!_nd.view && ndIsInCharge(me)) tabs.push(['setup', 'ti-settings', 'Set-up']);
+  if (!_nd.view) tabs.push(['me', 'ti-user', 'Me']);
   var day = ndDay(), info = nfDeptDay(_nd.plan[(_nd.cfg.departments[0] || {}).id] || [[], [], [], [], [], [], []], day);
-  var hd = '<header class="nd-hd"><div><small>' + ndEsc(_nd.cfg.name) + ' · ' + ndEsc(_nd.code) + '</small><b>' + ndEsc(_nd.fac.name || _nd.code) + '</b>'
+  var hd = '<header class="nd-hd">' + (_nd.view ? '<button type="button" class="nd-ib" aria-label="Back to the facility list" title="Back" onclick="ndCloseView()"><i class="ti ti-arrow-left"></i></button>' : '') + '<div><small>' + ndEsc(_nd.cfg.name) + ' · ' + ndEsc(_nd.code) + '</small><b>' + ndEsc(_nd.fac.name || _nd.code) + '</b>'
     + '<span class="nd-sub">' + (_nd.fac.startDate ? (day >= 1 && day <= _nd.cfg.days ? 'Day ' + day + ' of ' + _nd.cfg.days + ' · ' + ND_PHASE[info.phase] : ND_PHASE[info.phase]) : 'Start date not set') + '</span></div>'
     + '<button type="button" class="nd-ib" aria-label="Refresh" title="Refresh" onclick="ndReload()"><i class="ti ti-refresh"></i></button></header>';
-  var body = _nd.tab === 'ready' ? ndReadyHTML() : _nd.tab === 'setup' ? ndSetupHTML() : _nd.tab === 'me' ? ndMeHTML() : ndTodayHTML();
+  var body = _nd.tab === 'ready' ? ndReadyHTML() : _nd.tab === 'actions' ? ndActionsHTML() : _nd.tab === 'setup' ? ndSetupHTML() : _nd.tab === 'me' ? ndMeHTML() : ndTodayHTML();
   var nav = '<nav class="nd-nav">' + tabs.map(function (t) { return '<button type="button" class="' + (_nd.tab === t[0] ? 'on' : '') + '" onclick="ndTab(\'' + t[0] + '\')"><i class="ti ' + t[1] + '"></i><span>' + t[2] + '</span></button>'; }).join('') + '</nav>';
   app.innerHTML = hd + '<main class="nd-main">' + body + '</main>' + nav;
 }
@@ -21122,7 +21138,7 @@ function ndTodayHTML() {
   if (!mine.length) return '<div class="nd-card nd-empty"><i class="ti ti-users"></i><b>No department yet</b><p>The ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you to a department team in Set-up.</p></div>';
   var first = nfDeptDay(_nd.plan[mine[0].id], day);
   if (first.phase === 'ready') return '<div class="nd-card nd-empty"><i class="ti ti-trophy"></i><b>Readiness week — Day ' + day + '</b><p>' + ['End-line verification', 'End-line verification', 'Final team review', 'Graduation'][day - 57] + '. No department card today.</p></div>';
-  return '<div class="nd-sec"><b>Today · Day ' + day + '</b><small>' + ND_PHASE[first.phase] + (first.week ? ' · week ' + first.week : '') + '</small></div>'
+  return ndInboxHTML() + '<div class="nd-sec"><b>Today · Day ' + day + '</b><small>' + ND_PHASE[first.phase] + (first.week ? ' · week ' + first.week : '') + '</small></div>'
     + mine.map(function (d) {
       var st = ndStatus(d.id, day), lead = ndLead(d.id);
       return '<button type="button" class="nd-dept" onclick="ndOpenCard(\'' + d.id + '\',' + day + ')"><span class="nd-dk">' + ndEsc(d.id) + '</span>'
@@ -21137,13 +21153,18 @@ function ndCloseCard() { _nd.card = null; ndRender(); }
 function ndCardHTML() {
   var dept = _nd.card.dept, day = _nd.card.day, d = (_nd.cfg.departments || []).find(function (x) { return x.id === dept; }) || { name: dept };
   var info = ndDayInfo(dept, day), c = ndCard(dept, day), s = c.s || {}, note = c.note || {}, me = ndMob(), st = ndStatus(dept, day);
-  var locked = !!c.verified || !ndIsMember(dept, me), groups = [], cur = null;
+  var xcMe = ndNeedsXc(c) && ndXcheck(dept) === me, dsp = ndOpenDispute(c);
+  var locked = !!c.verified || !(ndIsMember(dept, me) || xcMe), frozen = locked || (c.done && !xcMe), groups = [], cur = null;
   info.ids.forEach(function (id) { var r = _nd.byId[id]; if (!r) return; var key = r[3]; if (!cur || cur.key !== key) { cur = { key: key, rows: [] }; groups.push(cur); } cur.rows.push(r); });
   var html = '<header class="nd-hd"><button type="button" class="nd-ib" aria-label="Back" onclick="ndCloseCard()"><i class="ti ti-arrow-left"></i></button>'
     + '<div><small>Day ' + day + ' · ' + ND_PHASE[info.phase] + (info.week ? ' · week ' + info.week : '') + '</small><b>' + ndEsc(d.name) + '</b><span class="nd-sub">' + ndEsc(st.t) + '</span></div></header><main class="nd-main">';
   if (c.sentBack && !c.done) html += '<div class="nd-note back"><i class="ti ti-arrow-back-up"></i><span><b>Sent back by ' + ndEsc(c.sentBack.byName || '') + ':</b> ' + ndEsc(c.sentBack.reason || '') + '</span></div>';
   if (c.verified) html += '<div class="nd-note ok"><i class="ti ti-circle-check"></i><span>Verified by ' + ndEsc(c.verified.byName || '') + ' (' + ndEsc(ndRoleLabel(c.verified.role || '')) + ')</span></div>';
-  if (!ndIsMember(dept, me)) html += '<div class="nd-note"><i class="ti ti-eye"></i><span>View only — you are not on this department\'s team.</span></div>';
+  if (c.done && c.done.role === 'USHA') html += '<div class="nd-note' + (c.xc ? ' ok' : '') + '"><i class="ti ti-user-check"></i><span>Filled by ' + ndEsc(c.done.byName || ndName(c.done.by)) + ' (USHA) · '
+    + (c.xc ? 'cross-checked by ' + ndEsc(c.xc.byName || ndName(c.xc.by)) : ndXcheck(dept) ? (xcMe ? '<b>you cross-check it</b>: correct any score, then confirm' : 'waiting for the cross-check by ' + ndEsc(ndName(ndXcheck(dept)))) : 'no cross-checker set — the ' + ndEsc(_nd.cfg.inChargeLabel) + ' names one in Set-up') + '</span></div>';
+  if (c.dispute) html += '<div class="nd-note' + (dsp ? ' back' : ' ok') + '"><i class="ti ti-alert-triangle"></i><span><b>Dispute by ' + ndEsc(c.dispute.byName || ndName(c.dispute.by)) + ':</b> ' + ndEsc(c.dispute.reason || '')
+    + (dsp ? ' — waiting for the ' + ndEsc(ndRoleLabel(c.dispute.to)) : '<br><b>Resolved by ' + ndEsc(c.dispute.resolved.byName || ndName(c.dispute.resolved.by)) + ':</b> ' + ndEsc(c.dispute.resolved.note || '')) + '</span></div>';
+  if (locked && !c.verified) html += '<div class="nd-note"><i class="ti ti-eye"></i><span>View only — ' + (_nd.view ? 'Supervisor / HealSol view.' : 'you are not on this department\'s team.') + '</span></div>';
   groups.forEach(function (g) {
     html += '<div class="nd-std"><b>Standard ' + ndEsc(g.key) + '</b><small>' + ndEsc(_nd.cl.stds[g.key] || '') + '</small></div>';
     g.rows.forEach(function (r) {
@@ -21151,14 +21172,20 @@ function ndCardHTML() {
       html += '<div class="nd-cp" id="nd-cp-' + r[0] + '"><div class="nd-cpt"><span class="nd-id">' + ndEsc(r[0]) + ' · ME ' + ndEsc(r[4]) + '</span>' + ndEsc(r[5]) + '</div>'
         + (r[7] ? '<div class="nd-mov"><i class="ti ti-search"></i>' + ndEsc(r[7]) + '</div>' : '')
         + '<div class="nd-meth">' + m.map(function (x) { return '<span title="' + ndEsc(ND_METHOD[x] || x) + '">' + ndEsc(x) + '</span>'; }).join('') + '</div>'
-        + '<div class="nd-sc">' + ND_SCORE.map(function (o) { return '<button type="button" class="' + o.k + (v === o.v ? ' on' : '') + '"' + (locked || c.done ? ' disabled' : '') + ' onclick="ndScore(\'' + r[0] + '\',' + o.v + ')">' + o.t + '</button>'; }).join('') + '</div>'
-        + ((v === 0 || v === 1 || note[r[0]]) ? '<input class="nd-in" placeholder="What is missing? (optional)" value="' + ndEsc(note[r[0]] || '') + '"' + (locked || c.done ? ' disabled' : '') + ' onchange="ndNote(\'' + r[0] + '\',this.value)">' : '')
+        + '<div class="nd-sc">' + ND_SCORE.map(function (o) { return '<button type="button" class="' + o.k + (v === o.v ? ' on' : '') + '"' + (frozen ? ' disabled' : '') + ' onclick="ndScore(\'' + r[0] + '\',' + o.v + ')">' + o.t + '</button>'; }).join('') + '</div>'
+        + ((v === 0 || v === 1 || note[r[0]]) ? '<input class="nd-in" placeholder="What is missing? (optional)" value="' + ndEsc(note[r[0]] || '') + '"' + (frozen ? ' disabled' : '') + ' onchange="ndNote(\'' + r[0] + '\',this.value)">' : '')
         + '</div>';
     });
   });
   html += '</main><footer class="nd-ft"><span>' + st.n + ' of ' + st.of + ' scored</span>';
   if (!c.verified && !c.done && ndIsMember(dept, me)) html += '<button type="button" class="nd-btn"' + (st.n < st.of ? ' disabled title="Score every checkpoint first"' : '') + ' onclick="ndDone()">Mark done</button>';
-  if (c.done && !c.verified && ndCanVerify(dept, me)) html += '<button type="button" class="nd-btn ghost" onclick="ndSendBack()">Send back</button><button type="button" class="nd-btn" onclick="ndVerify()">Verify &amp; submit</button>';
+  if (xcMe) html += '<button type="button" class="nd-btn" onclick="ndXc()">Cross-checked → lead</button>';
+  if (dsp && ndCanResolve(dsp.to, me)) html += '<button type="button" class="nd-btn" onclick="ndResolve()">Resolve dispute</button>';
+  if (c.done && !c.verified && ndCanVerify(dept, me)) {
+    var anyV = ndIsInCharge(me) || ndRole(me) === 'MOIC', wait = ndNeedsXc(c) ? 'Waiting for the cross-check' : (dsp && !anyV) ? 'Disputed — waiting for the ' + ndRoleLabel(dsp.to) : '';
+    html += '<button type="button" class="nd-btn ghost" onclick="ndSendBack()">Send back</button><button type="button" class="nd-btn"' + (wait ? ' disabled title="' + ndEsc(wait) + '"' : '') + ' onclick="ndVerify()">Verify &amp; submit</button>';
+  }
+  if (!c.verified && !dsp && !_nd.view && (ndIsMember(dept, me) || xcMe) && (c.done || st.n)) html += '<button type="button" class="nd-btn ghost" title="Disagree with a score or a send-back? The ' + ndEsc(ndRoleLabel(ndDisputeTo(dept))) + ' decides." onclick="ndDispute()">Dispute</button>';
   return html + '</footer>';
 }
 async function ndWrite(updates) {
@@ -21174,7 +21201,24 @@ async function ndScore(id, v) { if (await ndWrite({ ['s/' + id]: v })) { var y =
 async function ndNote(id, t) { await ndWrite({ ['note/' + id]: String(t || '').trim().slice(0, 500) || null }); }
 async function ndDone() {
   var me = ndMob();
-  if (await ndWrite({ done: { at: new Date().toISOString(), by: me, byName: ndName(me) }, sentBack: null })) { ndToast('Card marked done — the lead checks it next.', 'ok'); ndRender(); }
+  if (await ndWrite({ done: { at: new Date().toISOString(), by: me, byName: ndName(me), role: ndRole(me) }, sentBack: null })) { ndToast('Card marked done — the lead checks it next.', 'ok'); ndRender(); }
+}
+async function ndXc() {
+  var me = ndMob();
+  if (await ndWrite({ xc: { at: new Date().toISOString(), by: me, byName: ndName(me) } })) { ndToast('Cross-check done — the lead verifies next.', 'ok'); ndRender(); }
+}
+async function ndDispute() {
+  var dept = _nd.card.dept, to = ndDisputeTo(dept), r = null;
+  try { r = await scDialog({ title: 'Raise a dispute', icon: '⚖️', message: 'The ' + ndRoleLabel(to) + ' looks at this card and decides.', fields: [{ key: 'reason', label: 'What do you disagree with?', type: 'textarea', maxLength: 500, value: '' }], okLabel: 'Send to ' + ndRoleLabel(to) }); } catch (e) { r = null; }
+  var reason = r && String(r.reason || '').trim(); if (!reason) return;
+  var me = ndMob();
+  if (await ndWrite({ dispute: { at: new Date().toISOString(), by: me, byName: ndName(me), reason: reason.slice(0, 500), to: to } })) { ndToast('Dispute sent to the ' + ndRoleLabel(to) + '.', 'ok'); ndRender(); }
+}
+async function ndResolve() {
+  var r = null; try { r = await scDialog({ title: 'Resolve the dispute', icon: '⚖️', message: 'Correct any score on the card first if needed. Your decision is shown to the team.', fields: [{ key: 'note', label: 'Your decision', type: 'textarea', maxLength: 500, value: '' }], okLabel: 'Resolve' }); } catch (e) { r = null; }
+  var note = r && String(r.note || '').trim(); if (!note) return;
+  var me = ndMob();
+  if (await ndWrite({ 'dispute/resolved': { at: new Date().toISOString(), by: me, byName: ndName(me), note: note.slice(0, 500) } })) { ndToast('Dispute resolved.', 'ok'); ndRender(); }
 }
 async function ndVerify() {
   var me = ndMob();
@@ -21184,7 +21228,7 @@ async function ndSendBack() {
   var r = null; try { r = await scDialog({ title: 'Send back', fields: [{ key: 'reason', label: 'What should the team look at again?', value: '' }], okLabel: 'Send back' }); } catch (e) { r = null; }
   var reason = r && String(r.reason || '').trim(); if (!reason) return;
   var me = ndMob();
-  if (await ndWrite({ done: null, sentBack: { at: new Date().toISOString(), by: me, byName: ndName(me), reason: reason.slice(0, 500) } })) { ndToast('Sent back to the team.', 'ok'); ndRender(); }
+  if (await ndWrite({ done: null, xc: null, sentBack: { at: new Date().toISOString(), by: me, byName: ndName(me), reason: reason.slice(0, 500) } })) { ndToast('Sent back to the team.', 'ok'); ndRender(); }
 }
 
 // ── readiness: department × Area of Concern ──
@@ -21220,6 +21264,7 @@ function ndSetupHTML() {
     h += '<details class="nd-card nd-dset" id="nd-dset-' + d.id + '"><summary><span class="nd-dk">' + ndEsc(d.id) + '</span><span class="nd-dn"><b>' + ndEsc(d.name) + (set.off ? ' (off)' : '') + '</b><small>Lead: ' + ndEsc(set.lead ? ndName(set.lead) : '—') + ' · team ' + Object.keys(team).length + '</small></span></summary>'
       + '<label class="nd-chk"><input type="checkbox" data-k="off"' + (set.off ? ' checked' : '') + '> Not at this facility (switch off)</label>'
       + '<label class="nd-lbl">Lead<select class="nd-in" data-k="lead"><option value="">—</option>' + mobs.map(function (m) { return '<option value="' + m + '"' + (set.lead === m ? ' selected' : '') + '>' + ndEsc(staff[m].name || m) + ' · ' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</option>'; }).join('') + '</select></label>'
+      + '<label class="nd-lbl">Cross-checker for USHA cards<select class="nd-in" data-k="xcheck"><option value="">—</option>' + mobs.map(function (m) { return '<option value="' + m + '"' + (set.xcheck === m ? ' selected' : '') + '>' + ndEsc(staff[m].name || m) + ' · ' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</option>'; }).join('') + '</select></label>'
       + '<div class="nd-lbl">Team</div><div class="nd-team">' + mobs.map(function (m) { return '<label class="nd-chk"><input type="checkbox" data-team="' + m + '"' + (team[m] ? ' checked' : '') + '> ' + ndEsc(staff[m].name || m) + ' <small>' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</small></label>'; }).join('') + '</div>'
       + '<button type="button" class="nd-btn" onclick="ndSaveDept(\'' + d.id + '\')">Save ' + ndEsc(d.id) + '</button></details>';
   });
@@ -21227,7 +21272,7 @@ function ndSetupHTML() {
 }
 async function ndSaveDept(id) {
   var box = document.getElementById('nd-dset-' + id); if (!box) return;
-  var rec = { lead: box.querySelector('[data-k=lead]').value || null, team: {}, off: box.querySelector('[data-k=off]').checked || null };
+  var rec = { lead: box.querySelector('[data-k=lead]').value || null, team: {}, off: box.querySelector('[data-k=off]').checked || null, xcheck: box.querySelector('[data-k=xcheck]').value || null };
   [].forEach.call(box.querySelectorAll('[data-team]'), function (c) { if (c.checked) rec.team[c.getAttribute('data-team')] = true; });
   try { await db.ref(scFacilityPath(_nd.code) + '/depts/' + id).set(rec); _nd.fac.depts = _nd.fac.depts || {}; _nd.fac.depts[id] = rec; ndToast(id + ' saved.', 'ok'); ndRender(); }
   catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
@@ -21258,7 +21303,8 @@ function ndStaffHTML() {
 function ndJoinDefaults(mob, role) {
   var out = {};
   (_nd.cfg.departments || []).forEach(function (d) {
-    var cur = ndDeptSet(d.id), rec = { lead: cur.lead || null, team: Object.assign({}, cur.team || {}), off: cur.off || null }, ch = false;
+    var cur = ndDeptSet(d.id), rec = { lead: cur.lead || null, team: Object.assign({}, cur.team || {}), off: cur.off || null, xcheck: cur.xcheck || null }, ch = false;
+    if ((_nd.cfg.xcheckDepts || []).indexOf(d.id) >= 0 && (_nd.cfg.xcheckRoles || []).indexOf(role) >= 0 && !rec.xcheck) { rec.xcheck = mob; ch = true; }
     if (((_nd.cfg.defaultTeams || {})[role] || []).indexOf(d.id) >= 0 && !rec.team[mob]) { rec.team[mob] = true; ch = true; }
     if (d.lead === role && (!rec.lead || ndIsInCharge(rec.lead))) { rec.lead = mob; ch = true; }
     if (ch) out[d.id] = rec;
@@ -21269,8 +21315,8 @@ function ndJoinDefaults(mob, role) {
 function ndLeaveDepts(mob) {
   var out = {}, ic = Object.keys(ndStaff()).find(function (m) { return ndIsInCharge(m); }) || null;
   (_nd.cfg.departments || []).forEach(function (d) {
-    var cur = ndDeptSet(d.id); if (!(cur.team || {})[mob] && cur.lead !== mob) return;
-    var rec = { lead: cur.lead === mob ? ic : (cur.lead || null), team: Object.assign({}, cur.team || {}), off: cur.off || null }; delete rec.team[mob]; out[d.id] = rec;
+    var cur = ndDeptSet(d.id); if (!(cur.team || {})[mob] && cur.lead !== mob && cur.xcheck !== mob) return;
+    var rec = { lead: cur.lead === mob ? ic : (cur.lead || null), team: Object.assign({}, cur.team || {}), off: cur.off || null, xcheck: cur.xcheck === mob ? null : (cur.xcheck || null) }; delete rec.team[mob]; out[d.id] = rec;
   });
   return out;
 }
@@ -21320,6 +21366,120 @@ function ndMeHTML() {
     + '<button type="button" onclick="ndLogout()"><i class="ti ti-logout"></i>Logout</button></div>';
 }
 
+// ── inbox on Today: disputes I decide, cross-checks waiting for me, actions to fix ──
+function ndAllCards(fn) { Object.keys(_nd.cards || {}).forEach(function (dept) { var days = _nd.cards[dept] || {}; Object.keys(days).forEach(function (k) { fn(dept, +k.replace('day_', ''), days[k] || {}); }); }); }
+function ndMyActions() {
+  var me = ndMob(), all = ndIsInCharge(me), A = _nd.actions || {};
+  return Object.keys(A).filter(function (id) { var a = A[id]; return a && a.status === 'open' && (all || a.owner === me); }).sort(function (x, y) { return String(A[x].due).localeCompare(String(A[y].due)); });
+}
+function ndInboxHTML() {
+  if (_nd.view) return '';
+  var me = ndMob(), rows = [];
+  ndAllCards(function (dept, day, c) {
+    if (c.verified) return; var d = ndDeptDef(dept), dsp = ndOpenDispute(c);
+    if (dsp && ndCanResolve(dsp.to, me)) rows.push('<button type="button" class="nd-dept" onclick="ndOpenCard(\'' + dept + '\',' + day + ')"><span class="nd-dk">' + ndEsc(dept) + '</span><span class="nd-dn"><b>Dispute · ' + ndEsc(d.name) + ' · Day ' + day + '</b><small>' + ndEsc(dsp.byName || ndName(dsp.by)) + ': ' + ndEsc(dsp.reason) + '</small></span><span class="nd-st back">Decide</span></button>');
+    if (ndNeedsXc(c) && ndXcheck(dept) === me) rows.push('<button type="button" class="nd-dept" onclick="ndOpenCard(\'' + dept + '\',' + day + ')"><span class="nd-dk">' + ndEsc(dept) + '</span><span class="nd-dn"><b>Cross-check · ' + ndEsc(d.name) + ' · Day ' + day + '</b><small>Filled by ' + ndEsc(c.done.byName || ndName(c.done.by)) + ' (USHA)</small></span><span class="nd-st done">Cross-check</span></button>');
+  });
+  var acts = ndMyActions(), h = '';
+  if (rows.length) h += '<div class="nd-sec"><b>Waiting for you</b><small>' + rows.length + '</small></div>' + rows.join('');
+  if (acts.length) h += '<div class="nd-sec"><b>' + (ndIsInCharge(me) ? 'Open actions' : 'My actions') + '</b><small>from the Supervisor · ' + acts.length + '</small></div>' + acts.slice(0, 5).map(ndActionRow).join('')
+    + (acts.length > 5 ? '<button type="button" class="nd-btn ghost" onclick="ndTab(\'actions\')">All ' + acts.length + ' actions</button>' : '');
+  return h;
+}
+
+// ── actions: unmet checkpoint → Supervisor's action (how to fix · owner · due) → fixed → Supervisor closes ──
+function ndToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function ndAddDays(iso, n) { var d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function ndWeekEnd() { var d = new Date(), add = (7 - d.getDay()) % 7; return ndAddDays(ndToday(), add); }   // this Sunday
+// latest score and note per checkpoint (highest day wins), with the card it came from
+function ndLatestInfo() {
+  var out = {};
+  ndAllCards(function (dept, day, c) { var s = c.s || {}; Object.keys(s).forEach(function (id) { if (!out[id] || out[id].day <= day) out[id] = { s: s[id], note: (c.note || {})[id] || '', dept: dept, day: day }; }); });
+  return out;
+}
+function ndCpText(id) { var r = _nd.byId[id]; return r ? r[5] : id; }
+function ndActionRow(id) {
+  var a = (_nd.actions || {})[id], me = ndMob(), over = a.status === 'open' && a.due < ndToday();
+  var canFix = !_nd.view && a.status === 'open' && (a.owner === me || ndIsInCharge(me)), sup = _nd.view === 'sup';
+  return '<div class="nd-cp nd-act"><div class="nd-cpt"><span class="nd-id">' + ndEsc(id) + ' · ' + ndEsc(ndDeptDef(a.dept).name) + '</span>' + ndEsc(ndCpText(id)) + '</div>'
+    + '<div class="nd-how"><i class="ti ti-info-circle"></i><span>' + ndEsc(a.how) + '</span></div>'
+    + '<div class="nd-am"><span>' + ndEsc(ndName(a.owner)) + '</span><span class="' + (over ? 'over' : '') + '">due ' + ndEsc(a.due) + (over ? ' · overdue' : '') + '</span>'
+    + '<span class="nd-st ' + (a.status === 'open' ? 'prog' : a.status === 'fixed' ? 'done' : 'ok') + '">' + (a.status === 'open' ? 'Open' : a.status === 'fixed' ? 'Fixed — Supervisor checks' : 'Closed') + '</span></div>'
+    + (a.fixed ? '<div class="nd-dim">Fixed by ' + ndEsc(ndName(a.fixed.by)) + (a.fixed.note ? ': ' + ndEsc(a.fixed.note) : '') + '</div>' : '')
+    + (canFix ? '<div class="nd-row" style="margin-top:8px"><button type="button" class="nd-btn" onclick="ndFixAction(\'' + id + '\')">Mark fixed</button></div>' : '')
+    + (sup ? '<div class="nd-row" style="margin-top:8px">' + (a.status === 'fixed' ? '<button type="button" class="nd-btn" onclick="ndSetAction(\'' + id + '\',\'closed\')">Close</button><button type="button" class="nd-btn ghost" onclick="ndSetAction(\'' + id + '\',\'open\')">Reopen</button>' : '')
+      + (a.status !== 'closed' ? '<button type="button" class="nd-btn ghost" onclick="ndAssign(\'' + id + '\')">Edit</button>' : '') + '</div>' : '')
+    + '</div>';
+}
+function ndActionsHTML() {
+  var A = _nd.actions || {}, ids = Object.keys(A), sup = _nd.view === 'sup', today = ndToday(), wk = ndWeekEnd();
+  var open = ids.filter(function (i) { return A[i].status === 'open'; }), fixed = ids.filter(function (i) { return A[i].status === 'fixed'; }), closed = ids.filter(function (i) { return A[i].status === 'closed'; });
+  var byDue = function (a, b) { return String(A[a].due).localeCompare(String(A[b].due)); };
+  var h = '<div class="nd-card nd-sum"><div><b>' + open.length + '</b><small>open</small></div><div><b>' + fixed.length + '</b><small>fixed · to check</small></div><div><b class="ok">' + closed.length + '</b><small>closed</small></div></div>';
+  var week = open.filter(function (i) { return A[i].due <= wk; }).sort(byDue);
+  h += '<div class="nd-sec"><b>This week\'s action plan</b><small>due by ' + ndEsc(wk) + (week.filter(function (i) { return A[i].due < today; }).length ? ' · ' + week.filter(function (i) { return A[i].due < today; }).length + ' overdue' : '') + '</small></div>'
+    + (week.length ? week.map(ndActionRow).join('') : '<div class="nd-card nd-dim">Nothing due this week.</div>');
+  if (fixed.length) h += '<div class="nd-sec"><b>Fixed — ' + (sup ? 'check and close' : 'waiting for the Supervisor') + '</b><small>' + fixed.length + '</small></div>' + fixed.sort(byDue).map(ndActionRow).join('');
+  var later = open.filter(function (i) { return A[i].due > wk; }).sort(byDue);
+  if (later.length) h += '<div class="nd-sec"><b>Later</b><small>' + later.length + '</small></div>' + later.map(ndActionRow).join('');
+  if (sup) {
+    var L = ndLatestInfo(), on = {}; ndDeptDefs().forEach(function (d) { on[d.id] = true; });
+    var un = Object.keys(L).filter(function (id) { var r = _nd.byId[id], a = A[id]; return r && on[r[1]] && L[id].s < 2 && (!a || a.status === 'closed'); });
+    h += '<div class="nd-sec"><b>Unmet checkpoints without an action</b><small>' + un.length + ' · latest score Partial / Not met</small></div>';
+    if (!un.length) h += '<div class="nd-card nd-dim">None — every unmet checkpoint has an action.</div>';
+    ndDeptDefs().forEach(function (d) {
+      var rows = un.filter(function (id) { return _nd.byId[id][1] === d.id; }); if (!rows.length) return;
+      h += '<details class="nd-card nd-dset"><summary><span class="nd-dk">' + ndEsc(d.id) + '</span><span class="nd-dn"><b>' + ndEsc(d.name) + '</b><small>' + rows.length + ' unmet</small></span></summary>'
+        + rows.map(function (id) { var x = L[id]; return '<div class="nd-srow"><span class="nd-dn"><b>' + ndEsc(id) + ' · ' + (x.s === 0 ? 'Not met' : 'Partial') + '</b><small>' + ndEsc(ndCpText(id)) + (x.note ? ' — “' + ndEsc(x.note) + '”' : '') + '</small></span><button type="button" class="nd-btn ghost" onclick="ndAssign(\'' + id + '\')">Assign</button></div>'; }).join('')
+        + '</details>';
+    });
+  }
+  if (closed.length) h += '<details class="nd-card nd-dset"><summary><span class="nd-dn"><b>Closed</b><small>' + closed.length + '</small></span></summary>' + closed.map(ndActionRow).join('') + '</details>';
+  return h;
+}
+async function ndAssign(id) {
+  var r0 = _nd.byId[id]; if (!r0) return; var dept = r0[1], a = (_nd.actions || {})[id] || {}, staff = ndStaff();
+  var opts = Object.keys(staff).map(function (m) { return { value: m, label: (staff[m].name || m) + ' · ' + ndRoleLabel(staff[m].role || _nd.cfg.inCharge) }; });
+  var info = ndLatestInfo()[id] || {}, r = null;
+  try { r = await scDialog({ title: 'Action · ' + id, icon: '🔧', message: ndCpText(id) + (info.note ? '\nTeam note: ' + info.note : ''), fields: [
+    { key: 'how', label: 'How to fix', type: 'textarea', maxLength: 600, value: a.how || '' },
+    { key: 'owner', label: 'Who does it', type: 'select', options: opts, value: a.owner || ndLead(dept) || '' },
+    { key: 'due', label: 'Due date', type: 'date', value: a.due || ndAddDays(ndToday(), 7) }], okLabel: a.how ? 'Save' : 'Assign' }); } catch (e) { r = null; }
+  if (!r) return; var how = String(r.how || '').trim();
+  if (how.length < 3 || !/^\d{10}$/.test(r.owner || '') || !/^\d{4}-\d{2}-\d{2}$/.test(r.due || '')) { ndToast('Fill in how to fix, who and the due date.', 'err'); return; }
+  var rec = { dept: dept, how: how.slice(0, 600), owner: r.owner, due: r.due, status: 'open', at: new Date().toISOString(), by: _nd.supId || 'sup', byName: _nd.supName || '' };
+  try { await db.ref('sc_dactions/' + _nd.code + '/' + id).set(rec); (_nd.actions = _nd.actions || {})[id] = rec; ndToast('Action saved.', 'ok'); ndRender(); } catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
+}
+async function ndFixAction(id) {
+  var r = null; try { r = await scDialog({ title: 'Mark fixed', icon: '✅', message: ndCpText(id), fields: [{ key: 'note', label: 'What was done? (optional)', type: 'textarea', maxLength: 300, value: '' }], okLabel: 'Mark fixed' }); } catch (e) { r = null; }
+  if (!r) return; var me = ndMob(), fx = { at: new Date().toISOString(), by: me }; if (String(r.note || '').trim()) fx.note = String(r.note).trim().slice(0, 300);
+  try { await db.ref('sc_dactions/' + _nd.code + '/' + id).update({ status: 'fixed', fixed: fx }); var a = _nd.actions[id]; a.status = 'fixed'; a.fixed = fx; ndToast('Marked fixed — re-score it on the next card.', 'ok'); ndRender(); }
+  catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
+}
+async function ndSetAction(id, st) {
+  var up = { status: st }; if (st === 'open') up.fixed = null;
+  try { await db.ref('sc_dactions/' + _nd.code + '/' + id).update(up); var a = _nd.actions[id]; a.status = st; if (st === 'open') delete a.fixed; ndToast(st === 'closed' ? 'Closed.' : 'Reopened.', 'ok'); ndRender(); }
+  catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
+}
+
+// ── Supervisor / HealSol / District: open a department-core facility from the facility list (no staff login) ──
+async function ndOpenView(code) {
+  var fac = null; try { fac = await fbGet(scFacilityPath(code)); } catch (e) {}
+  if (!fac) { ndToast('Facility not found.', 'err'); return; }
+  var t = nfTypeOf(fac), cfg = NF_LEVELS[t]; if (!cfg || cfg.core !== 'dept') return;
+  var cl; try { cl = await nfLoadData(cfg.checklist); } catch (e) { ndToast('The ' + cfg.name + ' checklist could not be loaded. Check the internet and try again.', 'err'); return; }
+  nfSetLevel(t);
+  var claims = (typeof _nfAuth !== 'undefined' && _nfAuth && _nfAuth.claims) || {}, sup = (typeof appMode !== 'undefined' && appMode === 'sc-supervisor') ? claims.sup : null, supName = '';
+  if (sup) { try { supName = ((await fbGet('sc_supervisors/' + sup)) || {}).name || ''; } catch (e) {} }
+  _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: {}, actions: {}, tab: sup ? 'actions' : 'today', card: null, view: sup ? 'sup' : 'view', supId: sup, supName: supName };
+  (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id); });
+  _nd.byId = {}; cl.items.forEach(function (r) { _nd.byId[r[0]] = r; });
+  try { _nd.cards = (await fbGet(ndPath())) || {}; } catch (e) {}
+  try { _nd.actions = (await fbGet('sc_dactions/' + code)) || {}; } catch (e) {}
+  ndShow();
+}
+function ndCloseView() { ndClose(); _nd = null; nfSetLevel(NF_LEVEL_DEFAULT); try { if (typeof scRenderMasterDashboard === 'function') scRenderMasterDashboard(); } catch (e) {} }
+
 // ── HealSol / Supervisor facility list: card for a department-core facility (UPHC …) — no Sub-Centre figures ──
 function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
   var e = ndEsc, prog = (LV.programmes || []).find(function (p) { return p.id === fac.progId; });
@@ -21338,7 +21498,7 @@ function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
     + '</div><div class="mfc-pct" style="color:var(--teal);font-size:12px;">' + e(when.replace(/ of \d+$/, '')) + '</div></div>'
     + '<div style="height:6px;border-radius:10px;background:var(--br);margin:7px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:' + pct + '%;background:var(--teal);"></div></div>'
     + '<div class="mfc-meta"><span>' + e(when) + '</span><span>' + e(LV.inChargeLabel || LV.inCharge) + ': ' + e(fac.choName || 'Not set') + '</span></div>'
-    + '<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">' + (adminBtns || '') + '</div>';
+    + '<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;"><button class="mfc-btn" style="flex:2;" onclick="ndOpenView(\'' + e(code) + '\')"><i class="ti ti-zoom-in" style="font-size:11px;"></i> Open</button>' + (adminBtns || '') + '</div>';
 }
 
 nfRegisterCore('dept', { open: { staff: ndOpen } });

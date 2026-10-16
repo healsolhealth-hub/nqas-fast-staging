@@ -95,6 +95,8 @@ var NF_LEVELS={
       LHV:['MH','NB','FP','OR'], Pharmacist:['PH'], LabTech:['LAB'], OutreachSup:['OR'], SupportStaff:['GA','ER'], USHA:['OR']
     },
     seeAll:['Coordinator','MOIC'],
+    // USHA cards are cross-checked: the in-charge names a cross-checker per department; new staff of these roles become it by default
+    xcheckDepts:['OR'], xcheckRoles:['OutreachSup','LHV','ANM'],
     roles:[
       {id:'Coordinator',  label:'UPHC Coordinator',      icon:'🗂️', requireName:false},
       {id:'MOIC',         label:'Medical Officer In-charge', icon:'🩺', requireName:false},
