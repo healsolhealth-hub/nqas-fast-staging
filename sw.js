@@ -1,0 +1,143 @@
+// NQAS | FAST service worker — made by app/build.js (do not edit site/sw.js; edit app/pwa/sw.js).
+// • The page (index.html): network first, so everyone gets the latest app when online; the last copy
+//   is used only when the network fails or takes longer than 6 s (offline: the app opens and says it cannot reach the server).
+// • assets/… (name carries a content hash, never changes): cache first; a new build only downloads changed blocks.
+// • Fixed-version libraries from gstatic (Firebase SDK) and cdnjs / jsdelivr / unpkg (jsPDF …): cache first.
+// • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
+// Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
+// that only unregisters itself.
+const BUILD = "f514b7e3a868";
+const ASSETS = [
+ "assets/data-sc-checkpoints.faf119347a.js",
+ "assets/data-sc-days.84b54839e3.js",
+ "assets/data-sc-how-to-fix.370427c0e7.js",
+ "assets/dept-core.e9aa70d544.css",
+ "assets/dept-core.fe4f23858b.js",
+ "assets/dept-plan.0d8e8d2719.js",
+ "assets/sc-baseline-review.9bd6ffb924.js",
+ "assets/sc-baseline-review.cba584c030.css",
+ "assets/sc-baseline7.d38d5e0f28.js",
+ "assets/sc-build1.7a975d02d8.js",
+ "assets/sc-build2.65b20c180e.js",
+ "assets/sc-build2.9b9d0fc3cf.css",
+ "assets/sc-champion-verify.6be0e5d069.js",
+ "assets/sc-champions.e1ab6daa4b.css",
+ "assets/sc-champions.ef6d2f719b.js",
+ "assets/sc-checklist.63f7006cf3.js",
+ "assets/sc-compliance.db47e45d0f.js",
+ "assets/sc-cp-master.01f36caf69.js",
+ "assets/sc-cp-progress.02e5f35df1.js",
+ "assets/sc-cross-cutting.74584f8128.js",
+ "assets/sc-day-placement.9020e8e4d1.js",
+ "assets/sc-district.7979842a5a.js",
+ "assets/sc-fadm.1fb01e6ce7.css",
+ "assets/sc-fadm.90548a4c15.js",
+ "assets/sc-gaps.df1042b0ae.js",
+ "assets/sc-graduation.3110780067.js",
+ "assets/sc-healsol-view.3fbb05a162.js",
+ "assets/sc-hierarchy.4d51074fef.js",
+ "assets/sc-how-to-fix.7dbba620cc.js",
+ "assets/sc-implementation.27485be94c.js",
+ "assets/sc-laptop.3b958233dd.css",
+ "assets/sc-laptop.c55d6f8774.js",
+ "assets/sc-linked-checks.047edf7bec.js",
+ "assets/sc-links.39cf2b42da.js",
+ "assets/sc-login-3tier.d4e8ecf957.js",
+ "assets/sc-looks-met.c2aaaff056.js",
+ "assets/sc-phases.07a2a34a96.css",
+ "assets/sc-phases.e63ef7115d.js",
+ "assets/sc-plan-wa.4a4291bea8.js",
+ "assets/sc-prep-lists.2f422a93fa.js",
+ "assets/sc-readiness.6cf4731cfe.js",
+ "assets/sc-review-inbox.d5525ac076.js",
+ "assets/sc-review.54a1bc1306.js",
+ "assets/sc-staff-app.1f975b2968.js",
+ "assets/sc-staff-app.e0189e484b.css",
+ "assets/sc-summary.0ba9eaf152.js",
+ "assets/sc-v2-core.1f19854840.js",
+ "assets/sc-v2.6b52c20961.css",
+ "assets/sc-week-plan.126d067680.js",
+ "assets/shared-base.e513cad502.css",
+ "assets/shared-biz-dash.333261e206.css",
+ "assets/shared-biz-dash.7bfe787182.js",
+ "assets/shared-biz-report.277765cffc.js",
+ "assets/shared-brand.1b47ef65ba.js",
+ "assets/shared-business-ind.75044a63cd.js",
+ "assets/shared-business-ind.d97663522b.css",
+ "assets/shared-cert.1c3d0ffa3c.js",
+ "assets/shared-cert.bd7de7b6f9.css",
+ "assets/shared-dashboards.524d7561de.js",
+ "assets/shared-dashboards.c05c6b7e04.css",
+ "assets/shared-impact.109d76a0dd.css",
+ "assets/shared-impact.9f12aaeff6.js",
+ "assets/shared-one-login.6f478da916.css",
+ "assets/shared-one-login.c204d6395c.js",
+ "assets/shared-payments.2b35528884.js",
+ "assets/shared-pdf-reports.77cff64a9b.js",
+ "assets/shared-pdf.33e49f6393.js",
+ "assets/shared-registration.6833f0a40c.js",
+ "assets/shared-secure.8f3346d9b1.js",
+ "assets/shared-whatsapp.a3bc984eb3.js",
+ "assets/types-settings.c3dfc7b194.js",
+ "assets/vendor-pdf-fonts.d24cedb333.js",
+ "assets/vendor-poppins-font.7a4a5ae076.css",
+ "assets/vendor-qrcode.fabb956c75.js",
+ "assets/vendor-sign-font.245deebf21.js",
+ "icons/apple-touch-icon.png",
+ "icons/icon-192.png",
+ "icons/icon-512.png",
+ "icons/icon-maskable-512.png",
+ "manifest.webmanifest"
+];
+const STATIC = 'nqf-static', PAGES = 'nqf-pages', LIBS = 'nqf-libs';
+const LIB_RE = /^https:\/\/(www\.gstatic\.com\/firebasejs\/\d+\.\d+\.\d+\/|cdnjs\.cloudflare\.com\/ajax\/libs\/[^/]+\/\d[^/]*\/|cdn\.jsdelivr\.net\/npm\/[^/]+@\d[^/]*\/|unpkg\.com\/[^/]+@\d[^/]*\/)/;
+const scopeUrl = p => new URL(p, self.registration.scope).href;
+
+self.addEventListener('install', e => {
+  e.waitUntil((async () => {
+    const c = await caches.open(STATIC), have = new Set((await c.keys()).map(r => r.url));
+    // only what this build adds; a failed download is retried on first use
+    await Promise.all(ASSETS.map(scopeUrl).filter(u => !have.has(u)).map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => {})));
+    await self.skipWaiting();
+  })());
+});
+self.addEventListener('activate', e => {
+  e.waitUntil((async () => {
+    const keep = new Set(ASSETS.map(scopeUrl)), c = await caches.open(STATIC);
+    await Promise.all((await c.keys()).filter(r => !keep.has(r.url)).map(r => c.delete(r)));   // blocks of older builds
+    const names = await caches.keys();
+    await Promise.all(names.filter(n => [STATIC, PAGES, LIBS].indexOf(n) < 0).map(n => caches.delete(n)));
+    await self.clients.claim();
+  })());
+});
+
+async function networkFirstPage(req) {
+  const c = await caches.open(PAGES), key = scopeUrl('./');
+  try {
+    const res = await Promise.race([fetch(req), new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 6000))]);
+    if (res && res.ok && res.type === 'basic') c.put(key, res.clone());
+    return res;
+  } catch (err) {
+    const hit = await c.match(key);
+    if (hit) return hit;
+    return fetch(req);                                  // slow but not offline: keep waiting for the network
+  }
+}
+async function cacheFirst(name, req) {
+  const c = await caches.open(name), hit = await c.match(req);
+  if (hit) return hit;
+  const res = await fetch(req);
+  if (res && (res.ok || res.type === 'opaque')) c.put(req, res.clone());
+  return res;
+}
+self.addEventListener('fetch', e => {
+  const req = e.request; if (req.method !== 'GET') return;
+  const url = new URL(req.url), scope = new URL(self.registration.scope);
+  if (url.origin === scope.origin && url.pathname.startsWith(scope.pathname)) {
+    const rel = url.pathname.slice(scope.pathname.length);
+    if (rel === '' || rel === 'index.html') { if (url.searchParams.has('cert') || url.searchParams.has('impact')) return; e.respondWith(networkFirstPage(req)); return; }   // the app page (Verify links: plain network)
+    if (rel.startsWith('assets/')) { e.respondWith(cacheFirst(STATIC, req)); return; }
+    return;                                             // manifest, icons, app-inline.html …: normal network
+  }
+  if (LIB_RE.test(req.url)) e.respondWith(cacheFirst(LIBS, req));
+});

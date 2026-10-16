@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#1E6B5E"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<link rel="preconnect" href="https://www.gstatic.com"/>
+<script id="nf-asset-fallback">// Step 5: the published page keeps big blocks in assets/…; each of those tags calls this if it cannot load (for example
+// an upload without the assets folder). The page then opens app-inline.html — the same app as one file — instead.
+function nfAssetFail(el){ try{ console.warn('[NQAS] asset missing:',el&&(el.src||el.href)); location.replace('app-inline.html'+location.search+location.hash); }catch(e){} }
+</script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<title>NQAS | FAST · HealSol Academy</title>
+<script id="nf-level" src="assets/types-settings.c3dfc7b194.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-assets">var NF_ASSETS={"uphc-checklist":"assets/data-uphc-checklist.09cb37887b.json"};</script>
+<script id="nf-data-loader">// Data files loaded on demand (phase 3): a facility type's checklist is fetched only when a facility of that type opens.
+// NF_ASSETS (written by app/build.js): name → 'assets/data-<name>.<hash>.json' (published page) or '#nf-data-<name>'
+// (single file: inline <script type="application/json">). nfLoadData(name) → Promise of the parsed data, fetched once
+// per page; a failure is not remembered, so the next call tries again. The service worker keeps the file after first use.
+var _nfData={};
+function nfLoadData(name){
+  if(_nfData[name]) return _nfData[name];
+  var ref=(typeof NF_ASSETS!=='undefined'&&NF_ASSETS)?NF_ASSETS[name]:null;
+  if(!ref) return Promise.reject(new Error('No data file called '+name));
+  var p=(ref.charAt(0)==='#')
+    ? new Promise(function(ok,no){ var go=function(){ var el=document.getElementById(ref.slice(1)); if(!el) return no(new Error('Data block missing: '+ref)); try{ ok(JSON.parse(el.textContent)); }catch(e){ no(e); } };
+        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go(); })
+    : fetch(ref).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status+' for '+ref); return r.json(); });
+  _nfData[name]=p.catch(function(e){ delete _nfData[name]; throw e; });
+  return _nfData[name];
+}
+</script>
+
+
+<link rel="stylesheet" href="assets/shared-base.e513cad502.css" onerror="nfAssetFail(this)">
+<link rel="stylesheet" href="assets/sc-v2.6b52c20961.css" onerror="nfAssetFail(this)">
+
+<style id="nf-boot-css">
+/* Hide the old staff-login panel from the very first paint; the new NQAS | FAST login replaces it (nf-on). Safety net: show it after 6 s if the new login never mounts. */
+#login-screen:not(.nf-on){background:#EEF3F2;}
+#login-screen:not(.nf-on) > *{visibility:hidden;animation:nfBootShow 0s 6s forwards;}
+@keyframes nfBootShow{to{visibility:visible;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+  <!-- Branding + admin icon buttons -->
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:420px;margin-bottom:20px;">
+    <div class="login-logo-wrap" style="margin-bottom:0;flex:1;">
+      <div class="login-icon"><span class="login-icon-text">H</span></div>
+      <div>
+        <div class="login-brand-name">NQAS | FAST</div>
+        <div class="login-brand-sub" data-nf-lvl>by HealSol Academy · Sub-Centre</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+      <div class="lang-tog dark">
+        <button type="button" data-lang="en" class="on" onclick="setLang('en')">EN</button>
+        <button type="button" data-lang="hi" onclick="setLang('hi')">हिं</button>
+      </div>
+      <button onclick="scShowChoLogin()" title="Facility Admin Login"
+        style="width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;"
+        onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+        <i class="ti ti-building" style="font-size:17px;"></i>
+      </button>
+      <button onclick="scShowSupLogin()" title="Supervisor Login"
+        style="width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;"
+        onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+        <i class="ti ti-binoculars" style="font-size:17px;"></i>
+      </button>
+      <button onclick="scShowAdminLogin()" title="HealSol Admin Login"
+        style="width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;"
+        onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+        <i class="ti ti-shield-lock" style="font-size:17px;"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- STAFF LOGIN (default, full card) -->
+  <div class="login-card" id="sc-staff-panel">
+    <div class="lc-title" data-i18n="Staff Login">Staff Login</div>
+    <div class="lc-sub">Login with your Facility ID, mobile number and password.</div>
+    <div class="lc-field">
+      <label class="lc-label">Facility ID</label>
+      <input class="lc-input" id="sc-staff-fid" placeholder="e.g. UP-SC-001"
+        autocapitalize="characters" autocomplete="off"
+        onkeydown="if(event.key==='Enter')document.getElementById('sc-staff-mob').focus()"/>
+    </div>
+    <div class="lc-field">
+      <label class="lc-label">Mobile Number</label>
+      <input class="lc-input" id="sc-staff-mob" type="tel" maxlength="10"
+        inputmode="numeric" placeholder="10-digit mobile number"
+        onkeydown="if(event.key==='Enter')document.getElementById('sc-staff-pwd').focus()"/>
+    </div>
+    <div class="lc-field">
+      <label class="lc-label">Password</label>
+      <input class="lc-input" id="sc-staff-pwd" type="password"
+        placeholder="Password"
+        onkeydown="if(event.key==='Enter')scStaffLogin()"/>
+    </div>
+    <div class="lc-err" id="sc-staff-err"></div>
+    <button class="lc-btn staff" id="sc-staff-btn" onclick="scStaffLogin()">
+      <i class="ti ti-rocket" style="font-size:15px;"></i> Enter SC App
+    </button>
+    <div class="lc-note">Your mobile is registered by your CHO. Use the temporary password you were given, then choose your own.</div>
+    <button onclick="phcOpenDemoSignup()" style="width:100%;margin-top:10px;padding:11px;border-radius:12px;border:1.5px dashed var(--teal,#1E6B5E);background:rgba(30,107,94,0.08);color:var(--teal,#1E6B5E);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <i class="ti ti-rocket" style="font-size:14px;"></i> New facility? Register — first 7 days (Baseline) free
+    </button>
+    <button onclick="phcOpenLeadModal()" style="width:100%;margin-top:8px;padding:10px;border-radius:12px;border:1.5px solid var(--br);background:transparent;color:var(--t2);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <i class="ti ti-building-community" style="font-size:13px;"></i> District / Bulk enrollment? Contact us
+    </button>
+  </div>
+
+  <!-- FACILITY ADMIN LOGIN (hidden, slide-in) -->
+  <div class="login-card" id="sc-cho-panel" style="display:none;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <button onclick="scHideSecondaryLogin()"
+        style="width:28px;height:28px;border-radius:7px;border:1.5px solid var(--br);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:13px;">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div>
+        <div class="lc-title" style="margin-bottom:0;">Facility Admin Login</div>
+        <div style="font-size:10px;color:var(--t3);font-weight:600;">CHO / Facility In-charge</div>
+      </div>
+    </div>
+    <div style="background:var(--teal-lt);border:1px solid rgba(30,107,94,0.2);border-radius:9px;padding:9px 11px;margin-bottom:12px;font-size:11px;color:var(--teal-dk);font-weight:600;line-height:1.5;">
+      <i class="ti ti-info-circle" style="font-size:12px;vertical-align:-2px;"></i>
+      CHOs can now sign in once through <strong>Staff Login</strong> with their mobile number and get both <strong>My Cards</strong> and the <strong>Facility Dashboard</strong>. This older login still works.
+    </div>
+    <div class="lc-field">
+      <label class="lc-label">Facility ID</label>
+      <input class="lc-input" id="sc-cho-fid" placeholder="e.g. UP-SC-001"
+        autocapitalize="characters" autocomplete="off"
+        onkeydown="if(event.key==='Enter')document.getElementById('sc-cho-pwd').focus()"/>
+    </div>
+    <div class="lc-field">
+      <label class="lc-label">Admin Password</label>
+      <input class="lc-input" id="sc-cho-pwd" type="password"
+        placeholder="Your facility admin password"
+        onkeydown="if(event.key==='Enter')scChoLogin()"/>
+    </div>
+    <div class="lc-field" id="sc-cho-ak-field" style="display:none;">
+      <label class="lc-label">Activation Key <span style="font-weight:600;color:var(--t3);text-transform:none;letter-spacing:0;">(one-time)</span></label>
+      <input class="lc-input" id="sc-cho-ak" placeholder="Enter activation key from HealSol"
+        autocapitalize="characters"/>
+      <div style="font-size:10px;color:var(--t3);margin-top:4px;font-weight:600;">Required once to activate. Not needed again.</div>
+    </div>
+    <div class="lc-err" id="sc-cho-err"></div>
+    <button class="lc-btn staff" style="background:var(--teal);" onclick="scChoLogin()">
+      <i class="ti ti-building" style="font-size:14px;"></i> Enter Facility Admin Panel
+    </button>
+  </div>
+
+  <!-- SUPERVISOR LOGIN (hidden, slide-in) -->
+  <div class="login-card" id="sc-sup-panel" style="display:none;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <button onclick="scHideSecondaryLogin()"
+        style="width:28px;height:28px;border-radius:7px;border:1.5px solid var(--br);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:13px;">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div>
+        <div class="lc-title" style="margin-bottom:0;">Supervisor Login</div>
+        <div style="font-size:10px;color:var(--t3);font-weight:600;">View readiness for the facilities assigned to you</div>
+      </div>
+    </div>
+    <div class="lc-field">
+      <label class="lc-label">Supervisor ID</label>
+      <input class="lc-input" id="sc-sup-id" placeholder="Given by HealSol Academy" autocomplete="off" autocapitalize="none"
+        onkeydown="if(event.key==='Enter')document.getElementById('sc-sup-pwd').focus()"/>
+    </div>
+    <div class="lc-field">
+      <label class="lc-label">Password</label>
+      <input class="lc-input" id="sc-sup-pwd" type="password" placeholder="Enter password"
+        onkeydown="if(event.key==='Enter')scSupervisorLogin()"/>
+    </div>
+    <div class="lc-err" id="sc-sup-err"></div>
+    <button class="lc-btn admin" onclick="scSupervisorLogin()">
+      <i class="ti ti-binoculars" style="font-size:14px;"></i> Login as Supervisor
+    </button>
+  </div>
+
+  <!-- HEALSOL ADMIN LOGIN (hidden, slide-in) -->
+  <div class="login-card" id="sc-admin-panel" style="display:none;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <button onclick="scHideSecondaryLogin()"
+        style="width:28px;height:28px;border-radius:7px;border:1.5px solid var(--br);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:13px;">
+        <i class="ti ti-arrow-left"></i>
+      </button>
+      <div>
+        <div class="lc-title" style="margin-bottom:0;">HealSol Admin</div>
+        <div style="font-size:10px;color:var(--t3);font-weight:600;">Master dashboard access only</div>
+      </div>
+    </div>
+    <div class="lc-field">
+      <label class="lc-label">Master Password</label>
+      <input class="lc-input" id="admin-pwd" type="password"
+        placeholder="Enter master password"
+        onkeydown="if(event.key==='Enter')adminLogin()"/>
+    </div>
+    <div class="lc-err" id="admin-err"></div>
+    <button class="lc-btn admin" onclick="adminLogin()">
+      <i class="ti ti-shield-lock" style="font-size:14px;"></i> Login as HealSol Admin
+    </button>
+  </div>
+</div>
+
+<!-- WELCOME SCREEN -->
+<div class="welcome-screen" id="welcome-screen">
+  <div class="ws-hero">
+    <div class="ws-hero-bg1"></div><div class="ws-hero-bg2"></div>
+    <div class="ws-hero-top">
+      <div class="ws-logo">
+        <div class="ws-logo-icon">H</div>
+        <div><div class="ws-logo-name">NQAS | FAST</div><div class="ws-logo-sub">by HealSol Academy</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;">
+        <button class="ws-expand-btn" id="ws-guide-toggle-btn" onclick="wsToggleGuide()" style="display:none;">
+          <i class="ti ti-book" style="font-size:11px;"></i> <span id="ws-guide-btn-label">View Guide</span>
+        </button>
+        <div class="lang-tog dark">
+          <button type="button" data-lang="en" class="on" onclick="setLang('en')">EN</button>
+          <button type="button" data-lang="hi" onclick="setLang('hi')">हिं</button>
+        </div>
+        <button class="ws-expand-btn scx-refresh-btn" onclick="scStaffRefresh(this)" title="Refresh"><i class="ti ti-refresh" style="font-size:11px;"></i> <span data-i18n="Refresh">Refresh</span></button>
+        <button class="ws-expand-btn" onclick="scOpenLiveSessions()" title="Live Sessions"><i class="ti ti-broadcast" style="font-size:11px;"></i> <span data-i18n="Live">Live</span></button>
+        <button class="ws-expand-btn" onclick="wsLogout()" style="border-color:rgba(255,100,100,0.5);color:#FCA5A5;">
+          <i class="ti ti-logout" style="font-size:11px;"></i> Logout
+        </button>
+      </div>
+    </div>
+    <div class="ws-prog-badge">
+      <div class="ws-prog-icon" id="ws-prog-icon">🏥</div>
+      <div><div class="ws-prog-name" id="ws-prog-name">Programme</div><div class="ws-prog-tag" id="ws-prog-tag">Loading...</div></div>
+    </div>
+    <div class="ws-status-bar"><div class="ws-status-chip" id="ws-status-chip"><i class="ti ti-loader" style="font-size:12px;animation:spin 1s linear infinite;"></i> Loading...</div></div>
+    <div class="ws-stats-row" id="ws-stats-row" style="display:none;"></div>
+    <div class="ws-countdown" id="ws-countdown" style="display:none;">
+      <div class="ws-cd-title">Programme starts in</div>
+      <div class="ws-cd-boxes" id="ws-cd-boxes"></div>
+      <div class="ws-cd-start" id="ws-cd-start"></div>
+    </div>
+  </div>
+  <div class="ws-body">
+    <div id="ws-live-banner" style="display:none;"></div>
+    <div id="ws-verify-section" style="display:none;"></div>
+    <div id="ws-actions-section" style="display:none;"></div>
+    <div id="ws-today-section" style="display:none;">
+      <div class="ws-section-label"><i class="ti ti-calendar-check" style="font-size:12px;"></i> Today's Focus</div>
+      <div class="ws-today-card" onclick="wsEnterApp()">
+        <div class="ws-today-top">
+          <div class="ws-today-day" id="ws-today-day-num">01</div>
+          <div><div class="ws-today-title" id="ws-today-title">Loading...</div><div class="ws-today-aoc" id="ws-today-aoc"></div></div>
+        </div>
+        <div class="ws-today-meta" id="ws-today-meta"></div>
+        <button class="ws-today-arrow"><i class="ti ti-cards" style="font-size:14px;"></i> Open Today's Card <i class="ti ti-arrow-right" style="font-size:13px;margin-left:auto;"></i></button>
+      </div>
+    </div>
+    <div id="ws-prestart-section" style="display:none;">
+      <div class="ws-prestart-box">
+        <div class="ws-prestart-title"><i class="ti ti-calendar-event" style="font-size:15px;"></i> Your Programme Starts Soon</div>
+        <div class="ws-prestart-msg" id="ws-prestart-msg"></div>
+        <div class="ws-prestart-tips">
+          <div class="ws-tip"><span>📋</span> Read the programme guide below</div>
+          <div class="ws-tip"><span>👥</span> Brief your team — CHO, ANM, ASHA, MPW</div>
+          <div class="ws-tip"><span>🗂️</span> Gather key registers and documents</div>
+          <div class="ws-tip"><span>📅</span> Mark your calendar for each assessment day</div>
+        </div>
+      </div>
+    </div>
+    <div id="ws-complete-section" style="display:none;">
+      <div class="ws-complete-box">
+        <div style="font-size:48px;text-align:center;margin-bottom:10px;">🏆</div>
+        <div class="ws-complete-title">Programme Complete!</div>
+        <div class="ws-complete-sub" id="ws-complete-sub"></div>
+        <button class="ws-complete-btn" onclick="wsViewResults()"><i class="ti ti-chart-bar" style="font-size:14px;"></i> View Results on Quest Board</button>
+      </div>
+    </div>
+    <div id="ws-guide-sections">
+      <div class="ws-guide">
+        <button class="ws-guide-toggle" id="ws-gt-prog" onclick="wsToggleSection('prog')">
+          <div class="ws-guide-toggle-left"><span>📋</span> About This Programme</div>
+          <i class="ti ti-chevron-down ws-guide-toggle-chevron"></i>
+        </button>
+        <div class="ws-guide-body" id="ws-gb-prog"><div id="ws-prog-info-content"></div></div>
+      </div>
+      <div class="ws-guide">
+        <button class="ws-guide-toggle" id="ws-gt-features" onclick="wsToggleSection('features')">
+          <div class="ws-guide-toggle-left"><span>✨</span> Key Features</div>
+          <i class="ti ti-chevron-down ws-guide-toggle-chevron"></i>
+        </button>
+        <div class="ws-guide-body" id="ws-gb-features">
+          <div class="ws-features">
+            <div class="ws-feature"><div class="ws-feature-icon">📅</div><div class="ws-feature-title">Daily Cards</div><div class="ws-feature-desc">One service area per day — real NQAS checkpoints from official checklist</div></div>
+            <div class="ws-feature"><div class="ws-feature-icon">ⓘ</div><div class="ws-feature-title">Smart Guidance</div><div class="ws-feature-desc">Tap i on any checkpoint for method-specific assessment instructions</div></div>
+            <div class="ws-feature"><div class="ws-feature-icon">✅</div><div class="ws-feature-title">Two-step Verify</div><div class="ws-feature-desc">CHO marks done, verifier confirms — mirrors real NQAS assessment</div></div>
+            <div class="ws-feature"><div class="ws-feature-icon">🔥</div><div class="ws-feature-title">Streak Tracking</div><div class="ws-feature-desc">Build daily consistency — your streak resets if you miss a day</div></div>
+            <div class="ws-feature"><div class="ws-feature-icon">🎓</div><div class="ws-feature-title">Readiness week</div><div class="ws-feature-desc">Days 57–60: end-line verification, final team review and graduation</div></div>
+            <div class="ws-feature"><div class="ws-feature-icon">📊</div><div class="ws-feature-title">Quest Board</div><div class="ws-feature-desc">AoC bars, role readiness, and service-wise progress tracking</div></div>
+            <div class="ws-feature"><div class="ws-feature-icon">🎯</div><div class="ws-feature-title">Gap Closure</div><div class="ws-feature-desc">Zero/half scores flagged — re-attempt and re-verify to close them</div></div>
+            <div class="ws-feature"><div class="ws-feature-icon">🗓️</div><div class="ws-feature-title">Calendar Unlock</div><div class="ws-feature-desc">Cards unlock day by day — catch up on missed days anytime</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ws-guide">
+        <button class="ws-guide-toggle" id="ws-gt-howto" onclick="wsToggleSection('howto')">
+          <div class="ws-guide-toggle-left"><span>🚀</span> How to Use</div>
+          <i class="ti ti-chevron-down ws-guide-toggle-chevron"></i>
+        </button>
+        <div class="ws-guide-body" id="ws-gb-howto">
+          <div class="ws-steps">
+            <div class="ws-step"><div class="ws-step-num">1</div><div><div class="ws-step-text">Open today's daily card</div><div class="ws-step-sub">Read the micro-task — it tells you exactly what to assess today</div></div></div>
+            <div class="ws-step"><div class="ws-step-num">2</div><div><div class="ws-step-text">Score each checkpoint — Full / Half / Zero</div><div class="ws-step-sub">Tap i for guidance · Full=2pts · Half=1pt · Zero=0pts</div></div></div>
+            <div class="ws-step"><div class="ws-step-num">3</div><div><div class="ws-step-text">Click Mark Done when all scored</div><div class="ws-step-sub">Unscored checkpoints auto-score as Full — review before marking done</div></div></div>
+            <div class="ws-step"><div class="ws-step-num">4</div><div><div class="ws-step-text">Verifier clicks Verify to confirm</div><div class="ws-step-sub">ANM or supervisor reviews and signs off — adds comment if needed</div></div></div>
+            <div class="ws-step"><div class="ws-step-num">5</div><div><div class="ws-step-text">Close gaps before the end-line</div><div class="ws-step-sub">Not-met items appear in My gaps — fix them, then re-score on Days 50–56</div></div></div>
+            <div class="ws-step"><div class="ws-step-num">6</div><div><div class="ws-step-text">Track readiness on Quest Board</div><div class="ws-step-sub">Aim for 80% across all AoC · 70% overall is the NQAS threshold</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ws-guide" style="margin-bottom:20px;">
+        <button class="ws-guide-toggle" id="ws-gt-scoring" onclick="wsToggleSection('scoring')">
+          <div class="ws-guide-toggle-left"><span>🎯</span> Scoring Guide</div>
+          <i class="ti ti-chevron-down ws-guide-toggle-chevron"></i>
+        </button>
+        <div class="ws-guide-body" id="ws-gb-scoring">
+          <div class="ws-score-guide">
+            <div class="ws-score-item"><div class="ws-score-dot" style="background:var(--green);">2</div><div><div class="ws-score-title">Full — 2 points</div><div class="ws-score-desc">Fully available, correctly practiced, properly documented. No gaps.</div></div></div>
+            <div class="ws-score-item"><div class="ws-score-dot" style="background:var(--amber);">1</div><div><div class="ws-score-title">Half — 1 point</div><div class="ws-score-desc">Partially available or practiced. Gaps in implementation or documentation.</div></div></div>
+            <div class="ws-score-item"><div class="ws-score-dot" style="background:var(--red);">0</div><div><div class="ws-score-title">Zero — 0 points</div><div class="ws-score-desc">Not available, not practiced, or no evidence found. Immediate action required.</div></div></div>
+            <div class="ws-score-item" style="background:var(--teal-lt);border-color:rgba(30,107,94,0.2);"><div class="ws-score-dot" style="background:var(--teal);font-size:9px;">70%</div><div><div class="ws-score-title">NQAS Threshold</div><div class="ws-score-desc">70% overall · 50% minimum per Area of Concern · aim for 80%+ to be safe</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ws-cta">
+    <button class="ws-cta-btn" id="ws-cta-btn" onclick="wsEnterApp()">
+      <i class="ti ti-cards" style="font-size:15px;" id="ws-cta-icon"></i>
+      <span id="ws-cta-label">Go to Today's Card</span>
+    </button>
+  </div>
+</div>
+
+
+<!-- ADMIN APP -->
+<div class="admin-app" id="admin-app">
+  <div class="admin-nav">
+    <div class="admin-nav-brand">
+      <div class="admin-nav-icon">H</div>
+      <div><div class="admin-nav-title" id="sc-nav-title">Admin Dashboard</div><div class="admin-nav-sub">NQAS | FAST · by HealSol Academy</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="admin-badge"><i class="ti ti-shield-lock" style="font-size:11px;"></i> <span id="sc-nav-badge-text">Admin</span></div>
+      <button class="scx-navbtn" id="scx-adm-vq-btn" onclick="scAdmOpenVerify()" title="Verification queue" style="position:relative;"><i class="ti ti-shield-check" style="font-size:13px;"></i> Verification<span class="scx-vq-badge" id="scx-adm-vq-badge" style="display:none;"></span></button>
+      <button class="scx-navbtn" onclick="scOpenLiveSessions()" title="Live Sessions"><i class="ti ti-broadcast" style="font-size:13px;"></i> Live Sessions</button>
+      <button class="hs-only" onclick="toggleAdminEditor()" style="background:rgba(255,255,255,0.12);color:#fff;border:1.5px solid rgba(255,255,255,0.2);border-radius:10px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;"><span>✏️</span> Edit Cards</button>
+      <button class="switch-btn" onclick="logoutAdmin()"><i class="ti ti-logout" style="font-size:12px;"></i> Logout</button>
+    </div>
+  </div>
+  <div class="admin-main">
+
+    <!-- ══ Admin Card Editor Panel ══════════════════ -->
+    <div id="admin-editor-section" class="hs-only" style="display:none;background:#fff;border-radius:18px;border:1px solid #E2E8F0;overflow:hidden;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+      <!-- Header -->
+      <div style="background:var(--teal,#1E6B5E);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:15px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">✏️ Card Editor</span>
+          <span id="ae-edit-count" style="font-size:11px;color:rgba(255,255,255,0.7);font-weight:600;">0 cards edited</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="aeSaveDay()" style="background:#10B981;color:#fff;border:none;border-radius:18px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">💾 Save Card</button>
+          <button onclick="aeResetDay()" style="background:#EF4444;color:#fff;border:none;border-radius:18px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">↺ Reset</button>
+          <button onclick="toggleAdminEditor()" style="background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.3);border-radius:18px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;pointer-events:all;position:relative;z-index:10;">✕ Close</button>
+        </div>
+      </div>
+      <!-- Track/Programme selector -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid #E2E8F0;background:#F8FAFC;">
+        <span style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Programme:</span>
+        <div id="ae-prog-sel-row" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+      <!-- Day strip -->
+      <div style="border-bottom:1px solid #E2E8F0;background:#F8FAFC;">
+        <div id="ae-day-strip" style="display:flex;flex-wrap:wrap;gap:5px;padding:10px 16px;max-height:130px;overflow-y:auto;"></div>
+      </div>
+      <!-- Editor panel — shown after selecting a day -->
+      <div id="ae-editor-panel" style="display:none;padding:16px;">
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <div id="ae-day-module" style="background:#ECFDF5;color:#065F46;border-radius:8px;padding:4px 11px;font-size:11px;font-weight:800;"></div>
+          <div id="ae-day-prog" style="background:#F8FAFC;color:#94A3B8;border-radius:8px;padding:4px 11px;font-size:11px;font-weight:700;"></div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Card Title</label>
+          <input id="ae-day-title" type="text" style="width:100%;border:1.5px solid #E2E8F0;border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;color:#0F172A;"/>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Task / Description</label>
+          <textarea id="ae-day-task" rows="3" style="width:100%;border:1.5px solid #E2E8F0;border-radius:8px;padding:8px 12px;font-size:12px;font-family:inherit;color:#0F172A;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <label style="font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;">Checkpoints</label>
+          <button onclick="aeAddCP()" style="background:var(--teal,#1E6B5E);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">+ Add Checkpoint</button>
+        </div>
+        <div id="ae-cp-list" style="max-height:420px;overflow-y:auto;"></div>
+      </div>
+    </div>
+    <!-- ══════════════════════════════════════════════ -->
+
+    <div id="sc-master-heading" style="font-size:20px;font-weight:900;color:var(--t1);margin-bottom:3px;font-family:'Poppins',sans-serif;">HealSol Master Dashboard — SC</div>
+    <div id="sc-master-subheading" data-nf-lvl style="font-size:12px;color:var(--t3);margin-bottom:16px;">All enrolled Sub-Centre facilities · readiness · staff · reports</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="background:var(--bgc);border-radius:12px;border:1px solid var(--br);padding:13px 18px;flex:1;min-width:110px;">
+        <div style="font-size:26px;font-weight:900;color:var(--teal-dk);font-family:'Poppins',sans-serif;" id="sc-master-total">—</div>
+        <div style="font-size:10px;color:var(--t3);font-weight:700;" id="sc-master-total-lbl">Facilities enrolled</div>
+      </div>
+      <div style="background:var(--bgc);border-radius:12px;border:1px solid var(--br);padding:13px 18px;flex:1;min-width:110px;">
+        <div style="font-size:26px;font-weight:900;color:var(--teal-dk);font-family:'Poppins',sans-serif;" id="sc-master-avg">—</div>
+        <div style="font-size:10px;color:var(--t3);font-weight:700;">Avg readiness</div>
+      </div>
+      <div style="background:var(--bgc);border-radius:12px;border:1px solid var(--br);padding:13px 18px;flex:1;min-width:110px;">
+        <div style="font-size:26px;font-weight:900;color:#1D4ED8;font-family:'Poppins',sans-serif;" id="master-demo-count">—</div>
+        <div style="font-size:10px;color:var(--t3);font-weight:700;">Self-registered (free trial)</div>
+      </div>
+    </div>
+    <div class="scx-sub" style="margin-top:0;">Readiness by package</div>
+    <div class="scx-pkgstrip" id="sc-pkg-strip"></div>
+    <div class="sc-report-bar">
+      <button class="sc-report-btn" onclick="openReportModal('facility')"><i class="ti ti-building-hospital"></i> Facility Report</button>
+      <button class="sc-report-btn" onclick="openReportModal('role')"><i class="ti ti-users"></i> Role Report</button>
+      <button class="sc-report-btn" onclick="openReportModal('prog')"><i class="ti ti-layout-grid"></i> Programme Report</button>
+      <button class="sc-report-btn" style="border-color:var(--t3);color:var(--t3);" onclick="scRefreshDashboard()"><i class="ti ti-refresh"></i> Refresh</button>
+    </div>
+    <button id="sc-master-back" onclick="scDrillBack()" style="display:none;border:1.5px solid var(--br);border-radius:20px;padding:7px 16px;font-size:11px;font-weight:800;cursor:pointer;background:transparent;color:var(--t2);font-family:inherit;margin-bottom:12px;"><i class="ti ti-arrow-left" style="font-size:12px;"></i> All Facilities</button>
+    <!-- Drill-in -->
+    <div class="sc-drill-panel" id="sc-drill-panel" style="display:none;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:8px;">
+        <div>
+          <div style="font-size:15px;font-weight:900;color:var(--t1);font-family:'Poppins',sans-serif;" id="sc-drill-title"></div>
+          <div style="font-size:9px;color:var(--teal);font-weight:700;" id="sc-drill-code"></div>
+          <div style="font-size:10px;color:var(--t3);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;" id="sc-drill-info"></div>
+        </div>
+        <button onclick="scGenerateReport('facility',document.getElementById('sc-drill-code').textContent)" style="background:var(--teal);color:#fff;border:none;border-radius:14px;padding:7px 14px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">PDF</button>
+      </div>
+      <div style="font-size:10px;font-weight:800;color:var(--t2);margin-bottom:7px;text-transform:uppercase;letter-spacing:0.5px;">Staff</div>
+      <div id="sc-drill-staff"></div>
+      <div style="font-size:10px;font-weight:800;color:var(--t2);margin:14px 0 7px;text-transform:uppercase;letter-spacing:0.5px;">Readiness &amp; Gap Register</div>
+      <div id="sc-drill-insights"></div>
+    </div>
+    <!-- District / Bulk Enrollment Leads -->
+    <div class="enroll-box hs-only" id="leads-box" style="display:none;background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-building-community" style="color:#6D28D9;font-size:15px;"></i> District / Bulk Enrollment Enquiries</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Leads submitted via "District / Bulk enrollment? Contact us" on the login screen. Mark as contacted once you've followed up.</div>
+      <div id="leads-list"></div>
+    </div>
+
+    <!-- Demo / Trial Facilities -->
+    <div class="enroll-box hs-only" id="demo-facilities-box" style="display:none;background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-rocket" style="color:#1D4ED8;font-size:15px;"></i> Self-registered facilities</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Facilities that registered themselves (first 7 days — Baseline — free). Payments made in the app unlock automatically; record payment links, UPI or bank transfers here.</div>
+      <div id="demo-facilities-list"></div>
+    </div>
+
+    <!-- Facility Grid -->
+    <div class="sc-master-grid" id="sc-master-grid"></div>
+    <!-- Enroll New Facility -->
+    <div class="hs-only" style="background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-building-plus" style="color:var(--teal);font-size:15px;"></i> Enroll New Facility</div>
+      <div class="sc-enroll-grid">
+        <div><label class="lc-label">Facility type</label><select class="fc-add-input" id="sc-enroll-type" style="width:100%;" onchange="nfEnrollTypeChanged(this)"></select></div>
+        <div><label class="lc-label">Facility Name *</label><input class="fc-add-input" id="sc-enroll-name" data-nf-lvl-ph placeholder="Rampur Sub-Centre" style="width:100%;"/></div>
+        <div><label class="lc-label">State *</label><select class="fc-add-input" id="sc-enroll-state" style="width:100%;"></select></div>
+        <div><label class="lc-label">District *</label><input class="fc-add-input" id="sc-enroll-district" list="nf-enroll-districts" placeholder="Start typing…" autocomplete="off" style="width:100%;"/></div>
+        <div><label class="lc-label">Programme</label>
+          <select class="fc-add-input" id="sc-enroll-prog" style="width:100%;">
+            <option value="nqas_12A">12A — 12 Services (60 days)</option>
+            <option value="nqas_12B">12B — 12 Services + Delivery (60 days)</option>
+          </select>
+        </div>
+        <div><label class="lc-label">CHO Name</label><input class="fc-add-input" id="sc-enroll-choname" placeholder="CHO Name" style="width:100%;"/></div>
+        <div><label class="lc-label">CHO Mobile *</label><input class="fc-add-input" id="sc-enroll-chomob" type="tel" maxlength="10" inputmode="numeric" placeholder="10-digit mobile (CHO login)" style="width:100%;"/></div>
+        <div><label class="lc-label">Govt. facility ID (NIN / HFR)</label><input class="fc-add-input" id="sc-enroll-nin" placeholder="Optional" maxlength="40" style="width:100%;"/></div>
+      </div>
+      <div id="sc-enroll-idnote" style="font-size:11.5px;color:var(--t3);background:var(--bgs);border:1px dashed var(--br);border-radius:10px;padding:8px 11px;margin:-2px 0 12px;"><i class="ti ti-id" style="color:var(--teal);"></i> The Facility ID is created on save from the state and district — for example <b>UP-JHS-SC-0001</b> (running number per district, shared with self-registration). The CHO's login and a temporary password are shown once after enrolling.</div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase;">Access Level</label>
+        <div style="display:flex;gap:8px;">
+          <label id="enroll-access-full-lbl" style="flex:1;display:flex;align-items:center;gap:7px;padding:10px 12px;border:1.5px solid var(--teal);background:var(--teal-lt);border-radius:10px;cursor:pointer;">
+            <input type="radio" name="enroll-access" id="enroll-access-full" value="contract" checked onchange="enrollAccessToggle()"/>
+            <span style="font-size:12px;font-weight:700;color:var(--t1);">Full Access <span style="color:var(--t3);font-weight:600;">(contract / bulk deal)</span></span>
+          </label>
+          <label id="enroll-access-trial-lbl" style="flex:1;display:flex;align-items:center;gap:7px;padding:10px 12px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;">
+            <input type="radio" name="enroll-access" id="enroll-access-trial" value="trial" onchange="enrollAccessToggle()"/>
+            <span style="font-size:12px;font-weight:700;color:var(--t1);">Start on 7-day Trial</span>
+          </label>
+        </div>
+      </div>
+      <button onclick="scEnrollFacility()" style="width:100%;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <i class="ti ti-circle-plus" style="font-size:14px;"></i> Enroll Facility
+      </button>
+    </div>
+
+    <!-- Subscription Pricing -->
+    <!-- Supervisors -->
+    <div class="hs-only" style="background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <div style="font-size:13px;font-weight:800;color:var(--t1);font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-binoculars" style="color:var(--teal);font-size:15px;"></i> Supervisors</div>
+        <button class="scx-btn sm" onclick="scEditSupervisor(null)"><i class="ti ti-user-plus"></i> Add supervisor</button>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Supervisors can drill into their assigned facilities, see readiness and the gap register, assign corrective actions and join live sessions. They cannot set dates, edit, suspend or cancel facilities, use the Card Editor, or schedule sessions.</div>
+      <div id="sc-sup-list"></div>
+    </div>
+    <div class="hs-only" style="background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-currency-rupee" style="color:var(--teal);font-size:15px;"></i> Subscription Pricing</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Set the price per package. A trial facility can buy their chosen package once their 7-day trial ends. Leave blank to keep a package unpriced.</div>
+      <div id="pricing-list"></div>
+      <button onclick="adminSavePricing()" style="width:100%;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;">
+        <i class="ti ti-device-floppy" style="font-size:14px;"></i> Save Pricing
+      </button>
+    </div>
+    <!-- Access Key -->
+    <div class="hs-only" style="background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:800;color:var(--t2);margin-bottom:10px;"><i class="ti ti-key"></i> Rotating Access Key (CHO one-time activation)</div>
+      <div style="display:flex;gap:8px;">
+        <input class="ak-input" id="sc-ak-input" placeholder="e.g. SC2026JUN" maxlength="30" autocapitalize="characters"/>
+        <button class="ak-btn" style="background:var(--teal);" onclick="scAdminSetAccessKey()">Set Key</button>
+      </div>
+    </div>
+    <button onclick="logoutAdmin()" style="border:1.5px solid var(--br);border-radius:20px;padding:8px 18px;font-size:12px;font-weight:800;cursor:pointer;background:transparent;color:var(--t2);font-family:inherit;width:100%;">
+      <i class="ti ti-logout" style="font-size:13px;"></i> Logout
+    </button>
+  </div></div>
+</div>
+
+<div class="pub-overlay" id="pub-overlay">
+  <div class="pub-card">
+    <div class="pub-card-title"><i class="ti ti-cloud-upload" style="font-size:16px;color:var(--teal);"></i> Publish Configuration</div>
+    <div class="pub-card-sub">Review before publishing to all enrolled devices.</div>
+    <div class="pub-success-box" id="pub-success-box"><span style="font-size:24px;">🎉</span><div class="pub-success-txt" id="pub-success-txt"></div></div>
+    <div class="pub-summary" id="pub-summary">
+      <div class="pub-sum-row"><span class="pub-sum-l">Programme</span><span class="pub-sum-r" id="ps-prog">-</span></div>
+      <div class="pub-sum-row"><span class="pub-sum-l">Package</span><span class="pub-sum-r" id="ps-pkg">-</span></div>
+      <div class="pub-sum-row"><span class="pub-sum-l">Facility type</span><span class="pub-sum-r" id="ps-type">-</span></div>
+      <div class="pub-sum-row"><span class="pub-sum-l">Duration</span><span class="pub-sum-r" id="ps-days">-</span></div>
+      <div class="pub-sum-row"><span class="pub-sum-l">Cards edited</span><span class="pub-sum-r" id="ps-edits">-</span></div>
+    </div>
+    <button class="pub-confirm-btn" id="pub-confirm-btn" onclick="publishNow()"><i class="ti ti-cloud-upload" style="font-size:14px;"></i> Confirm and Publish</button>
+    <button class="pub-cancel-btn" onclick="closePubModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- CHO APP -->
+<div class="cho-app" id="cho-app">
+  <div class="setup-screen" id="setup-screen" style="display:none;">
+    <div class="setup-card">
+      <div class="setup-logo">
+        <div class="setup-icon">H</div>
+        <div><div class="setup-brand">NQAS | FAST</div><div class="setup-sub-brand">by HealSol Academy</div></div>
+      </div>
+      <div class="setup-title">Set up your facility</div>
+      <div class="setup-sub">Enter your facility details to personalise your NQAS preparation programme.</div>
+      <div class="setup-prog-info" id="setup-prog-info">
+        <div class="spi-icon" id="spi-icon">🏥</div>
+        <div><div class="spi-name" id="spi-name">Loading programme...</div><div class="spi-tag" id="spi-tag">-</div></div>
+      </div>
+      <div class="setup-field">
+        <label class="setup-label">Facility / SC Name</label>
+        <input class="setup-input" id="setup-name" placeholder="e.g. Rampur Sub-Center"/>
+      </div>
+      <div class="setup-row">
+        <div class="setup-field"><label class="setup-label">District</label><input class="setup-input" id="setup-district" placeholder="District"/></div>
+        <div class="setup-field"><label class="setup-label">State</label><input class="setup-input" id="setup-state" placeholder="State"/></div>
+      </div>
+      <div class="start-date-field">
+        <div class="sd-label"><i class="ti ti-calendar" style="font-size:12px;"></i> Programme Start Date</div>
+        <input type="date" class="setup-input" id="setup-start-date" style="border-color:rgba(245,166,35,0.4);background:#fff;"/>
+        <div class="sd-note" id="admin-sd-note" style="display:none;"></div>
+      </div>
+      <div class="setup-note">Your start date determines which day card is active today.</div>
+      <button class="setup-btn" onclick="completeFacilitySetup()"><i class="ti ti-rocket" style="font-size:15px;"></i> Start NQAS | FAST</button>
+    </div>
+  </div>
+  <div class="cho-nav" id="cho-nav" style="display:none;">
+    <div class="cho-nav-row1">
+      <div class="cho-nav-brand">
+        <div class="cho-nav-icon">H</div>
+        <div><div class="cho-nav-name" id="cho-nav-name">HealSol Academy</div><div class="cho-nav-sub">NQAS | FAST</div></div>
+      </div>
+      <div class="cho-nav-right">
+        <div class="cho-pkg-pill" id="cho-pkg-pill">12-Pkg</div>
+        <div class="cho-day-pill" id="cho-day-pill">Day 1</div>
+        <div class="lang-tog light">
+          <button type="button" data-lang="en" class="on" onclick="setLang('en')">EN</button>
+          <button type="button" data-lang="hi" onclick="setLang('hi')">हिं</button>
+        </div>
+        <button class="cho-logout-btn" onclick="scGoHome()" title="Back to Home"><i class="ti ti-home" style="font-size:14px;"></i></button>
+        <button class="cho-logout-btn scx-refresh-btn" onclick="scStaffRefresh(this)" title="Refresh"><i class="ti ti-refresh" style="font-size:14px;"></i></button>
+        <button class="cho-logout-btn scx-vq-btn" id="scx-vq-btn" onclick="scOpenVerifyQueue()" title="Cards to verify" style="display:none;"><i class="ti ti-shield-check" style="font-size:14px;"></i><span class="scx-vq-badge" id="scx-vq-badge" style="display:none;"></span></button>
+        <button class="cho-logout-btn" onclick="scOpenLiveSessions()" title="Live Sessions"><i class="ti ti-broadcast" style="font-size:14px;"></i></button>
+        <button class="cho-logout-btn" onclick="logoutCHO()" title="Logout"><i class="ti ti-logout" style="font-size:14px;"></i></button>
+      </div>
+    </div>
+    <div class="cho-nav-tabs">
+      <button class="cho-tab active" id="bnav-cards" onclick="switchView('cards')"><i class="ti ti-cards"></i><span data-i18n="Daily Cards">Daily Cards</span></button>
+      <button class="cho-tab" id="bnav-board" onclick="switchView('board')"><i class="ti ti-puzzle"></i><span data-i18n="Quest Board">Quest Board</span></button>
+    </div>
+  </div>
+  <div class="cho-main" id="cho-main" style="display:none;">
+    <div id="view-cards">
+      <div class="fac-bar">
+        <span class="fac-icon">🏥</span>
+        <div><div class="fac-name" id="fac-name">-</div><div class="fac-loc" id="fac-loc">-</div></div>
+        <div class="fac-right"><div class="fac-pkg" id="fac-pkg">-</div><div class="fac-day-info" id="fac-day-info">-</div></div>
+      </div>
+      <div class="ds-wrap"><div class="ds-label" data-i18n="Select Day">Select Day</div><div class="ds-scroll" id="ds-scroll"></div></div>
+      <div id="card-container"></div>
+    </div>
+    <div id="view-board" style="display:none;">
+      <div class="qb-wrap">
+        <div class="qb-stats" id="qb-stats"></div>
+        <div class="qb-section"><div class="qb-sec-title"><i class="ti ti-puzzle" style="font-size:15px;color:var(--teal);"></i> Quest Puzzle Board</div><div id="puzzle-rows"></div><div class="legend-row" style="margin-top:10px;"><div class="legend-item"><div class="legend-dot" style="background:var(--green);"></div> Full</div><div class="legend-item"><div class="legend-dot" style="background:var(--amber);"></div> Half</div><div class="legend-item"><div class="legend-dot" style="background:var(--red);"></div> Zero</div><div class="legend-item"><div class="legend-dot" style="background:var(--grey-lt);border:1px solid var(--br);"></div> Locked</div></div></div>
+        <div class="qb-section"><div class="qb-sec-title"><i class="ti ti-chart-bar" style="font-size:15px;color:var(--teal);"></i> Area of Concern Readiness</div><div class="aoc-bars" id="aoc-bars"></div></div>
+        <div class="qb-section"><div class="qb-sec-title"><i class="ti ti-users" style="font-size:15px;color:var(--teal);"></i> Role-wise Readiness</div><div class="role-readiness" id="role-readiness"></div></div>
+        <div class="qb-section"><div class="qb-sec-title"><i class="ti ti-list-details" style="font-size:15px;color:var(--teal);"></i> Service-wise Readiness</div><div class="srv-section" id="srv-section"></div></div>
+        <div class="qb-section"><div class="qb-sec-title"><i class="ti ti-map" style="font-size:15px;color:var(--teal);"></i> Area of Concern Legend</div><div class="aoc-legend" id="aoc-legend"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- CUSTOM CONFIRM MODAL -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">🔒</div>
+    <div class="confirm-title" id="confirm-title">Logout</div>
+    <div class="confirm-msg" id="confirm-msg">Logout and return to login screen?</div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="confirmResolve(false)">Cancel</button>
+      <button class="confirm-ok" id="confirm-ok-btn" onclick="confirmResolve(true)">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRIVACY OVERLAY -->
+<div id="privacy-overlay" style="display:none;position:fixed;inset:0;background:var(--teal-dk);z-index:9999;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;">
+  <div style="font-size:52px;margin-bottom:16px;">🔒</div>
+  <div style="font-size:20px;font-weight:900;color:#fff;font-family:'Poppins',sans-serif;margin-bottom:8px;">Content Protected</div>
+  <div style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:600;line-height:1.6;">This content is proprietary to HealSol Academy.<br>Unauthorized reproduction is not permitted.</div>
+  <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:20px;font-weight:600;">Tap anywhere to continue</div>
+</div>
+
+
+<!-- SC CHO FACILITY ADMIN PANEL -->
+<div class="sc-cho-app" id="sc-cho-app">
+  <div class="sc-cho-nav">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div class="sc-cho-nav-icon">H</div>
+      <div>
+        <div style="font-size:13px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">Facility Admin — <span id="sc-cho-fac-name"></span></div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.7);font-weight:600;">Code: <span id="sc-cho-fac-code"></span> · NQAS | FAST</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="scx-navbtn" onclick="scOpenLiveSessions()" title="Live Sessions" style="border-radius:20px;padding:6px 12px;font-size:11px;"><i class="ti ti-broadcast" style="font-size:12px;"></i> Live</button>
+      <button onclick="scChoLogout()" style="border:1.5px solid rgba(255,255,255,0.3);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:800;cursor:pointer;background:transparent;color:#fff;font-family:inherit;">
+        <i class="ti ti-logout" style="font-size:12px;"></i> Logout
+      </button>
+    </div>
+  </div>
+  <div class="sc-cho-main">
+
+    <!-- Start Date -->
+    <div class="sc-panel-section">
+      <div class="sc-panel-hd"><div class="sc-panel-title"><i class="ti ti-calendar"></i> Programme Start Date</div></div>
+      <div class="sc-panel-body">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:9px;font-weight:600;">Set the date when Day 1 unlocks for all staff at this facility.</div>
+        <div style="display:flex;gap:8px;">
+          <input type="date" id="sc-cho-start-date" class="lc-input" style="flex:1;border-color:rgba(30,107,94,0.3);"/>
+          <button onclick="scChoSetStartDate()" style="background:var(--teal);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">Set Date</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff Roster -->
+    <div class="sc-panel-section">
+      <div class="sc-panel-hd">
+        <div class="sc-panel-title"><i class="ti ti-users"></i> Staff Roster</div>
+        <button class="sc-panel-btn" onclick="scRenderChoStaff()"><i class="ti ti-refresh" style="font-size:11px;"></i> Refresh</button>
+      </div>
+      <div class="sc-panel-body">
+        <div style="background:var(--teal-lt);border-radius:9px;padding:9px 12px;margin-bottom:12px;border:1px solid rgba(30,107,94,0.2);font-size:11px;color:var(--teal-dk);font-weight:600;">
+          <i class="ti ti-info-circle" style="font-size:12px;vertical-align:-2px;"></i>
+          Add staff with name and mobile. Each person gets a temporary password once, then logs in with their mobile number and chooses their own password.
+        </div>
+        <div id="sc-cho-staff-roster"></div>
+      </div>
+    </div>
+
+    <!-- Facility Progress -->
+    <div class="sc-panel-section">
+      <div class="sc-panel-hd">
+        <div class="sc-panel-title"><i class="ti ti-chart-bar"></i> Readiness &amp; Gap Register</div>
+        <div style="display:flex;gap:6px;">
+          <button class="sc-panel-btn" onclick="scRenderChoProgress()"><i class="ti ti-refresh" style="font-size:11px;"></i> Refresh</button>
+          <button class="sc-panel-btn" onclick="scChoReport()"><i class="ti ti-file-text" style="font-size:11px;"></i> PDF</button>
+        </div>
+      </div>
+      <div class="sc-panel-body" id="sc-cho-progress">
+        <div style="text-align:center;padding:16px;color:var(--t3);">Loading...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SC ADMIN MASTER DASHBOARD UPGRADE -->
+<!-- Injected into existing admin-app via JS scStartAdminApp() -->
+
+<!-- SC DATE PICKER MODAL -->
+<div class="report-modal-overlay" id="sc-date-modal">
+  <div class="report-modal" style="max-width:360px;">
+    <div class="rm-title"><i class="ti ti-calendar" style="font-size:15px;color:var(--teal);"></i> Set Programme Start Date</div>
+    <div class="rm-sub">Facility: <strong id="sc-date-fac-name"></strong> (<span id="sc-date-fac-code"></span>)</div>
+    <div style="margin-bottom:16px;">
+      <label class="lc-label">Start Date</label>
+      <input type="date" id="sc-date-input" class="lc-input" style="width:100%;border-color:rgba(30,107,94,0.3);"/>
+      <div style="font-size:10px;color:var(--t3);margin-top:5px;font-weight:600;">All staff see this date. Day 1 unlocks on this date.</div>
+    </div>
+    <div class="rm-btns">
+      <button class="rm-cancel" onclick="document.getElementById('sc-date-modal').classList.remove('open')">Cancel</button>
+      <button class="rm-generate" style="background:var(--teal);" onclick="scSaveAdminDate()"><i class="ti ti-calendar-check"></i> Set Date</button>
+    </div>
+  </div>
+</div>
+
+<!-- SC ADD STAFF MODAL -->
+<div class="report-modal-overlay" id="sc-add-modal">
+  <div class="report-modal" style="max-width:380px;">
+    <div class="rm-title"><i class="ti ti-user-plus" style="font-size:15px;color:var(--teal);"></i> Add <span id="sc-add-role-label">Staff</span></div>
+    <div class="rm-sub">Staff will login with Facility ID + Mobile + Password.</div>
+    <input type="hidden" id="sc-add-role-id"/>
+    <div style="margin-bottom:10px;">
+      <label class="lc-label">Full Name <span style="color:var(--red);">*</span></label>
+      <input class="lc-input" id="sc-add-name" placeholder="e.g. Sunita Devi" maxlength="60"/>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label class="lc-label">Mobile Number <span style="color:var(--red);">*</span></label>
+      <input class="lc-input" id="sc-add-mob" type="tel" maxlength="10" inputmode="numeric"
+        placeholder="10-digit mobile number" oninput="scAddMobileInput()"/>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="lc-label">Password</label>
+      <input class="lc-input" id="sc-add-pwd" placeholder="Default: last 4 digits of mobile" maxlength="20"/>
+      <div style="font-size:10px;color:var(--t3);margin-top:3px;font-weight:600;">Auto-filled. Can be changed.</div>
+    </div>
+    <div class="lc-err" id="sc-add-err" style="display:none;margin-bottom:10px;"></div>
+    <div class="rm-btns">
+      <button class="rm-cancel" onclick="scCloseAddStaff()">Cancel</button>
+      <button class="rm-generate" style="background:var(--teal);" onclick="scSaveNewStaff()"><i class="ti ti-user-plus"></i> Add Staff</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="confetti-layer" id="confetti"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
+<script src="assets/sc-login-3tier.d4e8ecf957.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/data-sc-days.84b54839e3.js" onerror="nfAssetFail(this)"></script>
+
+<div class="report-modal-overlay" id="rpt-filter-modal">
+  <div class="report-modal" style="max-width:560px;padding:0;overflow:hidden;">
+    <!-- Header -->
+    <div id="rpt-header" style="background:var(--teal);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;" id="rpt-title">Facility Report</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.7);">Set filters then preview or download</div>
+      </div>
+      <button onclick="closeReportModal()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">✕</button>
+    </div>
+    <!-- Body -->
+    <div style="padding:20px;max-height:70vh;overflow-y:auto;">
+      <!-- Facility filter -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:10px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Facilities</label>
+        <div id="rpt-fac-list" style="display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto;border:1.5px solid var(--br);border-radius:10px;padding:8px 10px;background:var(--bgs);"></div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button onclick="rptSelectAllFacs(true)" style="font-size:10px;font-weight:700;color:var(--teal);border:1px solid var(--teal);border-radius:6px;padding:3px 10px;background:transparent;cursor:pointer;font-family:inherit;">Select All</button>
+          <button onclick="rptSelectAllFacs(false)" style="font-size:10px;font-weight:700;color:var(--t3);border:1px solid var(--br);border-radius:6px;padding:3px 10px;background:transparent;cursor:pointer;font-family:inherit;">Clear</button>
+        </div>
+      </div>
+
+      <!-- Programme filter -->
+      <div style="margin-bottom:16px;" id="rpt-prog-row">
+        <label style="font-size:10px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Programme</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="rpt-prog-btns">
+          <button class="rpt-filter-btn active" onclick="rptToggleProg(this,'')">All</button>
+          <button class="rpt-filter-btn" onclick="rptToggleProg(this,'nqas_12A')">12A</button>
+          <button class="rpt-filter-btn" onclick="rptToggleProg(this,'nqas_12B')">12B</button>
+        </div>
+      </div>
+
+      <!-- Role filter -->
+      <div style="margin-bottom:16px;display:none;" id="rpt-role-row">
+        <label style="font-size:10px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Role</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="rpt-role-btns">
+          <button class="rpt-filter-btn active" onclick="rptToggleRole(this,'')">All Roles</button>
+          <button class="rpt-filter-btn" onclick="rptToggleRole(this,'CHO')">CHO</button>
+          <button class="rpt-filter-btn" onclick="rptToggleRole(this,'ANM')">ANM</button>
+          <button class="rpt-filter-btn" onclick="rptToggleRole(this,'ASHA')">ASHA</button>
+          <button class="rpt-filter-btn" onclick="rptToggleRole(this,'MPW')">MPW</button>
+          <button class="rpt-filter-btn" onclick="rptToggleRole(this,'MO')">MO</button>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div id="rpt-preview" style="background:var(--bgs);border-radius:10px;padding:11px 14px;margin-bottom:16px;border:1px solid var(--br);font-size:12px;color:var(--t1);line-height:1.6;">
+        Select filters above to preview what will be included.
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;">
+        <button onclick="rptGenerate('preview')" style="flex:1;background:var(--teal);color:#fff;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">👁 Preview</button>
+        <button onclick="rptGenerate('print')" style="flex:1;background:var(--teal-dk,#0F4C3A);color:#fff;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">🖨 Print PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="demo-signup-overlay" class="rm-preview-overlay">
+  <div class="rm-preview-box" style="max-width:460px;height:auto;max-height:88vh;">
+    <div class="rm-preview-head">
+      <div class="rm-preview-head-title" id="nf-reg-title">🏥 Register your Sub-Centre</div>
+      <button class="rm-cancel" onclick="phcCloseDemoSignup()">✕ Close</button>
+    </div>
+    <div style="padding:20px;overflow-y:auto;" id="demo-signup-body">
+      <p style="font-size:12px;color:var(--t3);margin:0 0 16px;" id="nf-reg-intro">The first 7 days (Baseline) are free. After that, the CHO pays to continue the 60-day programme.</p>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-reg-l-name">Sub-Centre name *</label>
+        <input id="demo-fac-name" class="fc-add-input" style="width:100%;" data-nf-lvl-ph placeholder="e.g. Rampur Sub-Centre"/>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <div style="flex:1;">
+          <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-reg-l-dist">District *</label>
+          <input id="demo-fac-district" class="fc-add-input" style="width:100%;" placeholder="e.g. Jhansi" list="nf-districts" autocomplete="off"/>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-reg-l-state">State *</label>
+          <select id="demo-fac-state" class="fc-add-input" style="width:100%;"></select>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-reg-l-pkg">Package</label>
+        <select id="demo-fac-pkg" class="fc-add-input" style="width:100%;">
+          <option value="nqas_12A">12A — 12 Services (60 days)</option>
+          <option value="nqas_12B">12B — 12 Services + Delivery (60 days)</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-reg-l-you">Your name (CHO) *</label>
+        <input id="demo-contact-name" class="fc-add-input" style="width:100%;" placeholder="CHO Name"/>
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-reg-l-mob">Mobile number *</label>
+        <input id="demo-contact-mobile" class="fc-add-input" style="width:100%;" placeholder="10-digit mobile" maxlength="10"/>
+      </div>
+      <div id="demo-signup-err" style="color:#DC2626;font-size:12px;font-weight:700;margin-bottom:10px;display:none;"></div>
+      <button class="fc-add-btn" onclick="phcSubmitDemoSignup()" style="width:100%;padding:12px;border-radius:10px;font-size:13px;">
+        <i class="ti ti-check" style="font-size:14px;"></i> Register
+      </button>
+    </div>
+  </div>
+</div>
+<div id="lead-signup-overlay" class="rm-preview-overlay">
+  <div class="rm-preview-box" style="max-width:440px;height:auto;max-height:88vh;">
+    <div class="rm-preview-head">
+      <div class="rm-preview-head-title" id="nf-lead-title">🏛️ District / Bulk Enrollment</div>
+      <button class="rm-cancel" onclick="phcCloseLeadModal()">✕ Close</button>
+    </div>
+    <div style="padding:20px;overflow-y:auto;" id="lead-signup-body">
+      <p style="font-size:12px;color:var(--t3);margin:0 0 16px;" id="nf-lead-intro">Interested in enrolling multiple facilities under a district or organizational contract? Share your details and our team will reach out.</p>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-lead-l-org">District / Organization Name *</label>
+        <input id="lead-org-name" class="fc-add-input" style="width:100%;" placeholder="e.g. Sitapur District Health Society"/>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <div style="flex:1;min-width:0;"><label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-lead-l-state">State *</label><select id="lead-state" class="fc-add-input" style="width:100%;"></select></div>
+        <div style="flex:1;min-width:0;"><label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-lead-l-dist">District</label><input id="lead-district" class="fc-add-input" style="width:100%;" placeholder="e.g. Sitapur" list="nf-lead-districts" autocomplete="off"/></div>
+      </div>
+      <div id="nf-lead-dist-hint" style="font-size:10.5px;color:var(--t3);margin:-6px 0 12px;">Leave District blank if the enquiry covers several districts.</div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-lead-l-you">Your Name *</label>
+        <input id="lead-contact-name" class="fc-add-input" style="width:100%;" placeholder="Dr. Anita Verma, CMO"/>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-lead-l-mob">Mobile Number *</label>
+        <input id="lead-contact-mobile" class="fc-add-input" style="width:100%;" placeholder="10-digit mobile" maxlength="10"/>
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;display:block;margin-bottom:4px;" id="nf-lead-l-count">Approx. Number of Facilities</label>
+        <input id="lead-fac-count" class="fc-add-input" style="width:100%;" placeholder="e.g. 12" type="number" min="1"/>
+      </div>
+      <div id="lead-signup-err" style="color:#DC2626;font-size:12px;font-weight:700;margin-bottom:10px;display:none;"></div>
+      <button class="fc-add-btn" onclick="phcSubmitLead()" style="width:100%;padding:12px;border-radius:10px;font-size:13px;">
+        <i class="ti ti-send" style="font-size:14px;"></i> Submit Enquiry
+      </button>
+    </div>
+  </div>
+</div>
+<div id="demo-convert-overlay" class="rm-preview-overlay">
+  <div class="rm-preview-box" style="max-width:460px;height:auto;max-height:88vh;">
+    <div class="rm-preview-head">
+      <div class="rm-preview-head-title">💳 Confirm Payment</div>
+      <button class="rm-cancel" onclick="closeDemoConvertModal()">✕ Close</button>
+    </div>
+    <div style="padding:20px;overflow-y:auto;" id="demo-convert-body"></div>
+  </div>
+</div>
+<script src="assets/sc-v2-core.1f19854840.js" onerror="nfAssetFail(this)"></script>
+<!-- ══════════════════════════════════════════════════════════════
+     BUILD 1 — SC simplification
+     · Single CHO login: My Cards + Facility Dashboard tabs
+     · "Signed in as" identity strip on the staff Welcome screen
+     · Lighter MO / MPW views
+     ══════════════════════════════════════════════════════════════ -->
+<style>
+.scb1-tabs{position:fixed;left:0;right:0;bottom:0;z-index:185;display:flex;justify-content:center;background:var(--bgc,#fff);border-top:1px solid var(--br);box-shadow:0 -4px 16px rgba(0,0,0,0.08);padding:6px 10px calc(6px + env(safe-area-inset-bottom));}
+.scb1-tabs-in{display:flex;gap:8px;width:100%;max-width:560px;}
+.scb1-tabs button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;min-height:46px;border-radius:12px;border:1.5px solid var(--br);background:transparent;color:var(--t2);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;}
+.scb1-tabs button i{font-size:17px;}
+.scb1-tabs button.on{background:var(--teal);border-color:var(--teal);color:#fff;}
+body.scb1-tabs-on .welcome-screen{padding-bottom:62px;}
+body.scb1-tabs-on .ws-cta{bottom:0;}
+body.scb1-tabs-on .cho-app,body.scb1-tabs-on .sc-cho-app{padding-bottom:66px;}
+body.scb1-tabs-on .toast{bottom:84px;}
+.scb1-who{position:relative;z-index:2;display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.14);border:1.5px solid rgba(255,255,255,0.28);color:#fff;}
+.scb1-av{width:40px;height:40px;border-radius:12px;background:#fff;color:var(--teal-dk);font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.scb1-who-t{flex:1;min-width:0;}
+.scb1-who-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;opacity:0.8;}
+.scb1-who-n{font-size:15px;font-weight:900;line-height:1.25;word-break:break-word;}
+.scb1-role{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:10px;background:#fff;color:var(--teal-dk);vertical-align:2px;margin-left:4px;}
+.scb1-who-f,.scb1-who-m{font-size:11px;font-weight:700;opacity:0.92;margin-top:2px;word-break:break-word;}
+.scb1-notyou{flex-shrink:0;align-self:flex-start;border:1.5px solid rgba(255,255,255,0.45);background:transparent;color:#fff;border-radius:10px;padding:6px 9px;font-size:10px;font-weight:800;font-family:inherit;cursor:pointer;max-width:92px;line-height:1.25;}
+.scb1-dash-who{font-size:10px;color:rgba(255,255,255,0.9);font-weight:700;margin-top:2px;}
+.scb1-none{background:var(--bgc,#fff);border:1.5px dashed var(--br);border-radius:14px;padding:14px;margin-bottom:14px;text-align:center;}
+.scb1-none-t{font-size:13px;font-weight:800;color:var(--t1);margin-bottom:4px;}
+.scb1-none-s{font-size:11px;font-weight:600;color:var(--t3);line-height:1.5;}
+.ws-today-chip.scb1-mine{background:var(--teal);color:#fff;}
+body.scb1-light #bnav-board{display:none;}
+body.scb1-light #ws-guide-toggle-btn{display:none !important;}
+</style>
+<script src="assets/sc-build1.7a975d02d8.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     BUILD 2 — Full 60-day timeline with prep preview
+     · One date rule for unlocking (start date, day reached, 7-day trial)
+     · "Today" never changes when a staff member opens another day
+     · Day strip + Timeline view (facility view for CHO, own days for staff)
+     · Read-only prep preview for future days
+     · Session markers (Live Sessions now; Build 3 review sessions plug in)
+     ══════════════════════════════════════════════════════════════ -->
+<link rel="stylesheet" href="assets/sc-build2.9b9d0fc3cf.css" onerror="nfAssetFail(this)">
+<script src="assets/sc-build2.65b20c180e.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ BUILD 3 — Quality Champions & peer review sessions ══ -->
+<link rel="stylesheet" href="assets/sc-champions.e1ab6daa4b.css" onerror="nfAssetFail(this)">
+<script src="assets/sc-champions.ef6d2f719b.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ STEP A — Checkpoint Master ══ -->
+<style>
+.scm-tabs{display:flex;gap:6px;padding:10px 16px;background:#F1F5F9;border-bottom:1px solid #E2E8F0;}
+.scm-tabs button{border:1.5px solid #CBD5E1;background:#fff;color:#475569;border-radius:18px;padding:7px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;}
+.scm-tabs button.on{background:var(--teal);border-color:var(--teal);color:#fff;}
+.scm-wrap{padding:14px 16px;}
+.scm-import{display:flex;align-items:center;gap:10px;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:12px;padding:10px 12px;font-size:12px;color:#92400E;margin-bottom:12px;}
+.scm-import i.ti{font-size:20px;}
+.scm-stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.scm-stat{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:9px 12px;min-width:120px;}
+.scm-stat.wide{flex:1;min-width:260px;}
+.scm-stat b{display:block;font-size:20px;font-weight:900;color:var(--teal-dk);}
+.scm-stat span{font-size:10px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.4px;}
+.scm-bars{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+.scm-bars em{font-style:normal;font-size:11px;font-weight:800;color:#475569;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:3px 7px;}
+.scm-bars em b{display:inline;font-size:11px;color:var(--teal-dk);}
+.scm-bars em i{font-style:normal;color:#94A3B8;font-weight:700;}
+.scm-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.scm-filters select,.scm-filters input{border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;background:#fff;}
+.scm-filters input{flex:1;min-width:180px;}
+.scm-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:#475569;margin-bottom:8px;}
+.scm-bar .scx-btn{flex:0 0 auto;}
+.scm-list{max-height:560px;overflow-y:auto;border:1px solid #E2E8F0;border-radius:12px;}
+.scm-row{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-bottom:1px solid #F1F5F9;}
+.scm-row:last-child{border-bottom:none;}
+.scm-row.retired{opacity:0.55;}
+.scm-row input{margin-top:3px;}
+.scm-id{font-family:monospace;font-size:11px;font-weight:800;color:var(--teal-dk);min-width:52px;}
+.scm-id i{font-style:normal;color:var(--org-dk);margin-left:2px;}
+.scm-main{flex:1;min-width:0;}
+.scm-t{font-size:12.5px;font-weight:700;color:#0F172A;line-height:1.4;}
+.scm-hi{font-size:12px;color:#475569;margin-top:2px;}
+.scm-meta{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+.scm-meta span{font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:6px;background:#F1F5F9;color:#475569;}
+.scm-meta span.a{background:var(--teal-lt);color:var(--teal-dk);}
+.scm-meta span.r{background:#EFF6FF;color:#1D4ED8;}
+.scm-meta span.m{background:#FEF3C7;color:#92400E;}
+.scm-meta span.pk{background:#fff;border:1px solid #E2E8F0;}
+</style>
+<script src="assets/data-sc-checkpoints.faf119347a.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-cp-master.01f36caf69.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ STEP A.2 — NQAS hierarchy (AoC → Standard → ME) ══ -->
+<style>
+.scm-views{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #E2E8F0;}
+.scm-views button{border:1.5px solid #CBD5E1;background:#fff;color:#475569;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;}
+.scm-views button.on{background:var(--teal-lt);border-color:var(--teal);color:var(--teal-dk);}
+.scm-views select{border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;}
+.scm-badge{background:#DC2626;color:#fff;border-radius:9px;padding:0 6px;font-size:10px;}
+.scm-hi.miss{color:#B45309;font-style:italic;font-size:11px;}
+.scm-meta span.bad{background:#FEE2E2;color:#B91C1C;}
+.scm-active-check{display:flex;align-items:center;gap:8px;font-size:12px;color:#1E3A8A;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:7px 10px;margin-bottom:8px;}
+.scm-aoc{border:1px solid #E2E8F0;border-radius:12px;margin-bottom:8px;overflow:hidden;background:#fff;}
+.scm-aoc-hd{width:100%;display:flex;align-items:center;gap:8px;padding:11px 13px;border:none;background:#F8FAFC;cursor:pointer;font-family:inherit;font-size:13px;color:#0F172A;text-align:left;}
+.scm-aoc-hd span{margin-left:auto;font-size:11px;color:#64748B;font-weight:700;}
+.scm-aoc.open .scm-aoc-hd .ti-chevron-down{transform:rotate(180deg);}
+.scm-aoc-b{padding:6px 10px 10px;}
+.scm-std{border-left:3px solid var(--teal);margin:8px 0;padding-left:8px;}
+.scm-std-hd,.scm-me{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;}
+.scm-std-hd b{min-width:34px;color:var(--teal-dk);}
+.scm-std-hd span,.scm-me span{flex:1;min-width:0;color:#0F172A;font-weight:700;}
+.scm-std-hd span.miss,.scm-me span.miss{color:#B45309;font-style:italic;font-weight:600;}
+.scm-std-hd em,.scm-me em{font-style:normal;font-size:10.5px;color:#64748B;font-weight:800;white-space:nowrap;}
+.scm-me em.zero{color:#B91C1C;}
+.scm-me{padding-left:16px;border-top:1px dashed #F1F5F9;}
+.scm-me b{min-width:42px;font-size:11px;color:#475569;}
+.scm-check{display:flex;align-items:center;gap:10px;border:1px solid #E2E8F0;border-left:4px solid;border-radius:10px;padding:9px 11px;margin-bottom:7px;font-size:12px;color:#334155;}
+.scm-check i.ti{font-size:18px;flex-shrink:0;}
+.scm-check b{color:#0F172A;}
+.scm-check-sum{border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12.5px;}
+.scm-check-sum.error{background:#FEF2F2;color:#991B1B;}
+.scm-check-sum.warn{background:#FFFBEB;color:#92400E;}
+.scm-check-sum.ok{background:#F0FDF4;color:#166534;}
+</style>
+<script src="assets/sc-hierarchy.4d51074fef.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ STEP A.3 — Official checklist, MoV items, NQAS criteria ══ -->
+<style>
+.scmv-hd{font-size:10px;font-weight:900;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px;margin:2px 0 6px;}
+.scmv-list{margin:0 0 8px;padding-left:20px;}
+.scmv-list li{margin-bottom:8px;font-size:12px;color:var(--t1);line-height:1.45;}
+.scmv-m{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:2px;}
+.scmv-m span{font-size:9px;font-weight:800;border-radius:8px;padding:1px 7px;}
+.scmv-t{font-weight:600;}
+.scmv-rule{font-size:11px;color:var(--t2);background:var(--bgs);border:1px solid var(--br);border-radius:9px;padding:7px 9px;line-height:1.5;}
+.scmv-full{font-size:12px;color:var(--t1);background:var(--green-lt);border-radius:9px;padding:8px 10px;margin-bottom:8px;line-height:1.45;}
+.scmv-off{margin-top:8px;font-size:11px;color:var(--t3);}
+.scmv-off summary{cursor:pointer;font-weight:800;}
+.scmv-off div{margin-top:5px;padding:7px 9px;background:var(--bgs);border-radius:8px;line-height:1.5;}
+.scmv-round{margin-top:8px;font-size:11px;font-weight:700;color:#1D4ED8;}
+.scm-meta span.mv{background:#ECFDF5;color:#047857;}
+.scm-meta span.mv.part{background:#FFFBEB;color:#92400E;}
+.scm-meta span.mv.none{background:#FEF2F2;color:#B91C1C;}
+.scm-crit{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#F0FDFA;border:1px solid #99F6E4;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#134E4A;}
+.scm-crit>div:first-child{flex:1;min-width:240px;}
+.scm-cats{display:flex;gap:5px;flex-wrap:wrap;}
+.scm-cat{font-size:10px;font-weight:800;border-radius:8px;padding:2px 8px;}
+.scm-cat.structure{background:#EDE9FE;color:#5B21B6;}
+.scm-cat.process{background:#DBEAFE;color:#1E40AF;}
+.scm-cat.outcome{background:#DCFCE7;color:#166534;}
+.scm-min{font-style:normal;font-size:10px;font-weight:800;color:#64748B;background:#F1F5F9;border-radius:7px;padding:1px 6px;}
+.scm-min.hi{color:#9A3412;background:#FFEDD5;}
+</style>
+<script src="assets/sc-checklist.63f7006cf3.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ STEP B — Per-checkpoint progress, MoV ticks, scoring rule, reset ══ -->
+<style>
+.scmt{margin-top:8px;border:1px solid var(--br);border-radius:12px;overflow:hidden;background:var(--bgc);}
+.scmt-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--br);flex-wrap:wrap;}
+.scmt-row.met{background:#F0FDF4;}
+.scmt-row.not{background:#FEF2F2;}
+.scmt-t{flex:1;min-width:180px;font-size:12px;font-weight:600;color:var(--t1);line-height:1.4;display:flex;gap:6px;}
+.scmt-n{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--grey-lt);color:var(--t2);font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+.scmt-b{display:flex;gap:6px;flex-shrink:0;}
+.scmt-btn{min-height:38px;min-width:84px;border-radius:10px;border:1.5px solid var(--br);background:#fff;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;padding:6px 10px;}
+.scmt-btn.y{color:var(--green-dk);}
+.scmt-btn.n{color:var(--red-dk);}
+.scmt-btn.y.on{background:var(--green-dk);border-color:var(--green-dk);color:#fff;}
+.scmt-btn.n.on{background:var(--red-dk);border-color:var(--red-dk);color:#fff;}
+.scmt-ro{font-size:11px;font-weight:800;color:var(--t2);}
+.scmt-sum{padding:8px 10px;font-size:12px;color:var(--t2);background:var(--bgs);}
+.scmt-sum.s2{background:var(--green-lt);color:var(--green-dk);}
+.scmt-sum.s1{background:var(--amber-lt);color:var(--amber-dk);}
+.scmt-sum.s0{background:var(--red-lt);color:var(--red-dk);}
+</style>
+<script src="assets/sc-cp-progress.02e5f35df1.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Leftovers (prep from MoV, checklist re-import) + STEP C — Readiness engine & dashboards ══ -->
+<style>
+.scb2-cp-items{margin:6px 0 0;padding-left:18px;font-size:11px;color:var(--t2);line-height:1.45;}
+.scb2-cp-items li{margin-bottom:3px;}
+.scb2-cp-items li span{font-size:9px;font-weight:800;color:var(--teal-dk);background:var(--teal-lt);border-radius:6px;padding:0 5px;}
+.scimp-sec{margin-top:10px;border:1px solid var(--br);border-radius:10px;overflow:hidden;}
+.scimp-t{font-size:11px;font-weight:900;padding:7px 10px;background:var(--bgs);text-transform:uppercase;letter-spacing:0.4px;color:var(--t2);}
+.scimp-sec.add .scimp-t{background:#ECFDF5;color:#047857;}
+.scimp-sec.chg .scimp-t{background:#FFFBEB;color:#92400E;}
+.scimp-sec.mis .scimp-t{background:#FEF2F2;color:#B91C1C;}
+.scimp-l div{font-size:11.5px;padding:5px 10px;border-top:1px solid var(--br);}
+.scimp-d{font-size:10px;font-weight:800;color:#64748B;background:#F1F5F9;border-radius:6px;padding:1px 6px;}
+.scimp-w{font-size:10px;font-weight:800;color:#B45309;background:#FEF3C7;border-radius:6px;padding:1px 6px;}
+.scimp-opt{display:flex;gap:8px;align-items:center;font-size:12px;font-weight:700;margin-top:10px;}
+.scc-base{position:absolute;top:-3px;bottom:-3px;width:3px;background:#475569;border-radius:2px;margin-left:-1px;}
+.scx-bar-bg{position:relative;}
+.scc-legend{display:flex;gap:14px;font-size:10px;font-weight:800;color:var(--t3);margin:8px 0 2px;flex-wrap:wrap;}
+.scc-sw{display:inline-block;width:12px;height:8px;border-radius:2px;vertical-align:0;margin-right:4px;}
+.scc-sw.cur{background:var(--green);} .scc-sw.base{background:#475569;width:3px;} .scc-sw.min{background:var(--t1);width:2px;}
+.scc-hint{font-size:10px;font-weight:700;color:var(--t3);text-transform:none;letter-spacing:0;}
+.scc-std{max-height:360px;overflow:auto;border:1px solid var(--br);border-radius:10px;}
+.scc-std table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.scc-std th{position:sticky;top:0;background:var(--bgs);text-align:left;font-size:10px;text-transform:uppercase;color:var(--t3);padding:6px 8px;}
+.scc-std td{padding:6px 8px;border-top:1px solid var(--br);}
+.scc-std td span{color:var(--t3);font-size:10.5px;}
+.scc-std tr.no td:nth-child(4){color:var(--red-dk);font-weight:900;}
+.scc-std tr.ok td:nth-child(4){color:var(--green-dk);font-weight:900;}
+.scc-who{font-size:10.5px;color:var(--t2);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+.scc-who span{font-weight:800;border-radius:6px;padding:1px 6px;}
+.scc-who span.s2{background:var(--green-lt);color:var(--green-dk);} .scc-who span.s1{background:var(--amber-lt);color:var(--amber-dk);}
+.scc-who span.s0{background:var(--red-lt);color:var(--red-dk);} .scc-who span.sn{background:var(--grey-lt);color:var(--t3);}
+.scc-who em{color:var(--t3);font-style:normal;}
+.scc-card-line{font-size:10px;color:var(--t2);font-weight:700;margin:-2px 0 6px;}
+</style>
+<script src="assets/sc-prep-lists.2f422a93fa.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ STEP D — 7-day rapid-audit baseline, baseline report & action plan ══ -->
+<style>
+.scd-banner{background:linear-gradient(135deg,#0F766E,#115E59);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px;}
+.scd-b-t{font-size:13px;font-weight:900;display:flex;align-items:center;gap:6px;}
+.scd-b-s{font-size:11.5px;font-weight:700;opacity:0.9;margin-top:2px;}
+.scd-b-p{display:flex;align-items:center;gap:8px;font-size:11px;margin-top:8px;}
+.scd-b-p>div{flex:1;height:7px;background:rgba(255,255,255,0.25);border-radius:6px;overflow:hidden;}
+.scd-b-p>div>div{height:100%;background:#fff;}
+.scd-b-h{font-size:10.5px;opacity:0.85;margin-top:6px;line-height:1.4;}
+.scd-std{display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding:6px 10px;border-radius:9px;background:var(--teal-lt);color:var(--teal-dk);font-size:11.5px;font-weight:700;}
+.scd-std b{font-weight:900;}
+.scd-std span{margin-left:auto;font-size:10px;font-weight:800;background:#fff;border-radius:7px;padding:1px 6px;}
+.scd-all{margin-left:8px;min-height:30px;border-radius:9px;border:1.5px solid var(--green-dk);background:#fff;color:var(--green-dk);font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;padding:3px 10px;}
+.scd-ae{padding:14px 16px;font-size:12.5px;line-height:1.6;color:var(--t2);background:#F0FDFA;border:1px solid #99F6E4;border-radius:12px;margin:12px 16px;}
+.scd-rep-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.scd-rep-h{flex-wrap:wrap;} .scd-rep-h>div:first-child{flex:1 1 240px;min-width:0;} .scd-rep-h>.scx-btn{white-space:nowrap;}
+@media(max-width:600px){ .scd-rep-h>div:first-child{flex-basis:100%;} .scd-rep-h>.scx-btn{flex:1 1 0 !important;justify-content:center;} }
+.scd-rep-t{font-size:14px;font-weight:900;color:var(--t1);font-family:'Poppins',sans-serif;}
+.scd-days{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.scd-day{min-width:58px;border:1.5px solid var(--br);border-radius:10px;padding:5px 8px;text-align:center;background:var(--bgc);}
+.scd-day b{display:block;font-size:12px;color:var(--t1);}
+.scd-day span{font-size:10px;font-weight:800;color:var(--t3);}
+.scd-day.ok{border-color:var(--green-dk);background:var(--green-lt);}
+.scd-day.part{border-color:var(--amber-dk);background:var(--amber-lt);}
+.scd-plan{border:1px solid var(--br);border-radius:12px;padding:12px;font-size:12px;color:var(--t2);line-height:1.5;}
+.scd-plan-g{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;}
+.scd-plan-g>div{display:flex;flex-direction:column;gap:3px;min-width:200px;}
+.scd-plan-g span{font-size:11px;font-weight:700;}
+</style>
+<script src="assets/sc-baseline7.d38d5e0f28.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ District Admin — read-only district dashboards ══ -->
+<style>
+.scx-dist #scx-adm-vq-btn,.scx-dist #scq-nav-btn,.scx-dist #scb-reset-panel{display:none !important;}
+</style>
+<script src="assets/sc-district.7979842a5a.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Review & Action Plan — MoV-level actions, Supervisor-only assignment ══ -->
+<style>
+.scrv-chip{display:inline-block;font-size:10px;font-weight:800;border-radius:8px;padding:2px 8px;white-space:nowrap;}
+.scrv-intro{font-size:11.5px;color:var(--t2);background:var(--bgs);border:1px solid var(--br);border-radius:10px;padding:8px 10px;margin:6px 0 10px;line-height:1.5;}
+.scrv-grp{border:1px solid var(--br);border-radius:12px;margin-bottom:8px;padding:0 10px;background:var(--bgc);}
+.scrv-grp summary{cursor:pointer;font-size:12px;font-weight:900;padding:10px 0;}
+.scrv-act{border:1px solid var(--br);border-left:4px solid #CBD5E1;border-radius:10px;padding:9px 11px;margin-bottom:8px;background:#fff;}
+.scrv-act.scrv-overdue{border-left-color:#B91C1C;} .scrv-act.scrv-open{border-left-color:#1D4ED8;} .scrv-act.scrv-done{border-left-color:#7C3AED;}
+.scrv-act.scrv-awaiting{border-left-color:#B45309;} .scrv-act.scrv-closed{border-left-color:#15803D;opacity:0.85;} .scrv-act.scrv-draft{border-left-color:#94A3B8;border-style:dashed;}
+.scrv-act-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px;}
+.scrv-cp{font-size:12.5px;font-weight:800;color:var(--t1);line-height:1.4;}
+.scrv-item{font-size:11.5px;font-weight:700;color:#B91C1C;margin-top:3px;}
+.scrv-text{font-size:12px;color:var(--t1);margin:4px 0;}
+.scrv-note{font-size:11px;color:#5B21B6;background:#F5F3FF;border-radius:7px;padding:4px 8px;margin-top:5px;}
+.scrv-note.bad{color:#991B1B;background:#FEF2F2;} .scrv-note.ok{color:#166534;background:#F0FDF4;}
+.scrv-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;} .scrv-btns .scx-btn{flex:0 0 auto;}
+.scrv-drafts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:12px;color:#92400E;}
+.scrv-drafts>div{flex:1;min-width:200px;}
+.scrv-cpbox{border:1px solid var(--br);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--bgc);}
+.scrv-cp-h{font-size:11px;color:var(--t3);font-weight:700;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:3px;}
+.scrv-row{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:6px 0;border-top:1px dashed var(--br);flex-wrap:wrap;}
+.scrv-row.miss .scrv-row-t{color:#991B1B;}
+.scrv-row-t{flex:1;min-width:220px;font-size:12px;font-weight:600;color:var(--t2);line-height:1.4;}
+.scrv-own{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#991B1B;margin-bottom:4px;flex-wrap:wrap;}
+.scrv-own.ok{color:#15803D;} .scrv-own .scx-btn{flex:0 0 auto;}
+.scrv-vticks{margin-top:6px;border-top:1px dashed var(--br);padding-top:6px;}
+.scrv-vt{display:flex;gap:8px;align-items:center;font-size:11.5px;padding:3px 0;flex-wrap:wrap;}
+.scrv-vt>span{width:16px;font-weight:900;} .scrv-vt>div{flex:1;min-width:200px;}
+.scrv-vt.met>span{color:#15803D;} .scrv-vt.not>span,.scrv-vt.not>div{color:#B91C1C;}
+.scrv-vt .scx-btn{flex:0 0 auto;}
+.scrv-attn{border:1.5px solid #FCA5A5;background:#FEF2F2;border-radius:14px;padding:10px 12px;margin-bottom:12px;grid-column:1/-1;}
+.scrv-attn.ok{border-color:#BBF7D0;background:#F0FDF4;}
+.scrv-attn-h{font-size:12.5px;font-weight:900;color:#991B1B;margin-bottom:4px;} .scrv-attn.ok .scrv-attn-h{color:#166534;margin:0;}
+.scrv-attn-i{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:4px 0;border-top:1px solid rgba(0,0,0,0.05);flex-wrap:wrap;}
+.scrv-attn-i.amber b{color:#92400E;} .scrv-attn-i .scx-btn{margin-left:auto;}
+</style>
+<script src="assets/sc-review.54a1bc1306.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ STEP E — Implementation weeks, personalised focus, revision days ══ -->
+<style>
+.scd-banner.scd-impl{background:linear-gradient(135deg,#1D4ED8,#1E3A8A);}
+.scd-banner.scd-rev{background:linear-gradient(135deg,#7C3AED,#5B21B6);}
+.sce-last{font-size:11px;font-weight:700;color:var(--t3);margin-top:4px;}
+.sce-act{font-size:11.5px;font-weight:700;color:#1E40AF;background:#EFF6FF;border-radius:8px;padding:5px 8px;margin-top:4px;line-height:1.4;}
+.sce-act span{color:#B91C1C;font-weight:600;}
+.sce-opt{margin-top:14px;border:1.5px dashed var(--br);border-radius:12px;padding:0 10px;}
+.sce-opt>summary{cursor:pointer;font-size:12px;font-weight:900;color:var(--green-dk);padding:10px 0;}
+</style>
+<script src="assets/sc-implementation.27485be94c.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Day placement — see and (rarely) move checkpoint days ══ -->
+<style>
+.scm-meta span.dy{background:#EEF2FF;color:#3730A3;cursor:pointer;}
+.scm-meta span.dy:hover{background:#E0E7FF;}
+#ae-day-strip button{position:relative;}
+.scdp-n{display:block;font-size:8.5px;font-weight:800;color:var(--t3);line-height:1;margin-top:1px;}
+#ae-day-strip button.scdp-bl{box-shadow:inset 0 -3px 0 #0F766E;}
+#ae-day-strip button.scdp-impl{box-shadow:inset 0 -3px 0 #1D4ED8;}
+#ae-day-strip button.scdp-rev{box-shadow:inset 0 -3px 0 #7C3AED;}
+#ae-day-strip button.scdp-heavy .scdp-n{color:#B91C1C;}
+.scdp-list{margin-top:10px;max-height:420px;overflow:auto;border:1px solid var(--br);border-radius:10px;background:#fff;}
+.scdp-list table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.scdp-list th{position:sticky;top:0;background:var(--bgs);text-align:left;font-size:10px;text-transform:uppercase;color:var(--t3);padding:6px 8px;}
+.scdp-list td{padding:6px 8px;border-top:1px solid var(--br);vertical-align:top;color:var(--t1);}
+.scdp-list tr.ret td{opacity:0.5;}
+</style>
+<script src="assets/sc-day-placement.9020e8e4d1.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Mark Done guidance — which checkpoints still need an answer ══ -->
+<style>
+.scmd-need{outline:2px dashed #DC2626;outline-offset:4px;border-radius:12px;background:#FFF7F7;}
+.scmd-lbl{font-size:11px;font-weight:900;color:#B91C1C;margin-bottom:4px;}
+.scmd-flash{animation:scmdFlash 1.2s ease;}
+@keyframes scmdFlash{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.6);}100%{box-shadow:0 0 0 14px rgba(220,38,38,0);}}
+.scmd-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;margin:0 0 8px;border-radius:12px;background:#FEF2F2;border:1px solid #FECACA;font-size:12px;color:var(--t1);}
+.scmd-bar.ok{background:#F0FDF4;border-color:#BBF7D0;}
+.scmd-p{flex:1;min-width:120px;height:8px;border-radius:6px;background:rgba(0,0,0,0.08);overflow:hidden;}
+.scmd-p>div{height:100%;background:#16A34A;}
+.scmd-next{min-height:36px;border-radius:10px;border:1.5px solid #DC2626;background:#fff;color:#B91C1C;font-weight:800;font-size:12px;font-family:inherit;cursor:pointer;padding:6px 12px;}
+.scmd-ready{color:#15803D;font-weight:900;font-size:14px;}
+.scmd-save{flex-basis:100%;font-size:11px;font-weight:700;color:#15803D;}
+</style>
+<script>
+// ══════════════════════════════════════════════════════════════
+// MARK DONE GUIDANCE — show exactly which checkpoints still need an answer
+// ══════════════════════════════════════════════════════════════
+Object.assign(HINDI_UI,{'answered':'उत्तर दिए','Next unanswered':'अगला बाकी चेकपॉइंट','Answer needed':'उत्तर बाकी',
+  'Your answers are saved — you can finish the rest later.':'आपके उत्तर सहेजे गए हैं — बाकी बाद में पूरा कर सकते हैं।',
+  'marked in red.':'लाल रंग में दिखाए गए हैं।'});
+var _scMdNeed={};
+function scMdOpen(di){ var c=getCHOCard(di); return scMyCpIdx(di).filter(function(ci){ return scNormScore((c.cpScores||[])[ci])===null; }); }
+function scMdNext(di){
+  var open=scMdOpen(di); if(!open.length) return null;
+  var cur=window._scMdLast!=null&&window._scMdLastDi===di?window._scMdLast:-1;
+  var nx=open.find(function(ci){ return ci>cur; }); if(nx===undefined) nx=open[0];
+  window._scMdLast=nx; window._scMdLastDi=di;
+  var el=document.getElementById('cp-'+di+'-'+nx);
+  if(el){ var det=el.closest&&el.closest('details'); if(det) det.open=true; try{ el.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){} el.classList.add('scmd-flash'); setTimeout(function(){ el.classList.remove('scmd-flash'); },1200); }
+  return nx;
+}
+(function(){
+  var oDone=markDone;
+  markDone=function(di){
+    var c=getCHOCard(di); if(c.taskDone||appMode!=='cho') return oDone.apply(this,arguments);
+    var mine=scMyCpIdx(di), open=scMdOpen(di);
+    if(mine.length&&open.length){
+      _scMdNeed[di]=true; window._scMdLast=-1; window._scMdLastDi=di;
+      renderCard(di);
+      showToast(open.length+' of '+mine.length+' '+t('checkpoints still need an answer')+' — '+t('marked in red.'),'err');
+      scMdNext(di); return;
+    }
+    delete _scMdNeed[di];
+    return oDone.apply(this,arguments);
+  };
+  var oCard=renderCard;
+  renderCard=function(di){
+    var r=oCard.apply(this,arguments);
+    try{
+      if(appMode!=='cho') return r;
+      var c=getCHOCard(di), cont=document.getElementById('card-container'); if(!cont||c.taskDone) return r;
+      var mine=scMyCpIdx(di); if(!mine.length) return r;
+      var open=scMdOpen(di);
+      if(_scMdNeed[di]) open.forEach(function(ci){ var el=document.getElementById('cp-'+di+'-'+ci); if(!el) return; el.classList.add('scmd-need');
+        if(!el.querySelector('.scmd-lbl')) el.insertAdjacentHTML('afterbegin','<div class="scmd-lbl">⚠ '+scEsc(t('Answer needed'))+'</div>'); });
+      if(!open.length) delete _scMdNeed[di];
+      var btn=cont.querySelector('.btn-mark'); if(!btn) return r;
+      var done=mine.length-open.length, bar=document.createElement('div'); bar.className='scmd-bar'+(open.length?'':' ok');
+      bar.innerHTML='<div class="scmd-p"><div style="width:'+Math.round(done/mine.length*100)+'%"></div></div>'
+        +'<span><b>'+done+'</b> / '+mine.length+' '+scEsc(t('answered'))+'</span>'
+        +(open.length?'<button type="button" class="scmd-next" onclick="scMdNext('+di+')">⬇ '+scEsc(t('Next unanswered'))+'</button>':'<span class="scmd-ready">✓</span>')
+        +(open.length&&done?'<div class="scmd-save">✓ '+scEsc(t('Your answers are saved — you can finish the rest later.'))+'</div>':'');
+      var row=btn.parentNode; row.parentNode.insertBefore(bar,row);
+    }catch(e){ console.warn('[SC] mark-done guidance',e); }
+    return r;
+  };
+})();
+</script>
+
+<!-- ══ Quality Champion verification (CHO & MO cards) ══ -->
+<style>
+.scqv-box{margin:6px 0;border-top:1px dashed var(--br);padding-top:6px;}
+.scqv-d{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;padding:3px 0;color:var(--t2);}
+.scqv-d>span{flex:1;min-width:200px;}
+.scqv-d.on>span{color:#9A3412;font-weight:700;}
+.scqv-d em{font-style:normal;font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;border-radius:7px;padding:2px 7px;}
+.scqv-dd{font-size:11px;font-weight:700;color:#9A3412;background:#FFF7ED;border-radius:7px;padding:4px 8px;margin-top:4px;}
+.scqv-dd span{color:var(--t3);font-weight:600;}
+.scqv-intro{font-size:11.5px;color:#1E3A8A;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:7px 10px;margin:6px 0;}
+.scqv-ro{font-size:12px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:10px;padding:8px 10px;}
+.scqv-em{font-style:normal;font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;border-radius:7px;padding:2px 7px;}
+.scqv-db{flex:0 0 auto;min-height:30px;}
+.scqv-badge{background:#DC2626;color:#fff;border-radius:9px;padding:0 6px;font-size:10px;margin-left:4px;}
+</style>
+<script src="assets/sc-champion-verify.6be0e5d069.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ BUILD 4.1 — Foundation (brand, bundled fonts & icons) ══ -->
+<link rel="stylesheet" href="assets/vendor-poppins-font.7a4a5ae076.css" onerror="nfAssetFail(this)">
+<script src="assets/shared-brand.1b47ef65ba.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ BUILD 4.2 — single login ══ -->
+<link rel="stylesheet" href="assets/shared-one-login.6f478da916.css" onerror="nfAssetFail(this)">
+<script src="assets/shared-one-login.c204d6395c.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ BUILD 4.3 — staff app (Today · Cards · Progress · Me) ══ -->
+<link rel="stylesheet" href="assets/sc-staff-app.e0189e484b.css" onerror="nfAssetFail(this)">
+<script src="assets/sc-staff-app.1f975b2968.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ BUILD 4.4 — laptop dashboards ══ -->
+<link rel="stylesheet" href="assets/sc-laptop.3b958233dd.css" onerror="nfAssetFail(this)">
+<script src="assets/sc-laptop.c55d6f8774.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Readiness redesign + separate service dropdowns ══ -->
+<style>
+/* ══ Readiness redesign ══ */
+.rd-nq{border-radius:14px;margin:4px 0 6px;border:1.5px solid var(--br);background:#fff;}
+.rd-nq > summary{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;list-style:none;flex-wrap:wrap;}
+.rd-nq > summary::-webkit-details-marker{display:none;}
+.rd-nq > summary b{font-size:13px;} .rd-nq > summary span{flex:1;font-size:12px;color:var(--t2);min-width:180px;} .rd-nq > summary .ti{font-size:19px;color:var(--t3);}
+.rd-nq.no{border-color:#FECACA;background:#FEF6F6;} .rd-nq.no > summary b{color:var(--red-dk);}
+.rd-nq.ok{border-color:#BBF7D0;background:#F3FCF6;} .rd-nq.ok > summary b{color:var(--green-dk);}
+.rd-nq.na > summary b{color:var(--t3);}
+.rd-nq[open] > summary .ti{color:var(--teal);} .rd-nq > .scx-nqas{margin:0 12px 12px;}
+.rd-donuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+.rd-donut{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--br);border-radius:18px;padding:14px;}
+.rd-dn{position:relative;width:124px;height:124px;flex-shrink:0;} .rd-dn > span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;}
+.rd-dn b{font-size:24px;font-weight:700;} .rd-dn small{font-size:10.5px;color:var(--t3);margin-top:2px;}
+.rd-dl{min-width:0;} .rd-dl > b{display:block;font-size:15px;font-weight:600;color:var(--t1);} .rd-dl > small{display:block;font-size:11.5px;color:var(--t3);margin-bottom:8px;}
+.rd-dl > div{font-size:12px;color:var(--t2);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.rd-ch{display:inline-flex;align-items:center;font-size:11px;font-weight:700;border-radius:20px;padding:2px 8px;}
+.rd-ch.up{background:var(--green-lt);color:var(--green-dk);} .rd-ch.down{background:var(--red-lt);color:var(--red-dk);} .rd-ch.eq{background:var(--bg);color:var(--t3);} .rd-ch.na{background:var(--bg);color:var(--t3);font-weight:600;}
+.rd-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.rd-card{background:#fff;border:1px solid var(--br);border-radius:16px;padding:12px 14px;min-width:0;}
+.rd-ct b{display:block;font-size:12.5px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .rd-ct small{font-size:10.5px;color:var(--t3);}
+.rd-cv{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0 8px;} .rd-cv > b{font-size:24px;font-weight:700;line-height:1;}
+.rd-cb{position:relative;height:7px;border-radius:7px;background:#EAEFEE;} .rd-cb i{display:block;height:100%;border-radius:7px;}
+.rd-cb em{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1px;border-radius:2px;background:var(--org);}
+.rd-cf{display:flex;justify-content:space-between;gap:6px;font-size:10.5px;color:var(--t3);margin-top:6px;}
+.rd-grid.sm .rd-cv > b{font-size:19px;}
+@media(max-width:1100px){ .rd-grid{grid-template-columns:repeat(3,minmax(0,1fr));} .rd-donuts{grid-template-columns:1fr;} }
+@media(max-width:700px){ .rd-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+</style>
+<script src="assets/sc-readiness.6cf4731cfe.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ HealSol business indicators ══ -->
+<link rel="stylesheet" href="assets/shared-business-ind.d97663522b.css" onerror="nfAssetFail(this)">
+<script src="assets/shared-business-ind.75044a63cd.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Branded PDF reports ══ -->
+<script src="assets/shared-pdf-reports.77cff64a9b.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Phases: Baseline · Implementation · Endline ══ -->
+<link rel="stylesheet" href="assets/sc-phases.07a2a34a96.css" onerror="nfAssetFail(this)">
+<script src="assets/sc-phases.e63ef7115d.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Heat-map tabs, By Standard toggle, baseline incomplete ══ -->
+<style>
+/* heat-map tabs + By Standard toggle + baseline warning */
+.phx-st.warn{background:#FFFBEB;border-color:#FCD34D;} .phx-st.warn i{background:#F59E0B;color:#fff;}
+.phx-w{margin-top:6px;font-size:11.5px;font-weight:700;color:var(--red-dk);background:var(--red-lt);border-radius:8px;padding:4px 8px;display:inline-block;}
+.nfhm-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.nfhm-tabs{display:inline-flex;background:var(--bg);border-radius:20px;padding:3px;margin-left:auto;text-transform:none;letter-spacing:0;}
+.nfhm-tabs button{border:0;background:transparent;font:inherit;font-size:11.5px;font-weight:600;color:var(--t2);padding:5px 12px;border-radius:16px;cursor:pointer;}
+.nfhm-tabs button.on{background:var(--teal);color:#fff;} .nfhm-tabs button.off{color:#A3AEAC;cursor:not-allowed;} .nfhm-tabs button small{font-size:9.5px;font-weight:500;}
+.nfhm-plus{border:1.5px solid var(--br);background:#fff;border-radius:20px;font:inherit;font-size:11.5px;font-weight:600;color:var(--teal);padding:4px 11px;cursor:pointer;text-transform:none;letter-spacing:0;display:inline-flex;align-items:center;gap:4px;}
+.nfhm-plus.on{background:var(--teal-lt);border-color:var(--teal);}
+.nf-stdtbl{display:none;margin-top:10px;} .nf-stdtbl.open{display:block;} .nf-stdtbl-h{font-size:11.5px;font-weight:700;color:var(--t2);padding:8px 12px 2px;}
+</style>
+<script>
+// ══ Heat-map tabs (Baseline · Implementation · Endline) + "By Standard" toggle + baseline-incomplete attention ══
+var _nfHeatTab={}, _nfStdOpen={};
+function nfHeatPhases(P){ return [{k:'B',label:'Baseline',agg:P.B&&P.B.assessed?P.B:null,note:'from Day 1'},{k:'I',label:'Implementation',agg:P.I,note:'from Day 8'},{k:'E',label:'Endline',agg:P.E,note:'from Day 50'}]; }
+function nfHeatLatest(P){ var L=nfHeatPhases(P).filter(function(x){ return x.agg; }); return L.length?L[L.length-1]:{k:'B',label:'Baseline',agg:P.A}; }
+function nfHeatBlockHTML(hostId,P){
+  var ph=nfHeatPhases(P), cur=_nfHeatTab[hostId], pick=ph.find(function(x){ return x.k===cur&&x.agg; })||nfHeatLatest(P), H=JSON.stringify(hostId).replace(/"/g,'&quot;');
+  var open=!!_nfStdOpen[hostId];
+  return '<div class="nfhm" id="nfhm-'+scEsc(hostId)+'"><div class="scx-sub nfhm-head">Standards heat-map <span class="scc-hint">quick check of the weak ones</span>'
+    +'<span class="nfhm-tabs">'+ph.map(function(x){ return '<button type="button" class="'+(x.k===pick.k?'on':'')+(x.agg?'':' off')+'"'+(x.agg?' onclick="nfHeatTab('+H+',\''+x.k+'\')"':' disabled title="'+x.note+'"')+'>'+x.label+(x.agg?'':' <small>'+x.note+'</small>')+'</button>'; }).join('')+'</span>'
+    +'<button type="button" class="nfhm-plus'+(open?' on':'')+'" title="By Standard table" onclick="nfStdToggle('+H+')"><i class="ti '+(open?'ti-minus':'ti-plus')+'"></i> By Standard</button></div>'
+    +(pick.agg?nfStdHeatHTML(pick.agg):'<div class="nfo-empty">No scores yet.</div>')+'</div>';
+}
+function nfHeatTab(hostId,k){ _nfHeatTab[hostId]=k; var st=_scIns[hostId], el=document.getElementById('nfhm-'+hostId); if(!st||!el||!st._phO) return; el.outerHTML=nfHeatBlockHTML(hostId,nfFacPhases(st._phO)); }
+function nfStdToggle(hostId){ _nfStdOpen[hostId]=!_nfStdOpen[hostId]; var t=document.getElementById('nfstd-'+hostId); if(t) t.classList.toggle('open',_nfStdOpen[hostId]);
+  var hm=document.getElementById('nfhm-'+hostId), b=hm&&hm.querySelector('.nfhm-plus'); if(b){ b.classList.toggle('on',_nfStdOpen[hostId]); b.innerHTML='<i class="ti '+(_nfStdOpen[hostId]?'ti-minus':'ti-plus')+'"></i> By Standard'; } }
+(function(){
+  var oAtt=scRvAttention;
+  scRvAttention=function(){ var out=oAtt.apply(this,arguments);
+    if(appMode==='sc-admin'||(appMode==='sc-supervisor'&&!scIsDistrict())){ try{ scVisibleFacilityCodes().forEach(function(code){ var f=(scMasterFacilities||{})[code]; if(!f||f.migratedTo) return;
+      var day=nfDayOf(f); if(day==null||day<=7) return; var done=scBaselineStatus(f.progId||'nqas_12A',(scMasterProgress||{})[code]||{},f.staff||{}).filter(function(x){ return x.complete; }).length;
+      if(done<7) out.unshift({code:code,lvl:'red',txt:'Baseline incomplete — '+done+' of 7 days done, now Day '+day}); }); }catch(e){} }
+    return out; };
+})();
+</script>
+
+<!-- ══ Compliance tabs · Champion facility view · staff service packages · Today tabs ══ -->
+<style>
+/* compliance tabs */
+.rvc-tiles .rvc-click{cursor:pointer;} .rvc-tiles .rvc-click:hover{border-color:var(--teal);}
+.rvc-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px;}
+.rvc-tabs button{flex:1;min-width:150px;border:1.5px solid var(--br);background:#fff;border-radius:12px;padding:9px 12px;font:inherit;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.rvc-tabs button b{font-size:15px;color:var(--c);} .rvc-tabs button.on{border-color:var(--c);box-shadow:inset 0 -3px 0 var(--c);color:var(--t1);}
+.scrv-vb{margin-left:8px;font-size:10.5px;font-weight:700;color:var(--green-dk);background:var(--green-lt);border-radius:10px;padding:2px 8px;}
+/* Champion facility view */
+#nfcf-ov .scx-box.nfcf-box{max-width:1180px!important;width:96vw!important;}
+.nfcf-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;} .nfcf-head b{font-size:18px;color:var(--t1);} .nfck .scx-tile{min-width:0;} .nfck-s{font-size:10.5px;color:var(--t3);margin-top:3px;}
+/* staff Progress switch */
+.nfpv{display:flex;background:var(--bg);border-radius:20px;padding:3px;width:100%;} .nfpv button{flex:1;border:0;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--t3);padding:7px 10px;border-radius:16px;cursor:pointer;}
+.nfpv button.on{background:#fff;color:var(--teal);box-shadow:var(--shadow-sm);}
+.nfpv-cc{margin-top:8px;} .nfpv-cc > summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--teal);padding:8px 0;}
+/* Today tabs */
+body.nf-staff #scb2-ws-mini{display:none!important;}
+#nf-tt{margin-top:18px;}
+.nftt-tabs{display:flex;background:var(--bg);border-radius:14px;padding:4px;gap:4px;}
+.nftt-tabs button{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--t2);padding:9px 6px;border-radius:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;}
+.nftt-tabs button.on{background:#fff;color:var(--teal);box-shadow:var(--shadow-sm);}
+.nftt-tabs b{font-size:11px;background:var(--teal-lt);color:var(--teal);border-radius:10px;padding:1px 7px;} .nftt-tabs b.r{background:var(--red-dk);color:#fff;}
+.nftt-pane{margin-top:10px;}
+.nftt-pane #ws-actions-section,.nftt-pane #ws-verify-section{display:block!important;max-height:none!important;overflow:visible!important;margin:0;}
+.nftt-pane .scx-act-sec,.nftt-pane .scx-vq-sec{max-height:none!important;overflow:visible!important;margin:0;}
+.nftt-pane .scx-act-hd,.nftt-pane .scx-vq-sec > .hd{display:none!important;}
+.nftt-pane .scx-vq-sec{border:0;padding:0;background:transparent;}
+.nftt-pane:not(.all) .scx-act-sec > .scx-act-card:nth-child(n+5){display:none;}
+.nftt-pane:not(.all) .scx-vq-sec > .scx-vq-item:nth-child(n+5){display:none;}
+.nftt-pane .scx-act-card{background:#fff;border:1px solid var(--br);border-radius:16px;margin-bottom:8px;}
+.nftt-empty{font-size:13px;color:var(--t3);text-align:center;padding:16px;background:#fff;border:1px solid var(--br);border-radius:16px;}
+.nftt-more{width:100%;margin-top:4px;border:0;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--teal);padding:8px;cursor:pointer;}
+</style>
+<script src="assets/sc-compliance.db47e45d0f.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Review inbox ══ -->
+<style>
+/* Review inbox */
+body.nf-admin:not(.nfv-inbox) .admin-main > [data-nfv="inbox"]{display:none!important;}
+#nf-inbox{display:flex;flex-direction:column;gap:14px;}
+.nfib-sum{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;}
+.nfib-k{background:#fff;border:1px solid var(--br);border-radius:16px;padding:12px 14px;} .nfib-k b{display:block;font-size:24px;font-weight:700;line-height:1.2;} .nfib-k small{font-size:11px;color:var(--t3);} .nfib-k.z{opacity:.75;}
+.nfib-vf{position:relative;} .nfib-fac{position:absolute;right:46px;top:10px;font-size:10.5px;font-weight:700;color:var(--teal);background:var(--teal-lt);border-radius:10px;padding:2px 8px;z-index:1;}
+.nfib-ch{margin-top:10px;border-top:1px solid var(--br);padding-top:6px;} .nfib-ch > summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--teal);padding:6px 0;}
+.nfib-row{display:flex;width:100%;align-items:center;gap:6px;flex-wrap:wrap;border:0;border-top:1px solid var(--br);background:transparent;font:inherit;font-size:12px;color:var(--t2);text-align:left;padding:8px 2px;cursor:pointer;}
+.nfib-row b{color:var(--t1);} .nfib-row span{margin-left:auto;color:var(--green-dk);font-weight:600;}
+.nfib-n{min-width:34px;border:0;border-radius:10px;font:inherit;font-size:13px;font-weight:700;padding:4px 8px;cursor:pointer;}
+.nfib-n.t{background:var(--teal-lt);color:var(--teal);} .nfib-n.a{background:var(--amber-lt);color:var(--amber-dk);} .nfib-n.r{background:var(--red-lt);color:var(--red-dk);} .nfib-n.q{background:var(--qi-lt);color:var(--qi);}
+.nfib-0{color:#B5BFBD;}
+.nfib-link{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--teal-lt);border:1px solid #CFE6E2;border-radius:12px;padding:8px 12px;margin:0 0 10px;font-size:12px;color:var(--teal-dk);} .nfib-link span{flex:1;min-width:200px;}
+@media(max-width:1100px){ .nfib-sum{grid-template-columns:repeat(4,minmax(0,1fr));} }
+@media(max-width:700px){ .nfib-sum{grid-template-columns:repeat(2,minmax(0,1fr));} .nfib-fac{position:static;display:inline-block;margin-bottom:4px;} }
+.ti-inbox{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z%22 /%3E%3Cpath d=%22M4 13h3l3 3h4l3 -3h3%22 /%3E%3C/svg%3E")}</style>
+<script src="assets/sc-review-inbox.d5525ac076.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Release staff layers when a dashboard opens ══ -->
+<script>
+// Safety: when a dashboard opens (Facility Admin, Supervisor, HealSol, District, Champion), no staff-app
+// full-screen layer may stay open underneath and capture scrolling.
+function nfReleaseLayers(){
+  try{
+    var ws=document.getElementById('welcome-screen'); if(ws) ws.classList.remove('vis');
+    ['nf-progress','nf-me'].forEach(function(id){ var p=document.getElementById(id); if(p) p.style.display='none'; });
+    var ls=document.getElementById('login-screen'); if(ls&&appMode&&appMode!=='cho') ls.style.display='none';
+    var nav=document.getElementById('nf-nav'); if(nav&&appMode!=='cho') nav.style.display='none';
+    document.body.classList.remove('nf-staff'); document.body.style.overflow=''; document.documentElement.style.overflow='';
+  }catch(e){}
+}
+(function(){
+  var oTab=scb1ShowTab;
+  scb1ShowTab=async function(tab){ var r=await oTab.apply(this,arguments); if(tab==='dash'&&appMode==='sc-cho') nfReleaseLayers(); return r; };
+  var oDash=scRenderMasterDashboard;
+  scRenderMasterDashboard=function(){ var r=oDash.apply(this,arguments); if(appMode!=='cho') nfReleaseLayers(); return r; };
+  if(typeof scqRenderChampionApp==='function'){ var oC=scqRenderChampionApp; scqRenderChampionApp=function(){ var r=oC.apply(this,arguments); if(appMode==='sc-champion') nfReleaseLayers(); return r; }; }
+})();
+</script>
+
+<!-- ══ Secure mode (Firebase Authentication + server functions) ══ -->
+<style>
+/* secure mode */
+.nf-tmp{display:grid;gap:8px;background:var(--bgs);border:1px solid var(--br);border-radius:14px;padding:12px 14px;margin:10px 0;text-align:left;}
+.nf-tmp small{display:block;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;} .nf-tmp b{font-size:15px;color:var(--t1);} .nf-tmp b.pw{font-family:monospace;font-size:20px;letter-spacing:.08em;color:var(--teal-dk);}
+.nf-tmp-note{font-size:11.5px;color:var(--t3);margin-bottom:10px;}
+.nf-tmp-acts{display:flex;gap:8px;flex-wrap:wrap;} .nf-tmp-acts .scx-btn{flex:1;text-align:center;text-decoration:none;}
+.nfs-card{background:#fff;border:1px solid var(--br);border-radius:18px;padding:14px 16px;margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+.nfs-card h3{margin:0;font-size:15px;display:flex;align-items:center;gap:6px;color:var(--t1);} .nfs-sub{font-size:12px;color:var(--t3);} .nfs-ok{font-size:12.5px;font-weight:600;color:var(--green-dk);background:var(--green-lt);border-radius:10px;padding:8px 10px;}
+.nfs-row{display:flex;align-items:center;gap:8px;border-top:1px solid var(--br);padding:8px 0;} .nfs-row b{font-size:13px;} .nfs-row span{flex:1;font-size:12px;color:var(--t3);} .nfs-row .scx-btn{flex:0 0 auto;}
+.nfs-card .scx-btn{align-self:flex-start;} td.pw{font-family:monospace;font-weight:700;color:var(--teal-dk);}
+html.nf-secure #sc-add-pwd{display:none!important;}
+.ti-database-export{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M4 6c0 1.657 3.582 3 8 3s8 -1.343 8 -3s-3.582 -3 -8 -3s-8 1.343 -8 3%22 /%3E%3Cpath d=%22M4 6v6c0 1.657 3.582 3 8 3c1.118 0 2.183 -.086 3.15 -.241%22 /%3E%3Cpath d=%22M20 12v-6%22 /%3E%3Cpath d=%22M4 12v6c0 1.657 3.582 3 8 3c.157 0 .312 -.002 .466 -.005%22 /%3E%3Cpath d=%22M16 19h6%22 /%3E%3Cpath d=%22M19 16l3 3l-3 3%22 /%3E%3C/svg%3E")}.ti-id{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z%22 /%3E%3Cpath d=%22M9 10m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0%22 /%3E%3Cpath d=%22M15 8l2 0%22 /%3E%3Cpath d=%22M15 12l2 0%22 /%3E%3Cpath d=%22M7 16l10 0%22 /%3E%3C/svg%3E")}</style>
+<script src="assets/shared-secure.8f3346d9b1.js" onerror="nfAssetFail(this)"></script>
+
+<script id="nf-registration" src="assets/shared-registration.6833f0a40c.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-payments" src="assets/shared-payments.2b35528884.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-rcpt-css">
+.nf-rcpt{font-size:13px;color:#0F172A;max-width:520px;margin:0 auto;}
+.nf-rcpt-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0F5C52;padding-bottom:10px;margin-bottom:10px;gap:10px;}
+.nf-rcpt-top b{font-size:16px;color:#0F5C52;display:block;} .nf-rcpt-top small{display:block;color:#64748B;font-size:11px;}
+.nf-rcpt-t{text-align:right;font-weight:800;font-size:12px;letter-spacing:.06em;color:#0F5C52;}
+.nf-rcpt table{width:100%;border-collapse:collapse;margin:8px 0;}
+.nf-rcpt-kv td{padding:3px 0;vertical-align:top;} .nf-rcpt-kv td:first-child{color:#64748B;width:38%;}
+.nf-rcpt-amt th{text-align:left;font-size:11px;color:#64748B;border-bottom:1px solid #E2E8F0;padding:6px 0;} .nf-rcpt-amt th:last-child,.nf-rcpt-amt td:last-child{text-align:right;}
+.nf-rcpt-amt td{padding:7px 0;border-bottom:1px solid #F1F5F9;} .nf-rcpt-amt tr.tot td{font-weight:800;font-size:14px;border-bottom:2px solid #0F5C52;}
+.nf-rcpt-note{font-size:11px;color:#64748B;margin-top:10px;}
+.nf-rcpt-box{max-width:560px;width:calc(100vw - 32px);max-height:90vh;overflow:auto;}
+.nf-rcpt-li{display:flex;justify-content:space-between;width:100%;padding:10px 12px;border:1px solid #E2E8F0;border-radius:10px;background:#fff;margin:6px 0;cursor:pointer;font:inherit;}
+.nf-gst-break{display:block;font-size:11px;font-weight:600;color:var(--t3,#64748B);}
+.nf-mp-l{display:block;font-size:10.5px;font-weight:800;color:var(--t3,#64748B);text-transform:uppercase;margin:10px 0 4px;}
+.nf-mp-i{width:100%;box-sizing:border-box;border:1.5px solid var(--br,#E2E8F0);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;}
+.nf-mp-err{display:none;color:#B91C1C;font-size:12px;font-weight:700;margin:10px 0;}
+@media print{ body.nf-printing-rcpt > *:not(#nf-rcpt-ov){display:none!important;} body.nf-printing-rcpt #nf-rcpt-ov{position:static;background:none;padding:0;} body.nf-printing-rcpt .nf-rcpt-box{box-shadow:none;max-height:none;} body.nf-printing-rcpt .nf-tmp-acts{display:none!important;} }
+</style>
+<script id="nf-biz-report" src="assets/shared-biz-report.277765cffc.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-qr" src="assets/vendor-qrcode.fabb956c75.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-sign-font-data" src="assets/vendor-sign-font.245deebf21.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-cert-css" rel="stylesheet" href="assets/shared-cert.bd7de7b6f9.css" onerror="nfAssetFail(this)">
+<script id="nf-cert" src="assets/shared-cert.1c3d0ffa3c.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-wa-css">
+/* WhatsApp: help card, help links, one-tap message buttons */
+.nf-help{display:flex;gap:12px;align-items:center;margin-top:12px;border-radius:20px;padding:14px 16px;background:#fff;border:1px solid var(--br,#E2E8F0);}
+.nf-help > span{width:44px;height:44px;border-radius:13px;background:#DCFCE7;color:#15803D;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.nf-help > span svg{width:24px;height:24px;}
+.nf-help > div{flex:1;min-width:0;} .nf-help b{display:block;font-size:14px;color:var(--t1,#0F172A);} .nf-help small{display:block;font-size:11.5px;color:var(--t3,#64748B);}
+.nf-wa-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;background:#25D366;color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:9px 13px;cursor:pointer;text-decoration:none;white-space:nowrap;}
+.nf-wa-btn svg{width:15px;height:15px;flex-shrink:0;} .nf-wa-btn.sm{font-size:11px;padding:6px 10px;border-radius:8px;} .nf-wa-btn.ic{padding:6px 8px;}
+.nf-wa-btn.ghost{background:#F0FDF4;color:#15803D;border:1.5px solid #86EFAC;}
+.nf-l-plain.nf-l-wa{color:#15803D;} .nf-l-plain.nf-l-wa svg{width:15px;height:15px;vertical-align:-2px;}
+.nf-supset{background:#fff;border:1px solid var(--br,#E2E8F0);border-radius:16px;padding:16px 18px;margin:0 0 14px;}
+.nf-supset h3{margin:0 0 4px;font-size:14px;display:flex;align-items:center;gap:7px;} .nf-supset p{font-size:12px;color:var(--t3,#64748B);margin:0 0 10px;}
+.nf-supset .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;} .nf-supset label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--t3,#64748B);flex:1;min-width:190px;}
+.nf-supset input{border:1.5px solid var(--br,#E2E8F0);border-radius:10px;padding:9px 10px;font:inherit;font-size:13px;}
+.nf-supset button{border:0;border-radius:10px;background:var(--teal,#0F5C52);color:#fff;font:inherit;font-size:13px;font-weight:700;padding:10px 16px;cursor:pointer;}
+</style>
+<script id="nf-wa" src="assets/shared-whatsapp.a3bc984eb3.js" onerror="nfAssetFail(this)"></script>
+
+
+<script id="nf-pdf-fonts" src="assets/vendor-pdf-fonts.d24cedb333.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-pro-css">
+/* PRO badge — paid and contract facilities, shows the package (12A / 12B) */
+.nf-pro{display:inline-flex;align-items:stretch;vertical-align:middle;border-radius:6px;overflow:hidden;border:1px solid #135A55;font:700 9.5px/1 'NF Poppins',system-ui,sans-serif;letter-spacing:.05em;white-space:nowrap;margin-left:4px;box-shadow:0 1px 2px rgba(19,90,85,.18);}
+.nf-pro i.p{background:#135A55;color:#fff;padding:3px 5px 3px 6px;}
+.nf-pro i.t{font-weight:800;background:#E6F2F0;color:#135A55;padding:3px 6px 3px 5px;letter-spacing:0;}
+.nf-pro.lg{font-size:11.5px;border-radius:8px;} .nf-pro.lg i{padding:4px 8px!important;}
+/* the badge keeps its own look wherever it sits (chips, receipt header, table cells) */
+span.nf-pro{padding:0!important;background:none!important;height:auto!important;min-height:0!important;}
+.nf-pro i{display:inline-block!important;font-size:inherit!important;line-height:1!important;margin:0!important;font-style:normal!important;}
+.nf-pro i.p{color:#fff!important;} .nf-pro i.t{color:#135A55!important;}
+.nf-top-l small .nf-pro{margin-left:5px;}
+</style>
+<script id="nf-pro">
+// PRO badge: facilities with full access — paid (Razorpay or recorded by HealSol) or contract (government / district).
+// Not for trial facilities. Once earned it stays. Label shows the package: PRO 12A / PRO 12B.
+function nfProTier(f){ if(!f) return ''; var st=f.subscriptionStatus||'contract'; if(st!=='paid'&&st!=='contract') return '';
+  return String(f.progId||f.package||'').indexOf('12B')>=0?'12B':'12A'; }
+function nfProBadge(f,cls){ var t=nfProTier(f); if(!t) return '';
+  return '<span class="nf-pro'+(cls?' '+cls:'')+'" title="'+(f.subscriptionStatus==='paid'?'Paid subscription':'Full programme (contract)')+' · package '+t+'"><i class="p">PRO</i><i class="t">'+t+'</i></span>'; }
+</script>
+<link id="nf-biz-dash-css" rel="stylesheet" href="assets/shared-biz-dash.333261e206.css" onerror="nfAssetFail(this)">
+<script id="nf-pdf" src="assets/shared-pdf.33e49f6393.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-biz-dash" src="assets/shared-biz-dash.7bfe787182.js" onerror="nfAssetFail(this)"></script>
+
+<style>
+.nf-bizrep{background:var(--card,#fff);border:1px solid var(--br,#E2E8F0);border-radius:16px;padding:16px 18px;margin:0 0 14px;}
+.nf-bizrep-h{font-weight:800;font-size:14px;color:var(--t1,#0F172A);display:flex;align-items:center;gap:7px;}
+.nf-bizrep-h span{font-size:10.5px;font-weight:700;color:var(--t3,#64748B);background:#F1F5F9;border-radius:999px;padding:2px 8px;}
+.nf-bizrep-p{font-size:12px;color:var(--t2,#475569);line-height:1.55;margin:6px 0 12px;}
+.nf-bizrep-btn{background:var(--teal,#0F5C52);color:#fff;border:none;border-radius:10px;padding:10px 16px;font:800 12.5px/1.2 inherit;cursor:pointer;display:inline-flex;align-items:center;gap:7px;}
+.nf-bizrep-btn:disabled{opacity:.6;cursor:default;}
+</style>
+<script id="nf-open-cover">
+// ── While a screen opens after login, show a plain "Opening…" cover instead of the half-built old screen ──
+function nfWithin(p,ms){ return new Promise(function(res,rej){ var tm=setTimeout(function(){ var e=new Error('timeout'); e.nfTimeout=true; rej(e); },ms);
+  Promise.resolve(p).then(function(v){ clearTimeout(tm); res(v); },function(e){ clearTimeout(tm); rej(e); }); }); }
+var _nfCover={el:null,dash:false,timer:null};
+function nfCoverOn(){
+  _nfCover.dash=false; _nfCover.pending=false;
+  var c=_nfCover.el||document.getElementById('nf-open-cover-el');
+  if(!c){ c=document.createElement('div'); c.id='nf-open-cover-el';
+    c.innerHTML='<div class="nf-oc-spin"></div><div class="nf-oc-t">'+((typeof t==='function')?t('Opening…'):'Opening…')+'</div>'; document.body.appendChild(c); }
+  _nfCover.el=c; c.style.display='flex';
+  clearTimeout(_nfCover.timer); _nfCover.timer=setTimeout(nfCoverOff,12000);      // never stays longer than 12 s
+}
+function nfCoverOff(){ clearTimeout(_nfCover.timer); if(_nfCover.el) _nfCover.el.style.display='none'; }
+function nfCoverDone(){
+  if(_nfCover.pending&&!_nfCover.dash){ var n=0, iv=setInterval(function(){ if(_nfCover.dash||++n>100){ clearInterval(iv); _nfCover.pending=false; setTimeout(nfCoverOff,60); } },100); return; }
+  _nfCover.pending=false;
+  var ls=document.getElementById('login-screen');
+  if(ls&&ls.style.display!=='none'&&getComputedStyle(ls).display!=='none') return nfCoverOff();   // error, role picker or new-password screen
+  setTimeout(nfCoverOff,60);
+}
+(function(){
+  // HealSol dashboard: the cover stays until loading and drawing have finished
+  if(typeof scStartAdminApp==='function'){ var o=scStartAdminApp;
+    scStartAdminApp=function(){ _nfCover.dash=false; _nfCover.pending=true; var r=o.apply(this,arguments); Promise.resolve(r).then(function(){ _nfCover.dash=true; },function(){ _nfCover.dash=true; }); return r; }; }
+  try{ if(typeof HINDI_UI==='object') Object.assign(HINDI_UI,{'Opening…':'खुल रहा है…','Could not reach the server. Check your internet and try again.':'सर्वर से संपर्क नहीं हो सका। इंटरनेट जाँचें और फिर से कोशिश करें।'}); }catch(e){}
+})();
+</script>
+<style>
+#nf-open-cover-el{position:fixed;inset:0;z-index:9990;background:var(--bg,#F1F5F4);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+#nf-open-cover-el .nf-oc-spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(15,92,82,.18);border-top-color:#0F5C52;animation:nfocspin .8s linear infinite;}
+#nf-open-cover-el .nf-oc-t{font:600 14px/1.2 Poppins,system-ui,sans-serif;color:#0F5C52;}
+@keyframes nfocspin{to{transform:rotate(360deg)}}
+</style>
+<script id="nf-back-button">
+// ── Phone Back button inside in-app browsers (One HealSol WebView) ──────────────
+// NQAS changes screens without page loads, so the host app saw no "previous page" and closed NQAS on Back.
+// Each move away from Today records one history step: Back closes an open pop-up first, then returns to the
+// previous tab. From Today with nothing open, Back leaves NQAS as before.
+(function(){
+  if(!window.history||!history.pushState) return;
+  var depth=0, ignore=0, tabs=[], silent=false;
+  function push(){ try{ history.pushState({nfBack:++depth},''); }catch(e){} }
+  function unwind(){ if(depth>0){ ignore++; var n=depth; depth=0; try{ history.go(-n); }catch(e){ ignore--; } } tabs=[]; }
+  window.nfBackReset=unwind;
+  window.nfBackPush=push;
+  function closeBtn(el){
+    var bs=[].slice.call(el.querySelectorAll('button,[role=button],.close,[class*=close]')).filter(function(b){ return b.offsetParent!==null; });
+    return bs.find(function(b){ var t=(b.textContent||'').trim(), a=(b.getAttribute('aria-label')||'')+' '+(b.title||'')+' '+(b.className||'');
+      return /^(✕|×|x|close|cancel|back|not now|बंद|रद्द|वापस)/i.test(t)||/close|cancel|dismiss/i.test(a); });
+  }
+  // the top-most pop-up covering most of the screen
+  function topOverlay(){
+    var vw=window.innerWidth, vh=window.innerHeight, best=null, bz=-1;
+    [].slice.call(document.body.children).forEach(function(el){
+      if(el.offsetParent===null&&getComputedStyle(el).position!=='fixed') return;
+      var cs=getComputedStyle(el); if(cs.position!=='fixed'||cs.display==='none'||cs.visibility==='hidden') return;
+      if(/^(nf-nav|toast|login-screen|cho-app|welcome-screen)$/.test(el.id||'')||el.classList.contains('nf-page')) return;   // NQAS screens are not pop-ups
+      var r=el.getBoundingClientRect(); if(r.width*r.height<vw*vh*0.6) return;
+      var z=parseInt(cs.zIndex,10)||0; if(z>=bz){ bz=z; best=el; }
+    });
+    return best;
+  }
+  function closeTop(){
+    var ov=topOverlay();
+    if(ov){ var b=closeBtn(ov); if(b) b.click(); else { try{ document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); }catch(e){} if(ov.parentNode&&topOverlay()===ov) ov.remove(); } return true; }
+    if(typeof openHelpKey!=='undefined'&&openHelpKey){ var k=String(openHelpKey).split('-'); try{ showHelp(+k[0],+k[1]); }catch(e){} return true; }
+    return false;
+  }
+  window.addEventListener('popstate',function(){
+    if(ignore){ ignore--; return; }
+    if(depth>0) depth--;
+    if(closeTop()){ push(); return; }                                  // stay on this screen
+    if(document.body.classList.contains('nf-fadm')){ if(typeof window.nfFaBack==='function') window.nfFaBack(); return; }   // Facility dashboard: tab → Home → My cards
+    if(typeof nfIsStaff==='function'&&nfIsStaff()&&tabs.length&&typeof nfTab==='function'){
+      silent=true; try{ nfTab(tabs.pop()); }finally{ silent=false; }
+    }
+  });
+  function hook(){
+    if(typeof nfTab!=='function'||nfTab.__nfBack) return !!(typeof nfTab==='function');
+    var o=nfTab; nfTab=function(tab){ var prev=typeof _nfTab!=='undefined'?_nfTab:null; var r=o.apply(this,arguments);
+      if(!silent&&typeof nfIsStaff==='function'&&nfIsStaff()&&prev&&_nfTab!==prev){
+        if(_nfTab==='today') unwind(); else { tabs.push(prev); push(); } }
+      return r; };
+    nfTab.__nfBack=true;
+    if(typeof nfSecureSignOut==='function'&&!nfSecureSignOut.__nfBack){ var s=nfSecureSignOut; nfSecureSignOut=function(){ unwind(); return s.apply(this,arguments); }; nfSecureSignOut.__nfBack=true; }
+    return true;
+  }
+  if(!hook()) window.addEventListener('load',hook);
+})();
+</script>
+<style id="nf-video-fs">
+.nf-vfs-btn{position:absolute;top:10px;left:10px;z-index:3;background:rgba(0,0,0,.6);color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 12px;font:800 12px/1.2 inherit;cursor:pointer;}
+.nf-vbox:fullscreen{width:100vw!important;height:100vh;border-radius:0;display:flex;align-items:center;}
+.nf-vbox:fullscreen .nf-vstage{width:100%;height:100%;aspect-ratio:auto!important;}
+.nf-vbox:fullscreen video{height:100%;max-height:none!important;object-fit:contain;}
+.nf-vfs{padding:0!important;background:#000!important;}
+.nf-vfs .nf-vbox{position:fixed;top:50%;left:50%;border-radius:0!important;transform-origin:center center;}
+.nf-vfs .nf-vstage{width:100%;height:100%;aspect-ratio:auto!important;}
+.nf-vfs video{width:100%!important;height:100%!important;max-height:none!important;object-fit:contain;}
+</style>
+<style id="nf-phone-fixes">
+/* ── Phone layout fixes: narrow screens and large phone text (Oct 2026) ── */
+.cp-text.struck{text-decoration:none;}                       /* a gap is not "done": the ½ / ✗ badge marks it */
+.cp-body,.scmt-t{overflow-wrap:break-word;}
+.scmt-t{min-width:0;}
+.phr{flex-wrap:wrap;} .phr em{white-space:nowrap;}
+.scb2-legend{flex-wrap:wrap;overflow-x:visible;}
+.cp-meta{flex-wrap:wrap;row-gap:4px;} .cp-meta > *{white-space:nowrap;}       /* each tag stays on one line */
+@media (max-width:480px){
+  .scmt-t{flex:1 1 100%;}                                    /* item text uses the full width… */
+  .scmt-b{flex:1 1 100%;}                                    /* …and Met / Not met share the next line */
+  .scmt-btn{flex:1 1 0;min-width:0;}
+  .cp-top-row{flex-wrap:wrap;}
+  .cp-top-row .cp-body{flex:1 1 calc(100% - 80px);}
+  .cp-top-row .cp-video-btn{order:9;margin-left:29px;}        /* Video goes under the title instead of squeezing it */
+  .cp-body .scmt{margin-left:-29px;margin-right:-39px;}       /* Met / Not met box uses the full card width */
+  .scmt-btn{white-space:nowrap;}
+}
+@media (max-width:420px){
+  .nf-rings.ph-st{flex-wrap:wrap;justify-content:center;}      /* My progress: legend under the ring */
+  .nf-rings.ph-st .nf-rl3{flex:1 1 100%;}
+}
+</style>
+<!-- ══ Facility Admin dashboard — new look (Home · Staff · Readiness · More) ══ -->
+<link id="nf-fadm-css" rel="stylesheet" href="assets/sc-fadm.1fb01e6ce7.css" onerror="nfAssetFail(this)">
+<script id="nf-fadm" src="assets/sc-fadm.90548a4c15.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Action Plan → tell each staff member on WhatsApp ══ -->
+<style id="nf-plan-wa-css">
+.nfpw-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#ECFDF3;border:1px solid #BBF7D0;border-radius:14px;padding:10px 12px;margin:0 0 12px;}
+.nfpw-bar span{flex:1 1 200px;font-size:12.5px;color:#14532D;line-height:1.4;}
+.nfpw-list{max-height:55vh;overflow:auto;margin:6px 0 4px;text-align:left;}
+.nfpw-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--br);}
+.nfpw-row:last-child{border-bottom:0;}
+.nfpw-row > div{flex:1;min-width:0;} .nfpw-row b{display:block;font-size:13.5px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nfpw-row small{font-size:11.5px;color:var(--t3);} .nfpw-row small.od{color:var(--red-dk);}
+.nfpw-row.sent .nf-wa-btn{opacity:.55;} .nfpw-ok{font-size:11px;color:var(--green-dk);font-weight:600;}
+</style>
+<script id="nf-plan-wa" src="assets/sc-plan-wa.4a4291bea8.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Quality Champion: "Looks met?" on Not Met MoV items ══ -->
+<style id="nf-lm-css">
+.nflm-chip{border:1.5px solid #86EFAC;background:#F0FDF4;color:#166534;border-radius:20px;padding:3px 10px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;flex:0 0 auto;}
+.nflm-note{flex:1 1 100%;margin:2px 0 2px 24px;font-size:11px;color:#166534;background:#F0FDF4;border-radius:8px;padding:4px 8px;}
+.nflm-note b{font-weight:700;} .nflm-note .scx-linkbtn{margin-left:6px;}
+.nflm-sec{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:14px;padding:10px 12px;margin:0 0 12px;}
+.nflm-sec > b{display:block;font-size:13px;color:#14532D;margin-bottom:4px;}
+.nflm-it{border-top:1px solid #DCFCE7;padding:8px 0;font-size:12px;color:var(--t1);} .nflm-it:first-of-type{border-top:0;}
+.nflm-it small{display:block;color:var(--t3);font-size:11px;margin-top:2px;} .nflm-it em{display:block;font-style:normal;color:#166534;margin-top:2px;}
+.nflm-it .nflm-acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+</style>
+<script id="nf-lm" src="assets/sc-looks-met.c2aaaff056.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Baseline review (Days 1–7): Quality Champion / Supervisor correct baseline MoV scores; one verified baseline ══ -->
+<link id="nf-bl-css" rel="stylesheet" href="assets/sc-baseline-review.cba584c030.css" onerror="nfAssetFail(this)">
+<script id="nf-bl" src="assets/sc-baseline-review.9bd6ffb924.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ HealSol Admin: view only for facility work; hand over a facility to another Supervisor / Champion ══ -->
+<style id="nf-ho-css">
+.nf-ho{background:#fff;border:1px solid var(--br);border-radius:16px;padding:16px;margin:14px 0;}
+.nf-ho h3{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:8px;} .nf-ho > p{margin:0 0 10px;font-size:12.5px;color:var(--t3);line-height:1.5;}
+.nf-ho label{display:block;font-size:12px;font-weight:600;color:var(--t2);margin:10px 0 4px;}
+.nf-ho select{width:100%;border:1.5px solid var(--br);border-radius:10px;padding:9px 10px;font:inherit;font-size:13px;background:#fff;}
+.nf-ho .cur{font-size:12px;color:var(--t2);background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:6px;line-height:1.5;}
+.nf-ho .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;} @media(max-width:700px){ .nf-ho .two{grid-template-columns:1fr;} }
+.nf-ho .box{border:1px solid var(--br);border-radius:12px;padding:10px 12px;}
+.nf-ho .box b{font-size:13px;} .nf-ho .scx-btn{margin-top:10px;width:100%;}
+.nf-ho .hist{font-size:11.5px;color:var(--t3);margin-top:10px;line-height:1.6;}
+</style>
+<script id="nf-ho" src="assets/sc-healsol-view.3fbb05a162.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Step 2a: "My gaps" for staff; actions and WhatsApp in Hindi ══ -->
+<style id="nf-gaps-css">
+.nfg-it{border:1px solid var(--br);border-radius:14px;padding:10px 12px;margin-bottom:8px;background:#fff;}
+.nfg-it.wk{border-color:#FDE68A;background:#FFFDF5;}
+.nfg-meta{font-size:11px;color:var(--t3);display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.nfg-meta .wk{background:#FEF3C7;color:#92400E;border-radius:10px;padding:1px 8px;font-weight:700;}
+.nfg-meta .act{background:#DBEAFE;color:#1D4ED8;border-radius:10px;padding:1px 8px;font-weight:700;}
+.nfg-cp{font-size:13px;font-weight:600;color:var(--t1);margin:3px 0 4px;line-height:1.35;}
+.nfg-mov{font-size:12px;color:#B91C1C;margin:2px 0;line-height:1.4;} .nfg-mov:before{content:'✗ ';font-weight:700;}
+.nfg-it .scx-btn{margin-top:8px;}
+.nfg-later{margin-top:6px;} .nfg-later summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--teal);padding:8px 2px;list-style:none;} .nfg-later summary:before{content:'▸ ';} .nfg-later[open] summary:before{content:'▾ ';} .nfg-later[open] summary{margin-bottom:6px;}
+.nfg-intro{font-size:12px;color:var(--t3);margin:0 2px 10px;line-height:1.45;}
+.nfpw-lang{display:inline-flex;background:var(--bg);border-radius:20px;padding:3px;margin:8px 0 2px;}
+.nfpw-lang button{border:0;background:transparent;font:inherit;font-size:12px;font-weight:600;color:var(--t3);padding:5px 14px;border-radius:16px;cursor:pointer;} .nfpw-lang button.on{background:var(--teal);color:#fff;}
+</style>
+<script id="nf-gaps" src="assets/sc-gaps.df1042b0ae.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Step 2b: weekly focus plan (max 3 per person), role Leads, shared / group actions ══ -->
+<style id="nf-wp-css">
+.nfwp{border:1px solid #BFE3DD;background:linear-gradient(180deg,#F2FBF9,#fff);border-radius:16px;padding:14px;margin:0 0 14px;}
+.nfwp-h{font-size:15px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.nfwp-h small{font-size:11.5px;font-weight:600;color:var(--teal);background:var(--teal-lt);border-radius:10px;padding:2px 9px;}
+.nfwp-th{font-size:12.5px;color:var(--t2);margin:4px 0 2px;}
+.nfwp-intro{font-size:12px;color:var(--t3);line-height:1.45;margin:2px 0 10px;}
+.nfwp-p{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--br);font-size:13px;}
+.nfwp-p b{font-weight:600;} .nfwp-p .fa-chip{margin-left:4px;}
+.nfwp-p .r{margin-left:auto;text-align:right;font-size:12px;color:var(--t2);white-space:nowrap;}
+.nfwp-dots{display:inline-flex;gap:3px;vertical-align:middle;margin-right:4px;} .nfwp-dots i{width:9px;height:9px;border-radius:50%;background:#E2E8F0;display:inline-block;} .nfwp-dots i.on{background:var(--teal);}
+.nfwp-p .r small{display:block;color:var(--amber-dk);font-size:11px;}
+.nfwp-bl{font-size:12px;color:var(--t2);background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:8px;}
+.nfwp-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;} .nfwp-btns .scx-btn{flex:1 1 auto;}
+.fa-chip.lead{background:#FEF3C7;color:#92400E;}
+.fa-acts{flex-wrap:wrap;}
+.nfwp-with{font-size:12px;color:#5B21B6;background:#F5F3FF;border-radius:10px;padding:5px 9px;margin-top:6px;display:inline-block;}
+</style>
+<script id="nf-wp" src="assets/sc-week-plan.126d067680.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Step 3: PHC / CHC links · MO PHC overview · MOIC block view ══ -->
+<style id="nf-links-css">
+.nfl-card{border:1px solid var(--br);border-radius:14px;padding:12px 14px;background:#fff;margin-bottom:10px;}
+.nfl-card h4{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:6px;}
+.nfl-kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12.5px;color:var(--t2);} .nfl-kv b{color:var(--t1);font-weight:600;}
+.nfl-st{display:inline-block;font-size:11px;font-weight:700;border-radius:10px;padding:2px 9px;margin-left:6px;}
+.nfl-st.ok{background:#DCFCE7;color:#15803D;} .nfl-st.wait{background:#FEF3C7;color:#92400E;} .nfl-st.none{background:#F1F5F9;color:#64748B;}
+.nfl-row{display:flex;gap:10px;align-items:flex-start;border-top:1px solid var(--br);padding:9px 0;font-size:12.5px;}
+.nfl-row:first-child{border-top:0;} .nfl-row > div{flex:1 1 220px;min-width:0;} #nfl-body .nfl-row{flex-wrap:wrap;} #nfl-body .nfl-row > .scx-btn{width:100%;} .nfl-row small{display:block;color:var(--t3);font-size:11.5px;line-height:1.4;}
+.nfl-row .scx-btn{flex:0 0 auto;}
+.nfl-tree{font-size:12.5px;line-height:1.55;} .nfl-tree .c{font-weight:700;margin-top:6px;} .nfl-tree .p{margin-left:14px;} .nfl-tree .s{margin-left:28px;color:var(--t2);}
+#nf-mo{position:fixed;inset:0;z-index:9000;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;}
+.nfmo-hd{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--br);padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:2;}
+.nfmo-hd b{font-size:16px;display:block;} .nfmo-hd small{font-size:12px;color:var(--t3);}
+.nfmo-hd button{margin-left:auto;border:0;background:var(--bg);width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;flex:0 0 auto;}
+.nfmo-body{padding:14px 16px 40px;max-width:720px;margin:0 auto;}
+.nfmo-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.nfmo-sum div{background:#fff;border:1px solid var(--br);border-radius:14px;padding:10px;text-align:center;} .nfmo-sum b{display:block;font-size:20px;color:var(--teal);} .nfmo-sum span{font-size:11px;color:var(--t3);}
+.nfmo-sc{background:#fff;border:1px solid var(--br);border-radius:16px;padding:12px 14px;margin-bottom:10px;}
+.nfmo-sc.cur{border-color:var(--teal);}
+.nfmo-top{display:flex;align-items:center;gap:8px;} .nfmo-top b{font-size:14.5px;} .nfmo-top .pct{margin-left:auto;font-size:18px;font-weight:800;}
+.nfmo-meta{font-size:11.5px;color:var(--t3);margin:2px 0 8px;}
+.nfmo-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;} .nfmo-chips span{font-size:11.5px;border-radius:10px;padding:3px 9px;background:var(--bg);color:var(--t2);font-weight:600;}
+.nfmo-chips .v{background:#EDE9FE;color:#5B21B6;} .nfmo-chips .od{background:#FEE2E2;color:#B91C1C;} .nfmo-chips .bl{background:#FEF3C7;color:#92400E;}
+.nfmo-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.nfmo-chip{display:flex;align-items:center;gap:8px;width:100%;border:1px solid #BFE3DD;background:#F2FBF9;color:var(--teal);font:inherit;font-size:13px;font-weight:700;border-radius:14px;padding:10px 12px;margin:12px 0 0;cursor:pointer;}
+.nfmo-chip small{margin-left:auto;font-weight:600;color:var(--t3);}
+.nfl-drill{margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--t2);}
+</style>
+<script id="nf-links" src="assets/sc-links.39cf2b42da.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ How to fix (per MoV item) + linked checks (contradiction notes) ══ -->
+<script id="nf-fix-data" src="assets/data-sc-how-to-fix.370427c0e7.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-fix-css">
+.nffx{margin-top:6px;} .nffx summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--teal);list-style:none;} .nffx summary:before{content:'🔧 ';}
+.nffx-b{font-size:12px;color:var(--t2);line-height:1.5;background:#F8FAFC;border-radius:10px;padding:7px 10px;margin-top:4px;white-space:pre-line;}
+.nffx-ev{font-size:11.5px;color:#166534;margin-top:4px;} .nffx-ev:before{content:'✔ ';}
+.nffx-tm{font-size:11px;color:var(--t3);margin-top:2px;}
+.nfcx{margin-top:6px;font-size:11.5px;border-radius:10px;padding:6px 9px;background:#FFF7ED;color:#9A3412;line-height:1.4;border:1px solid #FED7AA;}
+.nfcx.s{background:#FEF2F2;color:#991B1B;border-color:#FECACA;} .nfcx b{font-weight:700;} .nfcx a{color:inherit;font-weight:700;text-decoration:underline;cursor:pointer;}
+.nfcx-card{border:1px solid #FECACA;background:#FFFBFB;border-radius:16px;padding:12px 14px;margin:0 0 14px;}
+.nfcx-card h4{margin:0 0 6px;font-size:14px;color:#991B1B;} .nfcx-row{font-size:12px;border-top:1px solid #FDE2E2;padding:6px 0;line-height:1.45;} .nfcx-row:first-of-type{border-top:0;}
+.nfcx-row small{display:block;color:var(--t3);} .nfcx-chip{display:inline-block;font-size:10.5px;font-weight:700;border-radius:8px;padding:1px 7px;background:#FEE2E2;color:#B91C1C;margin-right:4px;}
+.nfcx-chip.c{background:#FFEDD5;color:#9A3412;}
+.nfbl-cx{font-size:11px;font-weight:700;color:#B91C1C;background:#FEE2E2;border-radius:8px;padding:1px 7px;margin-left:4px;}
+</style>
+<script id="nf-fix" src="assets/sc-how-to-fix.7dbba620cc.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Card Editor: service package AND cross-cutting areas (your own list) · Hindi video link ══ -->
+<style id="nf-cc-css">
+.scm-meta .cc{background:#F5F3FF;color:#5B21B6;}
+.nf-vidnote{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;z-index:100000;background:#1F2937;color:#fff;font-size:12.5px;padding:7px 14px;border-radius:20px;}
+</style>
+<script id="nf-cc" src="assets/sc-cross-cutting.74584f8128.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Linked checks editor (Card Editor): see, edit, remove, add · import the expert's review Excel · download ══ -->
+<style id="nf-lx-css">
+.nflx-ov .scx-box{max-width:860px;width:calc(100% - 24px);max-height:calc(100vh - 40px);display:flex;flex-direction:column;}
+.nflx-tools{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px;} .nflx-tools .scx-in{flex:1 1 140px;min-width:0;padding:7px 9px;font-size:12.5px;}
+.nflx-tools select.scx-in{flex:0 1 auto;}
+.nflx-sum{font-size:12px;color:var(--t3);margin-bottom:6px;}
+.nflx-list{overflow:auto;flex:1;min-height:120px;border-top:1px solid var(--bd,#E5E7EB);}
+.nflx-row{border-bottom:1px solid var(--bd,#E5E7EB);padding:9px 2px;font-size:12.5px;line-height:1.45;}
+.nflx-row.rm{opacity:.55;} .nflx-row.rm .nflx-txt{text-decoration:line-through;}
+.nflx-hd{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-bottom:3px;}
+.nflx-hd b{font-size:12.5px;} .nflx-chip{font-size:10.5px;font-weight:700;border-radius:8px;padding:1px 7px;background:#FFEDD5;color:#9A3412;}
+.nflx-chip.s{background:#FEE2E2;color:#B91C1C;} .nflx-chip.g{background:#EEF2FF;color:#3730A3;} .nflx-chip.n{background:#DCFCE7;color:#166534;} .nflx-chip.x{background:#F3F4F6;color:#4B5563;}
+.nflx-txt span.k{font-weight:700;color:var(--teal,#0F5F56);white-space:nowrap;} .nflx-why{color:var(--t3);font-size:11.5px;margin-top:2px;}
+.nflx-btns{margin-left:auto;display:flex;gap:5px;} .nflx-btns .scx-btn{padding:4px 9px;font-size:11.5px;}
+.nflx-prev{font-size:11.5px;background:#F0FDFA;border:1px solid #CCFBF1;color:#115E59;border-radius:10px;padding:6px 9px;margin-top:-4px;white-space:pre-wrap;}
+.nflx-prev.bad{background:#FEF2F2;border-color:#FECACA;color:#991B1B;}
+.scm-row .nflx-cnt{flex:0 0 auto;font-size:11.5px;}
+.scm-lkf{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;}
+</style>
+<script id="nf-lx" src="assets/sc-linked-checks.047edf7bec.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Step 1 of CQI: Readiness week · graduation · close date · catch-up · NHSRC record · population · timeline compliance ══ -->
+<style id="nf-grad-css">
+.nfg-box{border:1px solid var(--br,#E5E7EB);background:var(--bgc,#fff);border-radius:16px;padding:12px 14px;margin:0 0 12px;}
+.nfg-box h4{margin:0 0 6px;font-size:13.5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;} .nfg-box h4 small{font-weight:600;color:var(--t3);font-size:11.5px;}
+.nfg-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;} .nfg-row:empty{display:none;}
+.nfg-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;border-radius:9px;padding:2px 8px;background:#F3F4F6;color:#374151;white-space:nowrap;}
+.nfg-chip.g{background:#DCFCE7;color:#166534;} .nfg-chip.a{background:#FEF3C7;color:#92400E;} .nfg-chip.r{background:#FEE2E2;color:#991B1B;} .nfg-chip.b{background:#E0F2FE;color:#075985;} .nfg-chip.p{background:#EDE9FE;color:#5B21B6;}
+.nfg-st{font-size:12px;font-weight:800;border-radius:10px;padding:3px 9px;} .nfg-st.g{background:#DCFCE7;color:#166534;} .nfg-st.a{background:#FEF3C7;color:#92400E;} .nfg-st.r{background:#FEE2E2;color:#991B1B;} .nfg-st.n{background:#F3F4F6;color:#4B5563;}
+.nfg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0;} .nfg-grid div{background:var(--bgs,#F9FAFB);border-radius:10px;padding:6px 8px;text-align:center;}
+.nfg-grid b{display:block;font-size:17px;} .nfg-grid small{font-size:10.5px;color:var(--t3);}
+.nfg-ms{font-size:12px;line-height:1.7;} .nfg-ms span{display:inline-block;min-width:16px;}
+.nfg-ppl{font-size:11.5px;color:var(--t2,#374151);margin-top:6px;} .nfg-ppl div{display:flex;justify-content:space-between;border-top:1px dashed var(--br,#E5E7EB);padding:3px 0;}
+.nfg-res{border-radius:14px;padding:12px;margin:6px 0;color:#fff;background:linear-gradient(135deg,#0F766E,#115E59);} .nfg-res.almost{background:linear-gradient(135deg,#B45309,#92400E);} .nfg-res.notyet,.nfg-res.incomplete{background:linear-gradient(135deg,#475569,#334155);}
+.nfg-res b{font-size:17px;display:block;} .nfg-res small{opacity:.9;font-size:12px;}
+.nfg-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;} .nfg-btns .scx-btn{padding:5px 10px;font-size:12px;}
+.nfg-note{font-size:11.5px;color:var(--t3);margin-top:4px;line-height:1.45;}
+.nfg-banner{border-radius:14px;padding:10px 12px;margin:10px 0;font-size:12.5px;line-height:1.45;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA;}
+.nfg-banner.g{background:#ECFDF5;color:#065F46;border-color:#A7F3D0;} .nfg-banner.b{background:#EFF6FF;color:#1E40AF;border-color:#BFDBFE;} .nfg-banner b{display:block;font-size:13.5px;margin-bottom:2px;}
+.nfg-banner button{margin-top:6px;}
+.master-fac-card .nfg-row{margin:6px 0 0;}
+</style>
+<script id="nf-grad" src="assets/sc-graduation.3110780067.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Step 2 of CQI: nightly facility summaries (server runs this app's own scoring) · light dashboards at scale · block · refresh ══ -->
+<script id="nf-sum" src="assets/sc-summary.0ba9eaf152.js" onerror="nfAssetFail(this)"></script>
+
+<!-- ══ Step 3 of CQI: Social impact — levels, stars, shareable card with QR, Verify page, partner strip ══ -->
+<link id="nf-imp-css" rel="stylesheet" href="assets/shared-impact.109d76a0dd.css" onerror="nfAssetFail(this)">
+<script id="nf-imp" src="assets/shared-impact.9f12aaeff6.js" onerror="nfAssetFail(this)"></script>
+
+<link id="nf-dash-css" rel="stylesheet" href="assets/shared-dashboards.c05c6b7e04.css" onerror="nfAssetFail(this)">
+<script id="nf-dash" src="assets/shared-dashboards.524d7561de.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-dept-css" rel="stylesheet" href="assets/dept-core.e9aa70d544.css" onerror="nfAssetFail(this)">
+<script id="nf-dept-plan" src="assets/dept-plan.0d8e8d2719.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept" src="assets/dept-core.fe4f23858b.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no
+// serviceWorker there), not on a page without the manifest. ?nosw skips it once; ?nosw=reset removes it and its caches.
+(function(){
+  try{
+    if(!('serviceWorker' in navigator)) return;
+    var q=location.search||'', h=location.hostname;
+    if(/[?&]nosw=reset\b/.test(q)){
+      navigator.serviceWorker.getRegistrations().then(function(rs){ rs.forEach(function(r){ r.unregister(); }); }).catch(function(){});
+      if(window.caches) caches.keys().then(function(ks){ ks.forEach(function(k){ if(/^nqf-/.test(k)) caches.delete(k); }); }).catch(function(){});
+      return;
+    }
+    if(/[?&]nosw\b/.test(q)) return;
+    if(!(location.protocol==='https:'||h==='localhost'||h==='127.0.0.1')) return;
+    if(!document.querySelector('link[rel="manifest"]')) return;
+    var go=function(){ navigator.serviceWorker.register('sw.js').catch(function(e){ console.warn('[PWA] service worker not registered:',e&&e.message); }); };
+    if(document.readyState==='complete') go(); else window.addEventListener('load',go);
+  }catch(e){}
+})();
+</script>
+
+</body>
+</html>
