@@ -19,7 +19,14 @@ var ND_PHASE = { baseline: 'Baseline', impl: 'Implementation', endline: 'End-lin
 var ND_METHOD = { SI: 'Staff interview', RR: 'Record review', OB: 'Observation', PI: 'Patient interview' };
 
 function ndEsc(s) { return typeof scEsc === 'function' ? scEsc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function ndToast(m, t) { try { showToast(m, t); } catch (e) {} }
+// own toast: the SC showToast lives in a Sub-Centre data file that a UPHC never loads
+var _ndToastT = null;
+function ndToast(m, t) {
+  var el = document.getElementById('toast');
+  if (!el) { try { if (typeof showToast === 'function') showToast(m, t); } catch (e) {} return; }
+  el.className = 'toast show' + (t ? ' ' + t : ''); el.textContent = String(m || '');
+  clearTimeout(_ndToastT); _ndToastT = setTimeout(function () { el.classList.remove('show'); }, 3200);
+}
 function ndMob() { return (typeof _nfAuth !== 'undefined' && _nfAuth && _nfAuth.claims && _nfAuth.claims.mob) || ''; }
 function ndPath(p) { return 'sc_dcards/' + _nd.code + (p ? '/' + p : ''); }
 
@@ -135,7 +142,7 @@ function ndTodayHTML() {
   if (!_nd.fac.startDate) return ndIsInCharge(me)
     ? '<div class="nd-card"><b>Set the programme start date</b><p>All departments start the baseline together on this date (Day 1).</p>' + ndStartForm() + '</div>'
     : '<div class="nd-card nd-empty"><i class="ti ti-clock"></i><b>The programme has not started yet</b><p>The ' + ndEsc(_nd.cfg.inChargeLabel) + ' sets the start date.</p></div>';
-  if (day < 1) return '<div class="nd-card nd-empty"><i class="ti ti-calendar"></i><b>Day 1 is ' + ndEsc(_nd.fac.startDate) + '</b><p>Your department cards appear on the start date.</p></div>';
+  if (day < 1) return '<div class="nd-card nd-empty"><i class="ti ti-calendar"></i><b>Day 1 is ' + ndEsc(ndDate(_nd.fac.startDate)) + '</b><p>Your department cards appear on the start date.</p></div>';
   if (day > _nd.cfg.days) return '<div class="nd-card nd-empty"><i class="ti ti-trophy"></i><b>The ' + _nd.cfg.days + '-day programme is complete</b><p>See Readiness for the result.</p></div>';
   var mine = ndMyDepts();
   if (!mine.length) return '<div class="nd-card nd-empty"><i class="ti ti-users"></i><b>No department yet</b><p>The ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you to a department team in Set-up.</p></div>';
@@ -393,6 +400,7 @@ function ndInboxHTML() {
 // ── actions: unmet checkpoint → Supervisor's action (how to fix · owner · due) → fixed → Supervisor closes ──
 function ndToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function ndAddDays(iso, n) { var d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function ndDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : (iso || ''); }   // 2026-10-23 → 23-10-2026
 function ndWeekEnd() { var d = new Date(), add = (7 - d.getDay()) % 7; return ndAddDays(ndToday(), add); }   // this Sunday
 // latest score and note per checkpoint (highest day wins), with the card it came from
 function ndLatestInfo() {
@@ -406,7 +414,7 @@ function ndActionRow(id) {
   var canFix = !_nd.view && a.status === 'open' && (a.owner === me || ndIsInCharge(me)), sup = _nd.view === 'sup';
   return '<div class="nd-cp nd-act"><div class="nd-cpt"><span class="nd-id">' + ndEsc(id) + ' · ' + ndEsc(ndDeptDef(a.dept).name) + '</span>' + ndEsc(ndCpText(id)) + '</div>'
     + '<div class="nd-how"><i class="ti ti-info-circle"></i><span>' + ndEsc(a.how) + '</span></div>'
-    + '<div class="nd-am"><span>' + ndEsc(ndName(a.owner)) + '</span><span class="' + (over ? 'over' : '') + '">due ' + ndEsc(a.due) + (over ? ' · overdue' : '') + '</span>'
+    + '<div class="nd-am"><span>' + ndEsc(ndName(a.owner)) + '</span><span class="' + (over ? 'over' : '') + '">due ' + ndEsc(ndDate(a.due)) + (over ? ' · overdue' : '') + '</span>'
     + '<span class="nd-st ' + (a.status === 'open' ? 'prog' : a.status === 'fixed' ? 'done' : 'ok') + '">' + (a.status === 'open' ? 'Open' : a.status === 'fixed' ? 'Fixed — Supervisor checks' : 'Closed') + '</span></div>'
     + (a.fixed ? '<div class="nd-dim">Fixed by ' + ndEsc(ndName(a.fixed.by)) + (a.fixed.note ? ': ' + ndEsc(a.fixed.note) : '') + '</div>' : '')
     + (canFix ? '<div class="nd-row" style="margin-top:8px"><button type="button" class="nd-btn" onclick="ndFixAction(\'' + id + '\')">Mark fixed</button></div>' : '')
@@ -420,7 +428,7 @@ function ndActionsHTML() {
   var byDue = function (a, b) { return String(A[a].due).localeCompare(String(A[b].due)); };
   var h = '<div class="nd-card nd-sum"><div><b>' + open.length + '</b><small>open</small></div><div><b>' + fixed.length + '</b><small>fixed · to check</small></div><div><b class="ok">' + closed.length + '</b><small>closed</small></div></div>';
   var week = open.filter(function (i) { return A[i].due <= wk; }).sort(byDue);
-  h += '<div class="nd-sec"><b>This week\'s action plan</b><small>due by ' + ndEsc(wk) + (week.filter(function (i) { return A[i].due < today; }).length ? ' · ' + week.filter(function (i) { return A[i].due < today; }).length + ' overdue' : '') + '</small></div>'
+  h += '<div class="nd-sec"><b>This week\'s action plan</b><small>due by ' + ndEsc(ndDate(wk)) + (week.filter(function (i) { return A[i].due < today; }).length ? ' · ' + week.filter(function (i) { return A[i].due < today; }).length + ' overdue' : '') + '</small></div>'
     + (week.length ? week.map(ndActionRow).join('') : '<div class="nd-card nd-dim">Nothing due this week.</div>');
   if (fixed.length) h += '<div class="nd-sec"><b>Fixed — ' + (sup ? 'check and close' : 'waiting for the Supervisor') + '</b><small>' + fixed.length + '</small></div>' + fixed.sort(byDue).map(ndActionRow).join('');
   var later = open.filter(function (i) { return A[i].due > wk; }).sort(byDue);
@@ -489,7 +497,7 @@ function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
   var pkg = prog ? String(prog.label).replace(/^[^—]*—\s*/, '').replace(/\s*\(\d+ days\)\s*$/, '') : (fac.progId || '—');
   var staffN = Object.keys(fac.staff || {}).filter(function (m) { return fac.staff[m] && !fac.staff[m].disabled; }).length;
   var day = fac.startDate ? nfDeptDayNo(fac.startDate) : null, days = LV.days || 60;
-  var when = !fac.startDate ? 'Start date not set' : day < 1 ? 'Starts ' + fac.startDate : day > days ? 'Programme complete' : 'Day ' + day + ' of ' + days;
+  var when = !fac.startDate ? 'Start date not set' : day < 1 ? 'Starts ' + ndDate(fac.startDate) : day > days ? 'Programme complete' : 'Day ' + day + ' of ' + days;
   var pct = day && day > 0 ? Math.min(100, Math.round(Math.min(day, days) / days * 100)) : 0;
   var chip = function (t, bg, fg) { return ' <span style="background:' + bg + ';color:' + fg + ';border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">' + t + '</span>'; };
   return '<div class="mfc-top"><div class="mfc-icon">🏥</div><div style="flex:1;min-width:0;">'
