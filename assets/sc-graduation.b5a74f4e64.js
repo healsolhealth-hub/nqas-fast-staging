@@ -323,7 +323,7 @@ function nfgProgHTML(st){
   scRenderMasterDashboard=function(){ var r=oM.apply(this,arguments);
     try{ var grid=document.getElementById('sc-master-grid'); if(!grid) return r; var rank={r:0,a:1,g:2,complete:3,notstarted:4}, cards=[];
       var byName={}; Object.keys(scMasterFacilities||{}).forEach(function(c){ var f=scMasterFacilities[c]; byName[((f&&f.name)||c).trim()]=c; });
-      [].slice.call(grid.querySelectorAll('.master-fac-card')).forEach(function(card){ if(card.querySelector('.nfg-row')) return; var m=/scDrillIn\('([^']+)'\)/.exec(card.outerHTML), nm=card.querySelector('.mfc-name');
+      [].slice.call(grid.querySelectorAll('.master-fac-card')).forEach(function(card){ if(card.querySelector('.nfg-row')||card.classList.contains('nf-dept-fac')) return; var m=/scDrillIn\('([^']+)'\)/.exec(card.outerHTML), nm=card.querySelector('.mfc-name');
         var code=m?m[1]:nm?byName[String((nm.childNodes[0]||{}).textContent||'').trim()]:null; if(!code) return;
         var f=(scMasterFacilities||{})[code]||{}, c=(typeof nfgCompFor==='function')?nfgCompFor(code,f,(scMasterProgress||{})[code],null):nfgComp({code:code,fac:f,staff:f.staff||{},progress:(scMasterProgress||{})[code]||{},progId:f.progId||'nqas_12A'});
         var chips=nfgChipsHTML(f,c), pop=nfgPopLine(f); if(pop) chips+='<span class="nfg-chip">👪 '+scEsc(pop)+'</span>';

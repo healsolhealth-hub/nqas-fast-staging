@@ -221,6 +221,7 @@ async function ndSaveStart() {
 function ndSetupHTML() {
   var staff = ndStaff(), mobs = Object.keys(staff).sort(function (a, b) { return String(staff[a].name || '').localeCompare(String(staff[b].name || '')); });
   var h = '<div class="nd-sec"><b>Programme start date</b><small>One date for all departments</small></div><div class="nd-card">' + ndStartForm() + '</div>'
+    + ndStaffHTML()
     + '<div class="nd-sec"><b>Departments</b><small>Lead verifies the daily card · team fills it</small></div>';
   (_nd.cfg.departments || []).forEach(function (d) {
     var set = ndDeptSet(d.id), team = set.team || {};
@@ -240,6 +241,84 @@ async function ndSaveDept(id) {
   catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
 }
 
+// ── staff (in-charge): add, reset password, remove — through the server (createAccount / resetPassword / removeStaff) ──
+function ndStaffRoles() { return (_nd.cfg.roles || []).filter(function (r) { return r.id !== _nd.cfg.inCharge; }); }
+function ndStaffHTML() {
+  var staff = ndStaff(), me = ndMob(), mobs = Object.keys(staff).sort(function (a, b) { return String(staff[a].name || '').localeCompare(String(staff[b].name || '')); });
+  var h = '<div class="nd-sec"><b>Staff</b><small>' + mobs.length + ' · each gets their own login</small></div><div class="nd-card nd-staff">';
+  mobs.forEach(function (m) {
+    var st = staff[m], ic = ndIsInCharge(m);
+    h += '<div class="nd-srow"><span class="nd-dn"><b>' + ndEsc(st.name || m) + '</b><small>' + ndEsc(ndRoleLabel(st.role || _nd.cfg.inCharge)) + ' · ' + ndEsc(m) + '</small></span>'
+      + (ic || m === me ? '' : '<button type="button" class="nd-ib2" title="Reset password" aria-label="Reset password" onclick="ndResetStaff(\'' + m + '\')"><i class="ti ti-key"></i></button>'
+        + '<button type="button" class="nd-ib2 red" title="Remove" aria-label="Remove" onclick="ndRemoveStaff(\'' + m + '\')"><i class="ti ti-trash"></i></button>') + '</div>';
+  });
+  h += '<details class="nd-add" id="nd-add"><summary class="nd-btn ghost"><i class="ti ti-user-plus"></i> Add staff</summary>'
+    + '<label class="nd-lbl">Role<select class="nd-in" id="nd-add-role">' + ndStaffRoles().map(function (r) { return '<option value="' + ndEsc(r.id) + '">' + ndEsc(r.label) + '</option>'; }).join('') + '</select></label>'
+    + '<label class="nd-lbl">Full name<input class="nd-in" id="nd-add-name" maxlength="60" autocomplete="off"></label>'
+    + '<label class="nd-lbl">Mobile number (their login ID)<input class="nd-in" id="nd-add-mob" inputmode="numeric" maxlength="10" autocomplete="off"></label>'
+    + '<div class="nd-err" id="nd-add-err" role="alert"></div>'
+    + '<button type="button" class="nd-btn" id="nd-add-go" onclick="ndAddStaff()">Add and get login</button>'
+    + '<p class="nd-dim">They are put on their usual departments automatically; change it below under Departments.</p></details></div>';
+  return h;
+}
+// a new person joins the departments their role usually works on, and leads a department whose usual lead role is theirs
+// while it is still led by the in-charge (the default when nobody of that role existed yet)
+function ndJoinDefaults(mob, role) {
+  var out = {};
+  (_nd.cfg.departments || []).forEach(function (d) {
+    var cur = ndDeptSet(d.id), rec = { lead: cur.lead || null, team: Object.assign({}, cur.team || {}), off: cur.off || null }, ch = false;
+    if (((_nd.cfg.defaultTeams || {})[role] || []).indexOf(d.id) >= 0 && !rec.team[mob]) { rec.team[mob] = true; ch = true; }
+    if (d.lead === role && (!rec.lead || ndIsInCharge(rec.lead))) { rec.lead = mob; ch = true; }
+    if (ch) out[d.id] = rec;
+  });
+  return out;
+}
+// someone leaves: off every team; a department they led goes back to the in-charge
+function ndLeaveDepts(mob) {
+  var out = {}, ic = Object.keys(ndStaff()).find(function (m) { return ndIsInCharge(m); }) || null;
+  (_nd.cfg.departments || []).forEach(function (d) {
+    var cur = ndDeptSet(d.id); if (!(cur.team || {})[mob] && cur.lead !== mob) return;
+    var rec = { lead: cur.lead === mob ? ic : (cur.lead || null), team: Object.assign({}, cur.team || {}), off: cur.off || null }; delete rec.team[mob]; out[d.id] = rec;
+  });
+  return out;
+}
+async function ndSaveDepts(map) {
+  var ids = Object.keys(map); if (!ids.length) return;
+  var up = {}; ids.forEach(function (id) { up[id] = map[id]; });
+  await db.ref(scFacilityPath(_nd.code) + '/depts').update(up);
+  _nd.fac.depts = _nd.fac.depts || {}; ids.forEach(function (id) { _nd.fac.depts[id] = map[id]; });
+}
+async function ndAddStaff() {
+  var g = function (id) { return ((document.getElementById(id) || {}).value || '').trim(); }, err = document.getElementById('nd-add-err'), btn = document.getElementById('nd-add-go');
+  var bad = function (m) { if (err) { err.textContent = m; err.style.display = 'block'; } };
+  var role = g('nd-add-role'), name = g('nd-add-name'), mob = g('nd-add-mob').replace(/\D/g, '');
+  if (!name) return bad('Name is required.'); if (!/^\d{10}$/.test(mob)) return bad('Enter a valid 10-digit mobile number.');
+  if (ndStaff()[mob]) return bad('This mobile number is already on the staff list.');
+  if (btn) btn.disabled = true;
+  try {
+    var r = await nfCall('createAccount', { kind: 'staff', code: _nd.code, role: role, mobile: mob, name: name });
+    _nd.fac.staff = _nd.fac.staff || {}; _nd.fac.staff[mob] = { name: name, mobile: mob, role: role };
+    try { await ndSaveDepts(ndJoinDefaults(mob, role)); } catch (e) { console.warn('[dept] departments not updated', e); ndToast('Added — set their departments below.', 'err'); }
+    ndRender(); nfShowTempPassword(name, r.identifier, r.tempPassword, name + ' added');
+  } catch (e) { bad(nfErrText(e)); if (btn) btn.disabled = false; }
+}
+async function ndResetStaff(mob) {
+  var nm = ndName(mob);
+  if (!(await showConfirm('Give ' + nm + ' a new temporary password? They will be signed out and choose a new password at their next login.', '🔑', 'Reset password', 'Reset', 'var(--teal)'))) return;
+  try { var r = await nfCall('resetPassword', { identifier: mob, code: _nd.code }); nfShowTempPassword(nm, r.identifier, r.tempPassword, 'Password reset'); } catch (e) { ndToast(nfErrText(e), 'err'); }
+}
+async function ndRemoveStaff(mob) {
+  var nm = ndName(mob);
+  if (!(await showConfirm('Remove ' + nm + '? Their work so far is kept; they can no longer log in to this UPHC. Departments they led go back to you.', '🗑️', 'Remove staff', 'Remove', 'var(--red-dk)'))) return;
+  var move = ndLeaveDepts(mob);
+  try {
+    await nfCall('removeStaff', { code: _nd.code, mobile: mob });
+    try { await ndSaveDepts(move); } catch (e) { console.warn('[dept] departments not updated', e); }
+    if (_nd.fac.staff && _nd.fac.staff[mob]) _nd.fac.staff[mob].disabled = true;
+    ndToast(nm + ' removed.', 'ok'); ndRender();
+  } catch (e) { ndToast(nfErrText(e), 'err'); }
+}
+
 // ── me ──
 function ndMeHTML() {
   var me = ndMob(), st = ndStaff()[me] || {};
@@ -247,6 +326,27 @@ function ndMeHTML() {
     + '<p class="nd-dim">My departments: ' + (ndMyDepts().map(function (d) { return ndEsc(d.name); }).join(', ') || '—') + '</p></div>'
     + '<div class="nd-card nd-rows"><button type="button" onclick="nfChangeMyPassword()"><i class="ti ti-key"></i>Change my password</button>'
     + '<button type="button" onclick="ndLogout()"><i class="ti ti-logout"></i>Logout</button></div>';
+}
+
+// ── HealSol / Supervisor facility list: card for a department-core facility (UPHC …) — no Sub-Centre figures ──
+function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
+  var e = ndEsc, prog = (LV.programmes || []).find(function (p) { return p.id === fac.progId; });
+  var pkg = prog ? String(prog.label).replace(/^[^—]*—\s*/, '').replace(/\s*\(\d+ days\)\s*$/, '') : (fac.progId || '—');
+  var staffN = Object.keys(fac.staff || {}).filter(function (m) { return fac.staff[m] && !fac.staff[m].disabled; }).length;
+  var day = fac.startDate ? nfDeptDayNo(fac.startDate) : null, days = LV.days || 60;
+  var when = !fac.startDate ? 'Start date not set' : day < 1 ? 'Starts ' + fac.startDate : day > days ? 'Programme complete' : 'Day ' + day + ' of ' + days;
+  var pct = day && day > 0 ? Math.min(100, Math.round(Math.min(day, days) / days * 100)) : 0;
+  var chip = function (t, bg, fg) { return ' <span style="background:' + bg + ';color:' + fg + ';border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">' + t + '</span>'; };
+  return '<div class="mfc-top"><div class="mfc-icon">🏥</div><div style="flex:1;min-width:0;">'
+    + '<div class="mfc-name">' + e(fac.name || code) + chip(e(LV.short || LV.name), '#E6F2EF', '#1E6B5E')
+    + (fac.suspended ? chip('Suspended', '#FEF3C7', '#92400E') : '')
+    + (fac.isDemo ? chip(fac.subscriptionStatus === 'paid' ? 'SELF-REGISTERED · PAID' : 'FREE TRIAL', '#DBEAFE', '#1D4ED8') : fac.subscriptionStatus === 'contract' ? chip('Contract', '#EDE9FE', '#6D28D9') : '') + '</div>'
+    + '<div class="mfc-loc">' + e([fac.district, fac.state].filter(Boolean).join(', ') || '—') + '</div>'
+    + '<div style="font-size:9px;color:var(--teal);font-weight:700;margin-top:1px;">📋 ' + e(pkg) + ' · 👥 ' + staffN + ' staff</div>'
+    + '</div><div class="mfc-pct" style="color:var(--teal);font-size:12px;">' + e(when.replace(/ of \d+$/, '')) + '</div></div>'
+    + '<div style="height:6px;border-radius:10px;background:var(--br);margin:7px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:' + pct + '%;background:var(--teal);"></div></div>'
+    + '<div class="mfc-meta"><span>' + e(when) + '</span><span>' + e(LV.inChargeLabel || LV.inCharge) + ': ' + e(fac.choName || 'Not set') + '</span></div>'
+    + '<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">' + (adminBtns || '') + '</div>';
 }
 
 nfRegisterCore('dept', { open: { staff: ndOpen } });

@@ -6,13 +6,13 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "f514b7e3a868";
+const BUILD = "b61d305d71f0";
 const ASSETS = [
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.84b54839e3.js",
  "assets/data-sc-how-to-fix.370427c0e7.js",
- "assets/dept-core.e9aa70d544.css",
- "assets/dept-core.fe4f23858b.js",
+ "assets/dept-core.7d8349d0c7.js",
+ "assets/dept-core.d77a683483.css",
  "assets/dept-plan.0d8e8d2719.js",
  "assets/sc-baseline-review.9bd6ffb924.js",
  "assets/sc-baseline-review.cba584c030.css",
@@ -33,7 +33,7 @@ const ASSETS = [
  "assets/sc-fadm.1fb01e6ce7.css",
  "assets/sc-fadm.90548a4c15.js",
  "assets/sc-gaps.df1042b0ae.js",
- "assets/sc-graduation.3110780067.js",
+ "assets/sc-graduation.b5a74f4e64.js",
  "assets/sc-healsol-view.3fbb05a162.js",
  "assets/sc-hierarchy.4d51074fef.js",
  "assets/sc-how-to-fix.7dbba620cc.js",
@@ -47,14 +47,14 @@ const ASSETS = [
  "assets/sc-phases.07a2a34a96.css",
  "assets/sc-phases.e63ef7115d.js",
  "assets/sc-plan-wa.4a4291bea8.js",
- "assets/sc-prep-lists.2f422a93fa.js",
+ "assets/sc-prep-lists.f9d5a7baea.js",
  "assets/sc-readiness.6cf4731cfe.js",
  "assets/sc-review-inbox.d5525ac076.js",
  "assets/sc-review.54a1bc1306.js",
  "assets/sc-staff-app.1f975b2968.js",
  "assets/sc-staff-app.e0189e484b.css",
  "assets/sc-summary.0ba9eaf152.js",
- "assets/sc-v2-core.1f19854840.js",
+ "assets/sc-v2-core.a78a0c658f.js",
  "assets/sc-v2.6b52c20961.css",
  "assets/sc-week-plan.126d067680.js",
  "assets/shared-base.e513cad502.css",
@@ -78,7 +78,7 @@ const ASSETS = [
  "assets/shared-registration.6833f0a40c.js",
  "assets/shared-secure.8f3346d9b1.js",
  "assets/shared-whatsapp.a3bc984eb3.js",
- "assets/types-settings.c3dfc7b194.js",
+ "assets/types-settings.f8826058db.js",
  "assets/vendor-pdf-fonts.d24cedb333.js",
  "assets/vendor-poppins-font.7a4a5ae076.css",
  "assets/vendor-qrcode.fabb956c75.js",

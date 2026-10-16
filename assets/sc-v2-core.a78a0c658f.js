@@ -1436,6 +1436,8 @@ function scRenderMasterDashboard(){
       +'<button class="mfc-btn" title="'+(fac.suspended?'Reactivate':'Suspend')+'" onclick="scSuspendFacility(\''+C+'\')" style="border-color:'+(fac.suspended?'var(--green)':'var(--amber)')+';color:'+(fac.suspended?'var(--green-dk)':'var(--amber-dk)')+';">'
         +(fac.suspended?'<i class="ti ti-player-play" style="font-size:11px;"></i>':'<i class="ti ti-player-pause" style="font-size:11px;"></i>')+'</button>'
       +'<button class="mfc-btn" title="Cancel" onclick="scCancelFacility(\''+C+'\')" style="border-color:var(--red);color:var(--red-dk);"><i class="ti ti-trash" style="font-size:11px;"></i></button>');
+    var LVF=(typeof nfTypeOf==='function'&&typeof NF_LEVELS!=='undefined')?NF_LEVELS[nfTypeOf(fac)]:null;
+    if(LVF&&LVF.core!=='sc'&&typeof nfDeptFacCardHTML==='function'){ card.className+=' nf-dept-fac'; card.innerHTML=nfDeptFacCardHTML(code,fac,LVF,adminBtns); grid.appendChild(card); return; }
     card.innerHTML='<div class="mfc-top"><div class="mfc-icon">🏥</div><div style="flex:1;min-width:0;">'
       +'<div class="mfc-name">'+scEsc(fac.name||code)
       +(fac.suspended?' <span style="background:#FEF3C7;color:#92400E;border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">Suspended</span>':'')

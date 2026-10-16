@@ -60,3 +60,14 @@ body.nd-on > *:not(#nf-dept-app):not(.scx-ov):not(#nf-toast):not([id$="-ov"]):no
 #nf-dept-app .nd-team{max-height:260px;overflow:auto;margin-bottom:12px;}
 #nf-dept-app .nd-rows button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;font:600 14px inherit;padding:12px 4px;border-bottom:1px solid #F1F5F9;cursor:pointer;color:inherit;}
 #nf-dept-app .nd-rows button:last-child{border-bottom:0;}
+#nf-dept-app .nd-srow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #F1F5F9;}
+#nf-dept-app .nd-srow:last-of-type{border-bottom:0;}
+#nf-dept-app .nd-ib2{flex:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--br,#E2E8F0);background:#fff;color:var(--teal,#1E6B5E);cursor:pointer;font-size:16px;}
+#nf-dept-app .nd-ib2.red{color:#B91C1C;}
+#nf-dept-app .nd-add{margin-top:10px;} #nf-dept-app .nd-add summary{list-style:none;display:inline-flex;align-items:center;gap:6px;}
+#nf-dept-app .nd-add summary::-webkit-details-marker{display:none;} #nf-dept-app .nd-add[open] summary{margin-bottom:4px;}
+#nf-dept-app .nd-add .nd-btn:not(summary){margin-top:12px;width:100%;}
+#nf-dept-app .nd-err{display:none;background:#FEE2E2;color:#991B1B;border-radius:10px;padding:8px 10px;font-size:12.5px;margin-top:10px;}
+/* staging ribbon sits at the very bottom: lift the bottom bars above it */
+body.nf-stage #nf-dept-app .nd-nav,body.nf-stage #nf-dept-app .nd-ft{bottom:22px;}
+body.nf-stage #nf-dept-app{padding-bottom:110px;}

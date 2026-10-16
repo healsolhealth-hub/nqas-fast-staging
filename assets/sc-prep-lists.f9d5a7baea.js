@@ -401,6 +401,7 @@ function scGapWhoHTML(g){
       codes.forEach(function(c){ var f=scMasterFacilities[c]; byName[(f&&f.name)||c]=c; });
       var avgN=0,avgS=0,pk={};
       document.querySelectorAll('#sc-master-grid .master-fac-card, .master-fac-card').forEach(function(card){
+        if(card.classList.contains('nf-dept-fac')) return;
         var nm=card.querySelector('.mfc-name'); if(!nm) return; var name=(nm.childNodes[0]||{}).textContent||'';
         var code=byName[name.trim()]; if(!code) return; var a=scFacAggFor(code), f=scMasterFacilities[code]||{};
         if(a.coverage.assessed){ avgN++; avgS+=a.pct; }

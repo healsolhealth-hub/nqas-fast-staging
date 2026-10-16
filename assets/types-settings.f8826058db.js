@@ -44,7 +44,7 @@ if(NF_STAGE) NF_APP.appCheckKey='';   // staging runs without App Check (its fun
 if(NF_STAGE) document.addEventListener('DOMContentLoaded',function(){ try{ var r=document.createElement('div'); r.id='nf-stage-ribbon';
   r.textContent='TEST SITE · staging data (healsol-nqas-uphc) — not the live app';
   r.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483000;background:#B91C1C;color:#fff;font:700 11px/1.6 system-ui,sans-serif;text-align:center;padding:2px 6px;pointer-events:none;opacity:.92';
-  document.body.appendChild(r); document.title='[TEST] '+document.title; }catch(e){} });
+  document.body.appendChild(r); document.body.classList.add('nf-stage'); document.title='[TEST] '+document.title; }catch(e){} });
 var NF_LEVELS={
   sc:{
     id:'sc', core:'sc', ready:true,
