@@ -454,7 +454,7 @@ function ndMeHTML() {
   h += '<div class="nx-card" style="flex-direction:row;align-items:center;gap:12px"><i class="ti ti-message" style="width:40px;height:40px;border-radius:12px;background:#DCFCE7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none"></i><span style="flex:1;display:flex;flex-direction:column"><b style="font-size:13.5px">Need help?</b><small class="nx-dim">' + (help ? 'WhatsApp HealSol support' : 'Ask your ' + ndEsc(_nd.cfg.inChargeLabel) + ' or HealSol Academy') + '</small></span>' + help + '</div>';
   var mi = function (icon, t, js, em, cls) { return '<button type="button" class="nx-mi' + (cls ? ' ' + cls : '') + '" onclick="' + js + '"><i class="ti ' + icon + '"></i><span>' + t + '</span>' + (em ? '<em>' + em + '</em>' : '') + '</button>'; };
   var nCheck = ndChecksDue(me).length, nLead = ndEscItems(me).length + ndUnassigned(me).length;
-  h += '<div class="nx-card nx-menu">' + mi('ti-language', 'Language · English <small class="nx-dim">(हिंदी coming soon)</small>', "ndToast('Hindi is coming soon for this app.','ok')")
+  h += '<div class="nx-card nx-menu">' + (ndFaCan(me) ? mi('ti-layout-dashboard', 'Facility dashboard', 'ndFaOpen()') : '') + mi('ti-language', 'Language · English <small class="nx-dim">(हिंदी coming soon)</small>', "ndToast('Hindi is coming soon for this app.','ok')")
     + mi('ti-layout-dashboard', 'Department dashboard', "_nd.ptab='dept';ndTab('ready')")
     + (nxIsChecker(me) ? mi('ti-list-check', 'Cards to compare', 'nxOpenFirstCheck()', nCheck || '') : '')
     + (nxLeads(me).length ? mi('ti-checklist', 'Decide &amp; assign', 'ndLeadOpen()', nLead || '') : '')
@@ -695,4 +695,118 @@ function ndNavHTML() {
 function ndFab() {
   var me = ndMob(), day = ndDay(); if (!_nd.fac.startDate || day < 1) { ndTab('today'); return; }
   var t = ndTodo(me); if (t.fill.length) ndGoCard(t.fill[0].id, day); else if (t.late.length) ndGoCard(t.late[0].dept, t.late[0].day); else { _nd.cday = Math.min(day, _nd.cfg.days); ndTab('cards'); }
+}
+
+// ═══ FACILITY DASHBOARD (UPHC Coordinator · MO in-charge) — own header and menu like the SC facility dashboard ═══
+//   Header: Day n of 60 · Facility dashboard · name · package · refresh · "My cards" (their own staff screens).
+//   Tabs: Home (readiness, needs your attention, quick actions, departments today) · Staff · Readiness · More.
+function ndFaOn() { return !!_nd && !_nd.view && !!_nd.fa; }
+function ndFaCan(mob) { return ndIsInCharge(mob) || ndSeesAll(mob); }
+function ndFaOpen(t) { _nd.fa = true; _nd.fatab = t || _nd.fatab || 'home'; _nd.card = null; _nd.screen = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndFaTab(t) { _nd.fatab = t; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndMyCards() { _nd.fa = false; _nd.tab = 'today'; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function nxFaItems() {
+  var me = ndMob(), day = ndDay(), n = _nd.cfg.days, out = [], A = _nd.actions || {}, staff = ndStaff();
+  if (!_nd.fac.startDate) return out;   // the start date form is in the hero
+  var others = Object.keys(staff).filter(function (m) { return m !== me; });
+  if (others.length < 3) out.push({ ic: 'ti-user-plus', cls: 'a', t: 'Add your staff', s: 'Add the MO, Staff Nurse, ANM, LHV, Pharmacist, Lab Technician, USHAs …', go: "ndFaTab('staff')" });
+  var chk = ndChecksDue(me);   // my comparisons and spot-checks, and anyone's that is over 24 h late
+  chk.slice(0, 4).forEach(function (x) { var inn = ndCardsIn(x.dept, x.day), mine = ndChecker(x.dept) === me;
+    out.push({ ic: x.solo ? 'ti-eye' : 'ti-list-check', cls: x.late ? 'r' : 'a', t: (x.solo ? 'Spot-check · ' : 'Compare the cards · ') + ndDeptDef(x.dept).name, s: 'Day ' + x.day + ' · ' + (x.solo ? 'one person fills' : inn.done.length + ' of ' + inn.fillers.length + ' sent') + (x.late ? ' · late' + (mine ? '' : ' — ' + nxFirst(ndChecker(x.dept)) + ' has not compared') : ''), go: "ndOpenDept('" + x.dept + "'," + x.day + ")" }); });
+  if (chk.length > 4) out.push({ ic: 'ti-list-check', cls: 'a', t: (chk.length - 4) + ' more to compare', s: 'Open them from Cards', go: 'nxOpenFirstCheck()' });
+  var esc = ndEscItems(me), un = ndUnassigned(me);
+  if (esc.length || un.length) out.push({ ic: 'ti-checklist', cls: esc.some(function (x) { return x.late; }) ? 'r' : 'a', t: 'Decide & assign', s: [esc.length ? esc.length + ' to decide' : '', un.length ? un.length + ' action' + (un.length > 1 ? 's' : '') + ' to assign' : ''].filter(Boolean).join(' · '), go: 'ndLeadOpen()' });
+  var over = Object.keys(A).filter(function (id) { var a = A[id]; return a.status === 'open' && ndHours(a.due + 'T23:59:59') > ND_ACTION_LATE_D * 24; });
+  if (over.length) out.push({ ic: 'ti-alert-triangle', cls: 'r', t: over.length + ' action' + (over.length > 1 ? 's' : '') + ' overdue', s: 'Past the due date by ' + ND_ACTION_LATE_D + '+ days — remind the owners', go: "ndLeadOpen('plan')" });
+  var sup = Object.keys(A).filter(function (id) { return A[id].status === 'sup'; }).length;
+  if (sup) out.push({ ic: 'ti-tools', cls: 'v', t: sup + ' with the Facility Supervisor', s: 'Still unmet after the action — waiting for a how-to-fix', go: "ndLeadOpen('plan')" });
+  if (day >= 2) { var idle = Object.keys(staff).filter(function (m) { if (m === me) return false; var any = false, mine = false; ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, m)) return; mine = true; var days = _nd.pcards[d.id] || {}; Object.keys(days).forEach(function (k) { if ((days[k][m] || {}).done) any = true; }); }); return mine && !any; });
+    if (idle.length) out.push({ ic: 'ti-user-question', cls: 'a', t: idle.length === 1 ? ndName(idle[0]) + ' has not completed any card yet' : idle.length + ' staff have not completed any card yet', s: idle.length === 1 ? 'Day ' + Math.min(day, n) + ' of the programme' : idle.map(nxFirst).slice(0, 5).join(', '), go: "ndFaTab('staff')" }); }
+  return out;
+}
+function nxFaCount() { try { return nxFaItems().filter(function (x) { return x.cls === 'r'; }).length; } catch (e) { return 0; } }
+function ndFaHTML() {
+  var t = _nd.fatab || 'home', day = ndDay(), n = _nd.cfg.days, pk = nxPkg();
+  var hd = '<div class="nx-fa-hd"><div class="nx-fa-hd-in"><div><small>' + (_nd.fac.startDate && day >= 1 ? 'Day ' + Math.min(day, n) + ' of ' + n + ' · ' : '') + 'Facility dashboard</small>'
+    + '<h1><span>' + ndEsc(_nd.fac.name || _nd.code) + '</span>' + (pk ? '<span class="nx-pk"><b>' + ndEsc(_nd.cfg.short || 'UPHC') + '</b><span>' + pk + '</span></span>' : '') + '</h1></div>'
+    + '<span class="nd-qb" id="nd-q" hidden></span><button type="button" class="nx-ib nd-rf" aria-label="Refresh" title="Refresh" onclick="ndReload()"><i class="ti ti-refresh"></i></button>'
+    + '<button type="button" class="nx-mc" onclick="ndMyCards()"><i class="ti ti-cards"></i><span>My cards</span></button></div></div>';
+  var body = t === 'staff' ? nxFaStaffHTML() : t === 'ready' ? nxFaReadyHTML() : t === 'more' ? nxFaMoreHTML() : nxFaHomeHTML();
+  var c = nxFaCount(), b = function (k, icon, label, em) { return '<button type="button" class="' + (t === k ? 'on' : '') + '" onclick="ndFaTab(\'' + k + '\')"><i class="ti ' + icon + '"></i>' + label + (em ? '<em>' + em + '</em>' : '') + '</button>'; };
+  return hd + '<div class="nx">' + body + '</div><nav class="nx-nav">' + b('home', 'ti-home', 'Home', c || '') + b('staff', 'ti-users', 'Staff') + b('ready', 'ti-chart-bar', 'Readiness') + b('more', 'ti-settings', 'More') + '</nav>';
+}
+function nxFaHomeHTML() {
+  var day = ndDay(), n = _nd.cfg.days, all = ndDeptDefs().map(function (d) { return d.id; });
+  var R = nxReady(all), B = nxReady(all, 7), cur = R.overall, gain = day > 7 && B.overall !== null && cur !== null ? cur - B.overall : null;
+  var ph = !_nd.fac.startDate ? 'Not started' : day < 1 ? 'Starts ' + nxLongDate(_nd.fac.startDate) : day > n ? 'Programme complete' : ndWeekLabel(day);
+  var nq = R.n === 0 ? 'Readiness appears once staff mark day cards as done.' : R.meets ? '<b>✓ Meets NQAS criteria</b> — overall ' + cur + '%' : '<b>Not yet at NQAS criteria</b> — overall ' + (cur === null ? '–' : cur + '%') + ' (needs ' + ((_nd.cfg.passMark || {}).overall || 70) + '% overall, in each department and each Area of Concern)';
+  var h = '<div class="nx-hero"><div class="nx-hero-row"><div class="nx-hero-txt"><div class="nx-hero-k">Facility readiness</div><div class="nx-hero-t" style="font-size:18px">' + ndEsc(ph) + '</div>'
+    + '<div class="nx-hero-k">' + (_nd.fac.startDate && day >= 1 ? 'Day ' + Math.min(day, n) + ' of ' + n : _nd.fac.startDate ? '' : 'Start date not set') + '</div></div>'
+    + '<div class="nx-ring">' + nxRing(cur || 0, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + (cur === null ? '–' : cur + '%') + '</b><small>readiness</small></span></div></div>'
+    + '<div class="nx-hero-n"><div><b class="acc">' + (B.overall === null ? '–' : B.overall + '%') + '</b><small>Baseline</small></div><i></i><div><b>' + (gain === null ? '–' : (gain >= 0 ? '+' : '') + gain) + '</b><small>Growth</small></div><i></i><div><b>' + R.n + '<small style="font-size:13px;opacity:.8">/' + R.of + '</small></b><small>Checkpoints</small></div></div>'
+    + '<div class="nx-fa-nq">' + nq + '</div>'
+    + (_nd.fac.startDate ? '<button type="button" class="nx-cta" onclick="ndFaTab(\'ready\')">Open readiness</button>' : '<div class="nx-card" style="color:#0F172A"><b>Set the programme start date</b><span class="nx-dim">All departments start the baseline together on this date (Day 1).</span>' + ndStartForm() + '</div>') + '</div>';
+  var items = nxFaItems();
+  h += '<div class="nx-sec"><b>Needs your attention</b>' + (items.length ? '<span class="nx-dim">' + items.length + '</span>' : '') + '</div>';
+  h += items.length ? '<div class="nx-card p0 nx-list">' + items.map(function (x) { return nxLi(x.ic, x.cls === 'v' ? 'b' : x.cls, x.t, x.s, x.go); }).join('') + '</div>'
+    : '<div class="nx-card"><div class="nx-empty"><i class="ti ti-circle-check"></i><b>All clear</b><br>Nothing needs your attention right now.</div></div>';
+  h += '<div class="nx-sec"><b>Quick actions</b></div><div class="nx-fa-qa"><button type="button" onclick="ndFaTab(\'staff\');setTimeout(function(){var d=document.getElementById(\'nd-add\');if(d){d.open=true;d.scrollIntoView({block:\'center\'});}},80)"><i class="ti ti-user-plus"></i>Add staff</button>'
+    + '<button type="button" onclick="ndLeadOpen(\'plan\')"><i class="ti ti-checklist"></i>Action plan</button><button type="button" onclick="ndFaTab(\'more\')"><i class="ti ti-send"></i>Reminders</button></div>';
+  if (_nd.fac.startDate && day >= 1) h += nxDeptListHTML();
+  return h;
+}
+function nxFaStaffHTML() {
+  var staff = ndStaff(), me = ndMob(), day = Math.min(ndDay(), _nd.cfg.days), roles = (_nd.cfg.roles || []).map(function (r) { return r.id; });
+  var mobs = Object.keys(staff).sort(function (a, b) { var ra = roles.indexOf(ndRole(a)), rb = roles.indexOf(ndRole(b)); return (ra - rb) || String(staff[a].name || '').localeCompare(String(staff[b].name || '')); });
+  var have = {}; mobs.forEach(function (m) { have[ndRole(m)] = 1; });
+  var miss = (_nd.cfg.roles || []).filter(function (r) { return !have[r.id] && r.id !== 'MO'; }).map(function (r) { return r.label; });
+  var h = '<div class="nx-sec"><b>Staff</b><span class="nx-dim">' + mobs.length + ' ' + (mobs.length === 1 ? 'person' : 'people') + '</span></div>' + (miss.length ? '<div class="nx-dim">Not added yet: ' + ndEsc(miss.join(' · ')) + '</div>' : '');
+  h += '<div class="nx-card p0">' + mobs.map(function (m) {
+    var st = staff[m], due = 0, done = 0, lead = [], fill = [];
+    ndDeptDefs().forEach(function (d) { if (ndLead(d.id) === m) lead.push(d.id); else if (ndChecker(d.id) === m) lead.push(d.id + ' (compares)'); if (!ndFills(d.id, m)) return; fill.push(d.id);
+      for (var k = 1; k <= day; k++) { if (!ndDayInfo(d.id, k).ids.length) continue; due++; var c = ndPc(d.id, k)[m] || {}; if (c.done || c.absent) done++; } });
+    var pct = due ? Math.round(100 * done / due) : null, ic = ndIsInCharge(m), you = m === me;
+    return '<details class="nx-fa-p"><summary><span class="nx-av" style="width:42px;height:42px;font-size:16px">' + ndEsc(String(st.name || m).charAt(0).toUpperCase()) + '</span><span class="nx-fa-pb"><b>' + ndEsc(st.name || m) + '</b>'
+      + '<small><span class="nx-chip t" style="font-size:10.5px;padding:1px 7px">' + ndEsc(ndRoleLabel(ndRole(m))) + '</span>' + (you ? '<span class="nx-chip o" style="font-size:10.5px;padding:1px 7px">you</span>' : '') + ' ' + ndEsc(m) + '</small>'
+      + (fill.length ? '<span class="nx-fa-pg"><span class="nx-bar" style="background:#E6F2EF"><span style="width:' + (pct || 0) + '%;background:#1E6B5E"></span></span><small>' + done + ' of ' + due + ' cards in' + (pct !== null ? ' · ' + pct + '%' : '') + '</small></span>' : '')
+      + '<small>' + ndEsc((fill.length ? 'Fills: ' + fill.join(', ') : '') + (fill.length && lead.length ? ' · ' : '') + (lead.length ? 'Leads: ' + lead.join(', ') : '') || 'No department yet') + '</small></span><i class="ti ti-dots-vertical" style="color:#94A3B8"></i></summary>'
+      + (ic || you ? '<div class="nx-dim" style="padding:0 0 10px 54px">The ' + ndEsc(_nd.cfg.inChargeLabel) + '\'s own login is managed by HealSol.</div>' : '<div class="nx-two" style="padding:0 0 12px 54px"><button type="button" class="nx-btn sm ghost" onclick="ndResetStaff(\'' + m + '\')"><i class="ti ti-key"></i> Reset password</button><button type="button" class="nx-btn sm ghost" style="color:#B91C1C;border-color:#FCA5A5" onclick="ndRemoveStaff(\'' + m + '\')"><i class="ti ti-trash"></i> Remove</button></div>')
+      + '</details>';
+  }).join('') + '</div>';
+  h += '<details class="nx-card" id="nd-add"' + (mobs.length < 3 ? ' open' : '') + '><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#135A55;display:flex;gap:8px;align-items:center"><i class="ti ti-user-plus"></i> Add staff</summary>'
+    + '<label class="nx-lbl">Role<select class="nx-in" id="nd-add-role">' + ndStaffRoles().map(function (r) { return '<option value="' + ndEsc(r.id) + '">' + ndEsc(r.label) + '</option>'; }).join('') + '</select></label>'
+    + '<label class="nx-lbl">Full name<input class="nx-in" id="nd-add-name" maxlength="60" autocomplete="off"></label>'
+    + '<label class="nx-lbl">Mobile number (their login ID)<input class="nx-in" id="nd-add-mob" inputmode="numeric" maxlength="10" autocomplete="off"></label>'
+    + '<div class="nd-err" id="nd-add-err" role="alert"></div><button type="button" class="nx-btn" id="nd-add-go" onclick="ndAddStaff()">Add and get login</button>'
+    + '<span class="nx-dim">They join their usual departments automatically; change it in More → Departments.</span></details>';
+  return h;
+}
+function nxFaReadyHTML() {
+  var day = Math.min(ndDay(), _nd.cfg.days), all = ndDeptDefs().map(function (d) { return d.id; }), pass = (_nd.cfg.passMark || {}).overall || 70;
+  var R = nxReady(all), B = nxReady(all, 7), I = day > 7 ? nxReady(all, 49, 8) : null, E = day >= 50 ? nxReady(all, 999, 50) : null, pct = R.overall === null ? 0 : R.overall, fmt = function (x) { return x && x.overall !== null ? x.overall + '%' : '–'; };
+  var h = '<div class="nx-card nx-pring"><div class="nx-ring">' + nxRing(pct, 104, 11, '#1E6B5E', '#E6F2EF') + '<span><b>' + pct + '%</b><small>facility</small></span></div><div class="nx-kv">'
+    + '<div><span>Baseline</span><b>' + fmt(B) + '</b></div><div><span>Implementation</span><b style="color:#135A55">' + (I ? fmt(I) : '<span style="color:#94A3B8;font-weight:600">from Day 8</span>') + '</b></div>'
+    + '<div><span>Endline</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day 50</span>') + '</b></div><div class="nx-dim">' + (R.meets ? '✓ Meets NQAS criteria' : 'Needs ' + pass + '% overall, in each department and each Area of Concern') + ' · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
+  var tab = _nd.ptab || 'dept';
+  h += '<div class="nx-seg"><button type="button" class="' + (tab === 'dept' ? 'on' : '') + '" onclick="_nd.ptab=\'dept\';ndKeepScroll()">Departments</button><button type="button" class="' + (tab === 'aoc' ? 'on' : '') + '" onclick="_nd.ptab=\'aoc\';ndKeepScroll()">Areas of Concern</button><button type="button" class="' + (tab === 'grid' ? 'on' : '') + '" onclick="_nd.ptab=\'grid\';ndKeepScroll()">Grid</button></div>';
+  if (tab === 'grid') return h + '<div class="nx-card">' + nxGridHTML() + '</div>';
+  var bar = function (name, cur, base) {
+    if (cur === null || cur === undefined) return '<div class="nx-hb"><div><b>' + ndEsc(name) + '</b><span class="nx-dim">not assessed</span></div><p></p></div>';
+    var b = base === null || base === undefined ? cur : Math.min(base, cur);
+    return '<div class="nx-hb"><div><b>' + ndEsc(name) + '</b><span style="font-weight:700;color:' + (cur >= pass ? '#166534' : cur >= 50 ? '#92400E' : '#991B1B') + '">' + cur + '%</span></div><p><span class="b" style="width:' + b + '%"></span>' + (cur > b ? '<span class="i" style="width:' + (cur - b) + '%"></span>' : '') + '</p></div>';
+  };
+  h += '<div class="nx-card"><div class="nx-leg"><span><i style="color:#CBD5E1">■</i> Baseline</span><span><i style="color:#1E6B5E">■</i> Gain since baseline</span><span>target ' + pass + '%</span></div>';
+  if (tab === 'aoc') Object.keys(_nd.cl.aocs).forEach(function (a) { if (R.byAoc[a]) h += bar(a + ' · ' + String(_nd.cl.aocs[a]).replace(/^[:\s]+/, ''), R.byAoc[a].pct, (B.byAoc[a] || {}).pct); });
+  else ndDeptDefs().forEach(function (d) { if (R.byDept[d.id]) h += bar(d.name + ' · lead ' + (nxFirst(ndLead(d.id)) || '—'), R.byDept[d.id].pct, (B.byDept[d.id] || {}).pct); });
+  return h + '</div>';
+}
+function nxFaMoreHTML() {
+  var me = ndMob(), rm = ndRemindHTML(), mi = function (icon, t, js, cls) { return '<button type="button" class="nx-mi' + (cls ? ' ' + cls : '') + '" onclick="' + js + '"><i class="ti ' + icon + '"></i><span>' + t + '</span></button>'; };
+  var h = '';
+  if (ndIsInCharge(me)) h += '<div class="nx-sec"><b>Programme start date</b></div><div class="nx-card">' + ndStartForm() + '</div>';
+  h += '<div class="nx-sec"><b>Reminders</b></div>' + (rm || '<div class="nx-card"><div class="nx-empty">Nobody has work pending today.</div></div>');
+  if (ndIsInCharge(me)) h += '<div class="nx-sec"><b>Departments</b></div><div class="nx-dim">Staff posted in a department fill the card; its lead compares, settles disputes and assigns actions. Tap a department to change it.</div><div class="nd-main" style="padding:0;max-width:none">' + ndSetupHTML().split('<div class="nd-sec"><b>Departments</b>')[1].replace(/^[^<]*<small>[^<]*<\/small><\/div>/, '') + '</div>';
+  h += '<div class="nx-card nx-menu" style="margin-top:6px">' + mi('ti-checklist', 'Action plan · all departments', "ndLeadOpen('plan')") + mi('ti-cards', 'My cards', 'ndMyCards()') + mi('ti-refresh', 'Refresh data', 'ndReload()')
+    + mi('ti-help-circle', 'How to use the app', 'nxHelp()') + mi('ti-key', 'Change password', 'nfChangeMyPassword()') + mi('ti-logout', 'Log out', 'ndLogout()', 'red') + '</div>';
+  return h;
 }

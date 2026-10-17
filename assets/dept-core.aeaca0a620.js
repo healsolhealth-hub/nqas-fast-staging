@@ -65,6 +65,7 @@ async function ndOpen(acc) {
   var st = (fac.staff || {})[me]; if (!st || st.disabled) return 'You are not on this facility\'s staff list.';
   var cl; try { cl = await nfLoadData(cfg.checklist); } catch (e) { return 'The ' + cfg.name + ' checklist could not be loaded. Check the internet and try again.'; }
   _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: {}, pcards: {}, actions: {}, sel: {}, tab: 'today', card: null };
+  _nd.fa = ndIsInCharge(me) || ndSeesAll(me);   // the in-charge and MO in-charge open on the Facility dashboard; "My cards" for their own screens
   (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id); });
   _nd.byId = {}; cl.items.forEach(function (r) { _nd.byId[r[0]] = r; });
   // first open by the in-charge: save the default departments set-up
@@ -99,12 +100,13 @@ function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
   if (_nd.card) { app.innerHTML = ndCardHTML(); ndQBadge(); return; }                                   // Compare the cards (full screen)
   if (_nd.screen === 'lead' && !_nd.view) { app.innerHTML = ndLeadScreenHTML(); ndQBadge(); return; }   // Decide & assign (full screen)
+  if (ndFaOn()) { app.innerHTML = ndFaHTML(); ndQBadge(); return; }                                       // Facility dashboard (in-charge, MO in-charge)
   var t = _nd.tab, body = t === 'cards' ? ndCardsHTML() : t === 'ready' ? ndReadyHTML() : t === 'actions' ? ndActionsPageHTML() : t === 'setup' ? ndSetupPageHTML()
     : t === 'me' ? ndMeHTML() : t === 'fix' ? ndSupHTML() : ndTodayHTML();
   app.innerHTML = body + ndNavHTML(); ndQBadge();   // screens: dept/screens.js
   if (t === 'cards') ndScrollStrip();
 }
-function ndTab(t) { if (t === 'timeline' || t === 'day') { _nd.cv = t === 'timeline' ? 'timeline' : 'day'; t = 'cards'; } _nd.tab = t; _nd.card = null; _nd.screen = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndTab(t) { if (_nd) _nd.fa = false; if (t === 'timeline' || t === 'day') { _nd.cv = t === 'timeline' ? 'timeline' : 'day'; t = 'cards'; } _nd.tab = t; _nd.card = null; _nd.screen = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
 function ndScrollStrip() { try { var box = document.getElementById('nd-ds'), el = box && box.querySelector('.sel'); if (el) box.scrollLeft = Math.max(0, el.offsetLeft - box.offsetLeft - (box.clientWidth - el.offsetWidth) / 2); } catch (e) {} }   // the chosen day in the middle of the strip
 
 // ── set-up (in-charge) ──
