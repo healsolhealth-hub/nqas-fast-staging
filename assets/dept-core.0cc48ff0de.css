@@ -7,7 +7,7 @@ body.nd-on > *:not(#nf-dept-app):not(.scx-ov):not(#nf-toast):not(#toast):not([id
 #nf-dept-app .nd-hd b{font-size:16px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;}
 #nf-dept-app .nd-sub{font-size:12px;opacity:.9;}
 #nf-dept-app .nd-ib{background:rgba(255,255,255,.16);border:0;color:#fff;width:38px;height:38px;border-radius:12px;font-size:18px;cursor:pointer;flex:none;}
-#nf-dept-app .nd-main{max-width:760px;margin:0 auto;padding:12px 16px;}
+#nf-dept-app .nd-main{max-width:580px;margin:0 auto;padding:12px 13px;}
 #nf-dept-app .nd-card{background:var(--card,#fff);border:1px solid var(--br,#E2E8F0);border-radius:16px;padding:14px;margin:0 0 12px;}
 #nf-dept-app .nd-card p{margin:6px 0 0;font-size:13px;color:var(--t2,#475569);}
 #nf-dept-app .nd-dim{color:var(--t3,#64748B)!important;font-size:12px!important;}
@@ -128,3 +128,28 @@ body.nd-on .toast{bottom:96px;white-space:normal;max-width:calc(100vw - 32px);te
 #nf-dept-app .nd-dept:disabled{opacity:.6;cursor:default;}
 #nf-dept-app .nd-in.nd-need{border-color:#D97706;background:#FFFBEB;}
 #nf-dept-app .nd-nav button span{white-space:nowrap;font-size:10.5px;}
+/* Cards tab in the SC design */
+#nf-dept-app .nd-chead{display:flex;align-items:center;gap:8px;padding:2px 2px 8px;flex-wrap:wrap;} #nf-dept-app .nd-chead h1{font:800 20px 'Poppins',sans-serif;margin:0;flex:1;}
+#nf-dept-app .nd-chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;border-radius:20px;padding:4px 10px;}
+#nf-dept-app .nd-chip.t{background:var(--teal-lt,#E6F2EF);color:var(--teal,#1E6B5E);} #nf-dept-app .nd-chip.o{background:var(--org-lt,#FFF4E5);color:#9A5A12;}
+#nf-dept-app .nd-seg-in{padding:0;margin:0 0 12px;max-width:none;}
+#nf-dept-app .ds-day{position:relative;} #nf-dept-app .ds-day.locked-day{cursor:default;}
+#nf-dept-app .nd-dchips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px;} #nf-dept-app .nd-dchips .scb2-chip{font-size:11px;padding:5px 10px;cursor:pointer;}
+#nf-dept-app .nd-dchips .scb2-chip.on{box-shadow:0 0 0 2px var(--t1,#0F172A);}
+#nf-dept-app .nd-sccard{margin-bottom:12px;} #nf-dept-app .nd-sccard .cp-list{list-style:none;margin:0 0 8px;padding:0;}
+#nf-dept-app .nd-stdh{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:12px 0 4px;padding:6px 8px;border-radius:8px;background:var(--teal-lt,#E6F2EF);}
+#nf-dept-app .nd-stdh>div{display:flex;flex-direction:column;min-width:0;} #nf-dept-app .nd-stdh b{font-size:11px;color:#135A55;} #nf-dept-app .nd-stdh small{font-size:10.5px;color:var(--t2,#475569);}
+#nf-dept-app .cp-score-row.nd-3{grid-template-columns:repeat(3,1fr);}
+#nf-dept-app .nd-wide{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;}
+#nf-dept-app .nd-sccard .nd-rs{margin-left:0;} #nf-dept-app .nd-sccard .nd-in{margin-top:6px;}
+/* Today in the SC design */
+#nf-dept-app .nf-top{padding-top:6px;} #nf-dept-app .nf-top-l{flex:1;min-width:0;} #nf-dept-app .nf-top-l small{display:block;font-size:11.5px;color:var(--t3,#64748B);} #nf-dept-app .nf-top-l h1{margin:2px 0 0;font:700 21px 'Poppins',sans-serif;}
+#nf-dept-app .nd-rf{padding:0 10px;} #nf-dept-app .nd-rf .ti{color:var(--teal,#1E6B5E);}
+#nf-dept-app .nf-list .nf-task{width:100%;display:flex;align-items:center;gap:10px;border:0;border-bottom:1px solid #F1F5F9;background:none;padding:10px 2px;text-align:left;font:inherit;color:inherit;}
+#nf-dept-app .nf-list .nf-task:last-child{border-bottom:0;}
+#nf-dept-app .nf-ti{flex:none;width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+#nf-dept-app .nf-ti.w{background:var(--teal-lt,#E6F2EF);color:var(--teal,#1E6B5E);} #nf-dept-app .nf-ti.f{background:#DCFCE7;color:#166534;} #nf-dept-app .nf-ti.n{background:#FEF3C7;color:#B45309;}
+#nf-dept-app .nf-tt{flex:1;min-width:0;display:flex;flex-direction:column;} #nf-dept-app .nf-tt b{font-size:14px;font-weight:600;} #nf-dept-app .nf-tt small{font-size:11.5px;color:var(--t3,#64748B);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#nf-dept-app .nd-cnt{flex:none;min-width:26px;text-align:center;border-radius:999px;background:var(--teal,#1E6B5E);color:#fff;padding:2px 8px;font-size:12px;font-weight:700;} #nf-dept-app .nd-cnt.warn{background:#B45309;}
+#nf-dept-app .nf-empty{text-align:center;color:var(--t3,#64748B);font-size:13px;padding:10px;}
+#nf-dept-app .nf-hero{margin-bottom:4px;} #nf-dept-app .nd-mini{margin-top:12px;}

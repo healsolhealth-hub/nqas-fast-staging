@@ -55,14 +55,14 @@ function ndCardsIn(dept, day) {   // who has filled / is marked not filled / is 
   return { fillers: fl, done: done, absent: absent, waiting: waiting, lastDone: last };
 }
 // latest score per checkpoint: the day result where checked, else the lowest score on that day's filled cards
-function ndLatest() {
-  var out = {}, seen = {};
+function ndLatest(maxDay) {
+  var out = {}, seen = {}, cap = maxDay || 999;
   var put = function (id, v, n, fin) { if (!(id in seen) || seen[id].n < n || (seen[id].n === n && fin && !seen[id].fin)) { seen[id] = { n: n, fin: fin }; out[id] = v; } };
   Object.keys(_nd.cards || {}).forEach(function (dept) { var days = _nd.cards[dept] || {};
-    Object.keys(days).forEach(function (k) { var n = +k.replace('day_', ''), f = (days[k] || {}).f || {}; Object.keys(f).forEach(function (id) { put(id, f[id], n, true); }); }); });
+    Object.keys(days).forEach(function (k) { var n = +k.replace('day_', ''), f = (days[k] || {}).f || {}; if (n > cap) return; Object.keys(f).forEach(function (id) { put(id, f[id], n, true); }); }); });
   Object.keys(_nd.pcards || {}).forEach(function (dept) { var days = _nd.pcards[dept] || {};
     Object.keys(days).forEach(function (k) {
-      var n = +k.replace('day_', ''); if ((ndRes(dept, n) || {}).chk) return;
+      var n = +k.replace('day_', ''); if (n > cap || (ndRes(dept, n) || {}).chk) return;
       var low = {}; Object.keys(days[k] || {}).forEach(function (m) { var c = days[k][m] || {}; if (!c.done || c.absent) return; Object.keys(c.s || {}).forEach(function (id) { low[id] = id in low ? Math.min(low[id], c.s[id]) : c.s[id]; }); });
       Object.keys(low).forEach(function (id) { put(id, low[id], n, false); });
     }); });
@@ -112,7 +112,8 @@ function ndOpenDept(dept, day) {
   if (!_nd.view && ndFills(dept, me) && !res.chk && !mine.done) mode = 'fill';
   else if (!_nd.view && ndCanCheck(dept, me)) mode = 'check';
   else if (!_nd.view && ndFills(dept, me)) mode = 'fill';
-  _nd.card = { dept: dept, day: day, mode: mode }; _nd.sel = {}; ndRender(); try { window.scrollTo(0, 0); } catch (e) {}
+  if (mode === 'fill') { ndGoCard(dept, day); return; }
+  _nd.card = { dept: dept, day: day, mode: mode }; ndRender(); try { window.scrollTo(0, 0); } catch (e) {}
 }
 function ndOpenCard(dept, day) { ndOpenDept(dept, day); }
 function ndCloseCard() { _nd.card = null; ndRender(); }
@@ -124,7 +125,7 @@ function ndCardHTML() {
     + '<div><small>Day ' + c.day + ' · ' + ND_PHASE[info.phase] + (info.week ? ' · week ' + info.week : '') + '</small><b>' + ndEsc(d.name) + '</b>'
     + '<span class="nd-sub">' + (c.mode === 'fill' ? 'My card' : c.mode === 'check' ? 'Check · compare the cards' : 'View') + '</span></div>'
     + '<span class="nd-qb" id="nd-q" hidden></span></header>';
-  if (both) h += '<div class="nd-seg"><button type="button" class="' + (c.mode === 'fill' ? 'on' : '') + '" onclick="ndMode(\'fill\')">My card</button><button type="button" class="' + (c.mode !== 'fill' ? 'on' : '') + '" onclick="ndMode(\'check\')">Check</button></div>';
+  if (false && both) h += '<div class="nd-seg"><button type="button" class="' + (c.mode === 'fill' ? 'on' : '') + '" onclick="ndMode(\'fill\')">My card</button><button type="button" class="' + (c.mode !== 'fill' ? 'on' : '') + '" onclick="ndMode(\'check\')">Check</button></div>';
   return h + (c.mode === 'fill' ? ndFillHTML(c.dept, c.day) : ndCheckHTML(c.dept, c.day, c.mode !== 'check'));
 }
 function ndGroups(ids) {
@@ -165,7 +166,7 @@ function ndFillHTML(dept, day) {
   if (!locked && !c.done) h += '<button type="button" class="nd-btn"' + (n < ids.length ? ' disabled title="Score every checkpoint first"' : '') + ' onclick="ndDone()">Mark done</button>';
   return h + '</footer>';
 }
-function ndMyBase() { return 'sc_pcards/' + _nd.code + '/' + _nd.card.dept + '/day_' + _nd.card.day + '/' + ndMob(); }
+function ndMyBase() { var c = ndCur(); return 'sc_pcards/' + _nd.code + '/' + c.dept + '/day_' + c.day + '/' + ndMob(); }
 function ndCardWrite(rel) {
   var base = ndMyBase(), up = {}, me = ndMob();
   Object.keys(rel).forEach(function (k) { up[base + '/' + k] = rel[k]; });
@@ -175,18 +176,18 @@ function ndCardWrite(rel) {
 function ndKeepScroll() { var y = window.scrollY; ndRender(); try { window.scrollTo(0, y); } catch (e) {} }
 function ndScore(id, v) { var rel = {}; rel['s/' + id] = v; if (v === 2) { rel['r/' + id] = null; rel['note/' + id] = null; } ndCardWrite(rel); ndKeepScroll(); }
 function ndAllMet(list) {
-  var me = ndMob(), c = ndPc(_nd.card.dept, _nd.card.day)[me] || {}, s = c.s || {}, rel = {};
+  var me = ndMob(), cc = ndCur(), c = ndPc(cc.dept, cc.day)[me] || {}, s = c.s || {}, rel = {};
   list.split(',').forEach(function (id) { if (s[id] === undefined) rel['s/' + id] = 2; });
   if (Object.keys(rel).length) { ndCardWrite(rel); ndKeepScroll(); }
 }
 function ndReasonSet(id, k) { var rel = {}; rel['r/' + id] = k; ndCardWrite(rel); ndKeepScroll(); }
 function ndNote(id, t) { var rel = {}; rel['note/' + id] = String(t || '').trim().slice(0, 300) || null; ndCardWrite(rel); }
 function ndDone() {
-  var c = ndPc(_nd.card.dept, _nd.card.day)[ndMob()] || {}, miss = Object.keys(c.r || {}).filter(function (id) { return c.r[id] === 'oth' && (c.s || {})[id] < 2 && !String((c.note || {})[id] || '').trim(); });
+  var cc = ndCur(), c = ndPc(cc.dept, cc.day)[ndMob()] || {}, miss = Object.keys(c.r || {}).filter(function (id) { return c.r[id] === 'oth' && (c.s || {})[id] < 2 && !String((c.note || {})[id] || '').trim(); });
   if (miss.length) { ndToast('You chose "Other" for ' + miss.join(', ') + ' — write what is missing first.', 'err'); var el = document.getElementById('nd-cp-' + miss[0]); if (el) try { el.scrollIntoView({ block: 'center' }); } catch (e) {} return; }
   ndDoneGo();
 }
-function ndDoneGo() { ndCardWrite({ done: { at: new Date().toISOString(), role: ndRole(ndMob()) } }); ndToast('Card done. ' + ndName(ndChecker(_nd.card.dept)) + ' compares the cards next.', 'ok'); ndCloseCard(); }
+function ndDoneGo() { var cc = ndCur(); ndCardWrite({ done: { at: new Date().toISOString(), role: ndRole(ndMob()) } }); ndToast('Card done. ' + ndName(ndChecker(cc.dept)) + ' compares the cards next.', 'ok'); if (_nd.card) ndCloseCard(); else ndKeepScroll(); }
 
 // ── checker: one comparison screen ──
 function ndCompare(dept, day) {
@@ -436,20 +437,29 @@ function ndTodo(mob) {
   ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, mob)) return; for (var n = Math.max(1, day - 13); n < Math.min(day, _nd.cfg.days + 1); n++) { var c = ndPc(d.id, n)[mob] || {}; if (!c.done && !c.absent && !ndRes(d.id, n).chk && ndDayInfo(d.id, n).ids.length) late.push({ dept: d.id, day: n }); } });
   return { fill: fill, late: late, check: ndChecksDue(mob), decide: ndEscItems(mob), assign: ndUnassigned(mob), fix: ndMyActions() };
 }
+function ndTask(icon, cls, title, sub, js, n) {
+  return '<button type="button" class="nf-task" onclick="' + js + '"><span class="nf-ti ' + cls + '"><i class="ti ' + icon + '"></i></span><span class="nf-tt"><b>' + ndEsc(title) + '</b><small>' + ndEsc(sub) + '</small></span>'
+    + (n != null ? '<span class="nd-cnt' + (cls === 'n' ? ' warn' : '') + '">' + n + '</span>' : '<i class="ti ti-chevron-right"></i>') + '</button>';
+}
 function ndTodoHTML() {
   if (_nd.view) return '';
-  var me = ndMob(), t = ndTodo(me), rows = [];
-  var row = function (icon, label, n, js, warn) { return '<button type="button" class="nd-todo-r" onclick="' + js + '"><i class="ti ' + icon + '"></i><span>' + label + '</span><b class="' + (warn ? 'warn' : '') + '">' + n + '</b></button>'; };
-  if (t.fill.length) rows.push(row('ti-pencil', 'Fill my card' + (t.fill.length > 1 ? 's' : ''), t.fill.length, "ndOpenDept('" + t.fill[0].id + "'," + ndDay() + ")"));
-  if (t.late.length) rows.push(row('ti-alert-triangle', 'Catch up missed cards', t.late.length, "ndOpenDept('" + t.late[0].dept + "'," + t.late[0].day + ")", true));
-  if (t.check.length) { var c0 = t.check.find(function (x) { return x.ready; }) || t.check[0]; rows.push(row('ti-list-check', 'Compare the cards', t.check.length, "ndOpenDept('" + c0.dept + "'," + c0.day + ")", t.check.some(function (x) { return x.late; }))); }
-  if (t.decide.length) rows.push(row('ti-alert-triangle', 'Decide (sent up)', t.decide.length, "ndTab('actions')", t.decide.some(function (x) { return x.late; })));
-  if (t.assign.length) rows.push(row('ti-checklist', 'Assign actions', t.assign.length, "ndTab('actions')"));
-  if (t.fix.length) rows.push(row('ti-circle-check', ndIsInCharge(me) ? 'Open actions' : 'My actions to fix', t.fix.length, "ndTab('actions')", t.fix.some(function (i) { return _nd.actions[i].due < ndToday(); })));
-  var h = '<div class="nd-sec"><b>To do today</b><small>' + (rows.length ? '' : 'all clear') + '</small></div>';
-  h += rows.length ? '<div class="nd-card nd-todo">' + rows.join('') + '</div>' : '<div class="nd-card nd-dim">Nothing waiting for you. Well done.</div>';
+  var me = ndMob(), t = ndTodo(me), rows = [], day = ndDay();
+  t.fill.forEach(function (d) { var c = ndPc(d.id, day)[me] || {}, ids = ndDayIds(d.id, day), k = ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length; rows.push(ndTask('ti-clipboard-list', 'w', 'Fill my card · ' + d.name, k + ' of ' + ids.length + ' scored', "ndGoCard('" + d.id + "'," + day + ")")); });
+  if (t.late.length) rows.push(ndTask('ti-alert-triangle', 'n', 'Catch up missed cards', 'Open until checked · ' + t.late.map(function (x) { return x.dept + ' Day ' + x.day; }).slice(0, 3).join(', '), "ndGoCard('" + t.late[0].dept + "'," + t.late[0].day + ")", t.late.length));
+  if (t.check.length) { var c0 = t.check.find(function (x) { return x.ready; }) || t.check[0]; rows.push(ndTask('ti-list-check', t.check.some(function (x) { return x.late; }) ? 'n' : 'w', 'Compare the cards', t.check.map(function (x) { return x.dept + ' Day ' + x.day + (x.ready ? '' : ' (cards awaited)'); }).slice(0, 3).join(', '), "ndOpenDept('" + c0.dept + "'," + c0.day + ")", t.check.length)); }
+  if (t.decide.length) rows.push(ndTask('ti-alert-triangle', t.decide.some(function (x) { return x.late; }) ? 'n' : 'w', 'Decide (sent up)', 'Differences the checker sent to you', "ndTab('actions')", t.decide.length));
+  if (t.assign.length) rows.push(ndTask('ti-checklist', 'w', 'Assign actions', 'Unmet checkpoints · text ready, one tap', "ndTab('actions')", t.assign.length));
+  if (t.fix.length) rows.push(ndTask('ti-circle-check', t.fix.some(function (i) { return _nd.actions[i].due < ndToday(); }) ? 'n' : 'w', ndIsInCharge(me) ? 'Open actions' : 'My actions to fix', 'From the action plan', "ndTab('actions')", t.fix.length));
+  var h = '<div class="nf-sec"><b>To do today</b><span>Day ' + day + '</span></div><div class="nf-card nf-list">' + (rows.length ? rows.join('') : '<div class="nf-empty">All done for today</div>') + '</div>';
   if (ndIsInCharge(me)) h += ndRemindHTML();
   return h;
+}
+function ndStreak() {   // days in a row (up to yesterday, plus today when done) with all my cards done
+  var me = ndMob(), t = Math.min(ndDay(), _nd.cfg.days), n = 0;
+  var full = function (day) { var ds = ndDeptDefs().filter(function (d) { return ndFills(d.id, me) && ndDayInfo(d.id, day).ids.length; }); if (!ds.length) return null; return ds.every(function (d) { var c = ndPc(d.id, day)[me] || {}; return c.done || c.absent; }); };
+  var today = full(t); if (today) n++;
+  for (var d = t - 1; d >= 1; d--) { var f = full(d); if (f === null) continue; if (!f) break; n++; }
+  return n;
 }
 // in-charge: a WhatsApp reminder to each person with something pending today
 function ndRemindHTML() {
@@ -479,24 +489,38 @@ function ndDeptStatus(dept, day) {
 }
 function ndMyDepts() { var me = ndMob(); return ndDeptDefs().filter(function (d) { return _nd.view || ndSeesAll(me) || ndFills(d.id, me) || ndCanCheck(d.id, me); }); }
 function ndTodayHTML() {
-  var me = ndMob(), day = ndDay();
-  if (!_nd.fac.startDate) return ndIsInCharge(me) && !_nd.view
+  var me = ndMob(), day = ndDay(), n = _nd.cfg.days, st = ndStaff()[me] || {};
+  var top = '<div class="nf-top"><div class="nf-top-l"><small>' + ndEsc((_nd.fac.name || _nd.code) + ' · ' + ndRoleLabel(st.role || _nd.cfg.inCharge)) + '</small><h1>Namaste, ' + ndEsc(String(st.name || '').split(' ')[0]) + ' <span aria-hidden="true">🙏</span></h1></div>'
+    + '<span class="nd-qb" id="nd-q" hidden></span><button type="button" class="nf-streak" onclick="ndTab(\'cards\')" title="Days in a row with all my cards done"><i class="ti ti-flame"></i>' + ndStreak() + '</button>'
+    + '<button type="button" class="nf-streak nd-rf" onclick="ndReload()" aria-label="Refresh" title="Refresh"><i class="ti ti-refresh"></i></button></div>';
+  if (!_nd.fac.startDate) return top + (ndIsInCharge(me)
     ? '<div class="nd-card"><b>Set the programme start date</b><p>All departments start the baseline together on this date (Day 1).</p>' + ndStartForm() + '</div>'
-    : '<div class="nd-card nd-empty"><i class="ti ti-clock"></i><b>The programme has not started yet</b><p>The ' + ndEsc(_nd.cfg.inChargeLabel) + ' sets the start date.</p></div>';
-  if (day < 1) return '<div class="nd-card nd-empty"><i class="ti ti-calendar"></i><b>Day 1 is ' + ndEsc(ndDate(_nd.fac.startDate)) + '</b><p>Your cards appear on the start date.</p></div>';
-  var h = ndMiniHTML() + ndTodoHTML();
-  if (day > _nd.cfg.days) return h + '<div class="nd-card nd-empty"><i class="ti ti-trophy"></i><b>The ' + _nd.cfg.days + '-day programme is complete</b><p>See Readiness for the result.</p></div>';
-  var mine = ndMyDepts();
-  if (!mine.length) return h + '<div class="nd-card nd-empty"><i class="ti ti-users"></i><b>No department yet</b><p>The ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you to a department team in Set-up.</p></div>';
-  var first = nfDeptDay(_nd.plan[mine[0].id], day);
-  if (first.phase === 'ready') return h + '<div class="nd-card nd-empty"><i class="ti ti-trophy"></i><b>Readiness week — Day ' + day + '</b><p>' + ['End-line verification', 'End-line verification', 'Final team review', 'Graduation'][day - 57] + '. No department card today.</p></div>';
-  return h + '<div class="nd-sec"><b>Today · Day ' + day + '</b><small>' + ND_PHASE[first.phase] + (first.week ? ' · week ' + first.week : '') + '</small></div>'
-    + mine.map(function (d) {
-      var st = ndDeptStatus(d.id, day), ids = ndDayIds(d.id, day), role = ndFills(d.id, me) ? 'you fill' + (ndChecker(d.id) === me ? ' · you check' : '') : ndChecker(d.id) === me ? 'you check' : 'checker ' + ndName(ndChecker(d.id));
-      return '<button type="button" class="nd-dept" onclick="ndOpenDept(\'' + d.id + '\',' + day + ')"><span class="nd-dk">' + ndEsc(d.id) + '</span>'
-        + '<span class="nd-dn"><b>' + ndEsc(d.name) + '</b><small>' + ids.length + ' checkpoints · ' + ndEsc(_nd.view ? 'checker ' + ndName(ndChecker(d.id)) : role) + '</small></span>'
-        + '<span class="nd-st ' + st.k + '">' + ndEsc(st.t) + '</span></button>';
-    }).join('');
+    : '<div class="nf-hero"><div class="nf-hero-k">Programme not started</div><div class="nf-hero-t">Waiting for the start date</div><div class="nf-hero-s">The ' + ndEsc(_nd.cfg.inChargeLabel) + ' sets it.</div></div>');
+  if (day < 1) return top + '<div class="nf-hero"><div class="nf-hero-k">Programme starts · ' + ndEsc(ndDate(_nd.fac.startDate)) + '</div><div class="nf-hero-t">' + (1 - day) + ' day' + (1 - day > 1 ? 's' : '') + ' to go</div><div class="nf-hero-s">The baseline starts on Day 1 for every department.</div></div>';
+  var on = ndDeptDefs().map(function (d) { return d.id; }), pass = (_nd.cfg.passMark || {}).overall || 70;
+  var R = nfDeptReadiness(_nd.cl.items, ndLatest(), { pass: pass, depts: on }), B = nfDeptReadiness(_nd.cl.items, ndLatest(7), { pass: pass, depts: on });
+  var pct = R.overall === null ? 0 : R.overall, base = B.overall, gain = day > 7 && base !== null && R.overall !== null ? R.overall - base : null;
+  var fill = ndTodo(me).fill, mine = ndCardDepts(Math.min(day, n)).filter(function (d) { return ndFills(d.id, me); });
+  var done = mine.filter(function (d) { var c = ndPc(d.id, day)[me] || {}; return c.done; }).length;
+  var cta = fill.length ? '<button type="button" class="nf-cta" onclick="ndGoCard(\'' + fill[0].id + '\',' + day + ')">Continue today\'s card · ' + done + ' of ' + mine.length + ' done</button>'
+    : mine.length ? '<button type="button" class="nf-cta" onclick="ndTab(\'cards\')">✓ All done for today</button>'
+    : '<button type="button" class="nf-cta" onclick="ndTab(\'cards\')">Open the cards</button>';
+  var ring = typeof nfRing === 'function' ? '<div class="nf-hero-ring">' + nfRing(pct, base, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + pct + '%</b><small>Facility</small></span></div>' : '';
+  var h = top + '<div class="nf-hero"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">Day ' + Math.min(day, n) + ' / ' + n + ' · ' + ndEsc(ndWeekLabel(Math.min(day, n))) + '</div>'
+    + '<div class="nf-hero-t">' + ndEsc(day > n ? 'Programme complete' : ndDayTitle(day)) + '</div>'
+    + '<div class="nf-hero-nums"><div><b>' + (R.overall === null ? '–' : R.overall + '%') + '</b><small>Facility readiness</small></div>' + (gain !== null ? '<i></i><div><b class="acc">' + (gain >= 0 ? '+' : '') + gain + '</b><small>since baseline</small></div>' : '<i></i><div><b>' + R.n + '</b><small>of ' + R.of + ' assessed</small></div>') + '</div></div>'
+    + ring + '</div>' + cta + '</div>';
+  h += ndMiniHTML() + ndTodoHTML();
+  if (day > n) return h;
+  var list = ndMyDepts();
+  if (!list.length) return h + '<div class="nf-card"><div class="nf-empty">No department yet — the ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you to a team in Set-up.</div></div>';
+  return h + '<div class="nf-sec"><b>Departments · Day ' + day + '</b><span onclick="ndTab(\'cards\')">' + ndEsc(ndWeekLabel(day)) + '</span></div><div class="nf-card nf-list">'
+    + list.map(function (d) {
+      var st2 = ndDeptStatus(d.id, day), ids = ndDayIds(d.id, day), role = ndFills(d.id, me) ? 'you fill' : ndChecker(d.id) === me ? 'you compare' : 'checker ' + ndName(ndChecker(d.id));
+      var cls = st2.k === 'ok' ? 'f' : st2.k === 'back' ? 'n' : 'w', icon = st2.k === 'ok' ? 'ti-shield-check' : st2.k === 'done' ? 'ti-clock' : 'ti-clipboard-list';
+      return '<button type="button" class="nf-task nd-dept-row" onclick="' + (ndFills(d.id, me) && !_nd.view ? 'ndGoCard' : 'ndOpenDept') + '(\'' + d.id + '\',' + day + ')"><span class="nf-ti ' + cls + '"><i class="ti ' + icon + '"></i></span>'
+        + '<span class="nf-tt"><b>' + ndEsc(d.name) + '</b><small>' + ids.length + ' checkpoints · ' + ndEsc(_nd.view ? 'checker ' + ndName(ndChecker(d.id)) : role) + '</small></span><span class="nd-st ' + st2.k + '">' + ndEsc(st2.t) + '</span></button>';
+    }).join('') + '</div>';
 }
 
 // ═══ Timeline (SC style, 17 Oct): 60 days in weeks, my status per day, tap a day to see / fill / catch up ═══
@@ -565,17 +589,89 @@ function ndTlRow(m) {
     + '<div class="scb2-rs">' + ndStPill(m.st) + '</div></button>';
 }
 function ndWeek(w) { _ndWkOpen[w] = !_ndWkOpen[w]; var el = document.getElementById('nd-wk-' + w); if (el) el.classList.toggle('open', !!_ndWkOpen[w]); }
-function ndOpenDay(day) { _nd.tday = day; _nd.tab = 'day'; _nd.card = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
-function ndDayHTML() {
-  var day = _nd.tday || ndDay(), today = ndDay(), me = ndMob();
-  var h = '<div class="nd-sec"><b><button type="button" class="nd-back" onclick="ndTab(\'timeline\')"><i class="ti ti-arrow-left"></i></button> Day ' + day + ' · ' + ndEsc(ndShortDate(ndDateOf(day))) + '</b><small>' + ndEsc(ndDayTitle(day)) + '</small></div>';
-  if (day > today) h += '<div class="nd-note"><i class="ti ti-calendar"></i><span>This day has not come yet — you can look at the checkpoints; scoring opens on the day.</span></div>';
-  else if (ndDaySt(day) === 'overdue' && !_nd.view) h += '<div class="nd-note back"><i class="ti ti-alert-triangle"></i><span>Missed. The card stays open until it is checked — fill it now to catch up.</span></div>';
-  var list = ndMyDepts().filter(function (d) { return ndDayInfo(d.id, day).ids.length; });
-  if (!list.length) return h + '<div class="nd-card nd-empty"><i class="ti ti-calendar"></i><b>No department card on this day</b></div>';
-  return h + list.map(function (d) {
-    var st = ndMySt(d.id, day), ds = day > today ? { k: 'new', t: 'Upcoming' } : ndDeptStatus(d.id, day);
-    return '<button type="button" class="nd-dept" onclick="ndOpenDept(\'' + d.id + '\',' + day + ')"' + (day > today ? ' disabled' : '') + '><span class="nd-dk">' + ndEsc(d.id) + '</span>'
-      + '<span class="nd-dn"><b>' + ndEsc(d.name) + '</b><small>' + ndDayIds(d.id, day).length + ' checkpoints · ' + ndEsc(ND_ST[st].t) + '</small></span><span class="nd-st ' + ds.k + '">' + ndEsc(ds.t) + '</span></button>';
-  }).join('');
+
+// ═══ Cards tab in the SC design (17 Oct): Cards head · Day / Timeline switch · facility bar · day strip · the day card ═══
+function ndCur() { return _nd.card || { dept: _nd.cdept, day: _nd.cday }; }
+function ndAocColor(a) { try { if (typeof getAoCDef === 'function') { var c = (getAoCDef(a) || {}).color; if (c) return c; } } catch (e) {} return '#1E6B5E'; }
+function ndWeekLabel(day) { return day <= 7 ? 'Baseline audit' : day <= 49 ? 'Week ' + (Math.floor((day - 8) / 7) + 2) : day <= 56 ? 'End-line' : 'Readiness week'; }
+function ndCardDepts(day) {   // my departments with a card on this day: the ones I fill first, then the ones I check
+  var me = ndMob();
+  return ndMyDepts().filter(function (d) { return ndDayIds(d.id, day).length && (_nd.view || ndFills(d.id, me) || ndCanCheck(d.id, me)); })
+    .sort(function (a, b) { return (ndFills(b.id, me) ? 1 : 0) - (ndFills(a.id, me) ? 1 : 0); });
+}
+function ndGoCard(dept, day) { _nd.tab = 'cards'; _nd.cv = 'day'; _nd.cday = day; _nd.cdept = dept; _nd.card = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndOpenDay(day) { ndGoCard(null, day); }
+function ndCv(v) { _nd.cv = v; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndCardsHTML() {
+  var today = ndDay(), n = _nd.cfg.days;
+  if (!_nd.fac.startDate || today < 1) return ndTodayHTML();
+  if (!_nd.cday) _nd.cday = Math.min(today, n);
+  var day = _nd.cday, cv = _nd.cv || 'day';
+  var h = '<div class="nd-chead"><h1>Cards</h1><span class="nd-qb" id="nd-q" hidden></span><span class="nd-chip t"><i class="ti ti-calendar"></i>' + ndEsc(ndWeekLabel(Math.min(today, n))) + '</span><span class="nd-chip o">Day ' + Math.min(today, n) + ' / ' + n + '</span></div>'
+    + '<div class="nd-seg nd-seg-in"><button type="button" class="' + (cv === 'day' ? 'on' : '') + '" onclick="ndCv(\'day\')"><i class="ti ti-cards"></i> Day</button><button type="button" class="' + (cv === 'timeline' ? 'on' : '') + '" onclick="ndCv(\'timeline\')"><i class="ti ti-timeline"></i> Timeline</button></div>';
+  if (cv === 'timeline') return h + ndTimelineHTML();
+  var prog = (_nd.cfg.programmes || []).find(function (p) { return p.id === _nd.fac.progId; });
+  h += '<div class="fac-bar"><span class="fac-icon">🏥</span><div><div class="fac-name">' + ndEsc(_nd.fac.name || _nd.code) + '</div><div class="fac-loc">' + ndEsc([_nd.fac.district, _nd.fac.state].filter(Boolean).join(', ')) + '</div></div>'
+    + '<div class="fac-right"><div class="fac-pkg">' + ndEsc(prog ? String(prog.label).replace(/^[^—]*—\s*/, '').replace(/\s*\(\d+ days\)\s*$/, '') : _nd.cfg.short) + '</div><div class="fac-day-info">Day ' + Math.min(today, n) + ' of ' + n + '</div></div></div>';
+  // day strip (Select Day)
+  h += '<div class="ds-wrap"><div class="ds-label">Select Day</div><div class="ds-scroll" id="nd-ds">';
+  for (var d = 1; d <= n; d++) {
+    var st = ndDaySt(d), mine = ndCardDepts(d).length, cls = 'ds-day scb2-d scb2-st-' + st + (d === today ? ' active today-ring' : d === day ? ' scb2-sel' : '') + (!mine ? ' scx-no-cps' : '') + (d > today ? ' locked-day' : '');
+    h += '<div class="' + cls + '" title="Day ' + d + ' · ' + ndEsc(ND_ST[st].t) + '"' + (d <= today ? ' onclick="ndOpenDay(' + d + ')"' : '') + '><div class="dd-n">' + String(d).padStart(2, '0') + '</div><div class="dd-z">' + ndEsc(ndShortDate(ndDateOf(d))) + '</div>'
+      + '<div class="scb2-dm">' + (mine ? '<i class="ti ti-user"></i>' + mine : '—') + '</div></div>';
+  }
+  h += '</div></div>';
+  var depts = ndCardDepts(day);
+  if (!depts.length) return h + '<div class="nd-card nd-empty"><i class="ti ti-calendar"></i><b>No card for you on Day ' + day + '</b><p>' + ndEsc(ndDayTitle(day)) + '</p></div>';
+  if (!_nd.cdept || !depts.some(function (x) { return x.id === _nd.cdept; })) _nd.cdept = depts[0].id;
+  if (depts.length > 1) h += '<div class="nd-dchips">' + depts.map(function (x) { var s = ndMySt(x.id, day); return '<button type="button" class="scb2-chip scb2-st-' + s + (x.id === _nd.cdept ? ' on' : '') + '" onclick="_nd.cdept=\'' + x.id + '\';ndRender()"><i class="ti ' + ND_ST[s].i + '"></i>' + ndEsc(x.name) + '</button>'; }).join('') + '</div>';
+  return h + ndDayCardHTML(_nd.cdept, day);
+}
+function ndDayCardHTML(dept, day) {
+  var me = ndMob(), today = ndDay(), d = ndDeptDef(dept), info = ndDayInfo(dept, day), ids = ndDayIds(dept, day), res = ndRes(dept, day);
+  var fills = !_nd.view && ndFills(dept, me), c = fills ? (ndPc(dept, day)[me] || {}) : {}, s = c.s || {}, rs = c.r || {}, nt = c.note || {};
+  var aocs = []; ids.forEach(function (id) { var r = _nd.byId[id]; if (r && aocs.indexOf(r[2]) < 0) aocs.push(r[2]); });
+  var col = ndAocColor(aocs[0] || 'C'), meths = {};
+  ids.forEach(function (id) { String((_nd.byId[id] || [])[6] || '').split('/').forEach(function (m) { if (m) meths[m] = 1; }); });
+  var MC = { SI: ['si', 'user-check', 'Staff Interview'], RR: ['rr', 'file-text', 'Record Review'], OB: ['ob', 'eye', 'Observation'], PI: ['ci', 'users', 'Patient Interview'] };
+  var locked = !fills || !!res.chk || day > today, n = ids.filter(function (i) { return s[i] !== undefined; }).length, st = ndMySt(dept, day);
+  var h = '<div class="card nd-sccard"><div class="card-hd" style="background:linear-gradient(135deg,' + col + ',' + col + 'CC);"><div class="hbg hbg1"></div><div class="hbg hbg2"></div>'
+    + '<div class="htop"><div><div class="day-lbl">Day</div><div class="day-num">' + String(day).padStart(2, '0') + '</div><div class="day-sub">' + ndEsc(d.name) + '</div></div>'
+    + '<div class="hright"><div class="unlock-tag"><i class="ti ti-lock-open" style="font-size:9px;"></i> ' + (day === today ? 'Today' : 'Day ' + day) + '</div></div></div></div>'
+    + '<div class="aoc-strip" style="background:' + col + 'E0;"><div class="aoc-badge">AoC ' + ndEsc(aocs.join(' · ')) + '</div><div class="aoc-info">' + ndEsc(ND_PHASE[info.phase] + (info.week ? ' · week ' + info.week : '') + (aocs.length === 1 ? ' · ' + (_nd.cl.aocs[aocs[0]] || '') : '')) + '</div></div><div class="cbody">';
+  // status banner (SC wording, UPHC flow)
+  if (res.chk) h += '<div class="status-banner verified show"><i class="ti ti-shield-check" style="font-size:14px;flex-shrink:0;"></i> Checked by ' + ndEsc(res.chk.byName || ndName(res.chk.by)) + ' · ' + ndEsc(ndShortDate((res.chk.at || '').slice(0, 10))) + (Object.keys(res.esc || {}).length ? ' · ' + Object.keys(res.esc).length + ' with the lead' : '') + '</div>';
+  else if (fills && c.done) h += '<div class="status-banner pending show"><i class="ti ti-clock" style="font-size:14px;flex-shrink:0;"></i> Marked done · awaiting the check by ' + ndEsc(ndName(ndChecker(dept))) + '. You can still change a score until then.</div>';
+  else if (fills && st === 'overdue') h += '<div class="status-banner pending show" style="background:#FEF2F2;border-color:#FCA5A5;color:#991B1B;"><i class="ti ti-alert-triangle" style="font-size:14px;flex-shrink:0;"></i> Missed. The card stays open until it is checked — fill it now to catch up.</div>';
+  h += '<div class="sec">Department · checkpoints</div><div class="tags-row"><div class="tag aoc"><i class="ti ti-layout-grid" style="font-size:10px;"></i> ' + ndEsc(d.id + ' · ' + d.name) + '</div><div class="tag cp-t"><i class="ti ti-list-check" style="font-size:10px;"></i> ' + ids.length + ' CPs' + (fills ? ' · ' + n + ' scored' : '') + '</div></div>'
+    + '<div class="sec">Assessment Methods</div><div class="methods-row">' + Object.keys(meths).map(function (m) { var x = MC[m] || ['rr', 'file', m]; return '<div class="mc ' + x[0] + '"><i class="ti ti-' + x[1] + '" style="font-size:11px;"></i> ' + m + ' — ' + x[2] + '</div>'; }).join('') + '</div><div class="dvd"></div>';
+  if (!fills) {   // checker / lead / viewer: who is in, and the comparison
+    var inn = ndCardsIn(dept, day);
+    h += '<div class="sec">Cards from the team</div><div class="nd-who">' + inn.fillers.map(function (m) { var k = inn.done.indexOf(m) >= 0 ? 'ok' : inn.absent.indexOf(m) >= 0 ? 'na' : 'wait'; return '<span class="nd-pill ' + k + '">' + ndEsc(ndName(m)) + ' · ' + (k === 'ok' ? 'done' : k === 'na' ? 'not filled today' : 'awaited') + '</span>'; }).join('') + '</div>'
+      + '<button type="button" class="nd-btn nd-wide" onclick="ndOpenDept(\'' + dept + '\',' + day + ')"><i class="ti ti-list-check"></i> ' + (res.chk || _nd.view || !ndCanCheck(dept, me) ? 'See the comparison' : 'Compare the cards') + '</button></div></div>';
+    return h;
+  }
+  h += '<div class="sec">Checkpoints <span style="font-weight:600;color:var(--t3);font-size:9px;letter-spacing:0;text-transform:none;">— Met / Partial / Not met · for your own area</span></div>';
+  var groups = [], cur = null, re = ndRecheckIds(dept, day), plan = info.ids;
+  ids.forEach(function (id) { var r = _nd.byId[id]; if (!r) return; var key = plan.indexOf(id) < 0 && re.indexOf(id) >= 0 ? '__re' : r[3]; if (!cur || cur.key !== key) { cur = { key: key, rows: [] }; groups.push(cur); } cur.rows.push(r); });
+  groups.forEach(function (g) {
+    var open = g.rows.filter(function (r) { return s[r[0]] === undefined; }).length;
+    h += '<div class="nd-stdh"><div><b>' + (g.key === '__re' ? 'Re-check after a fix' : 'Standard ' + ndEsc(g.key)) + '</b><small>' + ndEsc(g.key === '__re' ? 'An action was marked fixed — score it again' : (_nd.cl.stds[g.key] || '')) + '</small></div>'
+      + (!locked && open ? '<button type="button" class="nd-allmet" onclick="ndAllMet(\'' + g.rows.map(function (r) { return r[0]; }).join(',') + '\')">All Met</button>' : '') + '</div><ul class="cp-list">';
+    g.rows.forEach(function (r) {
+      var id = r[0], v = s[id], box = v === 2 ? 'cp-box t2' : v === 1 ? 'cp-box t1' : v === 0 ? 'cp-box t0' : 'cp-box', icon = v === 2 ? '✓' : v === 1 ? '½' : v === 0 ? '✗' : '';
+      h += '<li class="cp-item" id="nd-cp-' + id + '"><div class="cp-top-row"><div class="' + box + '"><span class="cp-icon" style="font-size:10px;">' + icon + '</span></div><div class="cp-body">'
+        + '<div class="cp-text' + (v === 0 || v === 1 ? ' struck' : '') + '">' + ndEsc(r[5]) + '</div><div class="cp-meta"><span class="cp-role">' + ndEsc(id) + ' · ME ' + ndEsc(r[4]) + '</span></div>'
+        + (r[7] ? '<div class="mov-text">📋 ' + ndEsc(String(r[7]).slice(0, 120)) + (String(r[7]).length > 120 ? '…' : '') + '</div>' : '')
+        + (locked ? '' : '<div class="cp-score-row nd-3">' + ND_SCORE.map(function (o) { return '<button type="button" class="sc-btn s' + o.v + (v === o.v ? ' sel' : '') + '" onclick="event.stopPropagation();ndScore(\'' + id + '\',' + o.v + ')">' + o.t + '</button>'; }).join('') + '</div>');
+      if (v === 0 || v === 1) {
+        h += '<div class="nd-rs">' + ND_REASONS.map(function (x) { return '<button type="button" class="' + (rs[id] === x.k ? 'on' : '') + '"' + (locked ? ' disabled' : '') + ' onclick="ndReasonSet(\'' + id + '\',\'' + x.k + '\')">' + ndEsc(x.t) + '</button>'; }).join('') + '</div>';
+        if (rs[id] === 'oth' || nt[id]) h += '<input class="nd-in' + (rs[id] === 'oth' && !nt[id] ? ' nd-need' : '') + '" maxlength="300" placeholder="' + (rs[id] === 'oth' ? 'What is missing? (needed for Other)' : 'What is missing?') + '" value="' + ndEsc(nt[id] || '') + '"' + (locked ? ' disabled' : '') + ' onchange="ndNote(\'' + id + '\',this.value)">';
+      }
+      h += '</div></div></li>';
+    });
+    h += '</ul>';
+  });
+  if (!locked && !c.done) h += '<div class="dvd"></div><button type="button" class="nd-btn nd-wide"' + (n < ids.length ? ' disabled title="Score every checkpoint first"' : '') + ' onclick="ndDone()"><i class="ti ti-circle-check"></i> Mark done · ' + n + ' / ' + ids.length + '</button>';
+  return h + '</div></div>';
 }
