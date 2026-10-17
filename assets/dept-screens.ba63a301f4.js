@@ -85,10 +85,10 @@ function ndTodayHTML() {
     if (late) chips.push('<span class="nx-chip r">You are ' + late + ' card' + (late > 1 ? 's' : '') + ' behind — catch up today</span>');
     if (chips.length) h += '<div class="nx-chips">' + chips.join('') + '</div>';
   }
-  if (!_nd.view) h += nxJobsHTML(me);
+  if (!_nd.view && !ndFaCan(me)) h += nxJobsHTML(me);
   if (day > n) return h + '</div>';
   if (!_nd.view) h += nxTodoHTML(me, t) + nxTabsHTML(me) + nxMissionsHTML();
-  if (_nd.view || ndSeesAll(me) || !nxFillIds().length) h += nxDeptListHTML();
+  if (_nd.view) h += nxDeptListHTML();
   return h + '</div>';
 }
 function nxTheme(day) {   // "Week 4 · Outreach, General Clinic"
@@ -395,7 +395,7 @@ function ndReadyHTML() {
   if (tab === 'aoc') Object.keys(_nd.cl.aocs).forEach(function (a) { if (!R.byAoc[a]) return; h += bar(a + ' · ' + String(_nd.cl.aocs[a]).replace(/^[:\s]+/, ''), R.byAoc[a].pct, (B.byAoc[a] || {}).pct); });
   else mine.forEach(function (id) { if (!R.byDept[id]) return; h += bar(ndDeptDef(id).name, R.byDept[id].pct, (B.byDept[id] || {}).pct); });
   h += '<span class="nx-dim">' + (mineOnly ? 'Only the departments you are part of. Your department lead sees the whole team.' : 'Latest checked score of each checkpoint, % of the maximum.') + '</span></div>';
-  if (_nd.view || ndIsInCharge(me) || nxLeads(me).length) h += '<details class="nx-card"><summary style="cursor:pointer;font-weight:700;font-size:14px">Department × Area of Concern grid</summary>' + nxGridHTML() + '</details>';
+  if (_nd.view) h += '<details class="nx-card"><summary style="cursor:pointer;font-weight:700;font-size:14px">Department × Area of Concern grid</summary>' + nxGridHTML() + '</details>';
   if (!_nd.view && mineOnly) {
     var BD = nxBadges();
     h += '<div class="nx-sec"><b>Badges</b><span>' + BD.filter(function (b) { return b.on; }).length + ' of ' + BD.length + '</span></div><div class="nx-card nx-badges">'
@@ -405,13 +405,14 @@ function ndReadyHTML() {
   }
   return h + '</div>';
 }
-function nxGridHTML() {
-  var on = ndDeptDefs().map(function (d) { return d.id; }), R = nfDeptReadiness(_nd.cl.items, ndLatest(), { pass: (_nd.cfg.passMark || {}).overall || 70, depts: on });
+function nxGridHTML(only) {
+  var on = only && only.length ? only : ndDeptDefs().map(function (d) { return d.id; }), R = nfDeptReadiness(_nd.cl.items, ndLatest(), { pass: (_nd.cfg.passMark || {}).overall || 70, depts: on });
   var aocs = Object.keys(_nd.cl.aocs), cls = function (p) { return p === null ? 'na' : p >= 70 ? 'g' : p >= 50 ? 'a' : 'r'; };
   var cell = function (x) { return '<td class="' + cls(x && x.pct !== undefined ? x.pct : null) + '">' + (x && x.pct !== null && x.pct !== undefined ? x.pct : '–') + '</td>'; };
   var h = '<div class="nd-grid" style="margin-top:10px"><table><thead><tr><th>Dept</th>' + aocs.map(function (a) { return '<th title="' + ndEsc(_nd.cl.aocs[a]) + '">' + a + '</th>'; }).join('') + '<th>All</th></tr></thead><tbody>';
-  ndDeptDefs().forEach(function (d) { var x = R.byDept[d.id] || {}; h += '<tr><th title="' + ndEsc(d.name) + '">' + ndEsc(d.id) + '</th>' + aocs.map(function (a) { return cell((x.byAoc || {})[a]); }).join('') + cell(x) + '</tr>'; });
-  h += '<tr class="tot"><th>All</th>' + aocs.map(function (a) { return cell(R.byAoc[a]); }).join('') + cell({ pct: R.overall }) + '</tr></tbody></table></div>';
+  ndDeptDefs().filter(function (d) { return on.indexOf(d.id) >= 0; }).forEach(function (d) { var x = R.byDept[d.id] || {}; h += '<tr><th title="' + ndEsc(d.name) + '">' + ndEsc(d.id) + '</th>' + aocs.map(function (a) { return cell((x.byAoc || {})[a]); }).join('') + cell(x) + '</tr>'; });
+  if (!(only && only.length === 1)) h += '<tr class="tot"><th>' + (only && only.length ? 'Mine' : 'All') + '</th>' + aocs.map(function (a) { return cell(R.byAoc[a]); }).join('') + cell({ pct: R.overall }) + '</tr>';
+  h += '</tbody></table></div>';
   return h + '<div class="nd-legend"><span class="g">≥ 70</span><span class="a">50–69</span><span class="r">&lt; 50</span><span class="na">not assessed</span></div>';
 }
 function nxImpact() {   // what I did: checkpoints scored on my done cards, gaps I fixed, share of my cards in on time
@@ -455,10 +456,9 @@ function ndMeHTML() {
   var mi = function (icon, t, js, em, cls) { return '<button type="button" class="nx-mi' + (cls ? ' ' + cls : '') + '" onclick="' + js + '"><i class="ti ' + icon + '"></i><span>' + t + '</span>' + (em ? '<em>' + em + '</em>' : '') + '</button>'; };
   var nCheck = ndChecksDue(me).length, nLead = ndEscItems(me).length + ndUnassigned(me).length;
   h += '<div class="nx-card nx-menu">' + (ndFaCan(me) ? mi('ti-layout-dashboard', 'Facility dashboard', 'ndFaOpen()') : '') + mi('ti-language', 'Language · English <small class="nx-dim">(हिंदी coming soon)</small>', "ndToast('Hindi is coming soon for this app.','ok')")
-    + mi('ti-layout-dashboard', 'Department dashboard', "_nd.ptab='dept';ndTab('ready')")
-    + (nxIsChecker(me) ? mi('ti-list-check', 'Cards to compare', 'nxOpenFirstCheck()', nCheck || '') : '')
-    + (nxLeads(me).length ? mi('ti-checklist', 'Decide &amp; assign', 'ndLeadOpen()', nLead || '') : '')
-    + (ndIsInCharge(me) ? mi('ti-settings', 'Set-up · staff, departments, start date', "ndTab('setup')") : '')
+    + (nxMyDeptIds().length ? mi('ti-layout-grid', 'Department dashboard', "ndTab('dept')") : '')
+    + (!ndFaCan(me) && nxIsChecker(me) ? mi('ti-list-check', 'Cards to compare', 'nxOpenFirstCheck()', nCheck || '') : '')
+    + (!ndFaCan(me) && nxLeads(me).length ? mi('ti-checklist', 'Decide &amp; assign', 'ndLeadOpen()', nLead || '') : '')
     + mi('ti-refresh', 'Refresh data', 'ndReload()') + mi('ti-help-circle', 'How to use the app', 'nxHelp()')
     + mi('ti-key', 'Change password', 'nfChangeMyPassword()') + mi('ti-logout', 'Log out', 'ndLogout()', '', 'red') + '</div>';
   return h + '</div>';
@@ -690,7 +690,7 @@ function ndNavHTML() {
   var jobs = nxJobCount(me);
   return '<nav class="nx-nav">' + b('today', 'ti-home', 'Today', jobs || '') + b('cards', 'ti-cards', 'Cards')
     + '<button type="button" class="nx-fab" aria-label="Continue today\'s card" title="Continue today\'s card" onclick="ndFab()"><i class="ti ti-player-play"></i></button>'
-    + b('ready', 'ti-chart-bar', 'Progress') + b('me', 'ti-user', 'Me', '', tab === 'me' || tab === 'setup') + '</nav>';
+    + b('ready', 'ti-chart-bar', 'Progress') + b('me', 'ti-user', 'Me', '', tab === 'me' || tab === 'setup' || tab === 'dept') + '</nav>';
 }
 function ndFab() {
   var me = ndMob(), day = ndDay(); if (!_nd.fac.startDate || day < 1) { ndTab('today'); return; }
@@ -806,7 +806,26 @@ function nxFaMoreHTML() {
   if (ndIsInCharge(me)) h += '<div class="nx-sec"><b>Programme start date</b></div><div class="nx-card">' + ndStartForm() + '</div>';
   h += '<div class="nx-sec"><b>Reminders</b></div>' + (rm || '<div class="nx-card"><div class="nx-empty">Nobody has work pending today.</div></div>');
   if (ndIsInCharge(me)) h += '<div class="nx-sec"><b>Departments</b></div><div class="nx-dim">Staff posted in a department fill the card; its lead compares, settles disputes and assigns actions. Tap a department to change it.</div><div class="nd-main" style="padding:0;max-width:none">' + ndSetupHTML().split('<div class="nd-sec"><b>Departments</b>')[1].replace(/^[^<]*<small>[^<]*<\/small><\/div>/, '') + '</div>';
-  h += '<div class="nx-card nx-menu" style="margin-top:6px">' + mi('ti-checklist', 'Action plan · all departments', "ndLeadOpen('plan')") + mi('ti-cards', 'My cards', 'ndMyCards()') + mi('ti-refresh', 'Refresh data', 'ndReload()')
+  h += '<div class="nx-card nx-menu" style="margin-top:6px">' + mi('ti-checklist', 'Action plan · all departments', "ndLeadOpen('plan')")
     + mi('ti-help-circle', 'How to use the app', 'nxHelp()') + mi('ti-key', 'Change password', 'nfChangeMyPassword()') + mi('ti-logout', 'Log out', 'ndLogout()', 'red') + '</div>';
   return h;
+}
+
+// ═══ Department dashboard (Me menu): only the departments a person works in — fills, leads or compares ═══
+function nxMyDeptIds() { var me = ndMob(); if (_nd.view) return []; return ndDeptDefs().filter(function (d) { return ndFills(d.id, me) || ndLead(d.id) === me || ndChecker(d.id) === me; }).map(function (d) { return d.id; }); }
+function ndDeptDashHTML() {
+  var me = ndMob(), ids = nxMyDeptIds(), pass = (_nd.cfg.passMark || {}).overall || 70, A = _nd.actions || {}, F = ndLatestFinal();
+  var R = nxReady(ids), B = nxReady(ids, 7);
+  var h = nxBk("ndTab('me')", 'Department dashboard', ids.length ? ids.length + ' department' + (ids.length > 1 ? 's' : '') + ' you work in' : 'No department yet') + '<div class="nx">';
+  if (!ids.length) return h + '<div class="nx-card"><div class="nx-empty">You are not on a department yet — the ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you in Set-up.</div></div></div>';
+  h += ids.map(function (id) {
+    var d = ndDeptDef(id), x = R.byDept[id] || {}, b = (B.byDept[id] || {}).pct, role = ndLead(id) === me ? 'You lead' : ndChecker(id) === me ? 'You compare' : 'You fill';
+    var gaps = Object.keys(F).filter(function (k) { return F[k].dept === id && F[k].s < 2; }).length, open = Object.keys(A).filter(function (k) { return A[k].dept === id && A[k].status !== 'closed'; }).length;
+    var p = x.pct === null || x.pct === undefined ? null : x.pct;
+    return '<div class="nx-card"><div style="display:flex;align-items:center;gap:10px"><b style="flex:1;font-size:14.5px">' + ndEsc(d.name) + '</b><span class="nx-chip t" style="font-size:10.5px;padding:2px 8px">' + role + '</span><b style="font-size:18px;color:' + (p === null ? '#94A3B8' : p >= pass ? '#166534' : p >= 50 ? '#92400E' : '#991B1B') + '">' + (p === null ? '–' : p + '%') + '</b></div>'
+      + '<div class="nx-hb"><p>' + (p === null ? '' : '<span class="b" style="width:' + Math.min(b === null || b === undefined ? p : b, p) + '%"></span>' + (b !== null && b !== undefined && p > b ? '<span class="i" style="width:' + (p - b) + '%"></span>' : '')) + '</p></div>'
+      + '<div class="nx-tg"><span>Lead: ' + ndEsc(nxFirst(ndLead(id)) || '—') + '</span><span>' + ndFillers(id).length + ' fill</span><span class="' + (gaps ? 'r' : 'g') + '">' + gaps + ' open gap' + (gaps === 1 ? '' : 's') + '</span><span class="' + (open ? 'a' : 'g') + '">' + open + ' action' + (open === 1 ? '' : 's') + ' open</span>' + (b !== null && b !== undefined ? '<span>baseline ' + b + '%</span>' : '') + '</div></div>';
+  }).join('');
+  h += '<div class="nx-sec"><b>Department × Area of Concern</b></div><div class="nx-card">' + nxGridHTML(ids) + '<span class="nx-dim">Latest checked score of each checkpoint, % of the maximum · target ' + pass + '%</span></div>';
+  return h + '</div>';
 }

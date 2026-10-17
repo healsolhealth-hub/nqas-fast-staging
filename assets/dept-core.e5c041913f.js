@@ -101,7 +101,7 @@ function ndRender() {
   if (_nd.card) { app.innerHTML = ndCardHTML(); ndQBadge(); return; }                                   // Compare the cards (full screen)
   if (_nd.screen === 'lead' && !_nd.view) { app.innerHTML = ndLeadScreenHTML(); ndQBadge(); return; }   // Decide & assign (full screen)
   if (ndFaOn()) { app.innerHTML = ndFaHTML(); ndQBadge(); return; }                                       // Facility dashboard (in-charge, MO in-charge)
-  var t = _nd.tab, body = t === 'cards' ? ndCardsHTML() : t === 'ready' ? ndReadyHTML() : t === 'actions' ? ndActionsPageHTML() : t === 'setup' ? ndSetupPageHTML()
+  var t = _nd.tab, body = t === 'cards' ? ndCardsHTML() : t === 'ready' ? ndReadyHTML() : t === 'actions' ? ndActionsPageHTML() : t === 'setup' ? ndSetupPageHTML() : t === 'dept' ? ndDeptDashHTML()
     : t === 'me' ? ndMeHTML() : t === 'fix' ? ndSupHTML() : ndTodayHTML();
   app.innerHTML = body + ndNavHTML(); ndQBadge();   // screens: dept/screens.js
   if (t === 'cards') ndScrollStrip();

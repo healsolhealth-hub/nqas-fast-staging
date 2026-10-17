@@ -274,3 +274,8 @@
 #nf-dept-app .nx-fa-pg{display:flex;flex-direction:column;gap:3px;margin-top:2px;}
 #nf-dept-app .nx-lbl select,#nf-dept-app .nx-lbl input{margin-top:4px;display:block;}
 #nf-dept-app label.nx-lbl{display:block;}
+/* the department × Area of Concern grid fits a phone without sideways scrolling */
+#nf-dept-app .nx .nd-grid{border-radius:12px;}
+#nf-dept-app .nx .nd-grid table{min-width:0;font-size:11.5px;table-layout:fixed;}
+#nf-dept-app .nx .nd-grid th,#nf-dept-app .nx .nd-grid td{padding:8px 1px;}
+#nf-dept-app .nx .nd-grid thead th:first-child,#nf-dept-app .nx .nd-grid tbody th{width:44px;padding-left:8px;}
