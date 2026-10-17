@@ -1,8 +1,8 @@
 // ══════════════════════════════════════════════════════════════
 // DEPARTMENT CORE (phase 3) — UPHC now; PHC / CHC later with their own settings and checklist.
 // Registered as core 'dept' (NF_LEVELS.uphc.core). Opened by nfGo for a staff member of a facility of that type.
-// Screens (#nf-dept-app, full screen): Today (my departments' cards for the programme day) · Readiness (department ×
-// Area of Concern) · Set-up (in-charge: start date, departments, leads, teams) · Me.
+// Screens (#nf-dept-app, full screen; drawn by dept/screens.js): Today · Cards · Progress · Me · Set-up (in-charge) ·
+// Compare the cards (checker) · Decide & assign (lead) · How to fix (Facility Supervisor).
 // Data
 //   sc_facilities/{code}/startDate            one date for all departments (baseline starts together)
 //   sc_facilities/{code}/depts/{dept}         {lead: mobile, team: {mobile: true}, off: true?}  (in-charge writes)
@@ -97,35 +97,15 @@ function ndDayInfo(dept, day) { return nfDeptDay(_nd.plan[dept], day); }
 // ── render ──
 function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
-  if (_nd.card) { app.innerHTML = ndCardHTML(); ndQBadge(); return; }
-  var me = ndMob(), tabs = [['today', 'ti-home', 'Today'], ['cards', 'ti-cards', 'Cards'], ['ready', 'ti-chart-bar', 'Progress'], ['actions', 'ti-checklist', 'Actions']];   // SC staff tabs + Actions
-  if (!_nd.view && ndIsInCharge(me)) tabs.push(['setup', 'ti-settings', 'Set-up']);
-  if (!_nd.view) tabs.push(['me', 'ti-user', 'Me']);
-  var day = ndDay(), info = nfDeptDay(_nd.plan[(_nd.cfg.departments[0] || {}).id] || [[], [], [], [], [], [], []], day);
-  var hd = '<header class="nd-hd">' + (_nd.view ? '<button type="button" class="nd-ib" aria-label="Back to the facility list" title="Back" onclick="ndCloseView()"><i class="ti ti-arrow-left"></i></button>' : '') + '<div><small>' + ndEsc(_nd.cfg.name) + ' · ' + ndEsc(_nd.code) + '</small><b>' + ndEsc(_nd.fac.name || _nd.code) + '</b>'
-    + '<span class="nd-sub">' + (_nd.fac.startDate ? (day >= 1 && day <= _nd.cfg.days ? 'Day ' + day + ' of ' + _nd.cfg.days + ' · ' + ND_PHASE[info.phase] : ND_PHASE[info.phase]) : 'Start date not set') + '</span></div>'
-    + '<span class="nd-qb" id="nd-q" hidden></span><button type="button" class="nd-ib" aria-label="Refresh" title="Refresh" onclick="ndReload()"><i class="ti ti-refresh"></i></button></header>';
-  var body = _nd.tab === 'cards' ? ndCardsHTML() : _nd.tab === 'ready' ? ndReadyHTML() : _nd.tab === 'actions' ? ndActionsHTML() : _nd.tab === 'setup' ? ndSetupHTML() : _nd.tab === 'me' ? ndMeHTML() : ndTodayHTML();
-  var nav = '<nav class="nd-nav">' + tabs.map(function (t) { return '<button type="button" class="' + (_nd.tab === t[0] ? 'on' : '') + '" onclick="ndTab(\'' + t[0] + '\')"><i class="ti ' + t[1] + '"></i><span>' + t[2] + '</span></button>'; }).join('') + '</nav>';
-  if (!_nd.view && (_nd.tab === 'today' || _nd.tab === 'cards') && _nd.fac.startDate) hd = '';   // SC design: these tabs carry their own heading
-  app.innerHTML = hd + '<main class="nd-main">' + body + '</main>' + nav; ndQBadge();
+  if (_nd.card) { app.innerHTML = ndCardHTML(); ndQBadge(); return; }                                   // Compare the cards (full screen)
+  if (_nd.screen === 'lead' && !_nd.view) { app.innerHTML = ndLeadScreenHTML(); ndQBadge(); return; }   // Decide & assign (full screen)
+  var t = _nd.tab, body = t === 'cards' ? ndCardsHTML() : t === 'ready' ? ndReadyHTML() : t === 'actions' ? ndActionsPageHTML() : t === 'setup' ? ndSetupPageHTML()
+    : t === 'me' ? ndMeHTML() : t === 'fix' ? ndSupHTML() : ndTodayHTML();
+  app.innerHTML = body + ndNavHTML(); ndQBadge();   // screens: dept/screens.js
+  if (t === 'cards') ndScrollStrip();
 }
-function ndTab(t) { if (t === 'timeline' || t === 'day') { _nd.cv = t === 'timeline' ? 'timeline' : 'day'; t = 'cards'; } _nd.tab = t; _nd.card = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} if (t === 'cards') ndScrollStrip(); }
-function ndScrollStrip() { try { var el = document.querySelector('#nd-ds .scb2-sel, #nd-ds .today-ring'); if (el) el.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) {} }
-
-// ── readiness: department × Area of Concern ──
-function ndReadyHTML() {
-  var on = ndDeptDefs().map(function (d) { return d.id; }), R = nfDeptReadiness(_nd.cl.items, ndLatest(), { pass: (_nd.cfg.passMark || {}).overall || 70, depts: on });
-  var aocs = Object.keys(_nd.cl.aocs), cls = function (p) { return p === null ? 'na' : p >= 70 ? 'g' : p >= 50 ? 'a' : 'r'; };
-  var cell = function (x) { return '<td class="' + cls(x && x.pct !== undefined ? x.pct : null) + '">' + (x && x.pct !== null && x.pct !== undefined ? x.pct : '–') + '</td>'; };
-  var h = '<div class="nd-card nd-sum"><div><b>' + (R.overall === null ? '–' : R.overall + '%') + '</b><small>overall</small></div><div><b>' + R.n + '</b><small>of ' + R.of + ' assessed</small></div>'
-    + '<div><b class="' + (R.meets ? 'ok' : '') + '">' + (R.meets ? 'Meets' : R.n < R.of ? 'In progress' : 'Not yet') + '</b><small>70% overall · each department · each Area of Concern</small></div></div>';
-  h += '<div class="nd-grid"><table><thead><tr><th>Dept</th>' + aocs.map(function (a) { return '<th title="' + ndEsc(_nd.cl.aocs[a]) + '">' + a + '</th>'; }).join('') + '<th>All</th></tr></thead><tbody>';
-  ndDeptDefs().forEach(function (d) { var x = R.byDept[d.id] || {}; h += '<tr><th title="' + ndEsc(d.name) + '">' + ndEsc(d.id) + '</th>' + aocs.map(function (a) { return cell((x.byAoc || {})[a]); }).join('') + cell(x) + '</tr>'; });
-  h += '<tr class="tot"><th>All</th>' + aocs.map(function (a) { return cell(R.byAoc[a]); }).join('') + cell({ pct: R.overall }) + '</tr></tbody></table></div>';
-  h += '<div class="nd-legend"><span class="g">≥ 70</span><span class="a">50–69</span><span class="r">&lt; 50</span><span class="na">not assessed</span> · latest score of each checkpoint, % of the maximum</div>';
-  return h;
-}
+function ndTab(t) { if (t === 'timeline' || t === 'day') { _nd.cv = t === 'timeline' ? 'timeline' : 'day'; t = 'cards'; } _nd.tab = t; _nd.card = null; _nd.screen = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndScrollStrip() { try { var box = document.getElementById('nd-ds'), el = box && box.querySelector('.sel'); if (el) box.scrollLeft = Math.max(0, el.offsetLeft - box.offsetLeft - (box.clientWidth - el.offsetWidth) / 2); } catch (e) {} }   // the chosen day in the middle of the strip
 
 // ── set-up (in-charge) ──
 function ndStartForm() {
@@ -240,14 +220,6 @@ async function ndRemoveStaff(mob) {
 }
 
 // ── me ──
-function ndMeHTML() {
-  var me = ndMob(), st = ndStaff()[me] || {};
-  return '<div class="nd-card"><b>' + ndEsc(st.name || me) + '</b><p>' + ndEsc(ndRoleLabel(st.role || _nd.cfg.inCharge)) + ' · ' + ndEsc(_nd.fac.name || _nd.code) + '</p>'
-    + '<p class="nd-dim">My departments: ' + (ndMyDepts().map(function (d) { return ndEsc(d.name); }).join(', ') || '—') + '</p></div>'
-    + '<div class="nd-card nd-rows"><button type="button" onclick="nfChangeMyPassword()"><i class="ti ti-key"></i>Change my password</button>'
-    + '<button type="button" onclick="ndLogout()"><i class="ti ti-logout"></i>Logout</button></div>';
-}
-
 // ── dates ──
 function ndToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function ndAddDays(iso, n) { var d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -264,7 +236,7 @@ async function ndOpenView(code) {
   nfSetLevel(t);
   var claims = (typeof _nfAuth !== 'undefined' && _nfAuth && _nfAuth.claims) || {}, sup = (typeof appMode !== 'undefined' && appMode === 'sc-supervisor') ? claims.sup : null, supName = '';
   if (sup) { try { supName = ((await fbGet('sc_supervisors/' + sup)) || {}).name || ''; } catch (e) {} }
-  _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: {}, pcards: {}, actions: {}, sel: {}, tab: sup ? 'actions' : 'today', card: null, view: sup ? 'sup' : 'view', supId: sup, supName: supName };
+  _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: {}, pcards: {}, actions: {}, sel: {}, tab: sup ? 'fix' : 'today', card: null, view: sup ? 'sup' : 'view', supId: sup, supName: supName };
   (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id); });
   _nd.byId = {}; cl.items.forEach(function (r) { _nd.byId[r[0]] = r; });
   try { _nd.cards = (await fbGet(ndPath())) || {}; } catch (e) {}
