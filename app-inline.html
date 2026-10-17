@@ -21939,7 +21939,7 @@ function nxRing(pct, size, stroke, col, track) {
   return '<svg viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '" aria-hidden="true"><circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" stroke="' + track + '" stroke-width="' + stroke + '" fill="none"/>'
     + '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" stroke="' + col + '" stroke-width="' + stroke + '" fill="none" stroke-linecap="round" stroke-dasharray="' + a + ' ' + c + '" transform="rotate(-90 ' + size / 2 + ' ' + size / 2 + ')"/></svg>';
 }
-function nxFirst(mob) { return String(ndName(mob) || '').split(' ')[0] || ndName(mob); }
+function nxFirst(mob) { var p = String(ndName(mob) || '').split(/\s+/).filter(Boolean); if (p.length > 1 && /^(dr|mr|mrs|ms|smt|shri)\.?$/i.test(p[0])) return p[0] + ' ' + p[1]; return p[0] || ndName(mob); }   // "Dr Jain", not "Dr"
 function nxRoleOf(mob) { return ndRoleLabel(ndRole(mob) || _nd.cfg.inCharge); }
 function nxPkg() { var p = (_nd.cfg.programmes || []).find(function (x) { return x.id === _nd.fac.progId; }); var m = (p ? /package\s*([A-Z])\b/i.exec(p.label) : null) || /([A-Z])$/.exec(String(_nd.fac.progId || '')); return m ? m[1].toUpperCase() : ''; }
 function nxPkgLabel() { var k = nxPkg(); return k ? 'Package ' + k : (_nd.cfg.short || ''); }
@@ -22081,7 +22081,7 @@ function nxMyRechecks() { var me = ndMob(), A = _nd.actions || {}; return Object
 function nxTabsHTML(me) {
   var acts = ndMyActions(), re = nxMyRechecks(), gaps = nxMyGaps(), tab = _nd.ttab || 'act', A = _nd.actions || {};
   var b = function (k, t, n) { return '<button type="button" class="' + (tab === k ? 'on' : '') + '" onclick="_nd.ttab=\'' + k + '\';ndKeepScroll()">' + t + ' <em>' + n + '</em></button>'; };
-  var h = '<div class="nx-seg">' + b('act', ndIsInCharge(me) ? 'Open actions' : 'My actions', acts.length) + b('re', 'Re-checks', re.length) + b('gap', 'My gaps', gaps.length) + '</div>';
+  var h = '<div class="nx-seg">' + b('act', ndIsInCharge(me) ? 'Actions' : 'My actions', acts.length) + b('re', 'Re-checks', re.length) + b('gap', 'My gaps', gaps.length) + '</div>';
   if (tab === 'act') {
     if (!acts.length) return h + '<div class="nx-card"><div class="nx-empty">No actions for you right now.</div></div>';
     h += acts.slice(0, _nd.allAct ? 99 : 3).map(function (id) { return nxActCard(id); }).join('');
