@@ -214,18 +214,34 @@ function ndCheckHTML(dept, day, ro) {
   h += '<div class="nd-card nd-sum4"><div><b class="ok">' + cnt.met + '</b><small>agreed Met · done</small></div><div><b>' + cnt.spot + '</b><small>spot-check</small></div><div><b>' + cnt.unmet + '</b><small>agreed unmet</small></div><div><b class="warn">' + cnt.diff + '</b><small>cards differ</small></div></div>';
   var look = rows.filter(function (x) { return x.look; }), order = { diff: 0, unmet: 1, met: 2, none: 3 };
   look.sort(function (a, b) { return (a.re ? -1 : 0) - (b.re ? -1 : 0) || order[a.kind] - order[b.kind]; });
-  look.forEach(function (x) {
-    var r = _nd.byId[x.id]; if (!r) return;
-    var cur = res.chk ? (res.esc && res.esc[x.id] ? 'esc' : (res.f || {})[x.id]) : (x.id in sel ? sel[x.id] : (x.kind === 'met' || x.kind === 'unmet' ? x.sc[0].s : undefined));
-    var tag = x.re ? '<span class="nd-tag re">Re-check</span>' : x.kind === 'diff' ? '<span class="nd-tag warn">Cards differ</span>' : x.kind === 'unmet' ? '<span class="nd-tag">All say ' + (x.sc[0].s === 0 ? 'Not met' : 'Partial') + '</span>' : '<span class="nd-tag">Spot-check</span>';
-    h += '<div class="nd-cp nd-cmp" id="nd-cmp-' + x.id + '">' + tag + ndCpHead(r)
-      + '<div class="nd-votes">' + x.sc.map(function (v) { var rr = ndReason(v.r); return '<span class="nd-vote s' + v.s + '"><b>' + ndEsc(ndName(v.m)) + '</b> ' + ['Not met', 'Partial', 'Met'][v.s] + (rr ? ' · ' + ndEsc(rr.t) : '') + (v.note ? ' · “' + ndEsc(v.note) + '”' : '') + '</span>'; }).join('') + '</div>'
-      + '<div class="nd-sc">' + ND_SCORE.map(function (o) { return '<button type="button" class="' + o.k + (cur === o.v ? ' on' : '') + '"' + (!can ? ' disabled' : '') + ' onclick="ndPick(\'' + dept + '\',' + day + ',\'' + x.id + '\',' + o.v + ')">' + o.t + '</button>'; }).join('')
-      + (x.kind === 'diff' ? '<button type="button" class="esc' + (cur === 'esc' ? ' on' : '') + '"' + (!can ? ' disabled' : '') + ' onclick="ndPick(\'' + dept + '\',' + day + ',\'' + x.id + '\',\'esc\')">To lead</button>' : '') + '</div></div>';
+  // the comparison table (as agreed): checkpoints as rows, one column per person, then the decision and where it goes
+  var cols = inn.done, chip = function (v) { return v === undefined ? '<span class="nd-c na">—</span>' : '<span class="nd-c s' + v + '">' + ['Not met', 'Partial', 'Met'][v] + '</span>'; };
+  var where = function (x, cur) {
+    if (cur === 'esc') return 'Lead decides';
+    if (cur === undefined) return x.kind === 'diff' ? 'Choose, or send to the lead' : '';
+    return cur === 2 ? 'Closed as Met' + (x.re ? ' · action closed' : '') : x.re ? 'Still unmet → Supervisor' : 'Lead assigns an action';
+  };
+  var groups = [['re', 'Re-check after a fix'], ['diff', 'Cards differ — settle or send to the lead'], ['unmet', 'All cards say unmet — confirm'], ['spot', 'Spot-check (1 in ' + ND_SPOT + ' agreed Met)']];
+  var grp = function (x) { return x.re ? 're' : x.kind === 'diff' ? 'diff' : x.kind === 'unmet' ? 'unmet' : 'spot'; };
+  h += '<div class="nd-tblw"><table class="nd-cmpt"><thead><tr><th class="cp">Checkpoint</th>' + cols.map(function (m) { return '<th>' + ndEsc(ndName(m)) + '</th>'; }).join('') + '<th class="dec">Decision · where it goes</th></tr></thead><tbody>';
+  groups.forEach(function (g) {
+    var list = look.filter(function (x) { return grp(x) === g[0]; }); if (!list.length) return;
+    h += '<tr class="nd-gr"><th colspan="' + (cols.length + 2) + '">' + ndEsc(g[1]) + ' · ' + list.length + '</th></tr>';
+    list.forEach(function (x) {
+      var r = _nd.byId[x.id]; if (!r) return;
+      var cur = res.chk ? (res.esc && res.esc[x.id] ? 'esc' : (res.f || {})[x.id]) : (x.id in sel ? sel[x.id] : (x.kind === 'met' || x.kind === 'unmet' ? x.sc[0].s : undefined));
+      var by = {}; x.sc.forEach(function (v) { by[v.m] = v; });
+      h += '<tr class="nd-cmpr' + (x.kind === 'diff' && cur === undefined ? ' todo' : '') + '" id="nd-cmp-' + x.id + '"><td class="cp"><b>' + ndEsc(x.id) + '</b><span>' + ndEsc(r[5]) + '</span>' + (r[7] ? '<small><i class="ti ti-search"></i> ' + ndEsc(r[7]) + '</small>' : '') + '</td>'
+        + cols.map(function (m) { var v = by[m] || {}, rr = ndReason(v.r); return '<td class="pc">' + chip(v.s) + (rr ? '<small>' + ndEsc(rr.t) + '</small>' : '') + (v.note ? '<small>“' + ndEsc(v.note) + '”</small>' : '') + '</td>'; }).join('')
+        + '<td class="dec"><div class="nd-seg3">' + ND_SCORE.map(function (o) { return '<button type="button" class="' + o.k + (cur === o.v ? ' on' : '') + '"' + (!can ? ' disabled' : '') + ' title="' + o.t + '" onclick="ndPick(\'' + dept + '\',' + day + ',\'' + x.id + '\',' + o.v + ')">' + o.t + '</button>'; }).join('')
+        + (x.kind === 'diff' ? '<button type="button" class="esc' + (cur === 'esc' ? ' on' : '') + '"' + (!can ? ' disabled' : '') + ' onclick="ndPick(\'' + dept + '\',' + day + ',\'' + x.id + '\',\'esc\')">To lead</button>' : '') + '</div>'
+        + '<small class="nd-where">' + ndEsc(where(x, cur)) + '</small></td></tr>';
+    });
   });
+  h += '</tbody></table></div>';
   var auto = rows.filter(function (x) { return x.kind === 'met' && !x.look; });
-  if (auto.length) h += '<details class="nd-card nd-dset"><summary><span class="nd-dn"><b>' + auto.length + ' agreed Met</b><small>confirmed automatically</small></span></summary>'
-    + auto.map(function (x) { return '<div class="nd-srow"><span class="nd-dn"><b>' + ndEsc(x.id) + '</b><small>' + ndEsc(ndCpText(x.id)) + '</small></span></div>'; }).join('') + '</details>';
+  if (auto.length) h += '<details class="nd-card nd-dset"><summary><span class="nd-dn"><b>' + auto.length + ' agreed Met · closed automatically</b><small>every card says Met — the lead never sees them</small></span></summary>'
+    + auto.map(function (x) { return '<div class="nd-srow"><span class="nd-dn"><b>' + ndEsc(x.id) + '</b><small>' + ndEsc(ndCpText(x.id)) + '</small></span><span class="nd-c s2">Met</span></div>'; }).join('') + '</details>';
   var open = look.filter(function (x) { return x.kind === 'diff' && !(x.id in sel); }).length;
   h += '</main><footer class="nd-ft"><span>' + (res.chk ? 'Checked' : open ? open + ' difference' + (open > 1 ? 's' : '') + ' to settle' : 'Ready') + '</span>';
   if (can) h += '<button type="button" class="nd-btn"' + (open || inn.waiting.length ? ' disabled title="' + (inn.waiting.length ? 'Some cards are still awaited' : 'Settle every difference or send it to the lead') + '"' : '') + ' onclick="ndCheckDone(\'' + dept + '\',' + day + ')">Check done</button>';
