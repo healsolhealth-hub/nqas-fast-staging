@@ -75,3 +75,31 @@ body.nf-stage #nf-dept-app{padding-bottom:110px;}
 #nf-dept-app .nd-am{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;color:var(--t2,#475569);margin-top:8px;} #nf-dept-app .nd-am .over{color:#B91C1C;font-weight:700;}
 #nf-dept-app .nd-ft{flex-wrap:wrap;}
 body.nd-on .toast{bottom:96px;white-space:normal;max-width:calc(100vw - 32px);text-align:center;}
+/* review flow (17 Oct) */
+#nf-dept-app .nd-std{flex-direction:row;align-items:flex-end;justify-content:space-between;gap:10px;} #nf-dept-app .nd-std>div{display:flex;flex-direction:column;min-width:0;}
+#nf-dept-app .nd-allmet{flex:none;border:1.5px solid #16A34A;color:#166534;background:#F0FDF4;border-radius:10px;padding:6px 12px;font:700 12px inherit;cursor:pointer;}
+#nf-dept-app .nd-rs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+#nf-dept-app .nd-rs button{border:1px solid var(--br,#E2E8F0);background:#fff;border-radius:999px;padding:5px 10px;font:600 12px inherit;color:var(--t2,#475569);cursor:pointer;}
+#nf-dept-app .nd-rs button.on{background:var(--teal,#1E6B5E);border-color:var(--teal,#1E6B5E);color:#fff;}
+#nf-dept-app .nd-seg{display:flex;gap:6px;max-width:760px;margin:10px auto 0;padding:0 16px;}
+#nf-dept-app .nd-seg button{flex:1;border:1.5px solid var(--teal,#1E6B5E);background:#fff;color:var(--teal,#1E6B5E);border-radius:10px;padding:8px;font:700 13px inherit;cursor:pointer;}
+#nf-dept-app .nd-seg button.on{background:var(--teal,#1E6B5E);color:#fff;}
+#nf-dept-app .nd-who{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+#nf-dept-app .nd-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;background:#F1F5F9;color:#475569;}
+#nf-dept-app .nd-pill.ok{background:#DCFCE7;color:#166534;} #nf-dept-app .nd-pill.na{background:#F1F5F9;color:#94A3B8;} #nf-dept-app .nd-pill.wait{background:#FEF3C7;color:#92400E;}
+#nf-dept-app .nd-pill button{border:0;background:#fff;border-radius:999px;padding:2px 8px;font:700 11px inherit;color:#92400E;cursor:pointer;}
+#nf-dept-app .nd-sum4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;} #nf-dept-app .nd-sum4 b{font-size:20px;display:block;}
+#nf-dept-app .nd-sum4 b.ok{color:#16A34A;} #nf-dept-app .nd-sum4 b.warn{color:#B45309;} #nf-dept-app .nd-sum4 small{font-size:11px;color:var(--t3,#64748B);}
+#nf-dept-app .nd-tag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 7px;background:#F1F5F9;color:#475569;margin-bottom:6px;}
+#nf-dept-app .nd-tag.warn{background:#FEF3C7;color:#92400E;} #nf-dept-app .nd-tag.re{background:#DBEAFE;color:#1E40AF;}
+#nf-dept-app .nd-votes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+#nf-dept-app .nd-vote{font-size:12px;border-radius:8px;padding:4px 8px;background:#F1F5F9;} #nf-dept-app .nd-vote.s2{background:#DCFCE7;color:#14532D;}
+#nf-dept-app .nd-vote.s1{background:#FEF3C7;color:#78350F;} #nf-dept-app .nd-vote.s0{background:#FEE2E2;color:#7F1D1D;}
+#nf-dept-app .nd-sc button.esc{flex:.8;} #nf-dept-app .nd-sc button.esc.on{background:#6D28D9;border-color:#6D28D9;color:#fff;}
+#nf-dept-app .nd-asg{border-top:1px solid #F1F5F9;padding:10px 0;} #nf-dept-app .nd-asg:first-of-type{border-top:0;}
+#nf-dept-app .nd-asg .nd-row{margin-top:8px;}
+#nf-dept-app .nd-todo{padding:4px 12px;} #nf-dept-app .nd-todo-r{display:flex;align-items:center;gap:10px;width:100%;border:0;border-bottom:1px solid #F1F5F9;background:none;padding:12px 2px;font:600 14px inherit;color:inherit;cursor:pointer;text-align:left;}
+#nf-dept-app .nd-todo-r:last-child{border-bottom:0;} #nf-dept-app .nd-todo-r i{color:var(--teal,#1E6B5E);font-size:18px;} #nf-dept-app .nd-todo-r span{flex:1;}
+#nf-dept-app .nd-todo-r b{min-width:28px;text-align:center;border-radius:999px;background:var(--teal,#1E6B5E);color:#fff;padding:2px 8px;font-size:12px;} #nf-dept-app .nd-todo-r b.warn{background:#B45309;}
+#nf-dept-app .nd-wa{flex:none;display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:7px 10px;background:#DCFCE7;color:#166534;font:700 12px inherit;text-decoration:none;}
+#nf-dept-app .nd-qb{flex:none;font-size:11px;font-weight:700;background:#FEF3C7;color:#92400E;border-radius:999px;padding:3px 8px;}
