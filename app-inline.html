@@ -92,7 +92,10 @@ var NF_LEVELS={
     // packages (prices later): without / with delivery services — the same 12-department checklist (HealSol 16 Oct: no
     // delivery department; Maternity Health as it is). All departments start the baseline together (one start date).
     programmes:[{id:'nqas_uphcA',label:'UPHC — without delivery services (60 days)'},{id:'nqas_uphcB',label:'UPHC — with delivery services (60 days)'}],
-    // departments: clinical ones go to the MO in-charge on a dispute, the others to the UPHC Coordinator (working model 15 Oct)
+    // departments (HealSol 17 Oct): the staff posted in a department fill the card; its lead compares, settles disputes and assigns
+    // actions (does not fill). Until the Coordinator names a lead, the MO in-charge leads the clinical ones and the Coordinator the
+    // others. One person filling → her card counts as checked; the lead spot-checks 1 in 10 Met and assigns the rest.
+    // Outreach: USHAs fill, the ANM / Field Monitor compares (xcheck), only real disputes go to the Outreach lead.
     departments:[
       {id:'GC', name:'General Clinic',            clinical:true,  lead:'MOIC'},
       {id:'MH', name:'Maternity Health',          clinical:true,  lead:'MOIC'},
@@ -102,8 +105,8 @@ var NF_LEVELS={
       {id:'CD', name:'Communicable Disease',      clinical:true,  lead:'MOIC'},
       {id:'NCD',name:'Non-Communicable Disease',  clinical:true,  lead:'MOIC'},
       {id:'ER', name:'Dressing Room & Emergency', clinical:true,  lead:'MOIC'},
-      {id:'PH', name:'Pharmacy',                  clinical:false, lead:'Pharmacist'},
-      {id:'LAB',name:'Laboratory',                clinical:false, lead:'LabTech'},
+      {id:'PH', name:'Pharmacy',                  clinical:false, lead:'Coordinator'},
+      {id:'LAB',name:'Laboratory',                clinical:false, lead:'Coordinator'},
       {id:'OR', name:'Outreach',                  clinical:false, lead:'OutreachSup'},
       {id:'GA', name:'General Administration',    clinical:false, lead:'Coordinator'}
     ],
@@ -21448,14 +21451,14 @@ function ndSetupHTML() {
   var staff = ndStaff(), mobs = Object.keys(staff).sort(function (a, b) { return String(staff[a].name || '').localeCompare(String(staff[b].name || '')); });
   var h = '<div class="nd-sec"><b>Programme start date</b><small>One date for all departments</small></div><div class="nd-card">' + ndStartForm() + '</div>'
     + ndStaffHTML()
-    + '<div class="nd-sec"><b>Departments</b><small>Lead verifies the daily card · team fills it</small></div>';
+    + '<div class="nd-sec"><b>Departments</b><small>Staff fill · the lead compares and assigns actions</small></div>';
   (_nd.cfg.departments || []).forEach(function (d) {
     var set = ndDeptSet(d.id), team = set.team || {};
-    h += '<details class="nd-card nd-dset" id="nd-dset-' + d.id + '"><summary><span class="nd-dk">' + ndEsc(d.id) + '</span><span class="nd-dn"><b>' + ndEsc(d.name) + (set.off ? ' (off)' : '') + '</b><small>Lead: ' + ndEsc(set.lead ? ndName(set.lead) : '—') + ' · team ' + Object.keys(team).length + '</small></span></summary>'
+    h += '<details class="nd-card nd-dset" id="nd-dset-' + d.id + '"><summary><span class="nd-dk">' + ndEsc(d.id) + '</span><span class="nd-dn"><b>' + ndEsc(d.name) + (set.off ? ' (off)' : '') + '</b><small>Lead: ' + ndEsc(set.lead ? ndName(set.lead) : '—') + ' · ' + ndFillers(d.id).length + ' fill' + (ndSolo(d.id) ? ' (one person — counts as checked)' : '') + ' · overseen by ' + ndEsc(ndName(ndOverseer(d.id)) || '—') + '</small></span></summary>'
       + '<label class="nd-chk"><input type="checkbox" data-k="off"' + (set.off ? ' checked' : '') + '> Not at this facility (switch off)</label>'
-      + '<label class="nd-lbl">Lead<select class="nd-in" data-k="lead"><option value="">—</option>' + mobs.map(function (m) { return '<option value="' + m + '"' + (set.lead === m ? ' selected' : '') + '>' + ndEsc(staff[m].name || m) + ' · ' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</option>'; }).join('') + '</select></label>'
-      + '<label class="nd-lbl">Checker — compares the cards (blank: the lead)<select class="nd-in" data-k="checker"><option value="">—</option>' + mobs.map(function (m) { return '<option value="' + m + '"' + ((set.checker || set.xcheck) === m ? ' selected' : '') + '>' + ndEsc(staff[m].name || m) + ' · ' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</option>'; }).join('') + '</select></label>'
-      + '<div class="nd-lbl">Team</div><div class="nd-team">' + mobs.map(function (m) { return '<label class="nd-chk"><input type="checkbox" data-team="' + m + '"' + (team[m] ? ' checked' : '') + '> ' + ndEsc(staff[m].name || m) + ' <small>' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</small></label>'; }).join('') + '</div>'
+      + '<label class="nd-lbl">Lead — compares the cards, settles disputes, assigns actions (does not fill)<select class="nd-in" data-k="lead"><option value="">—</option>' + mobs.map(function (m) { return '<option value="' + m + '"' + (set.lead === m ? ' selected' : '') + '>' + ndEsc(staff[m].name || m) + ' · ' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</option>'; }).join('') + '</select></label>'
+      + '<label class="nd-lbl">Cadre checker — compares first, sends real disputes to the lead (Outreach: ANM / Field Monitor; blank: the lead)<select class="nd-in" data-k="checker"><option value="">—</option>' + mobs.map(function (m) { return '<option value="' + m + '"' + ((set.checker || set.xcheck) === m ? ' selected' : '') + '>' + ndEsc(staff[m].name || m) + ' · ' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</option>'; }).join('') + '</select></label>'
+      + '<div class="nd-lbl">Staff posted here — they fill the card (the lead and the checker do not)</div><div class="nd-team">' + mobs.map(function (m) { return '<label class="nd-chk"><input type="checkbox" data-team="' + m + '"' + (team[m] ? ' checked' : '') + '> ' + ndEsc(staff[m].name || m) + ' <small>' + ndEsc(ndRoleLabel(staff[m].role || _nd.cfg.inCharge)) + '</small></label>'; }).join('') + '</div>'
       + '<button type="button" class="nd-btn" onclick="ndSaveDept(\'' + d.id + '\')">Save ' + ndEsc(d.id) + '</button></details>';
   });
   return h;
@@ -21625,11 +21628,19 @@ var ND_CHECK_DUE_H = 24, ND_DECIDE_DUE_H = 48, ND_ACTION_LATE_D = 3;
 function ndPc(dept, day) { return ((_nd.pcards[dept] || {})['day_' + day]) || {}; }
 function ndRes(dept, day) { return ((_nd.cards[dept] || {})['day_' + day]) || {}; }
 function ndChecker(id) { var s = ndDeptSet(id); return s.checker || s.xcheck || ndLead(id) || ''; }
-function ndFillers(id) {   // the team, without the checker (she checks their cards; she fills only if nobody else does)
-  var st = ndStaff(), ck = ndDeptSet(id).checker || ndDeptSet(id).xcheck || '', all = Object.keys(ndTeam(id)).filter(function (m) { return st[m]; });
-  var t = all.filter(function (m) { return m !== ck; }); if (!t.length) t = all;
-  if (!t.length && ndLead(id) && st[ndLead(id)]) t = [ndLead(id)];
+function ndFillers(id) {   // the staff posted in the department fill; the lead and the checker do not (HealSol 17 Oct)
+  var st = ndStaff(), ck = ndDeptSet(id).checker || ndDeptSet(id).xcheck || '', ld = ndLead(id), all = Object.keys(ndTeam(id)).filter(function (m) { return st[m]; });
+  var t = all.filter(function (m) { return m !== ck && m !== ld; }); if (!t.length) t = all.filter(function (m) { return m !== ld; }); if (!t.length) t = all;
+  if (!t.length && ld && st[ld]) t = [ld];   // nobody else: the lead fills herself
   return t;
+}
+// one person fills: her card counts as checked when she marks it done; the lead spot-checks 1 in 10 Met and assigns the rest
+function ndSolo(id) { return ndFillers(id).length === 1; }
+function ndSoloDone(dept, day) { if (!ndSolo(dept) || ndRes(dept, day).chk) return false; var c = ndPc(dept, day)[ndFillers(dept)[0]] || {}; return !!c.done; }
+function ndOverseer(id) {   // above the lead: the MO in-charge for clinical departments, the in-charge (Coordinator) for the others
+  var d = (_nd.cfg.departments || []).find(function (x) { return x.id === id; }) || {}, st = ndStaff();
+  var mo = d.clinical ? Object.keys(st).find(function (m) { return st[m].role === 'MOIC'; }) : null;
+  return mo || Object.keys(st).find(function (m) { return ndIsInCharge(m); }) || '';
 }
 function ndFills(id, mob) { return !!mob && ndFillers(id).indexOf(mob) >= 0; }
 function ndCanCheck(id, mob) { return !!mob && (ndChecker(id) === mob || ndCanVerify(id, mob)); }
@@ -21673,6 +21684,9 @@ function ndLatestFinal() {
   Object.keys(_nd.cards || {}).forEach(function (dept) { var days = _nd.cards[dept] || {};
     Object.keys(days).forEach(function (k) { var n = +k.replace('day_', ''), r = days[k] || {}; if (!r.chk) return;
       Object.keys(r.f || {}).forEach(function (id) { if (!out[id] || out[id].day <= n) out[id] = { s: r.f[id], dept: dept, day: n }; }); }); });
+  Object.keys(_nd.pcards || {}).forEach(function (dept) { if (!ndSolo(dept)) return; var who = ndFillers(dept)[0], days = _nd.pcards[dept] || {};   // one person: her done card counts
+    Object.keys(days).forEach(function (k) { var n = +k.replace('day_', ''), c = (days[k] || {})[who] || {}; if (!c.done || ndRes(dept, n).chk) return;
+      Object.keys(c.s || {}).forEach(function (id) { if (!out[id] || out[id].day < n) out[id] = { s: c.s[id], dept: dept, day: n }; }); }); });
   return out;
 }
 
@@ -21737,7 +21751,7 @@ function ndDone() {
   if (miss.length) { ndToast('You chose "Other" for ' + miss.join(', ') + ' — write what is missing first.', 'err'); var el = document.getElementById('nd-cp-' + miss[0]); if (el) try { el.scrollIntoView({ block: 'center' }); } catch (e) {} return; }
   ndDoneGo();
 }
-function ndDoneGo() { var cc = ndCur(); ndCardWrite({ done: { at: new Date().toISOString(), role: ndRole(ndMob()) } }); ndToast('Card done. ' + ndName(ndChecker(cc.dept)) + ' compares the cards next.', 'ok'); if (_nd.card) ndCloseCard(); else ndKeepScroll(); }
+function ndDoneGo() { var cc = ndCur(); ndCardWrite({ done: { at: new Date().toISOString(), role: ndRole(ndMob()) } }); ndToast(ndSolo(cc.dept) ? 'Card done — it counts as checked. ' + ndName(ndChecker(cc.dept)) + ' spot-checks a few and assigns the gaps.' : 'Card done. ' + ndName(ndChecker(cc.dept)) + ' compares the cards next.', 'ok'); if (_nd.card) ndCloseCard(); else ndKeepScroll(); }
 
 // ── checker: one comparison screen ──
 function ndCompare(dept, day) {
@@ -21799,8 +21813,10 @@ function ndChecksDue(mob) {   // department-days ready to check (or overdue, for
     for (var n = Math.max(1, today - 13); n <= Math.min(today, _nd.cfg.days); n++) {
       var res = ndRes(d.id, n); if (res.chk) continue;
       var inn = ndCardsIn(d.id, n); if (!inn.done.length) continue;
+      var solo = ndSolo(d.id);
+      if (solo && !ndCompare(d.id, n).some(function (x) { return x.re || x.spot; })) continue;   // one card: nothing to spot-check or re-check
       var late = ndHours(inn.lastDone) > ND_CHECK_DUE_H;
-      if (ndChecker(d.id) === mob || (late && ndCanVerify(d.id, mob))) out.push({ dept: d.id, day: n, ready: !inn.waiting.length, late: late });
+      if (ndChecker(d.id) === mob || (late && ndCanVerify(d.id, mob))) out.push({ dept: d.id, day: n, ready: !inn.waiting.length, late: late, solo: solo });
     }
   });
   return out;
@@ -21892,7 +21908,7 @@ function ndMySt(dept, day) {
   var me = ndMob(), today = ndDay(), res = ndRes(dept, day);
   if (!ndDayInfo(dept, day).ids.length) return 'none';
   if (day > today) return 'upcoming';
-  if (res.chk) return 'verified';
+  if (res.chk || ndSoloDone(dept, day)) return 'verified';
   if (!_nd.view && ndFills(dept, me)) { var c = ndPc(dept, day)[me] || {}; return c.done ? 'awaiting' : c.absent ? 'none' : day === today ? 'today' : 'overdue'; }
   var inn = ndCardsIn(dept, day);
   if (inn.done.length) return 'awaiting';
@@ -22033,7 +22049,7 @@ function nxJobsHTML(me) {
   var out = [], check = ndChecksDue(me), re = nxRecheckFor(me), leads = nxLeads(me), esc = ndEscItems(me), un = ndUnassigned(me), waiting = 0;
   check.slice(0, 3).forEach(function (x) {
     var inn = ndCardsIn(x.dept, x.day), diff = x.ready ? ndCompare(x.dept, x.day).filter(function (r) { return r.kind === 'diff'; }).length : 0, due = nxDueText(inn.lastDone, ND_CHECK_DUE_H); waiting++;
-    out.push('<button type="button" class="nx-job hot" onclick="ndOpenDept(\'' + x.dept + '\',' + x.day + ')"><i class="ti ti-list-check" style="background:#F59E0B;color:#fff"></i><span><b>Compare the cards · ' + ndEsc(ndDeptDef(x.dept).name) + '</b><small>Day ' + x.day + ' · ' + inn.done.length + ' of ' + inn.fillers.length + ' sent' + (x.ready ? (diff ? ' · ' + diff + ' disagree' : ' · ready') : ' · cards awaited') + '</small></span>'
+    out.push('<button type="button" class="nx-job hot" onclick="ndOpenDept(\'' + x.dept + '\',' + x.day + ')"><i class="ti ti-list-check" style="background:#F59E0B;color:#fff"></i><span><b>' + (x.solo ? 'Spot-check · ' : 'Compare the cards · ') + ndEsc(ndDeptDef(x.dept).name) + '</b><small>Day ' + x.day + ' · ' + inn.done.length + ' of ' + inn.fillers.length + ' sent' + (x.ready ? (diff ? ' · ' + diff + ' disagree' : ' · ready') : ' · cards awaited') + '</small></span>'
       + (due ? '<em style="background:' + (/late/.test(due) ? '#FEE2E2;color:#991B1B' : '#FEF3C7;color:#92400E') + '">' + due + '</em>' : '') + '</button>');
   });
   if (check.length > 3) out.push('<div class="nx-dim nx-c">+' + (check.length - 3) + ' more days to compare</div>');
@@ -22209,11 +22225,12 @@ function ndDayCardHTML(dept, day) {
   var lead = ndLead(dept), ck = ndChecker(dept), myRole = nxRoleOf(me);
   var h = '<div class="nx-dc"><div class="nx-dc-hd"><div class="nx-dn"><small>DAY</small><b>' + day + '</b></div><div><b>' + ndEsc(d.name) + '</b><small>' + ndEsc((nxWd(day) ? nxWd(day) + ', ' : '') + ndShortDate(nxDateOf(day))) + (lead ? ' · lead: ' + ndEsc(ndName(lead)) + ' (' + ndEsc(nxRoleOf(lead)) + ')' : '') + '</small></div></div>'
     + '<div class="nx-aoc"><b>Area of Concern</b>' + aocs.map(function (a) { return '<span>' + ndEsc(a + ' · ' + String(_nd.cl.aocs[a] || '').replace(/^[:\s]+/, '')) + '</span>'; }).join('') + '</div>';
-  var about = fills ? 'Today you check ' + ids.length + ' checkpoint' + (ids.length > 1 ? 's' : '') + ' of ' + d.name + (stds.length ? ' — ' + stds.map(function (k) { return _nd.cl.stds[k] ? k : k; }).join(', ') : '') + '. Fill your own card; ' + (ck && ck !== me ? nxFirst(ck) + ' (' + nxRoleOf(ck) + ')' : 'the checker') + ' compares the cards later.'
+  var about = fills ? 'Today you check ' + ids.length + ' checkpoint' + (ids.length > 1 ? 's' : '') + ' of ' + d.name + (stds.length ? ' — ' + stds.map(function (k) { return _nd.cl.stds[k] ? k : k; }).join(', ') : '') + (ndSolo(dept) ? '. You are the only one filling this department, so your card counts as checked when you tap Done; ' + (ck && ck !== me ? nxFirst(ck) + ' (' + nxRoleOf(ck) + ')' : 'the lead') + ' spot-checks a few and assigns actions for the gaps.' : '. Fill your own card; ' + (ck && ck !== me ? nxFirst(ck) + ' (' + nxRoleOf(ck) + ')' : 'the checker') + ' compares the cards later.')
     : 'Your team fills their own cards for ' + d.name + '. ' + (ndCanCheck(dept, me) && !_nd.view ? 'You compare them on one screen: agreed Met closes by itself.' : 'The checker compares them on one screen.');
   h += '<div class="nx-blk"><b>About this day</b><span>' + ndEsc(about) + '</span></div>';
   // status
   if (res.chk) h += '<div class="nx-blk" style="background:#F0FDF4"><span style="color:#166534;font-weight:600">Checked by ' + ndEsc(res.chk.byName || ndName(res.chk.by)) + ' · ' + ndEsc(ndShortDate((res.chk.at || '').slice(0, 10))) + (Object.keys(res.esc || {}).length ? ' · ' + Object.keys(res.esc).length + ' with the lead' : '') + '</span></div>';
+  else if (fills && c.done && ndSolo(dept)) h += '<div class="nx-blk" style="background:#F0FDF4"><span style="color:#166534;font-weight:600">Done · counts as checked. ' + ndEsc(ndName(ck)) + ' spot-checks a few and assigns actions for the gaps.</span></div>';
   else if (fills && c.done) h += '<div class="nx-blk" style="background:#FFFBEB"><span style="color:#92400E;font-weight:600">Done · waiting for ' + ndEsc(ndName(ck)) + ' to compare. You can still change a score until then.</span></div>';
   else if (fills && st === 'overdue') h += '<div class="nx-blk" style="background:#FEF2F2"><span style="color:#991B1B;font-weight:600">Missed. The card stays open until it is checked — fill it now to catch up.</span></div>';
   if (!fills) {
@@ -22246,7 +22263,7 @@ function ndDayCardHTML(dept, day) {
     if (!locked && open.length && g.key !== '__re') h += '<div class="nx-foot" style="padding-bottom:0"><button type="button" class="nx-btn dash nd-allmet" onclick="ndAllMet(\'' + open.map(function (r) { return r[0]; }).join(',') + '\')">All Met for the rest of ' + (many ? 'Standard ' + ndEsc(g.key) : 'this Standard') + '</button></div>';
   });
   h += '<div class="nx-foot">';
-  if (!locked && !c.done) h += '<button type="button" class="nx-btn" id="nd-done"' + (n < ids.length ? ' disabled title="Score every checkpoint first"' : '') + ' onclick="ndDone()">Done · send to ' + ndEsc(ck && ck !== me ? nxRoleOf(ck) : 'the checker') + (n < ids.length ? ' · ' + n + '/' + ids.length : '') + '</button>';
+  if (!locked && !c.done) h += '<button type="button" class="nx-btn" id="nd-done"' + (n < ids.length ? ' disabled title="Score every checkpoint first"' : '') + ' onclick="ndDone()">' + (ndSolo(dept) ? 'Done · counts as checked' : 'Done · send to ' + ndEsc(ck && ck !== me ? nxRoleOf(ck) : 'the checker')) + (n < ids.length ? ' · ' + n + '/' + ids.length : '') + '</button>';
   if (!locked) h += '<span class="nx-dim nx-c">Saved on your phone · works without signal</span>';
   return h + '</div></div>';
 }
@@ -22395,8 +22412,9 @@ function nxHelp() {
 function ndCardHTML() {
   var c = _nd.card, dept = c.dept, day = c.day, me = ndMob(), res = ndRes(dept, day), inn = ndCardsIn(dept, day), can = c.mode === 'check' && ndCanCheck(dept, me) && !res.chk && !_nd.view;
   var due = !res.chk && inn.lastDone ? nxDueText(inn.lastDone, ND_CHECK_DUE_H) : '';
-  var h = nxBk('ndCloseCard()', 'Compare the cards', ndDeptDef(dept).name + ' · Day ' + day + ' · ' + (can ? 'you are the checker' : res.chk ? 'checked' : 'view only'),
+  var solo = ndSolo(dept), h = nxBk('ndCloseCard()', solo ? 'Spot-check the card' : 'Compare the cards', ndDeptDef(dept).name + ' · Day ' + day + ' · ' + (can ? 'you are the checker' : res.chk ? 'checked' : 'view only'),
     '<span class="nd-qb" id="nd-q" hidden></span>' + (due ? '<span class="nx-chip ' + (/late/.test(due) ? 'r' : 'a') + '" style="font-size:10.5px">' + due + '</span>' : '')) + '<div class="nx">';
+  if (solo && !res.chk) h += '<div class="nx-ban b"><span>Only ' + ndEsc(ndName(ndFillers(dept)[0])) + ' fills this department, so her card already counts as checked. Look at the spot-checks (and any re-check), then tap Done. Partial and Not met go to your Assign list.</span></div>';
   if (res.chk) h += '<div class="nx-ban g"><b>Checked by ' + ndEsc(res.chk.byName || ndName(res.chk.by)) + '.</b>' + (Object.keys(res.esc || {}).length ? '<span>' + Object.keys(res.esc).length + ' sent to the lead.</span>' : '') + '</div>';
   var cols = inn.done, tag = {}; inn.fillers.forEach(function (m, i) { tag[m] = 'U' + (i + 1); });
   var rows = inn.done.length ? ndCompare(dept, day) : [], sel = ndSelOf(dept, day);
@@ -22417,12 +22435,12 @@ function ndCardHTML() {
     var by = {}; x.sc.forEach(function (v) { by[v.m] = v; }); var s2 = sub(x);
     return '<div class="nx-r nd-cmpr" id="nd-cmp-' + x.id + '" style="' + grid + '"><div><b>' + ndEsc(ndCpText(x.id)) + '</b><small>' + ndEsc(x.id + (s2 ? ' · ' + s2 : '')) + '</small></div>' + cols.map(function (m) { return chip((by[m] || {}).s); }).join('') + (btns ? '<div class="nx-3">' + btns + '</div>' : '') + (where ? '<small class="nx-where">' + ndEsc(where) + '</small>' : '') + '</div>';
   };
-  var look = rows.filter(function (x) { return x.look; });
+  var look = rows.filter(function (x) { return x.look; }), toLeadOk = !!ndLead(dept) && ndChecker(dept) !== ndLead(dept);   // the lead settles disputes herself
   h += '<div class="nx-card p0 nd-cmpt"><div class="nx-r hd" style="' + grid + '"><span>Checkpoint</span>' + cols.map(function (m) { return '<span title="' + ndEsc(ndName(m)) + '">' + tag[m] + '</span>'; }).join('') + '</div>';
   var G = function (k, t, list) { return list.length ? '<div class="nx-grp ' + k + '"><span>' + t + '</span><span>' + list.length + '</span></div>' : ''; };
   var reL = look.filter(function (x) { return x.re; }), diffL = look.filter(function (x) { return !x.re && x.kind === 'diff'; }), unL = look.filter(function (x) { return !x.re && x.kind === 'unmet'; }), spL = look.filter(function (x) { return !x.re && x.kind === 'met'; });
   h += G('re', 'Re-check of a fixed action', reL) + reL.map(function (x) { var low = x.low === null ? 0 : Math.min(x.low, 1), cur = curOf(x); return row(x, btn(x, 2, 'Confirm fixed', 's2') + btn(x, low, 'Still unmet → Supervisor', 's0'), cur === undefined ? 'Fixed by ' + ndName(((_nd.actions || {})[x.id] || {}).fixed ? _nd.actions[x.id].fixed.by : '') : cur === 2 ? 'Action closed' : 'Goes to the Facility Supervisor'); }).join('');
-  h += G('diff', 'Disagree — you decide', diffL) + diffL.map(function (x) { var cur = curOf(x); return row(x, btn(x, 2, 'Met', 's2') + btn(x, 1, 'Partial', 's1') + btn(x, 0, 'Not met', 's0') + btn(x, 'esc', 'To lead', 'esc'), cur === undefined ? 'Choose, or send to the lead' : cur === 'esc' ? 'The lead decides' : cur === 2 ? 'Closed as Met' : 'The lead assigns an action'); }).join('');
+  h += G('diff', 'Disagree — you decide', diffL) + diffL.map(function (x) { var cur = curOf(x); return row(x, btn(x, 2, 'Met', 's2') + btn(x, 1, 'Partial', 's1') + btn(x, 0, 'Not met', 's0') + (toLeadOk ? btn(x, 'esc', 'To lead', 'esc') : ''), cur === undefined ? (toLeadOk ? 'Choose, or send to the lead' : 'Choose the score') : cur === 'esc' ? 'The lead decides' : cur === 2 ? 'Closed as Met' : 'The lead assigns an action'); }).join('');
   if (unL.length) { var showAll = _nd.cmpMore || unL.length <= 3; h += G('unmet', 'Agreed unmet — goes to the lead for an action', unL) + unL.slice(0, showAll ? 99 : 2).map(function (x) { return row(x, '', ''); }).join('') + (showAll ? '' : '<button type="button" class="nx-more" style="border-top:1px solid #F1F5F9" onclick="_nd.cmpMore=1;ndKeepScroll()">+' + (unL.length - 2) + ' more</button>'); }
   h += G('spot', 'Spot-check (1 in ' + ND_SPOT + ' agreed Met) · look at it yourself', spL) + spL.map(function (x) { return row(x, btn(x, 2, 'Yes, Met', 's2') + btn(x, 0, 'No — not met', 's0'), ''); }).join('');
   var auto = rows.filter(function (x) { return x.kind === 'met' && !x.look; });

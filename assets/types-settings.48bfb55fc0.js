@@ -74,7 +74,10 @@ var NF_LEVELS={
     // packages (prices later): without / with delivery services — the same 12-department checklist (HealSol 16 Oct: no
     // delivery department; Maternity Health as it is). All departments start the baseline together (one start date).
     programmes:[{id:'nqas_uphcA',label:'UPHC — without delivery services (60 days)'},{id:'nqas_uphcB',label:'UPHC — with delivery services (60 days)'}],
-    // departments: clinical ones go to the MO in-charge on a dispute, the others to the UPHC Coordinator (working model 15 Oct)
+    // departments (HealSol 17 Oct): the staff posted in a department fill the card; its lead compares, settles disputes and assigns
+    // actions (does not fill). Until the Coordinator names a lead, the MO in-charge leads the clinical ones and the Coordinator the
+    // others. One person filling → her card counts as checked; the lead spot-checks 1 in 10 Met and assigns the rest.
+    // Outreach: USHAs fill, the ANM / Field Monitor compares (xcheck), only real disputes go to the Outreach lead.
     departments:[
       {id:'GC', name:'General Clinic',            clinical:true,  lead:'MOIC'},
       {id:'MH', name:'Maternity Health',          clinical:true,  lead:'MOIC'},
@@ -84,8 +87,8 @@ var NF_LEVELS={
       {id:'CD', name:'Communicable Disease',      clinical:true,  lead:'MOIC'},
       {id:'NCD',name:'Non-Communicable Disease',  clinical:true,  lead:'MOIC'},
       {id:'ER', name:'Dressing Room & Emergency', clinical:true,  lead:'MOIC'},
-      {id:'PH', name:'Pharmacy',                  clinical:false, lead:'Pharmacist'},
-      {id:'LAB',name:'Laboratory',                clinical:false, lead:'LabTech'},
+      {id:'PH', name:'Pharmacy',                  clinical:false, lead:'Coordinator'},
+      {id:'LAB',name:'Laboratory',                clinical:false, lead:'Coordinator'},
       {id:'OR', name:'Outreach',                  clinical:false, lead:'OutreachSup'},
       {id:'GA', name:'General Administration',    clinical:false, lead:'Coordinator'}
     ],

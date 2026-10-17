@@ -26,11 +26,19 @@ var ND_CHECK_DUE_H = 24, ND_DECIDE_DUE_H = 48, ND_ACTION_LATE_D = 3;
 function ndPc(dept, day) { return ((_nd.pcards[dept] || {})['day_' + day]) || {}; }
 function ndRes(dept, day) { return ((_nd.cards[dept] || {})['day_' + day]) || {}; }
 function ndChecker(id) { var s = ndDeptSet(id); return s.checker || s.xcheck || ndLead(id) || ''; }
-function ndFillers(id) {   // the team, without the checker (she checks their cards; she fills only if nobody else does)
-  var st = ndStaff(), ck = ndDeptSet(id).checker || ndDeptSet(id).xcheck || '', all = Object.keys(ndTeam(id)).filter(function (m) { return st[m]; });
-  var t = all.filter(function (m) { return m !== ck; }); if (!t.length) t = all;
-  if (!t.length && ndLead(id) && st[ndLead(id)]) t = [ndLead(id)];
+function ndFillers(id) {   // the staff posted in the department fill; the lead and the checker do not (HealSol 17 Oct)
+  var st = ndStaff(), ck = ndDeptSet(id).checker || ndDeptSet(id).xcheck || '', ld = ndLead(id), all = Object.keys(ndTeam(id)).filter(function (m) { return st[m]; });
+  var t = all.filter(function (m) { return m !== ck && m !== ld; }); if (!t.length) t = all.filter(function (m) { return m !== ld; }); if (!t.length) t = all;
+  if (!t.length && ld && st[ld]) t = [ld];   // nobody else: the lead fills herself
   return t;
+}
+// one person fills: her card counts as checked when she marks it done; the lead spot-checks 1 in 10 Met and assigns the rest
+function ndSolo(id) { return ndFillers(id).length === 1; }
+function ndSoloDone(dept, day) { if (!ndSolo(dept) || ndRes(dept, day).chk) return false; var c = ndPc(dept, day)[ndFillers(dept)[0]] || {}; return !!c.done; }
+function ndOverseer(id) {   // above the lead: the MO in-charge for clinical departments, the in-charge (Coordinator) for the others
+  var d = (_nd.cfg.departments || []).find(function (x) { return x.id === id; }) || {}, st = ndStaff();
+  var mo = d.clinical ? Object.keys(st).find(function (m) { return st[m].role === 'MOIC'; }) : null;
+  return mo || Object.keys(st).find(function (m) { return ndIsInCharge(m); }) || '';
 }
 function ndFills(id, mob) { return !!mob && ndFillers(id).indexOf(mob) >= 0; }
 function ndCanCheck(id, mob) { return !!mob && (ndChecker(id) === mob || ndCanVerify(id, mob)); }
@@ -74,6 +82,9 @@ function ndLatestFinal() {
   Object.keys(_nd.cards || {}).forEach(function (dept) { var days = _nd.cards[dept] || {};
     Object.keys(days).forEach(function (k) { var n = +k.replace('day_', ''), r = days[k] || {}; if (!r.chk) return;
       Object.keys(r.f || {}).forEach(function (id) { if (!out[id] || out[id].day <= n) out[id] = { s: r.f[id], dept: dept, day: n }; }); }); });
+  Object.keys(_nd.pcards || {}).forEach(function (dept) { if (!ndSolo(dept)) return; var who = ndFillers(dept)[0], days = _nd.pcards[dept] || {};   // one person: her done card counts
+    Object.keys(days).forEach(function (k) { var n = +k.replace('day_', ''), c = (days[k] || {})[who] || {}; if (!c.done || ndRes(dept, n).chk) return;
+      Object.keys(c.s || {}).forEach(function (id) { if (!out[id] || out[id].day < n) out[id] = { s: c.s[id], dept: dept, day: n }; }); }); });
   return out;
 }
 
@@ -138,7 +149,7 @@ function ndDone() {
   if (miss.length) { ndToast('You chose "Other" for ' + miss.join(', ') + ' — write what is missing first.', 'err'); var el = document.getElementById('nd-cp-' + miss[0]); if (el) try { el.scrollIntoView({ block: 'center' }); } catch (e) {} return; }
   ndDoneGo();
 }
-function ndDoneGo() { var cc = ndCur(); ndCardWrite({ done: { at: new Date().toISOString(), role: ndRole(ndMob()) } }); ndToast('Card done. ' + ndName(ndChecker(cc.dept)) + ' compares the cards next.', 'ok'); if (_nd.card) ndCloseCard(); else ndKeepScroll(); }
+function ndDoneGo() { var cc = ndCur(); ndCardWrite({ done: { at: new Date().toISOString(), role: ndRole(ndMob()) } }); ndToast(ndSolo(cc.dept) ? 'Card done — it counts as checked. ' + ndName(ndChecker(cc.dept)) + ' spot-checks a few and assigns the gaps.' : 'Card done. ' + ndName(ndChecker(cc.dept)) + ' compares the cards next.', 'ok'); if (_nd.card) ndCloseCard(); else ndKeepScroll(); }
 
 // ── checker: one comparison screen ──
 function ndCompare(dept, day) {
@@ -200,8 +211,10 @@ function ndChecksDue(mob) {   // department-days ready to check (or overdue, for
     for (var n = Math.max(1, today - 13); n <= Math.min(today, _nd.cfg.days); n++) {
       var res = ndRes(d.id, n); if (res.chk) continue;
       var inn = ndCardsIn(d.id, n); if (!inn.done.length) continue;
+      var solo = ndSolo(d.id);
+      if (solo && !ndCompare(d.id, n).some(function (x) { return x.re || x.spot; })) continue;   // one card: nothing to spot-check or re-check
       var late = ndHours(inn.lastDone) > ND_CHECK_DUE_H;
-      if (ndChecker(d.id) === mob || (late && ndCanVerify(d.id, mob))) out.push({ dept: d.id, day: n, ready: !inn.waiting.length, late: late });
+      if (ndChecker(d.id) === mob || (late && ndCanVerify(d.id, mob))) out.push({ dept: d.id, day: n, ready: !inn.waiting.length, late: late, solo: solo });
     }
   });
   return out;
@@ -293,7 +306,7 @@ function ndMySt(dept, day) {
   var me = ndMob(), today = ndDay(), res = ndRes(dept, day);
   if (!ndDayInfo(dept, day).ids.length) return 'none';
   if (day > today) return 'upcoming';
-  if (res.chk) return 'verified';
+  if (res.chk || ndSoloDone(dept, day)) return 'verified';
   if (!_nd.view && ndFills(dept, me)) { var c = ndPc(dept, day)[me] || {}; return c.done ? 'awaiting' : c.absent ? 'none' : day === today ? 'today' : 'overdue'; }
   var inn = ndCardsIn(dept, day);
   if (inn.done.length) return 'awaiting';
