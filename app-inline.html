@@ -20952,6 +20952,12 @@ body.nd-on .toast{bottom:96px;white-space:normal;max-width:calc(100vw - 32px);te
 #nf-dept-app .nd-seg3 button.not.on{background:#DC2626;border-color:#DC2626;color:#fff;} #nf-dept-app .nd-seg3 button.esc.on{background:#6D28D9;border-color:#6D28D9;color:#fff;}
 #nf-dept-app .nd-seg3 button:disabled{cursor:default;opacity:.75;}
 #nf-dept-app .nd-where{display:block;font-size:11px;font-weight:600;color:var(--t3,#64748B);margin-top:5px;}
+/* timeline (SC style) inside the department app */
+#nf-dept-app .nd-mini{margin:0 0 12px;} #nf-dept-app .scb2-btn.sm{min-height:34px;padding:6px 10px;font-size:11.5px;}
+#nf-dept-app .nd-back{border:0;background:none;color:var(--teal,#1E6B5E);cursor:pointer;font-size:16px;padding:0 4px 0 0;vertical-align:middle;}
+#nf-dept-app .nd-dept:disabled{opacity:.6;cursor:default;}
+#nf-dept-app .nd-in.nd-need{border-color:#D97706;background:#FFFBEB;}
+#nf-dept-app .nd-nav button span{white-space:nowrap;font-size:10.5px;}
 </style>
 <script id="nf-dept-plan">// ══════════════════════════════════════════════════════════════
 // DEPARTMENT CORE — day plan (UPHC now; PHC / CHC later). Plain functions, no screen code.
@@ -21143,15 +21149,15 @@ function ndDayInfo(dept, day) { return nfDeptDay(_nd.plan[dept], day); }
 function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
   if (_nd.card) { app.innerHTML = ndCardHTML(); ndQBadge(); return; }
-  var me = ndMob(), tabs = [['today', 'ti-calendar-check', 'Today'], ['ready', 'ti-chart-bar', 'Readiness'], ['actions', 'ti-checklist', 'Actions']];
+  var me = ndMob(), tabs = [['today', 'ti-calendar-check', 'Today'], ['timeline', 'ti-timeline', 'Timeline'], ['ready', 'ti-chart-bar', 'Readiness'], ['actions', 'ti-checklist', 'Actions']];
   if (!_nd.view && ndIsInCharge(me)) tabs.push(['setup', 'ti-settings', 'Set-up']);
   if (!_nd.view) tabs.push(['me', 'ti-user', 'Me']);
   var day = ndDay(), info = nfDeptDay(_nd.plan[(_nd.cfg.departments[0] || {}).id] || [[], [], [], [], [], [], []], day);
   var hd = '<header class="nd-hd">' + (_nd.view ? '<button type="button" class="nd-ib" aria-label="Back to the facility list" title="Back" onclick="ndCloseView()"><i class="ti ti-arrow-left"></i></button>' : '') + '<div><small>' + ndEsc(_nd.cfg.name) + ' · ' + ndEsc(_nd.code) + '</small><b>' + ndEsc(_nd.fac.name || _nd.code) + '</b>'
     + '<span class="nd-sub">' + (_nd.fac.startDate ? (day >= 1 && day <= _nd.cfg.days ? 'Day ' + day + ' of ' + _nd.cfg.days + ' · ' + ND_PHASE[info.phase] : ND_PHASE[info.phase]) : 'Start date not set') + '</span></div>'
     + '<span class="nd-qb" id="nd-q" hidden></span><button type="button" class="nd-ib" aria-label="Refresh" title="Refresh" onclick="ndReload()"><i class="ti ti-refresh"></i></button></header>';
-  var body = _nd.tab === 'ready' ? ndReadyHTML() : _nd.tab === 'actions' ? ndActionsHTML() : _nd.tab === 'setup' ? ndSetupHTML() : _nd.tab === 'me' ? ndMeHTML() : ndTodayHTML();
-  var nav = '<nav class="nd-nav">' + tabs.map(function (t) { return '<button type="button" class="' + (_nd.tab === t[0] ? 'on' : '') + '" onclick="ndTab(\'' + t[0] + '\')"><i class="ti ' + t[1] + '"></i><span>' + t[2] + '</span></button>'; }).join('') + '</nav>';
+  var body = _nd.tab === 'timeline' ? ndTimelineHTML() : _nd.tab === 'day' ? ndDayHTML() : _nd.tab === 'ready' ? ndReadyHTML() : _nd.tab === 'actions' ? ndActionsHTML() : _nd.tab === 'setup' ? ndSetupHTML() : _nd.tab === 'me' ? ndMeHTML() : ndTodayHTML();
+  var nav = '<nav class="nd-nav">' + tabs.map(function (t) { return '<button type="button" class="' + (_nd.tab === t[0] || (_nd.tab === 'day' && t[0] === 'timeline') ? 'on' : '') + '" onclick="ndTab(\'' + t[0] + '\')"><i class="ti ' + t[1] + '"></i><span>' + t[2] + '</span></button>'; }).join('') + '</nav>';
   app.innerHTML = hd + '<main class="nd-main">' + body + '</main>' + nav; ndQBadge();
 }
 function ndTab(t) { _nd.tab = t; _nd.card = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
@@ -21498,7 +21504,7 @@ function ndFillHTML(dept, day) {
         + '<div class="nd-sc">' + ND_SCORE.map(function (o) { return '<button type="button" class="' + o.k + (v === o.v ? ' on' : '') + '"' + (locked ? ' disabled' : '') + ' onclick="ndScore(\'' + id + '\',' + o.v + ')">' + o.t + '</button>'; }).join('') + '</div>';
       if (v === 0 || v === 1) {
         h += '<div class="nd-rs">' + ND_REASONS.map(function (x) { return '<button type="button" class="' + (rs[id] === x.k ? 'on' : '') + '"' + (locked ? ' disabled' : '') + ' onclick="ndReasonSet(\'' + id + '\',\'' + x.k + '\')">' + ndEsc(x.t) + '</button>'; }).join('') + '</div>';
-        if (rs[id] === 'oth' || nt[id]) h += '<input class="nd-in" maxlength="300" placeholder="What is missing?" value="' + ndEsc(nt[id] || '') + '"' + (locked ? ' disabled' : '') + ' onchange="ndNote(\'' + id + '\',this.value)">';
+        if (rs[id] === 'oth' || nt[id]) h += '<input class="nd-in' + (rs[id] === 'oth' && !nt[id] ? ' nd-need' : '') + '" maxlength="300" placeholder="' + (rs[id] === 'oth' ? 'What is missing? (needed for Other)' : 'What is missing?') + '" value="' + ndEsc(nt[id] || '') + '"' + (locked ? ' disabled' : '') + ' onchange="ndNote(\'' + id + '\',this.value)">';
       }
       h += '</div>';
     });
@@ -21523,7 +21529,12 @@ function ndAllMet(list) {
 }
 function ndReasonSet(id, k) { var rel = {}; rel['r/' + id] = k; ndCardWrite(rel); ndKeepScroll(); }
 function ndNote(id, t) { var rel = {}; rel['note/' + id] = String(t || '').trim().slice(0, 300) || null; ndCardWrite(rel); }
-function ndDone() { ndCardWrite({ done: { at: new Date().toISOString(), role: ndRole(ndMob()) } }); ndToast('Card done. ' + ndName(ndChecker(_nd.card.dept)) + ' compares the cards next.', 'ok'); ndCloseCard(); }
+function ndDone() {
+  var c = ndPc(_nd.card.dept, _nd.card.day)[ndMob()] || {}, miss = Object.keys(c.r || {}).filter(function (id) { return c.r[id] === 'oth' && (c.s || {})[id] < 2 && !String((c.note || {})[id] || '').trim(); });
+  if (miss.length) { ndToast('You chose "Other" for ' + miss.join(', ') + ' — write what is missing first.', 'err'); var el = document.getElementById('nd-cp-' + miss[0]); if (el) try { el.scrollIntoView({ block: 'center' }); } catch (e) {} return; }
+  ndDoneGo();
+}
+function ndDoneGo() { ndCardWrite({ done: { at: new Date().toISOString(), role: ndRole(ndMob()) } }); ndToast('Card done. ' + ndName(ndChecker(_nd.card.dept)) + ' compares the cards next.', 'ok'); ndCloseCard(); }
 
 // ── checker: one comparison screen ──
 function ndCompare(dept, day) {
@@ -21725,13 +21736,14 @@ function ndMyActions() {
 function ndActionRow(id) {
   var a = (_nd.actions || {})[id], me = ndMob(), over = a.status === 'open' && a.due < ndToday(), sup = _nd.view === 'sup';
   var canFix = !_nd.view && a.status === 'open' && (a.owner === me || ndIsInCharge(me));
+  var leadEdit = !_nd.view && a.status === 'open' && a.level !== 'sup' && ndCanVerify(a.dept, me);   // the lead changes text / owner / due of their own action
   var st = { open: ['prog', 'Open'], fixed: ['done', 'Fixed — re-check on the next card'], sup: ['back', 'With the Supervisor'], closed: ['ok', 'Closed'] }[a.status] || ['', a.status];
   return '<div class="nd-cp nd-act"><div class="nd-cpt"><span class="nd-id">' + ndEsc(id) + ' · ' + ndEsc(ndDeptDef(a.dept).name) + (a.level === 'sup' ? ' · Supervisor' : '') + '</span>' + ndEsc(ndCpText(id)) + '</div>'
     + '<div class="nd-how"><i class="ti ti-info-circle"></i><span>' + ndEsc(a.how) + '</span></div>'
     + '<div class="nd-am"><span>' + ndEsc(ndName(a.owner)) + '</span><span class="' + (over ? 'over' : '') + '">due ' + ndEsc(ndDate(a.due)) + (over ? ' · overdue' : '') + '</span><span class="nd-st ' + st[0] + '">' + st[1] + '</span></div>'
     + (a.fixed ? '<div class="nd-dim">Fixed by ' + ndEsc(ndName(a.fixed.by)) + (a.fixed.note ? ': ' + ndEsc(a.fixed.note) : '') + '</div>' : '')
     + (a.rc ? '<div class="nd-dim">Re-check: ' + ['Not met', 'Partial', 'Met'][a.rc.s] + ' (' + ndEsc(ndName(a.rc.by)) + ')</div>' : '')
-    + (canFix ? '<div class="nd-row" style="margin-top:8px"><button type="button" class="nd-btn" onclick="ndFixAction(\'' + id + '\')">Mark fixed</button></div>' : '')
+    + (canFix || leadEdit ? '<div class="nd-row" style="margin-top:8px">' + (canFix ? '<button type="button" class="nd-btn" onclick="ndFixAction(\'' + id + '\')">Mark fixed</button>' : '') + (leadEdit ? '<button type="button" class="nd-btn ghost" onclick="ndAssign(\'' + id + '\')">Change</button>' : '') + '</div>' : '')
     + (sup && (a.status === 'sup' || a.status === 'open') ? '<div class="nd-row" style="margin-top:8px"><button type="button" class="nd-btn' + (a.status === 'open' ? ' ghost' : '') + '" onclick="ndAssign(\'' + id + '\')">' + (a.status === 'sup' ? 'Write how to fix' : 'Change') + '</button></div>' : '')
     + '</div>';
 }
@@ -21767,14 +21779,17 @@ function ndActionsHTML() {
 
 // ── Today: one "To do today" list, then my departments ──
 function ndTodo(mob) {
-  var day = ndDay(), fill = ndDeptDefs().filter(function (d) { var c = ndPc(d.id, day)[mob] || {}; return ndFills(d.id, mob) && !c.done && !ndRes(d.id, day).chk; });
-  return { fill: fill, check: ndChecksDue(mob), decide: ndEscItems(mob), assign: ndUnassigned(mob), fix: ndMyActions() };
+  var day = ndDay(), fill = ndDeptDefs().filter(function (d) { var c = ndPc(d.id, day)[mob] || {}; return ndFills(d.id, mob) && !c.done && !c.absent && !ndRes(d.id, day).chk && ndDayInfo(d.id, day).ids.length; });
+  var late = [];   // missed days still open (not checked) — catch up
+  ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, mob)) return; for (var n = Math.max(1, day - 13); n < Math.min(day, _nd.cfg.days + 1); n++) { var c = ndPc(d.id, n)[mob] || {}; if (!c.done && !c.absent && !ndRes(d.id, n).chk && ndDayInfo(d.id, n).ids.length) late.push({ dept: d.id, day: n }); } });
+  return { fill: fill, late: late, check: ndChecksDue(mob), decide: ndEscItems(mob), assign: ndUnassigned(mob), fix: ndMyActions() };
 }
 function ndTodoHTML() {
   if (_nd.view) return '';
   var me = ndMob(), t = ndTodo(me), rows = [];
   var row = function (icon, label, n, js, warn) { return '<button type="button" class="nd-todo-r" onclick="' + js + '"><i class="ti ' + icon + '"></i><span>' + label + '</span><b class="' + (warn ? 'warn' : '') + '">' + n + '</b></button>'; };
   if (t.fill.length) rows.push(row('ti-pencil', 'Fill my card' + (t.fill.length > 1 ? 's' : ''), t.fill.length, "ndOpenDept('" + t.fill[0].id + "'," + ndDay() + ")"));
+  if (t.late.length) rows.push(row('ti-alert-triangle', 'Catch up missed cards', t.late.length, "ndOpenDept('" + t.late[0].dept + "'," + t.late[0].day + ")", true));
   if (t.check.length) { var c0 = t.check.find(function (x) { return x.ready; }) || t.check[0]; rows.push(row('ti-list-check', 'Compare the cards', t.check.length, "ndOpenDept('" + c0.dept + "'," + c0.day + ")", t.check.some(function (x) { return x.late; }))); }
   if (t.decide.length) rows.push(row('ti-alert-triangle', 'Decide (sent up)', t.decide.length, "ndTab('actions')", t.decide.some(function (x) { return x.late; })));
   if (t.assign.length) rows.push(row('ti-checklist', 'Assign actions', t.assign.length, "ndTab('actions')"));
@@ -21790,6 +21805,7 @@ function ndRemindHTML() {
   Object.keys(staff).forEach(function (m) {
     if (m === ndMob()) return; var t = ndTodo(m), parts = [];
     if (t.fill.length) parts.push('fill your card for ' + t.fill.map(function (d) { return d.name; }).join(', '));
+    if (t.late.length) parts.push('catch up ' + t.late.length + ' missed card' + (t.late.length > 1 ? 's' : ''));
     if (t.check.length) parts.push('compare the cards (' + t.check.length + ')');
     if (t.decide.length) parts.push('decide ' + t.decide.length + ' checkpoint' + (t.decide.length > 1 ? 's' : ''));
     if (t.assign.length) parts.push('assign ' + t.assign.length + ' action' + (t.assign.length > 1 ? 's' : ''));
@@ -21816,7 +21832,7 @@ function ndTodayHTML() {
     ? '<div class="nd-card"><b>Set the programme start date</b><p>All departments start the baseline together on this date (Day 1).</p>' + ndStartForm() + '</div>'
     : '<div class="nd-card nd-empty"><i class="ti ti-clock"></i><b>The programme has not started yet</b><p>The ' + ndEsc(_nd.cfg.inChargeLabel) + ' sets the start date.</p></div>';
   if (day < 1) return '<div class="nd-card nd-empty"><i class="ti ti-calendar"></i><b>Day 1 is ' + ndEsc(ndDate(_nd.fac.startDate)) + '</b><p>Your cards appear on the start date.</p></div>';
-  var h = ndTodoHTML();
+  var h = ndMiniHTML() + ndTodoHTML();
   if (day > _nd.cfg.days) return h + '<div class="nd-card nd-empty"><i class="ti ti-trophy"></i><b>The ' + _nd.cfg.days + '-day programme is complete</b><p>See Readiness for the result.</p></div>';
   var mine = ndMyDepts();
   if (!mine.length) return h + '<div class="nd-card nd-empty"><i class="ti ti-users"></i><b>No department yet</b><p>The ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you to a department team in Set-up.</p></div>';
@@ -21829,6 +21845,87 @@ function ndTodayHTML() {
         + '<span class="nd-dn"><b>' + ndEsc(d.name) + '</b><small>' + ids.length + ' checkpoints · ' + ndEsc(_nd.view ? 'checker ' + ndName(ndChecker(d.id)) : role) + '</small></span>'
         + '<span class="nd-st ' + st.k + '">' + ndEsc(st.t) + '</span></button>';
     }).join('');
+}
+
+// ═══ Timeline (SC style, 17 Oct): 60 days in weeks, my status per day, tap a day to see / fill / catch up ═══
+// A past day's card stays open until the checker has checked that day (HealSol 17 Oct): missed Tuesday → catch up Wednesday.
+var ND_ST = {
+  upcoming: { t: 'Upcoming', i: 'ti-calendar' }, today: { t: 'Today', i: 'ti-player-play' }, awaiting: { t: 'Done · awaiting check', i: 'ti-clock' },
+  verified: { t: 'Checked', i: 'ti-shield-check' }, overdue: { t: 'Missed — catch up', i: 'ti-alert-triangle' }, none: { t: 'No card', i: 'ti-minus' }
+};
+var _ndWkOpen = {};
+function ndDateOf(day) { return _nd.fac.startDate ? ndAddDays(_nd.fac.startDate, day - 1) : ''; }
+function ndShortDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m[2] - 1] : ''; }
+// my status for one department on one day
+function ndMySt(dept, day) {
+  var me = ndMob(), today = ndDay(), res = ndRes(dept, day);
+  if (!ndDayInfo(dept, day).ids.length) return 'none';
+  if (day > today) return 'upcoming';
+  if (res.chk) return 'verified';
+  if (!_nd.view && ndFills(dept, me)) { var c = ndPc(dept, day)[me] || {}; return c.done ? 'awaiting' : c.absent ? 'none' : day === today ? 'today' : 'overdue'; }
+  var inn = ndCardsIn(dept, day);
+  if (inn.done.length) return 'awaiting';
+  return day === today ? 'today' : day < today ? 'overdue' : 'upcoming';
+}
+var ND_ST_RANK = ['overdue', 'today', 'awaiting', 'verified', 'upcoming', 'none'];
+function ndDaySt(day) {
+  var depts = ndMyDepts(), best = 'none';
+  depts.forEach(function (d) { var s = ndMySt(d.id, day); if (ND_ST_RANK.indexOf(s) < ND_ST_RANK.indexOf(best)) best = s; });
+  return best;
+}
+function ndStPill(st, extra) { var x = ND_ST[st] || ND_ST.none; return '<span class="scb2-pill scb2-st-' + st + '"><i class="ti ' + x.i + '"></i> ' + ndEsc(x.t) + (extra != null ? ' · ' + extra : '') + '</span>'; }
+function ndDayTitle(day) {
+  var d0 = ndMyDepts()[0] || (_nd.cfg.departments || [])[0], info = d0 ? ndDayInfo(d0.id, day) : { phase: 'baseline' };
+  if (day >= 57) return ['End-line verification', 'End-line verification', 'Final team review', 'Graduation'][day - 57];
+  return ND_PHASE[info.phase] + (info.week ? ' · week ' + info.week : '');
+}
+function ndMiniHTML() {   // the 10 × 6 grid on Today
+  if (!_nd.fac.startDate) return '';
+  var today = ndDay(), n = _nd.cfg.days, cells = '';
+  for (var d = 1; d <= n; d++) { var st = ndDaySt(d); cells += '<span class="scb2-st-' + st + (d === today ? ' scb2-now' : '') + '" title="Day ' + d + ' · ' + ndEsc(ND_ST[st].t) + '"></span>'; }
+  return '<div class="scb2-mini nd-mini"><div class="scb2-mini-hd"><div><div class="scb2-title" style="font-size:13px;">Your ' + n + '-day timeline</div><div class="scb2-sub">Day ' + Math.max(0, Math.min(today, n)) + ' / ' + n + '</div></div>'
+    + '<button type="button" class="scb2-btn sm" onclick="ndTab(\'timeline\')"><i class="ti ti-timeline"></i> Open timeline</button></div><div class="scb2-mini-g">' + cells + '</div></div>';
+}
+function ndTimelineHTML() {
+  if (!_nd.fac.startDate) return '<div class="nd-card nd-empty"><i class="ti ti-clock"></i><b>The programme has not started yet</b><p>The timeline appears once the start date is set.</p></div>';
+  var n = _nd.cfg.days, today = ndDay(), sum = {}, rows = [];
+  for (var d = 1; d <= n; d++) { var st = ndDaySt(d); sum[st] = (sum[st] || 0) + 1; rows.push({ day: d, st: st }); }
+  var h = '<div class="scb2-tl"><div class="scb2-hd"><div class="scb2-title"><i class="ti ti-timeline"></i> ' + n + '-day timeline</div>'
+    + '<div class="scb2-sub">' + ndEsc(_nd.fac.name || _nd.code) + ' · Day ' + Math.max(0, Math.min(today, n)) + ' / ' + n + ' · ' + (_nd.view ? 'facility view' : 'your days') + '</div>'
+    + '<div class="scb2-sum">' + ['overdue', 'today', 'awaiting', 'verified'].filter(function (k) { return sum[k]; }).map(function (k) { return ndStPill(k, sum[k]); }).join('') + '</div>'
+    + '<div class="scb2-legend">' + ['upcoming', 'today', 'awaiting', 'verified', 'overdue', 'none'].map(function (k) { return ndStPill(k); }).join('') + '</div>'
+    + (sum.overdue && !_nd.view ? '<div class="scb2-note"><i class="ti ti-info-circle"></i> A missed day stays open until it is checked — tap it to catch up.</div>' : '') + '</div>';
+  var curWk = Math.floor((Math.max(1, Math.min(today, n)) - 1) / 7); if (_ndWkOpen[curWk] === undefined) _ndWkOpen[curWk] = true;
+  for (var w = 0; w * 7 < n; w++) {
+    var wd = rows.slice(w * 7, w * 7 + 7), a = wd[0], z = wd[wd.length - 1];
+    h += '<div class="scb2-wk' + (_ndWkOpen[w] ? ' open' : '') + '" id="nd-wk-' + w + '"><button type="button" class="scb2-wk-hd" onclick="ndWeek(' + w + ')">'
+      + '<div class="scb2-wk-t"><div class="scb2-wk-n">Week ' + (w + 1) + '</div><div class="scb2-wk-d">Days ' + a.day + '–' + z.day + ' · ' + ndEsc(ndShortDate(ndDateOf(a.day))) + ' – ' + ndEsc(ndShortDate(ndDateOf(z.day))) + '</div></div>'
+      + '<div class="scb2-sq">' + wd.map(function (m) { return '<span class="scb2-st-' + m.st + (m.day === today ? ' scb2-now' : '') + '"></span>'; }).join('') + '</div><i class="ti ti-chevron-down"></i></button>'
+      + '<div class="scb2-wk-b">' + wd.map(ndTlRow).join('') + '</div></div>';
+  }
+  return h + '</div>';
+}
+function ndTlRow(m) {
+  var chips = ndMyDepts().map(function (d) { var s = ndMySt(d.id, m.day); return s === 'none' ? '' : '<span class="scb2-chip scb2-st-' + s + '" title="' + ndEsc(d.name + ' · ' + ND_ST[s].t) + '"><i class="ti ' + ND_ST[s].i + '"></i>' + ndEsc(d.id) + '</span>'; }).join('');
+  return '<button type="button" class="scb2-row scb2-st-' + m.st + (m.day === ndDay() ? ' scb2-today' : '') + (m.st === 'none' ? ' scb2-faded' : '') + '" onclick="ndOpenDay(' + m.day + ')">'
+    + '<div class="scb2-dn"><b>' + m.day + '</b><span>' + ndEsc(ndShortDate(ndDateOf(m.day))) + '</span></div>'
+    + '<div class="scb2-rm"><div class="scb2-rt">' + ndEsc(ndDayTitle(m.day)) + '</div><div class="scb2-chips">' + chips + '</div></div>'
+    + '<div class="scb2-rs">' + ndStPill(m.st) + '</div></button>';
+}
+function ndWeek(w) { _ndWkOpen[w] = !_ndWkOpen[w]; var el = document.getElementById('nd-wk-' + w); if (el) el.classList.toggle('open', !!_ndWkOpen[w]); }
+function ndOpenDay(day) { _nd.tday = day; _nd.tab = 'day'; _nd.card = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndDayHTML() {
+  var day = _nd.tday || ndDay(), today = ndDay(), me = ndMob();
+  var h = '<div class="nd-sec"><b><button type="button" class="nd-back" onclick="ndTab(\'timeline\')"><i class="ti ti-arrow-left"></i></button> Day ' + day + ' · ' + ndEsc(ndShortDate(ndDateOf(day))) + '</b><small>' + ndEsc(ndDayTitle(day)) + '</small></div>';
+  if (day > today) h += '<div class="nd-note"><i class="ti ti-calendar"></i><span>This day has not come yet — you can look at the checkpoints; scoring opens on the day.</span></div>';
+  else if (ndDaySt(day) === 'overdue' && !_nd.view) h += '<div class="nd-note back"><i class="ti ti-alert-triangle"></i><span>Missed. The card stays open until it is checked — fill it now to catch up.</span></div>';
+  var list = ndMyDepts().filter(function (d) { return ndDayInfo(d.id, day).ids.length; });
+  if (!list.length) return h + '<div class="nd-card nd-empty"><i class="ti ti-calendar"></i><b>No department card on this day</b></div>';
+  return h + list.map(function (d) {
+    var st = ndMySt(d.id, day), ds = day > today ? { k: 'new', t: 'Upcoming' } : ndDeptStatus(d.id, day);
+    return '<button type="button" class="nd-dept" onclick="ndOpenDept(\'' + d.id + '\',' + day + ')"' + (day > today ? ' disabled' : '') + '><span class="nd-dk">' + ndEsc(d.id) + '</span>'
+      + '<span class="nd-dn"><b>' + ndEsc(d.name) + '</b><small>' + ndDayIds(d.id, day).length + ' checkpoints · ' + ndEsc(ND_ST[st].t) + '</small></span><span class="nd-st ' + ds.k + '">' + ndEsc(ds.t) + '</span></button>';
+  }).join('');
 }
 </script>
 <script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no

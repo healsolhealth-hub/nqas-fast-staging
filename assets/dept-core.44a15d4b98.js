@@ -98,15 +98,15 @@ function ndDayInfo(dept, day) { return nfDeptDay(_nd.plan[dept], day); }
 function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
   if (_nd.card) { app.innerHTML = ndCardHTML(); ndQBadge(); return; }
-  var me = ndMob(), tabs = [['today', 'ti-calendar-check', 'Today'], ['ready', 'ti-chart-bar', 'Readiness'], ['actions', 'ti-checklist', 'Actions']];
+  var me = ndMob(), tabs = [['today', 'ti-calendar-check', 'Today'], ['timeline', 'ti-timeline', 'Timeline'], ['ready', 'ti-chart-bar', 'Readiness'], ['actions', 'ti-checklist', 'Actions']];
   if (!_nd.view && ndIsInCharge(me)) tabs.push(['setup', 'ti-settings', 'Set-up']);
   if (!_nd.view) tabs.push(['me', 'ti-user', 'Me']);
   var day = ndDay(), info = nfDeptDay(_nd.plan[(_nd.cfg.departments[0] || {}).id] || [[], [], [], [], [], [], []], day);
   var hd = '<header class="nd-hd">' + (_nd.view ? '<button type="button" class="nd-ib" aria-label="Back to the facility list" title="Back" onclick="ndCloseView()"><i class="ti ti-arrow-left"></i></button>' : '') + '<div><small>' + ndEsc(_nd.cfg.name) + ' · ' + ndEsc(_nd.code) + '</small><b>' + ndEsc(_nd.fac.name || _nd.code) + '</b>'
     + '<span class="nd-sub">' + (_nd.fac.startDate ? (day >= 1 && day <= _nd.cfg.days ? 'Day ' + day + ' of ' + _nd.cfg.days + ' · ' + ND_PHASE[info.phase] : ND_PHASE[info.phase]) : 'Start date not set') + '</span></div>'
     + '<span class="nd-qb" id="nd-q" hidden></span><button type="button" class="nd-ib" aria-label="Refresh" title="Refresh" onclick="ndReload()"><i class="ti ti-refresh"></i></button></header>';
-  var body = _nd.tab === 'ready' ? ndReadyHTML() : _nd.tab === 'actions' ? ndActionsHTML() : _nd.tab === 'setup' ? ndSetupHTML() : _nd.tab === 'me' ? ndMeHTML() : ndTodayHTML();
-  var nav = '<nav class="nd-nav">' + tabs.map(function (t) { return '<button type="button" class="' + (_nd.tab === t[0] ? 'on' : '') + '" onclick="ndTab(\'' + t[0] + '\')"><i class="ti ' + t[1] + '"></i><span>' + t[2] + '</span></button>'; }).join('') + '</nav>';
+  var body = _nd.tab === 'timeline' ? ndTimelineHTML() : _nd.tab === 'day' ? ndDayHTML() : _nd.tab === 'ready' ? ndReadyHTML() : _nd.tab === 'actions' ? ndActionsHTML() : _nd.tab === 'setup' ? ndSetupHTML() : _nd.tab === 'me' ? ndMeHTML() : ndTodayHTML();
+  var nav = '<nav class="nd-nav">' + tabs.map(function (t) { return '<button type="button" class="' + (_nd.tab === t[0] || (_nd.tab === 'day' && t[0] === 'timeline') ? 'on' : '') + '" onclick="ndTab(\'' + t[0] + '\')"><i class="ti ' + t[1] + '"></i><span>' + t[2] + '</span></button>'; }).join('') + '</nav>';
   app.innerHTML = hd + '<main class="nd-main">' + body + '</main>' + nav; ndQBadge();
 }
 function ndTab(t) { _nd.tab = t; _nd.card = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
