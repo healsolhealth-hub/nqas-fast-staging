@@ -250,23 +250,24 @@ function ndCloseView() { ndClose(); _nd = null; nfSetLevel(NF_LEVEL_DEFAULT); tr
 
 // ── HealSol / Supervisor facility list: card for a department-core facility (UPHC …) — no Sub-Centre figures ──
 function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
-  var e = ndEsc, prog = (LV.programmes || []).find(function (p) { return p.id === fac.progId; });
+  var e = ndEsc, prog = (LV.programmes || []).find(function (p) { return p.id === fac.progId; }), k = /([A-Z])$/.exec(String(fac.progId || ''));
   var pkg = prog ? String(prog.label).replace(/^[^—]*—\s*/, '').replace(/\s*\(\d+ days\)\s*$/, '') : (fac.progId || '—');
   var staffN = Object.keys(fac.staff || {}).filter(function (m) { return fac.staff[m] && !fac.staff[m].disabled; }).length;
   var day = fac.startDate ? nfDeptDayNo(fac.startDate) : null, days = LV.days || 60;
   var when = !fac.startDate ? 'Start date not set' : day < 1 ? 'Starts ' + ndDate(fac.startDate) : day > days ? 'Programme complete' : 'Day ' + day + ' of ' + days;
+  var phase = !fac.startDate || day < 1 ? '' : day <= 7 ? 'Baseline' : day <= 49 ? 'Implementation' : day <= 56 ? 'End-line' : day <= days ? 'Readiness week' : '';
   var pct = day && day > 0 ? Math.min(100, Math.round(Math.min(day, days) / days * 100)) : 0;
-  var chip = function (t, bg, fg) { return ' <span style="background:' + bg + ';color:' + fg + ';border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">' + t + '</span>'; };
   return '<div class="mfc-top"><div class="mfc-icon">🏥</div><div style="flex:1;min-width:0;">'
-    + '<div class="mfc-name">' + e(fac.name || code) + chip(e(LV.short || LV.name), '#E6F2EF', '#1E6B5E')
-    + (fac.suspended ? chip('Suspended', '#FEF3C7', '#92400E') : '')
-    + (fac.isDemo ? chip(fac.subscriptionStatus === 'paid' ? 'SELF-REGISTERED · PAID' : 'FREE TRIAL', '#DBEAFE', '#1D4ED8') : fac.subscriptionStatus === 'contract' ? chip('Contract', '#EDE9FE', '#6D28D9') : '') + '</div>'
+    + '<div class="mfc-name" title="' + e(fac.name || code) + '">' + e(fac.name || code) + '</div>'
+    + '<div class="mfc-chips"><span class="t">' + e(LV.short || LV.name) + (k ? ' · Package ' + k[1] : '') + '</span>'
+    + (fac.suspended ? '<span class="a">Suspended</span>' : '')
+    + (fac.isDemo ? '<span class="b">' + (fac.subscriptionStatus === 'paid' ? 'Self-registered · paid' : 'Free trial') + '</span>' : fac.subscriptionStatus === 'contract' ? '<span class="v">Contract</span>' : '') + '</div>'
     + '<div class="mfc-loc">' + e([fac.district, fac.state].filter(Boolean).join(', ') || '—') + '</div>'
-    + '<div style="font-size:9px;color:var(--teal);font-weight:700;margin-top:1px;">📋 ' + e(pkg) + ' · 👥 ' + staffN + ' staff</div>'
-    + '</div><div class="mfc-pct" style="color:var(--teal);font-size:12px;">' + e(when.replace(/ of \d+$/, '')) + '</div></div>'
-    + '<div style="height:6px;border-radius:10px;background:var(--br);margin:7px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:' + pct + '%;background:var(--teal);"></div></div>'
+    + '<div style="font-size:9.5px;color:var(--teal);font-weight:700;margin-top:2px;">' + e(pkg) + ' · ' + staffN + ' staff</div>'
+    + '</div><div class="mfc-pct" style="color:var(--teal);font-size:13px;text-align:right;line-height:1.2;">' + (day && day >= 1 && day <= days ? 'Day ' + day + '<br><span style="font-size:9.5px;font-weight:700;color:var(--t3);">' + e(phase) + '</span>' : '') + '</div></div>'
+    + '<div style="height:6px;border-radius:10px;background:var(--br);margin:8px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:' + pct + '%;background:var(--teal);"></div></div>'
     + '<div class="mfc-meta"><span>' + e(when) + '</span><span>' + e(LV.inChargeLabel || LV.inCharge) + ': ' + e(fac.choName || 'Not set') + '</span></div>'
-    + '<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;"><button class="mfc-btn" style="flex:2;" onclick="ndOpenView(\'' + e(code) + '\')"><i class="ti ti-zoom-in" style="font-size:11px;"></i> Open</button>' + (adminBtns || '') + '</div>';
+    + '<div style="display:flex;gap:6px;margin-top:8px;"><button class="mfc-btn mfc-open" onclick="ndOpenView(\'' + e(code) + '\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>' + (adminBtns || '') + '</div>';
 }
 
 nfRegisterCore('dept', { open: { staff: ndOpen } });

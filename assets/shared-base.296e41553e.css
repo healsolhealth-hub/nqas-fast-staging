@@ -819,6 +819,18 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;color
 .mfc-btn:hover{background:var(--teal);color:#fff;}
 .mfc-btn-report{border-color:var(--org);color:var(--org-dk);}
 .mfc-btn-report:hover{background:var(--org);color:#fff;}
+.mfc-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;}
+.mfc-chips span{font-size:9px;font-weight:800;border-radius:8px;padding:1px 7px;background:#F1F5F9;color:#475569;white-space:nowrap;}
+.mfc-chips .t{background:#E6F2EF;color:#1E6B5E;} .mfc-chips .v{background:#EDE9FE;color:#6D28D9;} .mfc-chips .b{background:#DBEAFE;color:#1D4ED8;} .mfc-chips .a{background:#FEF3C7;color:#92400E;}
+.mfc-chips .scx-nq-badge{font-size:9px;}
+.mfc-btn.mfc-open{flex:2;background:var(--teal);color:#fff;font-size:11px;padding:8px;}
+.mfc-btn.mfc-open:hover{background:var(--teal-dk,#135A55);}
+.mfc-btn.mfc-manage{flex:1.4;border-color:var(--br);color:var(--t2,#475569);font-size:11px;padding:8px;}
+.mfc-btn.mfc-manage:hover{background:#F1F5F9;color:var(--t1);}
+.mfc-menu{position:fixed;z-index:3000;width:230px;background:#fff;border:1px solid var(--br);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18);padding:6px;display:flex;flex-direction:column;}
+.mfc-menu button{display:flex;align-items:center;gap:10px;border:0;background:none;padding:10px 12px;border-radius:10px;font:inherit;font-size:13px;font-weight:600;color:var(--t1);text-align:left;cursor:pointer;}
+.mfc-menu button:hover{background:#F1F5F9;} .mfc-menu button .ti{font-size:16px;color:var(--teal);}
+.mfc-menu button.a .ti{color:#B45309;} .mfc-menu button.g .ti{color:#15803D;} .mfc-menu button.r{color:#B91C1C;} .mfc-menu button.r .ti{color:#B91C1C;}
 /* Drill-in panel */
 .sc-drill-panel{
   background:var(--bgc);border-radius:14px;

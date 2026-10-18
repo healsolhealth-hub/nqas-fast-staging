@@ -90,7 +90,7 @@ function ndLatestFinal() {
 
 // ── writes: applied on the phone at once, sent when there is signal (kept on the phone until the server confirms) ──
 var _ndQ = [], _ndOnline = true;
-function ndQKey() { return 'nd_q_' + ((_nd && _nd.code) || ''); }
+function ndQKey() { return 'nd_q_' + ((_nd && _nd.code) || '') + '_' + ndMob(); }   // per person: a queue never goes out under another login
 function ndQSave() { try { localStorage.setItem(ndQKey(), JSON.stringify(_ndQ)); } catch (e) {} }
 function ndQLoad() { try { _ndQ = JSON.parse(localStorage.getItem(ndQKey()) || '[]') || []; } catch (e) { _ndQ = []; } }
 function ndSetPath(root, rel, v) { var p = rel.split('/'), o = root; for (var i = 0; i < p.length - 1; i++) { o = o[p[i]] = (o[p[i]] && typeof o[p[i]] === 'object') ? o[p[i]] : {}; } if (v === null) delete o[p[p.length - 1]]; else o[p[p.length - 1]] = v; }

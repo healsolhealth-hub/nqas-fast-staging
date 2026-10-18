@@ -1425,37 +1425,50 @@ function scRenderMasterDashboard(){
   }
   cards.forEach(function(it){
     var code=it.code, fac=it.fac, agg=it.agg, pct=agg.pct, C=scJs(code);
-    var barCol=fac.suspended?'var(--grey-dk)':scPctColor(pct);
+    var barCol=fac.suspended||!(agg.max>0)?'var(--grey-dk)':scPctColor(pct);
     var staffCount=Object.keys(fac.staff||{}).length;
     var nq=agg.max>0?(agg.nqas.meets?'<span class="scx-nq-badge ok">NQAS ✓</span>':'<span class="scx-nq-badge no">Below NQAS</span>'):'';
     var card=document.createElement('div'); card.className='master-fac-card';
     card.style.opacity=fac.suspended?'0.7':'1';
-    var adminBtns=isSup?'':(
-      '<button class="mfc-btn mfc-btn-report" title="Set start date" onclick="scAdminSetDate(\''+C+'\')"><i class="ti ti-calendar" style="font-size:11px;"></i></button>'
-      +'<button class="mfc-btn mfc-btn-report" title="Edit facility" onclick="scEditFacility(\''+C+'\')"><i class="ti ti-pencil" style="font-size:11px;"></i></button>'
-      +'<button class="mfc-btn" title="'+(fac.suspended?'Reactivate':'Suspend')+'" onclick="scSuspendFacility(\''+C+'\')" style="border-color:'+(fac.suspended?'var(--green)':'var(--amber)')+';color:'+(fac.suspended?'var(--green-dk)':'var(--amber-dk)')+';">'
-        +(fac.suspended?'<i class="ti ti-player-play" style="font-size:11px;"></i>':'<i class="ti ti-player-pause" style="font-size:11px;"></i>')+'</button>'
-      +'<button class="mfc-btn" title="Cancel" onclick="scCancelFacility(\''+C+'\')" style="border-color:var(--red);color:var(--red-dk);"><i class="ti ti-trash" style="font-size:11px;"></i></button>');
+    // one labelled "Manage" menu instead of four unlabelled icon buttons (HealSol 17 Oct)
+    var adminBtns=isSup?'':'<button class="mfc-btn mfc-manage" aria-haspopup="menu" onclick="nfFacMenu(this,\''+C+'\')"><i class="ti ti-settings" style="font-size:12px;"></i> Manage <i class="ti ti-chevron-down" style="font-size:11px;"></i></button>';
     var LVF=(typeof nfTypeOf==='function'&&typeof NF_LEVELS!=='undefined')?NF_LEVELS[nfTypeOf(fac)]:null;
     if(LVF&&LVF.core!=='sc'&&typeof nfDeptFacCardHTML==='function'){ card.className+=' nf-dept-fac'; card.innerHTML=nfDeptFacCardHTML(code,fac,LVF,adminBtns); grid.appendChild(card); return; }
     card.innerHTML='<div class="mfc-top"><div class="mfc-icon">🏥</div><div style="flex:1;min-width:0;">'
-      +'<div class="mfc-name">'+scEsc(fac.name||code)
-      +(fac.suspended?' <span style="background:#FEF3C7;color:#92400E;border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">Suspended</span>':'')
-      +(fac.isDemo?' <span style="background:#DBEAFE;color:#1D4ED8;border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">'+(fac.subscriptionStatus==='paid'?'SELF-REGISTERED · PAID':'FREE TRIAL')+'</span>':'')
-      +((!fac.isDemo&&fac.subscriptionStatus==='contract')?' <span style="background:#EDE9FE;color:#6D28D9;border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">Contract</span>':'')
+      +'<div class="mfc-name" title="'+scEsc(fac.name||code)+'">'+scEsc(fac.name||code)+'</div>'
+      +'<div class="mfc-chips"><span class="t">SC</span>'
+      +(fac.suspended?'<span class="a">Suspended</span>':'')
+      +(fac.isDemo?'<span class="b">'+(fac.subscriptionStatus==='paid'?'Self-registered · paid':'Free trial')+'</span>':'')
+      +((!fac.isDemo&&fac.subscriptionStatus==='contract')?'<span class="v">Contract</span>':'')
       +nq+'</div>'
       +'<div class="mfc-loc">'+scEsc([fac.district,fac.state].filter(Boolean).join(', ')||'—')+nfProBadge(fac)+'</div>'
       +'<div style="font-size:9px;color:var(--teal);font-weight:700;margin-top:1px;">📋 '+scEsc(scPkgShort(fac.progId))+' · 👥 '+staffCount+' staff · '+agg.gaps.filter(function(g){return !g.closed;}).length+' open gaps</div>'
-      +'</div><div class="mfc-pct" style="color:'+barCol+';">'+(agg.max>0?pct+'%':'—')+'</div></div>'
+      +'</div><div class="mfc-pct" style="color:'+barCol+';">'+(agg.max>0?pct+'%':'<span style="font-size:11px;font-weight:700;">No data</span>')+'</div></div>'
       +'<div style="height:6px;border-radius:10px;background:var(--br);margin:7px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:'+pct+'%;background:'+barCol+';transition:width 0.5s;"></div></div>'
       +'<div class="mfc-meta"><span>'+(fac.startDate?'Started '+scEsc(fac.startDate):'Not started')+'</span><span>CHO: '+scEsc(fac.choName||'Not set')+'</span></div>'
       +'<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">'
-      +'<button class="mfc-btn" style="flex:2;" onclick="scDrillIn(\''+C+'\')"><i class="ti ti-zoom-in" style="font-size:11px;"></i> Drill In</button>'
+      +'<button class="mfc-btn mfc-open" onclick="scDrillIn(\''+C+'\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>'
       +adminBtns+'</div>';
     grid.appendChild(card);
   });
 }
 
+// the facility card's Manage menu: start date · edit · pause / reactivate · cancel (labels, not bare icons)
+function nfFacMenu(btn,code){
+  var old=document.getElementById('mfc-menu'); if(old){ var same=old.getAttribute('data-code')===code; old.remove(); if(same) return; }
+  var fac=(typeof scMasterFacilities!=='undefined'&&scMasterFacilities[code])||{}, C=scJs(code);
+  var m=document.createElement('div'); m.id='mfc-menu'; m.className='mfc-menu'; m.setAttribute('role','menu'); m.setAttribute('data-code',code);
+  var it=function(icon,label,js,cls){ return '<button type="button" role="menuitem" class="'+(cls||'')+'" onclick="document.getElementById(\'mfc-menu\').remove();'+js+'"><i class="ti '+icon+'"></i>'+label+'</button>'; };
+  m.innerHTML=it('ti-calendar',fac.startDate?'Change start date':'Set start date',"scAdminSetDate('"+C+"')")
+    +it('ti-pencil','Edit facility details',"scEditFacility('"+C+"')")
+    +it(fac.suspended?'ti-player-play':'ti-player-pause',fac.suspended?'Reactivate':'Pause (suspend)',"scSuspendFacility('"+C+"')",fac.suspended?'g':'a')
+    +it('ti-trash','Cancel programme…',"scCancelFacility('"+C+"')",'r');
+  document.body.appendChild(m);
+  var r=btn.getBoundingClientRect(), w=230, left=Math.max(8,Math.min(window.innerWidth-w-8,r.right-w)), top=r.bottom+6;
+  if(top+190>window.innerHeight) top=Math.max(8,r.top-196);
+  m.style.left=left+'px'; m.style.top=top+'px';
+  setTimeout(function(){ document.addEventListener('click',function off(e){ if(!m.contains(e.target)&&e.target!==btn&&!btn.contains(e.target)){ m.remove(); document.removeEventListener('click',off,true); } },true); },0);
+}
 async function scDrillIn(code){
   if(appMode==='sc-supervisor'&&!scSupAllowed(code)){ showToast('This facility is not assigned to you.','err'); return; }
   var fac=scMasterFacilities[code]; if(!fac){ showToast('Facility not found.','err'); return; }

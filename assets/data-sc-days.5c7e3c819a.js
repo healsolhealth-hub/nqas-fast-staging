@@ -2201,10 +2201,8 @@ function phcStartCheckout(moduleIds,totalRupees){
     theme:{color:'#1E6B5E'},
     handler:async function(response){
       try{
-        var facData=await fbGet(scFacilityPath(choState.facilityCode))||{};
-        facData.subscriptionStatus='paid';
-        facData.lastPayment={id:response.razorpay_payment_id,amount:totalRupees,package:moduleIds[0],at:new Date().toISOString()};
-        await fbSet(scFacilityPath(choState.facilityCode),facData);
+        var pay={subscriptionStatus:'paid',lastPayment:{id:response.razorpay_payment_id,amount:totalRupees,package:moduleIds[0],at:new Date().toISOString()}};
+        await db.ref(scFacilityPath(choState.facilityCode)).update(pay);   // only the payment fields
         choState.facility.subscriptionStatus='paid';
         showToast('Payment successful! Unlocked.','ok');
         if(typeof renderCard==='function'&&choState.currentDay)renderCard(choState.currentDay-1);
@@ -2288,15 +2286,15 @@ async function confirmDemoPayment(code){
       var oldProgress=await fbGet('sc_progress/'+code);
       if(oldProgress){ await fbSet('sc_progress/'+newCode,oldProgress); }
       facData.migratedTo=newCode;facData.active=false;
-      await fbSet(scFacilityPath(code),facData);
+      await db.ref(scFacilityPath(code)).update({subscriptionStatus:facData.subscriptionStatus,lastPayment:facData.lastPayment,migratedTo:newCode,active:false});
       scMasterFacilities[code]=facData;scMasterFacilities[newCode]=newFacData;
       if(oldProgress){scMasterProgress[newCode]=oldProgress;}
       closeDemoConvertModal();renderDemoFacilitiesPanel();scRenderMasterDashboard();
       showToast('Facility upgraded and moved to '+newCode+'.','ok');
       return;
     }
-    var ok=await fbSet(scFacilityPath(code),facData);
-    if(!ok){showToast('Failed to save — check connection.','err');return;}
+    try{ await db.ref(scFacilityPath(code)).update({subscriptionStatus:facData.subscriptionStatus,lastPayment:facData.lastPayment}); }   // only the payment fields
+    catch(e){ showToast('Failed to save — check connection.','err'); return; }
     scMasterFacilities[code]=facData;
     closeDemoConvertModal();renderDemoFacilitiesPanel();scRenderMasterDashboard();
     showToast('Payment confirmed — facility unlocked.','ok');

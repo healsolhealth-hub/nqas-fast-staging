@@ -80,7 +80,7 @@ async function nfRouteAuthed(){
   }
   try{ if(typeof nfMoAddEntry==='function') list=nfMoAddEntry(list,c.mob); }catch(e){}
   _nfLogin.id=c.mob||c.sup||c.dist||c.view||'healsol'; _nfLogin.pwd='__auth__'; _nfLogin.matches=list;
-  if(!list.length){ nfError('Your account has no active role. Contact HealSol Academy.'); try{ await firebase.auth().signOut(); }catch(e){} _nfAuth=null; return; }
+  if(!list.length){ nfError('Your account has no active role. Contact HealSol Academy.'); _nfAuth=null; try{ await firebase.auth().signOut(); }catch(e){} return; }
   if(list.length===1){ await nfGo(list[0],'__auth__'); return; }
   var rem=nfRememberedKey(_nfLogin.id), pick=list.find(function(a){ return a.key===rem; });
   if(pick){ await nfGo(pick,'__auth__'); return; }
@@ -119,6 +119,20 @@ async function nfSaveNewPassword(){
   finally{ if(btn){ btn.disabled=false; btn.textContent=t('Save and continue'); } }
 }
 var _nfSignOutP=null;
+function nfLoginSwitched(other){
+  if(document.getElementById('nf-switch-ov')) return;
+  var c=(_nfAuth&&_nfAuth.claims)||{}, who=c.mob||c.sup||(c.hs?'HealSol admin':'')||'';
+  _nfAuth=null;
+  var ov=document.createElement('div'); ov.id='nf-switch-ov';
+  ov.setAttribute('style','position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:20px;');
+  ov.innerHTML='<div role="alertdialog" aria-modal="true" style="background:#fff;border-radius:20px;max-width:380px;width:100%;padding:22px;font-family:inherit;box-shadow:0 20px 50px rgba(0,0,0,.3);">'
+    +'<div style="font-size:17px;font-weight:700;margin-bottom:8px;color:#0F172A;">'+(other?'Someone else logged in':'You were logged out')+'</div>'
+    +'<div style="font-size:13.5px;line-height:1.5;color:#475569;margin-bottom:16px;">'+(other?'A different login was used in another window or tab of this browser'+(who?' (this window was '+scEsc(String(who))+')':'')+'. One browser keeps only one login, so this window has stopped to avoid saving work under the wrong name.<br><br>To test several people at once, use a different browser (or a different Chrome profile) for each.':'This browser was logged out in another window or tab.')+'</div>'
+    +'<button type="button" id="nf-switch-go" style="width:100%;min-height:46px;border:0;border-radius:14px;background:#1E6B5E;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;">Reload</button></div>';
+  document.body.appendChild(ov);
+  document.getElementById('nf-switch-go').onclick=function(){ location.reload(); };
+  try{ if(typeof db!=='undefined'&&db) db.goOffline(); }catch(e){}   // nothing more is sent from this window
+}
 function nfSecureSignOut(){ _nfAuth=null; try{ nfSetLevel(NF_LEVEL_DEFAULT); }catch(e){}
   ['nf-id','nf-pwd'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; }); nfError(''); _nfSignOutP=(async function(){ try{ await firebase.auth().signOut(); }catch(e){} })(); return _nfSignOutP; }
 // change my own password (re-confirms the current one)
@@ -176,6 +190,13 @@ function nfShowTempPassword(name,identifier,pw,title){
       var ls=document.getElementById('login-screen'); if(ls&&ls.style.display==='none') return;
       nfCoverOn(); nfAfterSignIn().catch(function(e){ console.warn('[SC] auto sign-in',e); }).then(nfCoverDone); });
     if(location.hash==='#setup') setTimeout(nfShowBootstrap,400);
+    // one browser keeps one login for all its windows and tabs (Incognito windows share one too): if someone logs in as another
+    // person, or logs out, in another window, this window stops at once instead of acting under the wrong name
+    firebase.auth().onAuthStateChanged(function(u){
+      if(!_nfAuth||_nfLogin.busy) return;                 // not signed in here yet, or this window is logging in itself
+      if(u&&u.uid===_nfAuth.uid) return;                  // same person (token refresh, password change)
+      nfLoginSwitched(!!u);
+    });
   });
   // sign out of Firebase whenever someone logs out
   ['logoutCHO','logoutAdmin','scqLogout','scChoLogout'].forEach(function(fn){ var o=window[fn]; if(typeof o!=='function') return;

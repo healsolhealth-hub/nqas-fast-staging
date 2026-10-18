@@ -406,11 +406,11 @@ function scGapWhoHTML(g){
         var code=byName[name.trim()]; if(!code) return; var a=scFacAggFor(code), f=scMasterFacilities[code]||{};
         if(a.coverage.assessed){ avgN++; avgS+=a.pct; }
         var p=pk[f.progId||'nqas_12A']||(pk[f.progId||'nqas_12A']={n:0,xp:0,max:0,meets:0,withData:0}); p.n++; p.xp+=a.xp; p.max+=a.max; if(a.coverage.assessed){ p.withData++; if(a.nqas.meets) p.meets++; }
-        var pc=card.querySelector('.mfc-pct'); if(pc) pc.textContent=a.coverage.assessed?a.pct+'%':'—';
+        var pc=card.querySelector('.mfc-pct'); if(pc){ if(a.coverage.assessed) pc.textContent=a.pct+'%'; else { pc.innerHTML='<span style="font-size:11px;font-weight:700;">No data</span>'; pc.style.color='var(--grey-dk)'; } }
         var badge=card.querySelector('.scx-nq-badge'); if(badge&&!a.coverage.assessed) badge.remove();
         if(!card.querySelector('.scc-card-line')){
           var line=document.createElement('div'); line.className='scc-card-line';
-          line.innerHTML='Baseline <b>'+(a.baseline.assessed?a.baseline.pct+'%':'—')+'</b> · Assessed <b>'+a.coverage.assessed+'/'+a.total+'</b> · '
+          line.innerHTML=!a.coverage.assessed?'Not assessed yet · '+a.total+' checkpoints':'Baseline <b>'+(a.baseline.assessed?a.baseline.pct+'%':'—')+'</b> · Assessed <b>'+a.coverage.assessed+'/'+a.total+'</b> · '
             +(a.coverage.assessed?(a.nqas.stdFails.length?'<span style="color:var(--red-dk);">'+a.nqas.stdFails.length+' Standards below minimum</span>':'All Standards at minimum'):'Not assessed yet');
           var meta=card.querySelector('.mfc-meta'); if(meta) meta.parentNode.insertBefore(line,meta);
         }

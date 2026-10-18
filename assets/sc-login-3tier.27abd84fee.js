@@ -468,10 +468,11 @@ async function scEditFacility(code){
     ],
     validate:v=>v.choPwd&&v.choPwd.length<4?'CHO password must be at least 4 characters.':null});
   if(!v) return;
-  const updated={...fac,name:v.name,district:v.district,block:(v.block||'').trim()||null,state:v.state,choName:v.choName};
-  if(v.choPwd) updated.choPassword=v.choPwd;
-  const ok=await fbSet(scFacilityPath(code),updated);
-  if(!ok){showToast('Save failed — check connection.','err');return;}
+  // only the fields on this form: staff, departments, start date and cards written since the list was loaded stay as they are
+  const ch={name:v.name,district:v.district,block:(v.block||'').trim()||null,state:v.state,choName:v.choName};
+  if(v.choPwd) ch.choPassword=v.choPwd;
+  try{ await db.ref(scFacilityPath(code)).update(ch); }catch(e){ showToast('Save failed — '+(e&&e.message||'check connection.'),'err'); return; }
+  const updated={...fac,...ch}; if(updated.block===null) delete updated.block;
   scMasterFacilities[code]=updated;
   scRenderMasterDashboard();
   showToast('Facility updated.','ok');
@@ -482,8 +483,9 @@ async function scSuspendFacility(code){
   const isSuspended=fac.suspended;
   const ok=await showConfirm((isSuspended?'Reactivate':'Suspend')+' "'+fac.name+'"?',isSuspended?'▶️':'⏸️',(isSuspended?'Reactivate':'Suspend')+' Facility',(isSuspended?'Reactivate':'Suspend'),'var(--teal)');
   if(!ok)return;
-  const updated={...fac,suspended:!isSuspended,suspendedAt:!isSuspended?new Date().toISOString():null};
-  await fbSet(scFacilityPath(code),updated);
+  const ch={suspended:!isSuspended,suspendedAt:!isSuspended?new Date().toISOString():null};
+  try{ await db.ref(scFacilityPath(code)).update(ch); }catch(e){ showToast('Not saved — '+(e&&e.message||'check connection.'),'err'); return; }
+  const updated={...fac,...ch}; if(!updated.suspendedAt) delete updated.suspendedAt;
   scMasterFacilities[code]=updated;
   scRenderMasterDashboard();
   showToast('Facility '+(isSuspended?'reactivated':'suspended')+'.','ok');

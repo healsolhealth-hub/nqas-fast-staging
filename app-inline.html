@@ -1027,6 +1027,18 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;color
 .mfc-btn:hover{background:var(--teal);color:#fff;}
 .mfc-btn-report{border-color:var(--org);color:var(--org-dk);}
 .mfc-btn-report:hover{background:var(--org);color:#fff;}
+.mfc-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;}
+.mfc-chips span{font-size:9px;font-weight:800;border-radius:8px;padding:1px 7px;background:#F1F5F9;color:#475569;white-space:nowrap;}
+.mfc-chips .t{background:#E6F2EF;color:#1E6B5E;} .mfc-chips .v{background:#EDE9FE;color:#6D28D9;} .mfc-chips .b{background:#DBEAFE;color:#1D4ED8;} .mfc-chips .a{background:#FEF3C7;color:#92400E;}
+.mfc-chips .scx-nq-badge{font-size:9px;}
+.mfc-btn.mfc-open{flex:2;background:var(--teal);color:#fff;font-size:11px;padding:8px;}
+.mfc-btn.mfc-open:hover{background:var(--teal-dk,#135A55);}
+.mfc-btn.mfc-manage{flex:1.4;border-color:var(--br);color:var(--t2,#475569);font-size:11px;padding:8px;}
+.mfc-btn.mfc-manage:hover{background:#F1F5F9;color:var(--t1);}
+.mfc-menu{position:fixed;z-index:3000;width:230px;background:#fff;border:1px solid var(--br);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18);padding:6px;display:flex;flex-direction:column;}
+.mfc-menu button{display:flex;align-items:center;gap:10px;border:0;background:none;padding:10px 12px;border-radius:10px;font:inherit;font-size:13px;font-weight:600;color:var(--t1);text-align:left;cursor:pointer;}
+.mfc-menu button:hover{background:#F1F5F9;} .mfc-menu button .ti{font-size:16px;color:var(--teal);}
+.mfc-menu button.a .ti{color:#B45309;} .mfc-menu button.g .ti{color:#15803D;} .mfc-menu button.r{color:#B91C1C;} .mfc-menu button.r .ti{color:#B91C1C;}
 /* Drill-in panel */
 .sc-drill-panel{
   background:var(--bgc);border-radius:14px;
@@ -2560,10 +2572,11 @@ async function scEditFacility(code){
     ],
     validate:v=>v.choPwd&&v.choPwd.length<4?'CHO password must be at least 4 characters.':null});
   if(!v) return;
-  const updated={...fac,name:v.name,district:v.district,block:(v.block||'').trim()||null,state:v.state,choName:v.choName};
-  if(v.choPwd) updated.choPassword=v.choPwd;
-  const ok=await fbSet(scFacilityPath(code),updated);
-  if(!ok){showToast('Save failed — check connection.','err');return;}
+  // only the fields on this form: staff, departments, start date and cards written since the list was loaded stay as they are
+  const ch={name:v.name,district:v.district,block:(v.block||'').trim()||null,state:v.state,choName:v.choName};
+  if(v.choPwd) ch.choPassword=v.choPwd;
+  try{ await db.ref(scFacilityPath(code)).update(ch); }catch(e){ showToast('Save failed — '+(e&&e.message||'check connection.'),'err'); return; }
+  const updated={...fac,...ch}; if(updated.block===null) delete updated.block;
   scMasterFacilities[code]=updated;
   scRenderMasterDashboard();
   showToast('Facility updated.','ok');
@@ -2574,8 +2587,9 @@ async function scSuspendFacility(code){
   const isSuspended=fac.suspended;
   const ok=await showConfirm((isSuspended?'Reactivate':'Suspend')+' "'+fac.name+'"?',isSuspended?'▶️':'⏸️',(isSuspended?'Reactivate':'Suspend')+' Facility',(isSuspended?'Reactivate':'Suspend'),'var(--teal)');
   if(!ok)return;
-  const updated={...fac,suspended:!isSuspended,suspendedAt:!isSuspended?new Date().toISOString():null};
-  await fbSet(scFacilityPath(code),updated);
+  const ch={suspended:!isSuspended,suspendedAt:!isSuspended?new Date().toISOString():null};
+  try{ await db.ref(scFacilityPath(code)).update(ch); }catch(e){ showToast('Not saved — '+(e&&e.message||'check connection.'),'err'); return; }
+  const updated={...fac,...ch}; if(!updated.suspendedAt) delete updated.suspendedAt;
   scMasterFacilities[code]=updated;
   scRenderMasterDashboard();
   showToast('Facility '+(isSuspended?'reactivated':'suspended')+'.','ok');
@@ -5125,10 +5139,8 @@ function phcStartCheckout(moduleIds,totalRupees){
     theme:{color:'#1E6B5E'},
     handler:async function(response){
       try{
-        var facData=await fbGet(scFacilityPath(choState.facilityCode))||{};
-        facData.subscriptionStatus='paid';
-        facData.lastPayment={id:response.razorpay_payment_id,amount:totalRupees,package:moduleIds[0],at:new Date().toISOString()};
-        await fbSet(scFacilityPath(choState.facilityCode),facData);
+        var pay={subscriptionStatus:'paid',lastPayment:{id:response.razorpay_payment_id,amount:totalRupees,package:moduleIds[0],at:new Date().toISOString()}};
+        await db.ref(scFacilityPath(choState.facilityCode)).update(pay);   // only the payment fields
         choState.facility.subscriptionStatus='paid';
         showToast('Payment successful! Unlocked.','ok');
         if(typeof renderCard==='function'&&choState.currentDay)renderCard(choState.currentDay-1);
@@ -5212,15 +5224,15 @@ async function confirmDemoPayment(code){
       var oldProgress=await fbGet('sc_progress/'+code);
       if(oldProgress){ await fbSet('sc_progress/'+newCode,oldProgress); }
       facData.migratedTo=newCode;facData.active=false;
-      await fbSet(scFacilityPath(code),facData);
+      await db.ref(scFacilityPath(code)).update({subscriptionStatus:facData.subscriptionStatus,lastPayment:facData.lastPayment,migratedTo:newCode,active:false});
       scMasterFacilities[code]=facData;scMasterFacilities[newCode]=newFacData;
       if(oldProgress){scMasterProgress[newCode]=oldProgress;}
       closeDemoConvertModal();renderDemoFacilitiesPanel();scRenderMasterDashboard();
       showToast('Facility upgraded and moved to '+newCode+'.','ok');
       return;
     }
-    var ok=await fbSet(scFacilityPath(code),facData);
-    if(!ok){showToast('Failed to save — check connection.','err');return;}
+    try{ await db.ref(scFacilityPath(code)).update({subscriptionStatus:facData.subscriptionStatus,lastPayment:facData.lastPayment}); }   // only the payment fields
+    catch(e){ showToast('Failed to save — check connection.','err'); return; }
     scMasterFacilities[code]=facData;
     closeDemoConvertModal();renderDemoFacilitiesPanel();scRenderMasterDashboard();
     showToast('Payment confirmed — facility unlocked.','ok');
@@ -6812,37 +6824,50 @@ function scRenderMasterDashboard(){
   }
   cards.forEach(function(it){
     var code=it.code, fac=it.fac, agg=it.agg, pct=agg.pct, C=scJs(code);
-    var barCol=fac.suspended?'var(--grey-dk)':scPctColor(pct);
+    var barCol=fac.suspended||!(agg.max>0)?'var(--grey-dk)':scPctColor(pct);
     var staffCount=Object.keys(fac.staff||{}).length;
     var nq=agg.max>0?(agg.nqas.meets?'<span class="scx-nq-badge ok">NQAS ✓</span>':'<span class="scx-nq-badge no">Below NQAS</span>'):'';
     var card=document.createElement('div'); card.className='master-fac-card';
     card.style.opacity=fac.suspended?'0.7':'1';
-    var adminBtns=isSup?'':(
-      '<button class="mfc-btn mfc-btn-report" title="Set start date" onclick="scAdminSetDate(\''+C+'\')"><i class="ti ti-calendar" style="font-size:11px;"></i></button>'
-      +'<button class="mfc-btn mfc-btn-report" title="Edit facility" onclick="scEditFacility(\''+C+'\')"><i class="ti ti-pencil" style="font-size:11px;"></i></button>'
-      +'<button class="mfc-btn" title="'+(fac.suspended?'Reactivate':'Suspend')+'" onclick="scSuspendFacility(\''+C+'\')" style="border-color:'+(fac.suspended?'var(--green)':'var(--amber)')+';color:'+(fac.suspended?'var(--green-dk)':'var(--amber-dk)')+';">'
-        +(fac.suspended?'<i class="ti ti-player-play" style="font-size:11px;"></i>':'<i class="ti ti-player-pause" style="font-size:11px;"></i>')+'</button>'
-      +'<button class="mfc-btn" title="Cancel" onclick="scCancelFacility(\''+C+'\')" style="border-color:var(--red);color:var(--red-dk);"><i class="ti ti-trash" style="font-size:11px;"></i></button>');
+    // one labelled "Manage" menu instead of four unlabelled icon buttons (HealSol 17 Oct)
+    var adminBtns=isSup?'':'<button class="mfc-btn mfc-manage" aria-haspopup="menu" onclick="nfFacMenu(this,\''+C+'\')"><i class="ti ti-settings" style="font-size:12px;"></i> Manage <i class="ti ti-chevron-down" style="font-size:11px;"></i></button>';
     var LVF=(typeof nfTypeOf==='function'&&typeof NF_LEVELS!=='undefined')?NF_LEVELS[nfTypeOf(fac)]:null;
     if(LVF&&LVF.core!=='sc'&&typeof nfDeptFacCardHTML==='function'){ card.className+=' nf-dept-fac'; card.innerHTML=nfDeptFacCardHTML(code,fac,LVF,adminBtns); grid.appendChild(card); return; }
     card.innerHTML='<div class="mfc-top"><div class="mfc-icon">🏥</div><div style="flex:1;min-width:0;">'
-      +'<div class="mfc-name">'+scEsc(fac.name||code)
-      +(fac.suspended?' <span style="background:#FEF3C7;color:#92400E;border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">Suspended</span>':'')
-      +(fac.isDemo?' <span style="background:#DBEAFE;color:#1D4ED8;border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">'+(fac.subscriptionStatus==='paid'?'SELF-REGISTERED · PAID':'FREE TRIAL')+'</span>':'')
-      +((!fac.isDemo&&fac.subscriptionStatus==='contract')?' <span style="background:#EDE9FE;color:#6D28D9;border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">Contract</span>':'')
+      +'<div class="mfc-name" title="'+scEsc(fac.name||code)+'">'+scEsc(fac.name||code)+'</div>'
+      +'<div class="mfc-chips"><span class="t">SC</span>'
+      +(fac.suspended?'<span class="a">Suspended</span>':'')
+      +(fac.isDemo?'<span class="b">'+(fac.subscriptionStatus==='paid'?'Self-registered · paid':'Free trial')+'</span>':'')
+      +((!fac.isDemo&&fac.subscriptionStatus==='contract')?'<span class="v">Contract</span>':'')
       +nq+'</div>'
       +'<div class="mfc-loc">'+scEsc([fac.district,fac.state].filter(Boolean).join(', ')||'—')+nfProBadge(fac)+'</div>'
       +'<div style="font-size:9px;color:var(--teal);font-weight:700;margin-top:1px;">📋 '+scEsc(scPkgShort(fac.progId))+' · 👥 '+staffCount+' staff · '+agg.gaps.filter(function(g){return !g.closed;}).length+' open gaps</div>'
-      +'</div><div class="mfc-pct" style="color:'+barCol+';">'+(agg.max>0?pct+'%':'—')+'</div></div>'
+      +'</div><div class="mfc-pct" style="color:'+barCol+';">'+(agg.max>0?pct+'%':'<span style="font-size:11px;font-weight:700;">No data</span>')+'</div></div>'
       +'<div style="height:6px;border-radius:10px;background:var(--br);margin:7px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:'+pct+'%;background:'+barCol+';transition:width 0.5s;"></div></div>'
       +'<div class="mfc-meta"><span>'+(fac.startDate?'Started '+scEsc(fac.startDate):'Not started')+'</span><span>CHO: '+scEsc(fac.choName||'Not set')+'</span></div>'
       +'<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">'
-      +'<button class="mfc-btn" style="flex:2;" onclick="scDrillIn(\''+C+'\')"><i class="ti ti-zoom-in" style="font-size:11px;"></i> Drill In</button>'
+      +'<button class="mfc-btn mfc-open" onclick="scDrillIn(\''+C+'\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>'
       +adminBtns+'</div>';
     grid.appendChild(card);
   });
 }
 
+// the facility card's Manage menu: start date · edit · pause / reactivate · cancel (labels, not bare icons)
+function nfFacMenu(btn,code){
+  var old=document.getElementById('mfc-menu'); if(old){ var same=old.getAttribute('data-code')===code; old.remove(); if(same) return; }
+  var fac=(typeof scMasterFacilities!=='undefined'&&scMasterFacilities[code])||{}, C=scJs(code);
+  var m=document.createElement('div'); m.id='mfc-menu'; m.className='mfc-menu'; m.setAttribute('role','menu'); m.setAttribute('data-code',code);
+  var it=function(icon,label,js,cls){ return '<button type="button" role="menuitem" class="'+(cls||'')+'" onclick="document.getElementById(\'mfc-menu\').remove();'+js+'"><i class="ti '+icon+'"></i>'+label+'</button>'; };
+  m.innerHTML=it('ti-calendar',fac.startDate?'Change start date':'Set start date',"scAdminSetDate('"+C+"')")
+    +it('ti-pencil','Edit facility details',"scEditFacility('"+C+"')")
+    +it(fac.suspended?'ti-player-play':'ti-player-pause',fac.suspended?'Reactivate':'Pause (suspend)',"scSuspendFacility('"+C+"')",fac.suspended?'g':'a')
+    +it('ti-trash','Cancel programme…',"scCancelFacility('"+C+"')",'r');
+  document.body.appendChild(m);
+  var r=btn.getBoundingClientRect(), w=230, left=Math.max(8,Math.min(window.innerWidth-w-8,r.right-w)), top=r.bottom+6;
+  if(top+190>window.innerHeight) top=Math.max(8,r.top-196);
+  m.style.left=left+'px'; m.style.top=top+'px';
+  setTimeout(function(){ document.addEventListener('click',function off(e){ if(!m.contains(e.target)&&e.target!==btn&&!btn.contains(e.target)){ m.remove(); document.removeEventListener('click',off,true); } },true); },0);
+}
 async function scDrillIn(code){
   if(appMode==='sc-supervisor'&&!scSupAllowed(code)){ showToast('This facility is not assigned to you.','err'); return; }
   var fac=scMasterFacilities[code]; if(!fac){ showToast('Facility not found.','err'); return; }
@@ -11686,11 +11711,11 @@ function scGapWhoHTML(g){
         var code=byName[name.trim()]; if(!code) return; var a=scFacAggFor(code), f=scMasterFacilities[code]||{};
         if(a.coverage.assessed){ avgN++; avgS+=a.pct; }
         var p=pk[f.progId||'nqas_12A']||(pk[f.progId||'nqas_12A']={n:0,xp:0,max:0,meets:0,withData:0}); p.n++; p.xp+=a.xp; p.max+=a.max; if(a.coverage.assessed){ p.withData++; if(a.nqas.meets) p.meets++; }
-        var pc=card.querySelector('.mfc-pct'); if(pc) pc.textContent=a.coverage.assessed?a.pct+'%':'—';
+        var pc=card.querySelector('.mfc-pct'); if(pc){ if(a.coverage.assessed) pc.textContent=a.pct+'%'; else { pc.innerHTML='<span style="font-size:11px;font-weight:700;">No data</span>'; pc.style.color='var(--grey-dk)'; } }
         var badge=card.querySelector('.scx-nq-badge'); if(badge&&!a.coverage.assessed) badge.remove();
         if(!card.querySelector('.scc-card-line')){
           var line=document.createElement('div'); line.className='scc-card-line';
-          line.innerHTML='Baseline <b>'+(a.baseline.assessed?a.baseline.pct+'%':'—')+'</b> · Assessed <b>'+a.coverage.assessed+'/'+a.total+'</b> · '
+          line.innerHTML=!a.coverage.assessed?'Not assessed yet · '+a.total+' checkpoints':'Baseline <b>'+(a.baseline.assessed?a.baseline.pct+'%':'—')+'</b> · Assessed <b>'+a.coverage.assessed+'/'+a.total+'</b> · '
             +(a.coverage.assessed?(a.nqas.stdFails.length?'<span style="color:var(--red-dk);">'+a.nqas.stdFails.length+' Standards below minimum</span>':'All Standards at minimum'):'Not assessed yet');
           var meta=card.querySelector('.mfc-meta'); if(meta) meta.parentNode.insertBefore(line,meta);
         }
@@ -15631,7 +15656,7 @@ async function nfRouteAuthed(){
   }
   try{ if(typeof nfMoAddEntry==='function') list=nfMoAddEntry(list,c.mob); }catch(e){}
   _nfLogin.id=c.mob||c.sup||c.dist||c.view||'healsol'; _nfLogin.pwd='__auth__'; _nfLogin.matches=list;
-  if(!list.length){ nfError('Your account has no active role. Contact HealSol Academy.'); try{ await firebase.auth().signOut(); }catch(e){} _nfAuth=null; return; }
+  if(!list.length){ nfError('Your account has no active role. Contact HealSol Academy.'); _nfAuth=null; try{ await firebase.auth().signOut(); }catch(e){} return; }
   if(list.length===1){ await nfGo(list[0],'__auth__'); return; }
   var rem=nfRememberedKey(_nfLogin.id), pick=list.find(function(a){ return a.key===rem; });
   if(pick){ await nfGo(pick,'__auth__'); return; }
@@ -15670,6 +15695,20 @@ async function nfSaveNewPassword(){
   finally{ if(btn){ btn.disabled=false; btn.textContent=t('Save and continue'); } }
 }
 var _nfSignOutP=null;
+function nfLoginSwitched(other){
+  if(document.getElementById('nf-switch-ov')) return;
+  var c=(_nfAuth&&_nfAuth.claims)||{}, who=c.mob||c.sup||(c.hs?'HealSol admin':'')||'';
+  _nfAuth=null;
+  var ov=document.createElement('div'); ov.id='nf-switch-ov';
+  ov.setAttribute('style','position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:20px;');
+  ov.innerHTML='<div role="alertdialog" aria-modal="true" style="background:#fff;border-radius:20px;max-width:380px;width:100%;padding:22px;font-family:inherit;box-shadow:0 20px 50px rgba(0,0,0,.3);">'
+    +'<div style="font-size:17px;font-weight:700;margin-bottom:8px;color:#0F172A;">'+(other?'Someone else logged in':'You were logged out')+'</div>'
+    +'<div style="font-size:13.5px;line-height:1.5;color:#475569;margin-bottom:16px;">'+(other?'A different login was used in another window or tab of this browser'+(who?' (this window was '+scEsc(String(who))+')':'')+'. One browser keeps only one login, so this window has stopped to avoid saving work under the wrong name.<br><br>To test several people at once, use a different browser (or a different Chrome profile) for each.':'This browser was logged out in another window or tab.')+'</div>'
+    +'<button type="button" id="nf-switch-go" style="width:100%;min-height:46px;border:0;border-radius:14px;background:#1E6B5E;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;">Reload</button></div>';
+  document.body.appendChild(ov);
+  document.getElementById('nf-switch-go').onclick=function(){ location.reload(); };
+  try{ if(typeof db!=='undefined'&&db) db.goOffline(); }catch(e){}   // nothing more is sent from this window
+}
 function nfSecureSignOut(){ _nfAuth=null; try{ nfSetLevel(NF_LEVEL_DEFAULT); }catch(e){}
   ['nf-id','nf-pwd'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; }); nfError(''); _nfSignOutP=(async function(){ try{ await firebase.auth().signOut(); }catch(e){} })(); return _nfSignOutP; }
 // change my own password (re-confirms the current one)
@@ -15727,6 +15766,13 @@ function nfShowTempPassword(name,identifier,pw,title){
       var ls=document.getElementById('login-screen'); if(ls&&ls.style.display==='none') return;
       nfCoverOn(); nfAfterSignIn().catch(function(e){ console.warn('[SC] auto sign-in',e); }).then(nfCoverDone); });
     if(location.hash==='#setup') setTimeout(nfShowBootstrap,400);
+    // one browser keeps one login for all its windows and tabs (Incognito windows share one too): if someone logs in as another
+    // person, or logs out, in another window, this window stops at once instead of acting under the wrong name
+    firebase.auth().onAuthStateChanged(function(u){
+      if(!_nfAuth||_nfLogin.busy) return;                 // not signed in here yet, or this window is logging in itself
+      if(u&&u.uid===_nfAuth.uid) return;                  // same person (token refresh, password change)
+      nfLoginSwitched(!!u);
+    });
   });
   // sign out of Firebase whenever someone logs out
   ['logoutCHO','logoutAdmin','scqLogout','scChoLogout'].forEach(function(fn){ var o=window[fn]; if(typeof o!=='function') return;
@@ -21611,23 +21657,24 @@ function ndCloseView() { ndClose(); _nd = null; nfSetLevel(NF_LEVEL_DEFAULT); tr
 
 // ── HealSol / Supervisor facility list: card for a department-core facility (UPHC …) — no Sub-Centre figures ──
 function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
-  var e = ndEsc, prog = (LV.programmes || []).find(function (p) { return p.id === fac.progId; });
+  var e = ndEsc, prog = (LV.programmes || []).find(function (p) { return p.id === fac.progId; }), k = /([A-Z])$/.exec(String(fac.progId || ''));
   var pkg = prog ? String(prog.label).replace(/^[^—]*—\s*/, '').replace(/\s*\(\d+ days\)\s*$/, '') : (fac.progId || '—');
   var staffN = Object.keys(fac.staff || {}).filter(function (m) { return fac.staff[m] && !fac.staff[m].disabled; }).length;
   var day = fac.startDate ? nfDeptDayNo(fac.startDate) : null, days = LV.days || 60;
   var when = !fac.startDate ? 'Start date not set' : day < 1 ? 'Starts ' + ndDate(fac.startDate) : day > days ? 'Programme complete' : 'Day ' + day + ' of ' + days;
+  var phase = !fac.startDate || day < 1 ? '' : day <= 7 ? 'Baseline' : day <= 49 ? 'Implementation' : day <= 56 ? 'End-line' : day <= days ? 'Readiness week' : '';
   var pct = day && day > 0 ? Math.min(100, Math.round(Math.min(day, days) / days * 100)) : 0;
-  var chip = function (t, bg, fg) { return ' <span style="background:' + bg + ';color:' + fg + ';border-radius:8px;padding:1px 6px;font-size:8px;font-weight:800;">' + t + '</span>'; };
   return '<div class="mfc-top"><div class="mfc-icon">🏥</div><div style="flex:1;min-width:0;">'
-    + '<div class="mfc-name">' + e(fac.name || code) + chip(e(LV.short || LV.name), '#E6F2EF', '#1E6B5E')
-    + (fac.suspended ? chip('Suspended', '#FEF3C7', '#92400E') : '')
-    + (fac.isDemo ? chip(fac.subscriptionStatus === 'paid' ? 'SELF-REGISTERED · PAID' : 'FREE TRIAL', '#DBEAFE', '#1D4ED8') : fac.subscriptionStatus === 'contract' ? chip('Contract', '#EDE9FE', '#6D28D9') : '') + '</div>'
+    + '<div class="mfc-name" title="' + e(fac.name || code) + '">' + e(fac.name || code) + '</div>'
+    + '<div class="mfc-chips"><span class="t">' + e(LV.short || LV.name) + (k ? ' · Package ' + k[1] : '') + '</span>'
+    + (fac.suspended ? '<span class="a">Suspended</span>' : '')
+    + (fac.isDemo ? '<span class="b">' + (fac.subscriptionStatus === 'paid' ? 'Self-registered · paid' : 'Free trial') + '</span>' : fac.subscriptionStatus === 'contract' ? '<span class="v">Contract</span>' : '') + '</div>'
     + '<div class="mfc-loc">' + e([fac.district, fac.state].filter(Boolean).join(', ') || '—') + '</div>'
-    + '<div style="font-size:9px;color:var(--teal);font-weight:700;margin-top:1px;">📋 ' + e(pkg) + ' · 👥 ' + staffN + ' staff</div>'
-    + '</div><div class="mfc-pct" style="color:var(--teal);font-size:12px;">' + e(when.replace(/ of \d+$/, '')) + '</div></div>'
-    + '<div style="height:6px;border-radius:10px;background:var(--br);margin:7px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:' + pct + '%;background:var(--teal);"></div></div>'
+    + '<div style="font-size:9.5px;color:var(--teal);font-weight:700;margin-top:2px;">' + e(pkg) + ' · ' + staffN + ' staff</div>'
+    + '</div><div class="mfc-pct" style="color:var(--teal);font-size:13px;text-align:right;line-height:1.2;">' + (day && day >= 1 && day <= days ? 'Day ' + day + '<br><span style="font-size:9.5px;font-weight:700;color:var(--t3);">' + e(phase) + '</span>' : '') + '</div></div>'
+    + '<div style="height:6px;border-radius:10px;background:var(--br);margin:8px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:' + pct + '%;background:var(--teal);"></div></div>'
     + '<div class="mfc-meta"><span>' + e(when) + '</span><span>' + e(LV.inChargeLabel || LV.inCharge) + ': ' + e(fac.choName || 'Not set') + '</span></div>'
-    + '<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;"><button class="mfc-btn" style="flex:2;" onclick="ndOpenView(\'' + e(code) + '\')"><i class="ti ti-zoom-in" style="font-size:11px;"></i> Open</button>' + (adminBtns || '') + '</div>';
+    + '<div style="display:flex;gap:6px;margin-top:8px;"><button class="mfc-btn mfc-open" onclick="ndOpenView(\'' + e(code) + '\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>' + (adminBtns || '') + '</div>';
 }
 
 nfRegisterCore('dept', { open: { staff: ndOpen } });
@@ -21724,7 +21771,7 @@ function ndLatestFinal() {
 
 // ── writes: applied on the phone at once, sent when there is signal (kept on the phone until the server confirms) ──
 var _ndQ = [], _ndOnline = true;
-function ndQKey() { return 'nd_q_' + ((_nd && _nd.code) || ''); }
+function ndQKey() { return 'nd_q_' + ((_nd && _nd.code) || '') + '_' + ndMob(); }   // per person: a queue never goes out under another login
 function ndQSave() { try { localStorage.setItem(ndQKey(), JSON.stringify(_ndQ)); } catch (e) {} }
 function ndQLoad() { try { _ndQ = JSON.parse(localStorage.getItem(ndQKey()) || '[]') || []; } catch (e) { _ndQ = []; } }
 function ndSetPath(root, rel, v) { var p = rel.split('/'), o = root; for (var i = 0; i < p.length - 1; i++) { o = o[p[i]] = (o[p[i]] && typeof o[p[i]] === 'object') ? o[p[i]] : {}; } if (v === null) delete o[p[p.length - 1]]; else o[p[p.length - 1]] = v; }
