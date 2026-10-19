@@ -11,7 +11,20 @@
 //   Days 57–60  readiness week: 57–58 end-line verification, 59 final team review, 60 graduation (no checklist card).
 // ══════════════════════════════════════════════════════════════
 var NF_DEPT_AOC_ORDER = ['C', 'D', 'B', 'F', 'A', 'E', 'G', 'H'];
-var NF_DEPT_PHASES = { baseline: [1, 7], impl: [8, 49], endline: [50, 56], ready: [57, 60] };
+var NF_DEPT_PHASES = { baseline: [1, 7], impl: [8, 49], endline: [50, 56], ready: [57, 60] };   // the 60-day shape (UPHC, PHC)
+// a programme's shape from its type settings (cfg.plan): {base, implWeeks, end, ready} → day numbers of each phase.
+// 60 days: 7 · 6 weeks · 7 · 4 (default). CHC 90 days: 14 · 8 weeks · 14 · 6.
+function nfDeptShape(cfg) {
+  var p = (cfg && cfg.plan) || {}, b = p.base || 7, w = p.implWeeks || 6, e = p.end || b, r = p.ready || 4;
+  var iN = b + w * 7, eN = iN + e;
+  return { base: b, implWeeks: w, end: e, ready: r, b1: 1, bN: b, i1: b + 1, iN: iN, e1: iN + 1, eN: eN, r1: eN + 1, rN: eN + r, days: eN + r };
+}
+// which baseline days each implementation week revisits: the baseline days shared out over the weeks (60 days: 1…5, then 6+7)
+function nfDeptWeekBase(S) {   // equal shares; the extra baseline days go to the last weeks (60 days: 1, 2, 3, 4, 5, 6+7)
+  var per = Math.floor(S.base / S.implWeeks), extra = S.base % S.implWeeks, out = [], d = 1;
+  for (var w = 0; w < S.implWeeks; w++) { var n = per + (w >= S.implWeeks - extra ? 1 : 0), part = []; for (var k = 0; k < n && d <= S.base; k++) part.push(d++); out.push(part); }
+  return out;
+}
 
 // split an ordered list into n parts of similar size, cutting only where the group key changes
 function nfDeptSplit(list, n, keyOf) {
@@ -40,23 +53,23 @@ function nfDeptOrder(items, dept) {
     .map(function (x) { return x.r; });
 }
 // the 7 baseline days of a department → arrays of checkpoint ids
-function nfDeptBaseline(items, dept) {
-  return nfDeptSplit(nfDeptOrder(items, dept), 7, function (r) { return r[3] + '|' + r[4]; })
+function nfDeptBaseline(items, dept, S) {
+  return nfDeptSplit(nfDeptOrder(items, dept), (S && S.base) || 7, function (r) { return r[3] + '|' + r[4]; })
     .map(function (part) { return part.map(function (r) { return r[0]; }); });
 }
 // what a programme day holds for a department: {phase, day, week, ids:[checkpoint ids], base:[baseline day numbers]}
-function nfDeptDay(plan, day) {
-  day = +day;
-  if (day >= 1 && day <= 7) return { phase: 'baseline', day: day, ids: plan[day - 1].slice(), base: [day] };
-  if (day >= 50 && day <= 56) return { phase: 'endline', day: day, ids: plan[day - 50].slice(), base: [day - 49] };
-  if (day >= 8 && day <= 49) {
-    var week = Math.floor((day - 8) / 7) + 1, dayInWeek = (day - 8) % 7;           // week 1–6, day 0–6
-    var base = week < 6 ? [week] : [6, 7], ids = [];
-    base.forEach(function (b) { ids = ids.concat(plan[b - 1]); });
+function nfDeptDay(plan, day, S) {
+  day = +day; S = S || nfDeptShape(null);
+  if (day >= 1 && day <= S.bN) return { phase: 'baseline', day: day, ids: (plan[day - 1] || []).slice(), base: [day] };
+  if (day >= S.e1 && day <= S.eN) { var bd = Math.min(S.base, day - S.iN); return { phase: 'endline', day: day, ids: (plan[bd - 1] || []).slice(), base: [bd] }; }
+  if (day >= S.i1 && day <= S.iN) {
+    var week = Math.floor((day - S.i1) / 7) + 1, dayInWeek = (day - S.i1) % 7;   // week 1…implWeeks, day 0–6
+    var base = nfDeptWeekBase(S)[week - 1] || [], ids = [];
+    base.forEach(function (b) { ids = ids.concat(plan[b - 1] || []); });
     var spread = nfDeptSplit(ids.map(function (id) { return [id]; }), 7, function (x) { return x[0]; });
     return { phase: 'impl', day: day, week: week, ids: spread[dayInWeek].map(function (x) { return x[0]; }), base: base };
   }
-  if (day >= 57 && day <= 60) return { phase: 'ready', day: day, ids: [], base: [] };
+  if (day >= S.r1 && day <= S.rN) return { phase: 'ready', day: day, ids: [], base: [] };
   return { phase: day < 1 ? 'before' : 'after', day: day, ids: [], base: [] };
 }
 // programme day for a start date ('YYYY-MM-DD') and today (local date string); Day 1 = start date

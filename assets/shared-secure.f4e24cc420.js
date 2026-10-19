@@ -245,7 +245,9 @@ function nfShowTempPassword(name,identifier,pw,title){
     if(btn){ btn.disabled=true; btn.innerHTML='Enrolling…'; }
     try{
       var ftype=(document.getElementById('sc-enroll-type')||{}).value||'sc';
+      var off=typeof nfEnrollDeptsOff==='function'?nfEnrollDeptsOff():[];
       var r=await nfCall('enrollFacility',{type:ftype,name:name,state:state,district:district,progId:progId,choName:choName||'CHO',choMobile:choMob,access:access,nin:g('sc-enroll-nin')});
+      if(off.length){ var up={}; off.forEach(function(d){ up[d]={off:true}; }); try{ await db.ref(scFacilityPath(r.code)+'/depts').update(up); }catch(e){ showToast('Enrolled — switch off '+off.join(', ')+' in its Set-up.','err'); } }
       ['sc-enroll-name','sc-enroll-district','sc-enroll-choname','sc-enroll-chomob','sc-enroll-nin'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
       var full=document.getElementById('enroll-access-full'); if(full){ full.checked=true; try{ enrollAccessToggle(); }catch(e){} }
       if(r.tempPassword) nfShowTempPassword(choName||'CHO',r.identifier,r.tempPassword,name+' enrolled as '+r.code+' — CHO login');

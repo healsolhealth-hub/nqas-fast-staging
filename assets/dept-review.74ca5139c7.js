@@ -37,8 +37,9 @@ function ndSolo(id) { return ndFillers(id).length === 1; }
 function ndSoloDone(dept, day) { if (!ndSolo(dept) || ndRes(dept, day).chk) return false; var c = ndPc(dept, day)[ndFillers(dept)[0]] || {}; return !!c.done; }
 function ndOverseer(id) {   // above the lead: the MO in-charge for clinical departments, the in-charge (Coordinator) for the others
   var d = (_nd.cfg.departments || []).find(function (x) { return x.id === id; }) || {}, st = ndStaff();
-  var mo = d.clinical ? Object.keys(st).find(function (m) { return st[m].role === 'MOIC'; }) : null;
-  return mo || Object.keys(st).find(function (m) { return ndIsInCharge(m); }) || '';
+  var role = d.clinical ? (_nd.cfg.clinicalInCharge || 'MOIC') : (_nd.cfg.coordinator || _nd.cfg.inCharge);   // CHC: Facility Nodal Officer for the others
+  var who = Object.keys(st).find(function (m) { return (st[m].role || _nd.cfg.inCharge) === role; });
+  return who || Object.keys(st).find(function (m) { return ndIsInCharge(m); }) || '';
 }
 function ndFills(id, mob) { return !!mob && ndFillers(id).indexOf(mob) >= 0; }
 function ndCanCheck(id, mob) { return !!mob && (ndChecker(id) === mob || ndCanVerify(id, mob)); }
@@ -320,13 +321,13 @@ function ndDaySt(day) {
 }
 function ndDayTitle(day) {
   var d0 = ndMyDepts()[0] || (_nd.cfg.departments || [])[0], info = d0 ? ndDayInfo(d0.id, day) : { phase: 'baseline' };
-  if (day >= 57) return ['End-line verification', 'End-line verification', 'Final team review', 'Graduation'][day - 57];
+  var S = ndShape(); if (day >= S.r1 && day <= S.rN) { var k = day - S.r1, n = S.ready; return k >= n - 1 ? 'Graduation' : k === n - 2 ? 'Final team review' : 'End-line verification'; }
   return ND_PHASE[info.phase] + (info.week ? ' · week ' + info.week : '');
 }
 // ═══ Cards tab in the SC design (17 Oct): Cards head · Day / Timeline switch · facility bar · day strip · the day card ═══
 function ndCur() { return _nd.card || { dept: _nd.cdept, day: _nd.cday }; }
 function ndAocColor(a) { try { if (typeof getAoCDef === 'function') { var c = (getAoCDef(a) || {}).color; if (c) return c; } } catch (e) {} return '#1E6B5E'; }
-function ndWeekLabel(day) { return day <= 7 ? 'Baseline audit' : day <= 49 ? 'Week ' + (Math.floor((day - 8) / 7) + 2) : day <= 56 ? 'End-line' : 'Readiness week'; }
+function ndWeekLabel(day) { var S = ndShape(); return day <= S.bN ? 'Baseline audit' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
 function ndCardDepts(day) {   // my departments with a card on this day: the ones I fill first, then the ones I check
   var me = ndMob();
   return ndMyDepts().filter(function (d) { return ndDayIds(d.id, day).length && (_nd.view || ndFills(d.id, me) || ndCanCheck(d.id, me)); })

@@ -114,6 +114,109 @@ var NF_LEVELS={
       {id:'USHA',         label:'USHA',                  icon:'🌸', requireName:true}
     ],
     passMark:{overall:70, aoc:70, dept:70}
+  },
+  // PHC and CHC (HealSol 19 Oct 2026): the same department core as UPHC. Checklists from the official toolkits
+  // (developer/phc-chc-checklist); roles, leads and teams from the old PHC / CHC apps (developer/phc-chc-reference).
+  // Day plans are made fresh in the UPHC style (plan below); the departments a facility has are ticked at enrolment.
+  phc:{
+    id:'phc', core:'dept', ready:false,
+    name:'PHC', plural:'PHCs', short:'PHC', nameHi:'प्राथमिक स्वास्थ्य केंद्र',
+    tagline:'Get your PHC NQAS-ready in 60 days',
+    inCharge:'MOIC', inChargeLabel:'MO In-charge', clinicalInCharge:'MOIC', coordinator:'MOIC',
+    verifierRoles:[], checklist:'phc-checklist', days:60,
+    plan:{base:7, implWeeks:6, end:7, ready:4},
+    programmes:[{id:'nqas_phc',label:'PHC — NQAS (60 days)'}],
+    departments:[
+      {id:'OPD', name:'OPD',                        clinical:true,  lead:'MOIC'},
+      {id:'NHP', name:'National Health Programmes', clinical:true,  lead:'MOIC'},
+      {id:'LR',  name:'Labour Room',                clinical:true,  lead:'MOIC', optional:true},
+      {id:'IND', name:'Indoor',                     clinical:true,  lead:'MOIC', optional:true},
+      {id:'LAB', name:'Laboratory',                 clinical:false, lead:'MOIC'},
+      {id:'GA',  name:'General Administration',     clinical:false, lead:'MOIC'}
+    ],
+    defaultTeams:{
+      MO:['OPD','NHP','LR','IND'], StaffNurse:['OPD'], StaffNurseIPD:['LR','IND'], ANM:['OPD','NHP'], LHV:['NHP','LR'],
+      Pharmacist:['OPD','GA'], LabTech:['LAB'], OutreachSup:['NHP'], SupportStaff:['OPD','GA'], WardAttendant:['IND'], ASHA:['NHP']
+    },
+    seeAll:['MOIC'],
+    xcheckDepts:['NHP'], xcheckRoles:['ANM','LHV','OutreachSup'],
+    roles:[
+      {id:'MOIC',          label:'MO In-charge',                 icon:'🩺', requireName:false},
+      {id:'MO',            label:'Medical Officer',              icon:'🩺', requireName:true},
+      {id:'StaffNurse',    label:'Staff Nurse (OPD)',            icon:'🏥', requireName:true},
+      {id:'StaffNurseIPD', label:'Staff Nurse (Labour Room / Indoor)', icon:'🏥', requireName:true},
+      {id:'ANM',           label:'ANM',                          icon:'💉', requireName:true},
+      {id:'LHV',           label:'LHV',                          icon:'👩‍⚕️', requireName:true},
+      {id:'Pharmacist',    label:'Pharmacist',                   icon:'💊', requireName:true},
+      {id:'LabTech',       label:'Lab Technician',               icon:'🔬', requireName:true},
+      {id:'OutreachSup',   label:'Outreach Supervisor',          icon:'🌿', requireName:true},
+      {id:'SupportStaff',  label:'Support Staff',                icon:'🧹', requireName:true},
+      {id:'WardAttendant', label:'Ward Attendant',               icon:'🛏️', requireName:true},
+      {id:'ASHA',          label:'ASHA',                         icon:'🌸', requireName:true}
+    ],
+    passMark:{overall:70, aoc:70, dept:70}
+  },
+  chc:{
+    id:'chc', core:'dept', ready:false,
+    name:'CHC', plural:'CHCs', short:'CHC', nameHi:'सामुदायिक स्वास्थ्य केंद्र',
+    tagline:'Get your CHC NQAS-ready in 90 days',
+    inCharge:'MOIC', inChargeLabel:'MO In-charge (MOIC)', clinicalInCharge:'MOIC', coordinator:'FacilityNodal',
+    verifierRoles:[], checklist:'chc-checklist', days:90,
+    // 90 days: baseline 14 · implementation 8 weeks · end-line 14 · readiness 6 (verification 85–88, final review 89, graduation 90)
+    plan:{base:14, implWeeks:8, end:14, ready:6},
+    programmes:[{id:'nqas_chc',label:'CHC — NQAS · LaQshya · MusQan (90 days)'}],
+    departments:[
+      {id:'OPD',  name:'OPD',                        clinical:true,  lead:'MOIC'},
+      {id:'EM',   name:'Accident & Emergency',       clinical:true,  lead:'MOIC'},
+      {id:'IPD',  name:'IPD (Indoor)',               clinical:true,  lead:'MOIC'},
+      {id:'PAED', name:'Paediatric OPD (MusQan)',    clinical:true,  lead:'MOIC', prog:'MusQan', optional:true},
+      {id:'LR',   name:'Labour Room (LaQshya)',      clinical:true,  lead:'MOIC', prog:'LaQshya', optional:true},
+      {id:'NBSU', name:'NBSU (MusQan)',              clinical:true,  lead:'MOIC', prog:'MusQan', optional:true},
+      {id:'MOT',  name:'Maternity OT (LaQshya)',     clinical:true,  lead:'MOIC', prog:'LaQshya', optional:true},
+      {id:'OT',   name:'Operation Theatre',          clinical:true,  lead:'MOIC', optional:true},
+      {id:'LAB',  name:'Laboratory',                 clinical:false, lead:'FacilityNodal'},
+      {id:'RAD',  name:'Radiology',                  clinical:false, lead:'FacilityNodal', optional:true},
+      {id:'PH',   name:'Pharmacy & Stores',          clinical:false, lead:'FacilityNodal'},
+      {id:'BSU',  name:'Blood Storage Unit',         clinical:false, lead:'FacilityNodal', optional:true},
+      {id:'AUX',  name:'Auxiliary Services',         clinical:false, lead:'FacilityNodal'},
+      {id:'GA',   name:'General Administration',     clinical:false, lead:'FacilityNodal'}
+    ],
+    defaultTeams:{
+      GenSurgeon:['OT'], Physician:['OPD','EM','IPD'], ObGyn:['LR','MOT'], Paediatrician:['PAED','LR','NBSU','MOT'], Anaesthesiologist:['OT','MOT'],
+      PHSpecialist:['GA'], Ophthalmologist:['OPD'], Orthopaedic:['OPD','EM','OT'], MicroPath:['LAB','BSU'], PMR:['OPD','IPD'], GDMO:['OPD','PAED','IPD'],
+      DentalMO:['OPD'], AYUSHMO:['OPD'], Matron:['IPD','EM','LR','NBSU','MOT','OT'], SNIPD:['IPD','EM'], SNMat:['LR','MOT'], SNNBSU:['NBSU'], SNOT:['OT','MOT'],
+      NCDNurse:['OPD'], Pharmacist:['PH'], AYUSHPharmacist:['PH'], LabTech:['LAB'], Radiographer:['RAD'], Optometrist:['OPD'], DentalTech:['OPD'],
+      Physio:['OPD','IPD'], ColdChain:['PH'], OTTech:['OT','MOT'], Counselor:['LR','NBSU'], BPM:['GA'], AccountsOfficer:['GA'], DEO:['GA'],
+      HealthEducator:['OPD'], SanitaryInspector:['AUX'], HospitalAttendant:['IPD','EM'], Housekeeping:['AUX'], SecurityGuard:['AUX'], LaundryAttendant:['AUX'], BMWHandler:['AUX']
+    },
+    seeAll:['MOIC','FacilityNodal'],
+    xcheckDepts:[], xcheckRoles:[],
+    roleGroups:[{id:'clinical',label:'Clinical staff'},{id:'nursing',label:'Nursing staff'},{id:'allied',label:'Allied health & paramedical'},{id:'admin',label:'Public health & administration'},{id:'support',label:'Support & facility management'}],
+    roles:[
+      {id:'MOIC',label:'MO In-charge (MOIC)',icon:'🩺',group:'admin',requireName:false},
+      {id:'FacilityNodal',label:'Facility Nodal Officer',icon:'🗂️',group:'admin',requireName:true},
+      {id:'GenSurgeon',label:'General Surgeon',icon:'🩺',group:'clinical'},{id:'Physician',label:'Physician',icon:'🩺',group:'clinical'},
+      {id:'ObGyn',label:'Obstetrician & Gynaecologist',icon:'🩺',group:'clinical'},{id:'Paediatrician',label:'Paediatrician',icon:'🩺',group:'clinical'},
+      {id:'Anaesthesiologist',label:'Anaesthesiologist',icon:'🩺',group:'clinical'},{id:'PHSpecialist',label:'Public Health Specialist',icon:'🩺',group:'clinical'},
+      {id:'Ophthalmologist',label:'Ophthalmologist',icon:'🩺',group:'clinical'},{id:'Orthopaedic',label:'Orthopaedic Specialist',icon:'🩺',group:'clinical'},
+      {id:'MicroPath',label:'Microbiologist / Pathologist',icon:'🔬',group:'clinical'},{id:'PMR',label:'Physical Medicine & Rehab Specialist',icon:'🩺',group:'clinical'},
+      {id:'GDMO',label:'General Duty Medical Officer',icon:'🩺',group:'clinical'},{id:'DentalMO',label:'Dental Medical Officer',icon:'🦷',group:'clinical'},
+      {id:'AYUSHMO',label:'AYUSH Medical Officer',icon:'🌿',group:'clinical'},
+      {id:'Matron',label:'Nursing Superintendent / Matron',icon:'🏥',group:'nursing'},{id:'SNIPD',label:'Staff Nurse (IPD)',icon:'🏥',group:'nursing'},
+      {id:'SNMat',label:'Staff Nurse (Maternity)',icon:'🏥',group:'nursing'},{id:'SNNBSU',label:'Staff Nurse (NBSU)',icon:'🏥',group:'nursing'},
+      {id:'SNOT',label:'Staff Nurse (OT)',icon:'🏥',group:'nursing'},{id:'NCDNurse',label:'NCD Clinic Nurse',icon:'🏥',group:'nursing'},
+      {id:'Pharmacist',label:'Pharmacist',icon:'💊',group:'allied'},{id:'AYUSHPharmacist',label:'AYUSH Pharmacist',icon:'💊',group:'allied'},
+      {id:'LabTech',label:'Lab Technologist / Technician',icon:'🔬',group:'allied'},{id:'Radiographer',label:'Radiographer / X-ray Technician',icon:'🩻',group:'allied'},
+      {id:'Optometrist',label:'Ophthalmic Assistant / Optometrist',icon:'👁️',group:'allied'},{id:'DentalTech',label:'Dental Technician / Hygienist',icon:'🦷',group:'allied'},
+      {id:'Physio',label:'Physiotherapist / Occupational Therapist',icon:'🦵',group:'allied'},{id:'ColdChain',label:'Cold Chain & Vaccine Logistics Assistant',icon:'❄️',group:'allied'},
+      {id:'OTTech',label:'OT Technician',icon:'🔧',group:'allied'},{id:'Counselor',label:'Counsellor (RMNCH+A)',icon:'💬',group:'allied'},
+      {id:'BPM',label:'Block Programme Manager',icon:'🗂️',group:'admin'},{id:'AccountsOfficer',label:'Accounts Officer',icon:'🧾',group:'admin'},
+      {id:'DEO',label:'Data Entry Operator',icon:'⌨️',group:'admin'},{id:'HealthEducator',label:'Health Educator / BCPM',icon:'📣',group:'admin'},
+      {id:'SanitaryInspector',label:'Sanitary Inspector',icon:'🧽',group:'support'},{id:'HospitalAttendant',label:'Hospital Attendant',icon:'🧑‍⚕️',group:'support'},
+      {id:'Housekeeping',label:'Housekeeping Staff',icon:'🧹',group:'support'},{id:'SecurityGuard',label:'Security Guard',icon:'🛡️',group:'support'},
+      {id:'LaundryAttendant',label:'Laundry Attendant',icon:'🧺',group:'support'},{id:'BMWHandler',label:'Bio-Medical Waste Handler',icon:'♻️',group:'support'}
+    ],
+    passMark:{overall:70, aoc:70, dept:70}
   }
 };
 var NF_LEVEL_DEFAULT='sc';
@@ -165,5 +268,18 @@ function nfEnrollTypeChanged(sel){
   if(sel.value==='sc'||!L.programmes){ p.innerHTML=p.__nfSc; }
   else p.innerHTML=L.programmes.map(function(x){ return '<option value="'+x.id+'">'+x.label+'</option>'; }).join('');
   p.parentNode.style.display='';
+  // department-core types: tick the departments this facility has (the optional ones; the others are always there)
+  var box=document.getElementById('sc-enroll-depts');
+  if(!box){ var grid=p.closest('.sc-enroll-grid'); if(grid){ box=document.createElement('div'); box.id='sc-enroll-depts'; box.style.cssText='margin:-2px 0 12px;'; grid.parentNode.insertBefore(box,grid.nextSibling); } }
+  if(!box) return;
+  var ds=(L.core==='dept'&&L.departments)||[];
+  if(!ds.some(function(d){ return d.optional; })){ box.innerHTML=''; box.style.display='none'; return; }
+  box.style.display='';
+  box.innerHTML='<div class="lc-label" style="margin-bottom:6px;">Departments at this '+L.name+' <span style="font-weight:600;color:var(--t3);">— untick the ones it does not have (can be switched on later)</span></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px;">'+ds.map(function(d){ return d.optional
+      ?'<label style="display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--br);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" data-nf-dept="'+d.id+'" checked> '+d.name+'</label>'
+      :'<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bgs);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--t2);" title="Every '+L.name+' has this department">✓ '+d.name+'</span>'; }).join('')+'</div>';
 }
+// the departments unticked on the enrolment form (saved as switched off once the facility is created)
+function nfEnrollDeptsOff(){ return [].map.call(document.querySelectorAll('#sc-enroll-depts input[data-nf-dept]'),function(c){ return c.checked?null:c.getAttribute('data-nf-dept'); }).filter(Boolean); }
 document.addEventListener('DOMContentLoaded',function(){ try{ nfLvlApply(); }catch(e){} try{ nfFillTypeSelect(document.getElementById('sc-enroll-type')); }catch(e){} });

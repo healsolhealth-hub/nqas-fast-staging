@@ -6,17 +6,17 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "69bd4755b4dd";
+const BUILD = "dae04dab61d0";
 const ASSETS = [
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.5c7e3c819a.js",
  "assets/data-sc-how-to-fix.370427c0e7.js",
  "assets/dept-core.0cc48ff0de.css",
- "assets/dept-core.f8cb391d6f.js",
- "assets/dept-plan.0d8e8d2719.js",
- "assets/dept-review.c500d2c62b.js",
+ "assets/dept-core.fa0d625add.js",
+ "assets/dept-plan.a26f911f6b.js",
+ "assets/dept-review.74ca5139c7.js",
  "assets/dept-screens.1514e0a964.css",
- "assets/dept-screens.ba63a301f4.js",
+ "assets/dept-screens.6cb60ae8f5.js",
  "assets/sc-baseline-review.9bd6ffb924.js",
  "assets/sc-baseline-review.cba584c030.css",
  "assets/sc-baseline7.d38d5e0f28.js",
@@ -79,9 +79,9 @@ const ASSETS = [
  "assets/shared-pdf-reports.77cff64a9b.js",
  "assets/shared-pdf.33e49f6393.js",
  "assets/shared-registration.6833f0a40c.js",
- "assets/shared-secure.0154dea3aa.js",
+ "assets/shared-secure.f4e24cc420.js",
  "assets/shared-whatsapp.a3bc984eb3.js",
- "assets/types-settings.48bfb55fc0.js",
+ "assets/types-settings.f1077baf56.js",
  "assets/vendor-pdf-fonts.d24cedb333.js",
  "assets/vendor-poppins-font.7a4a5ae076.css",
  "assets/vendor-qrcode.fabb956c75.js",

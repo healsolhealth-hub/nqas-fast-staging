@@ -66,11 +66,12 @@ async function ndOpen(acc) {
   var cl; try { cl = await nfLoadData(cfg.checklist); } catch (e) { return 'The ' + cfg.name + ' checklist could not be loaded. Check the internet and try again.'; }
   _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: {}, pcards: {}, actions: {}, sel: {}, tab: 'today', card: null };
   _nd.fa = ndIsInCharge(me) || ndSeesAll(me);   // the in-charge and MO in-charge open on the Facility dashboard; "My cards" for their own screens
-  (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id); });
+  (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id, nfDeptShape(cfg)); });
   _nd.byId = {}; cl.items.forEach(function (r) { _nd.byId[r[0]] = r; });
   // first open by the in-charge: save the default departments set-up
-  if (ndIsInCharge(me) && !fac.depts) {
-    var def = ndDefaults();
+  var set0 = fac.depts || {}, hasSetup = Object.keys(set0).some(function (k) { return set0[k] && (set0[k].lead || set0[k].team); });
+  if (ndIsInCharge(me) && !hasSetup) {   // first open: the default leads and teams; departments switched off at enrolment stay off
+    var def = ndDefaults(); Object.keys(set0).forEach(function (k) { if (set0[k] && set0[k].off && def[k]) def[k].off = true; });
     try { await db.ref(scFacilityPath(code) + '/depts').set(def); _nd.fac.depts = def; } catch (e) { console.warn('[dept] defaults not saved', e); }
   }
   try { _nd.cards = (await fbGet(ndPath())) || {}; } catch (e) { _nd.cards = {}; }
@@ -94,7 +95,8 @@ async function ndReload() { if (!_nd) return; _nd.fac = (await fbGet(scFacilityP
 
 // ── programme day ──
 function ndDay() { return nfDeptDayNo(_nd.fac.startDate); }
-function ndDayInfo(dept, day) { return nfDeptDay(_nd.plan[dept], day); }
+function ndShape() { return nfDeptShape(_nd.cfg); }   // the programme's phase days (60 or 90)
+function ndDayInfo(dept, day) { return nfDeptDay(_nd.plan[dept], day, ndShape()); }
 // ── render ──
 function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
@@ -239,7 +241,7 @@ async function ndOpenView(code) {
   var claims = (typeof _nfAuth !== 'undefined' && _nfAuth && _nfAuth.claims) || {}, sup = (typeof appMode !== 'undefined' && appMode === 'sc-supervisor') ? claims.sup : null, supName = '';
   if (sup) { try { supName = ((await fbGet('sc_supervisors/' + sup)) || {}).name || ''; } catch (e) {} }
   _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: {}, pcards: {}, actions: {}, sel: {}, tab: sup ? 'fix' : 'today', card: null, view: sup ? 'sup' : 'view', supId: sup, supName: supName };
-  (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id); });
+  (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id, nfDeptShape(cfg)); });
   _nd.byId = {}; cl.items.forEach(function (r) { _nd.byId[r[0]] = r; });
   try { _nd.cards = (await fbGet(ndPath())) || {}; } catch (e) {}
   try { _nd.actions = (await fbGet('sc_dactions/' + code)) || {}; } catch (e) {}
@@ -253,9 +255,9 @@ function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
   var e = ndEsc, prog = (LV.programmes || []).find(function (p) { return p.id === fac.progId; }), k = /([A-Z])$/.exec(String(fac.progId || ''));
   var pkg = prog ? String(prog.label).replace(/^[^—]*—\s*/, '').replace(/\s*\(\d+ days\)\s*$/, '') : (fac.progId || '—');
   var staffN = Object.keys(fac.staff || {}).filter(function (m) { return fac.staff[m] && !fac.staff[m].disabled; }).length;
-  var day = fac.startDate ? nfDeptDayNo(fac.startDate) : null, days = LV.days || 60;
+  var day = fac.startDate ? nfDeptDayNo(fac.startDate) : null, days = LV.days || 60, S = nfDeptShape(LV);
   var when = !fac.startDate ? 'Start date not set' : day < 1 ? 'Starts ' + ndDate(fac.startDate) : day > days ? 'Programme complete' : 'Day ' + day + ' of ' + days;
-  var phase = !fac.startDate || day < 1 ? '' : day <= 7 ? 'Baseline' : day <= 49 ? 'Implementation' : day <= 56 ? 'End-line' : day <= days ? 'Readiness week' : '';
+  var phase = !fac.startDate || day < 1 ? '' : day <= S.bN ? 'Baseline' : day <= S.iN ? 'Implementation' : day <= S.eN ? 'End-line' : day <= days ? 'Readiness week' : '';
   var pct = day && day > 0 ? Math.min(100, Math.round(Math.min(day, days) / days * 100)) : 0;
   return '<div class="mfc-top"><div class="mfc-icon">🏥</div><div style="flex:1;min-width:0;">'
     + '<div class="mfc-name" title="' + e(fac.name || code) + '">' + e(fac.name || code) + '</div>'
