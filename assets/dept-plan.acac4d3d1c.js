@@ -152,3 +152,26 @@ function nfDeptLayerRows(items, layer) {
   });
   return { rows: order.filter(function (r) { return !retired[r[0]]; }), all: all, retired: retired };
 }
+// ── Step 2d (HealSol 19 Oct): the checklist's MoV text → the things staff tick, as a default HealSol can edit ──
+// numbered points "1. … 2. …" → one item each; several sentences → one item each; a short list "A, B, C" (3+ short parts)
+// → one item each; anything else stays one item (one item: ✓ = Met, ✗ = Not met).
+function nfMovSplit(s) {
+  s = String(s || '').replace(/\s+/g, ' ').trim(); if (!s) return [];
+  var cap = function (p) { p = String(p).replace(/^[\s.;,\-–•]+|[\s.;,\-–•]+$/g, ''); return p ? p.charAt(0).toUpperCase() + p.slice(1) : p; };
+  var words = function (p) { return p.split(' ').filter(Boolean).length; };
+  if (/^\(?1[.)]\s*/.test(s) && /\s\(?2[.)]\s*/.test(s)) {
+    var np = s.split(/(?:^|\s)\(?\d{1,2}[.)]\s*(?=[A-Za-z])/).map(cap).filter(function (p) { return p.length > 2; });
+    if (np.length > 1) return np;
+  }
+  var sn = s.replace(/([a-z0-9)\]])\s*\.\s+(?=[A-Z])/g, '$1\u0001').split('\u0001').filter(function (p) { return p.trim(); });   // no look-behind (older phones)
+  if (sn.length > 1 && sn.every(function (p) { return words(p) >= 3; })) return sn.map(cap);
+  var parts = [], cur = '', depth = 0, t = s.replace(/\.$/, '');
+  for (var i = 0; i < t.length; i++) {
+    var ch = t.charAt(i); if (ch === '(' || ch === '[') depth++; if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    if (!depth && (ch === ';' || (ch === ',' && !(/\d/.test(t.charAt(i - 1)) && /\d/.test(t.charAt(i + 1)))))) { parts.push(cur); cur = ''; } else cur += ch;
+  }
+  parts.push(cur); parts = parts.map(function (p) { return p.trim().replace(/^(and|&)\s+/i, ''); }).filter(Boolean);
+  if (parts.length >= 3 && words(parts[0]) <= 5 && parts.slice(0, -1).every(function (p) { return words(p) <= 6; }) && words(parts[parts.length - 1]) <= 10
+    && parts.every(function (p) { return p.length >= 2; }) && parts.reduce(function (a, p) { return a + words(p); }, 0) / parts.length <= 4.5) return parts.map(cap);
+  return [cap(s)];
+}

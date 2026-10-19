@@ -40,7 +40,7 @@ function nmMethods(s) {
 function nmFromRow(r) {
   var m = nmMethods(r[6]), what = String(r[7] || '').replace(/\s+/g, ' ').trim();
   return { id: r[0], dept: r[1], aoc: r[2], std: r[3], me: r[4], t: r[5], method: m, what: what, ord: r[8] || 0, hi: '',
-    items: what ? [{ t: what, h: '', m: m.slice() }] : [], video: '', videoHi: '', fix: {}, roles: [], pk: '', retired: false };
+    items: nfMovSplit(what).map(function (t) { return { t: t, h: '', m: m.slice() }; }), /* default things to tick (HealSol 19 Oct) */ video: '', videoHi: '', fix: {}, roles: [], pk: '', retired: false };
 }
 // encode one field for the database / compare
 function nmEnc(f, v) {

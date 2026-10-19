@@ -6,20 +6,21 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "eecdbfafa46a";
+const BUILD = "84e8532072fb";
 const ASSETS = [
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.5c7e3c819a.js",
  "assets/data-sc-how-to-fix.370427c0e7.js",
+ "assets/dept-content.9efe67bbd1.js",
  "assets/dept-core.0cc48ff0de.css",
- "assets/dept-core.213ac5a5b0.js",
+ "assets/dept-core.452ff7c147.js",
  "assets/dept-master-ui.61064e6f9f.js",
+ "assets/dept-master.0c48018e85.js",
  "assets/dept-master.47368ec57d.css",
- "assets/dept-master.e11b1d4918.js",
- "assets/dept-plan.f1df6e786e.js",
- "assets/dept-review.74ca5139c7.js",
- "assets/dept-screens.1514e0a964.css",
- "assets/dept-screens.6cb60ae8f5.js",
+ "assets/dept-plan.acac4d3d1c.js",
+ "assets/dept-review.a23e85a13f.js",
+ "assets/dept-screens.90b8e91230.js",
+ "assets/dept-screens.f786feb4e5.css",
  "assets/sc-baseline-review.9bd6ffb924.js",
  "assets/sc-baseline-review.cba584c030.css",
  "assets/sc-baseline7.d38d5e0f28.js",

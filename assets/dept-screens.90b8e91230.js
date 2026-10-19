@@ -178,14 +178,16 @@ function nxTabsHTML(me) {
 function nxGapOpen(id) { var F = ndLatestFinal()[id]; if (F) ndGoCard(F.dept, F.day); }
 function nxActCard(id) {
   var a = (_nd.actions || {})[id], me = ndMob(); if (!a) return '';
-  var over = a.status === 'open' && a.due < ndToday(), canFix = !_nd.view && a.status === 'open' && (a.owner === me || ndIsInCharge(me));
+  var over = a.status === 'open' && a.due < ndToday(), myPart = !!(a.owners && a.owners[me] && !(a.dn || {})[me]), canFix = !_nd.view && a.status === 'open' && (a.owners ? myPart || ndIsInCharge(me) : (a.owner === me || ndIsInCharge(me)));
+  var stp = ndActSteps(id, a), vu = ndVideoUrl(id), nOw = a.owners ? Object.keys(a.owners).length : 0, nDn = a.owners ? Object.keys(a.dn || {}).filter(function (m) { return a.owners[m]; }).length : 0;
   var leadEdit = !_nd.view && a.status === 'open' && a.level !== 'sup' && ndCanVerify(a.dept, me), sup = _nd.view === 'sup';
   var stt = { open: over ? ['r', 'overdue'] : ['t', 'open'], fixed: ['b', 're-check on the next card'], sup: ['v', 'with the Facility Supervisor'], closed: ['g', 'closed'] }[a.status] || ['', a.status];
   return '<div class="nx-card nd-act"><div class="nx-dim" style="font-weight:700">' + ndEsc(id) + ' · from the ' + (a.level === 'sup' ? 'Facility Supervisor' : ndEsc(ndDeptDef(a.dept).name) + ' lead') + ' · due ' + ndEsc(ndShortDate(a.due)) + '</div>'
-    + '<b style="font-size:14px;font-weight:600">' + ndEsc(ndCpText(id)) + '</b><div class="nx-how">' + ndEsc(a.how) + '</div>'
-    + '<div class="nx-tg"><span>' + ndEsc(ndName(a.owner)) + '</span><span class="' + stt[0] + '">' + ndEsc(stt[1]) + '</span></div>'
+    + '<b style="font-size:14px;font-weight:600">' + ndEsc(ndCpTextL(id)) + '</b>' + (a.k ? '<span class="nx-miss">' + ndItemNames(id, a.k).map(ndEsc).join(' · ') + '</span>' : '')
+    + '<div class="nx-how" style="white-space:pre-line">' + ndEsc(stp.steps) + '</div>' + (stp.ev ? '<div class="nx-dim"><b>Evidence to show:</b> ' + ndEsc(stp.ev) + '</div>' : '') + (vu ? '<button type="button" class="nx-vid" onclick="ndPlayVideo(\'' + id + '\')"><i class="ti ti-player-play"></i>Watch video</button>' : '')
+    + '<div class="nx-tg"><span>' + ndEsc(a.owners ? 'Each staff member · ' + nDn + ' of ' + nOw + ' done' : ndName(a.owner)) + '</span><span class="' + stt[0] + '">' + ndEsc(stt[1]) + '</span></div>'
     + (a.fixed && a.status !== 'open' ? '<div class="nx-dim">Fixed by ' + ndEsc(ndName(a.fixed.by)) + (a.fixed.note ? ': ' + ndEsc(a.fixed.note) : '') + '</div>' : '')
-    + (canFix || leadEdit || (sup && a.status !== 'closed') ? '<div class="nx-two">' + (canFix ? '<button type="button" class="nx-btn sm" onclick="ndFixAction(\'' + id + '\')">Mark fixed</button>' : '')
+    + (canFix || leadEdit || (sup && a.status !== 'closed') ? '<div class="nx-two">' + (canFix ? '<button type="button" class="nx-btn sm" onclick="ndFixAction(\'' + id + '\')">' + (myPart && nOw - nDn > 1 ? 'Mark my part done' : 'Mark fixed') + '</button>' : '')
       + (leadEdit ? '<button type="button" class="nx-btn sm ghost" onclick="ndAssign(\'' + id + '\')">Change</button>' : '')
       + (sup && a.status !== 'closed' ? '<button type="button" class="nx-btn sm ghost" onclick="nxSupEdit(\'' + id + '\')">' + (a.status === 'sup' ? 'Write how to fix' : 'Change') + '</button>' : '') + '</div>' : '')
     + '</div>';
@@ -248,7 +250,7 @@ function ndRemindHTML() {
 function nxCardsHead() {
   var today = Math.min(ndDay(), _nd.cfg.days), cv = _nd.cv || 'day';
   return '<div class="nx-ph"><div class="nx-ph-in"><div class="nx-ph-r"><h1>Cards</h1><span class="nd-qb" id="nd-q" hidden></span>'
-    + '<span class="nx-chip t">' + ndEsc(nxPkgLabel()) + '</span><span class="nx-chip o">Day ' + Math.max(today, 0) + '</span></div>'
+    + ndLangSeg() + '<span class="nx-chip t">' + ndEsc(nxPkgLabel()) + '</span><span class="nx-chip o">Day ' + Math.max(today, 0) + '</span></div>'
     + '<div class="nx-ul"><button type="button" class="' + (cv === 'day' ? 'on' : '') + '" onclick="ndCv(\'day\')">Daily Cards</button><button type="button" class="' + (cv === 'timeline' ? 'on' : '') + '" onclick="ndCv(\'timeline\')">Timeline</button></div></div></div>';
 }
 function ndCardsHTML() {
@@ -267,20 +269,21 @@ function ndCardsHTML() {
   if (!depts.length) return h + '<div class="nx-card"><div class="nx-empty"><i class="ti ti-calendar"></i>No card for you on Day ' + day + '<br><small>' + ndEsc(ndDayTitle(day)) + '</small></div></div></div>';
   if (!_nd.cdept || !depts.some(function (x) { return x.id === _nd.cdept; })) _nd.cdept = depts[0].id;
   var me = ndMob(), fillD = depts.filter(function (x) { return !_nd.view && ndFills(x.id, me); }), sc = 0, tot = 0;
-  fillD.forEach(function (x) { var c = ndPc(x.id, day)[me] || {}, ids = ndDayIds(x.id, day); tot += ids.length; sc += ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length; });
+  fillD.forEach(function (x) { var c = ndPc(x.id, day)[me] || {}, ids = ndMyIds(x.id, day, me); tot += ids.length; sc += ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length; });
   var info = ndDayInfo(_nd.cdept, day), cur = ndDeptDef(_nd.cdept);
   h += '<div class="nx-ban b"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:13.5px">' + ndEsc(ND_PHASE[info.phase] || ndWeekLabel(day)) + ' · Day ' + day + ' · ' + ndEsc(cur.name) + '</b>' + (tot ? '<b style="font-size:12.5px">' + sc + '/' + tot + '</b>' : '') + '</div>'
     + (tot ? '<span class="nx-bar b"><span style="width:' + Math.round(100 * sc / tot) + '%"></span></span>' : '')
     + '<span style="font-size:11.5px;color:#1E3A8A">' + (day === Math.min(today, n) ? 'Today' : 'Day ' + day) + ': ' + depts.length + ' department' + (depts.length > 1 ? 's' : '') + (fillD.length ? ' for your role' : '') + ' · ' + ndEsc(depts.map(function (x) { return x.id; }).join(', ')) + '</span></div>';
   if (depts.length > 1) h += '<div class="nx-pills">' + depts.map(function (x) {
-    var lab = x.name; if (!_nd.view && ndFills(x.id, me)) { var c = ndPc(x.id, day)[me] || {}, ids = ndDayIds(x.id, day); lab += ' · ' + ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length + '/' + ids.length; } else if (!_nd.view && ndCanCheck(x.id, me)) lab += ' · compare';
+    var lab = x.name; if (!_nd.view && ndFills(x.id, me)) { var c = ndPc(x.id, day)[me] || {}, ids = ndMyIds(x.id, day, me); lab += ' · ' + ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length + '/' + ids.length; } else if (!_nd.view && ndCanCheck(x.id, me)) lab += ' · compare';
     return '<button type="button" class="nx-pill' + (x.id === _nd.cdept ? ' on' : '') + '" onclick="_nd.cdept=\'' + x.id + '\';ndRender()">' + ndEsc(lab) + '</button>';
   }).join('') + '</div>';
   return h + ndDayCardHTML(_nd.cdept, day) + '</div>';
 }
 function ndDayCardHTML(dept, day) {
   var me = ndMob(), today = ndDay(), d = ndDeptDef(dept), info = ndDayInfo(dept, day), ids = ndDayIds(dept, day), res = ndRes(dept, day);
-  var fills = !_nd.view && ndFills(dept, me), c = fills ? (ndPc(dept, day)[me] || {}) : {}, s = c.s || {}, rs = c.r || {}, nt = c.note || {};
+  if (!_nd.view && ndFills(dept, me)) { var mine = ndMyIds(dept, day, me); if (mine.length) ids = mine; }   // best filled by: my checkpoints only
+  var fills = !_nd.view && ndFills(dept, me) && ndMyIds(dept, day, me).length > 0, c = fills ? (ndPc(dept, day)[me] || {}) : {}, s = c.s || {}, rs = c.r || {}, nt = c.note || {};
   var locked = !fills || !!res.chk || day > today, n = ids.filter(function (i) { return s[i] !== undefined; }).length, st = ndMySt(dept, day);
   var aocs = [], stds = []; ids.forEach(function (id) { var r = _nd.byId[id]; if (!r) return; if (aocs.indexOf(r[2]) < 0) aocs.push(r[2]); if (stds.indexOf(r[3]) < 0) stds.push(r[3]); });
   var lead = ndLead(dept), ck = ndChecker(dept), myRole = nxRoleOf(me);
@@ -307,14 +310,26 @@ function ndDayCardHTML(dept, day) {
     if (g.key === '__re') h += '<div class="nx-stdh" style="color:#1D4ED8;background:#EFF6FF">Re-check after a fix · an action was marked fixed — score it again</div>';
     else if (many) h += '<div class="nx-stdh">Standard ' + ndEsc(g.key) + ' · ' + ndEsc(_nd.cl.stds[g.key] || '') + '</div>';
     g.rows.forEach(function (r) {
-      var id = r[0], v = s[id], isRe = g.key === '__re', a = (_nd.actions || {})[id], things = nxThings(r);
-      h += '<div class="nx-cp' + (v === 1 ? ' s1' : v === 0 ? ' s0' : isRe ? ' re' : '') + '" id="nd-cp-' + id + '"><div class="nx-tg">' + (isRe ? '<span class="b">Re-check</span>' : '') + '<span>' + ndEsc(id) + '</span><span class="v">@' + ndEsc(myRole) + '</span>' + (nxMethod(r) ? '<span class="s">' + ndEsc(nxMethod(r)) + '</span>' : '') + '<span>ME ' + ndEsc(r[4]) + '</span></div>'
-        + '<b>' + ndEsc(r[5]) + '</b>'
-        + (r[7] ? '<details><summary><i class="ti ti-info-circle"></i>' + (things > 1 ? things + ' things to check' : 'What to check') + ' — tap ⓘ</summary><p>' + ndEsc(r[7]) + '</p></details>' : '')
+      var id = r[0], v = s[id], isRe = g.key === '__re', a = (_nd.actions || {})[id], ct = ndCt(id), its = ct.items, fy = ndForYouTag(dept, id), vu = ndVideoUrl(id);
+      h += '<div class="nx-cp' + (v === 1 ? ' s1' : v === 0 ? ' s0' : isRe ? ' re' : '') + '" id="nd-cp-' + id + '"><div class="nx-tg">' + (isRe ? '<span class="b">Re-check</span>' : '') + '<span>' + ndEsc(id) + '</span>' + (fy ? '<span class="v">' + ndEsc(fy) + '</span>' : '<span class="v">@' + ndEsc(myRole) + '</span>') + (nxMethod(r) ? '<span class="s">' + ndEsc(nxMethod(r)) + '</span>' : '') + '<span>ME ' + ndEsc(r[4]) + '</span></div>'
+        + '<b' + (ndLang() === 'hi' && ct.hi ? ' lang="hi"' : '') + '>' + ndEsc(ndCpTextL(id)) + '</b>'
+        + (vu ? '<button type="button" class="nx-vid" onclick="ndPlayVideo(\'' + id + '\')"><i class="ti ti-player-play"></i>Watch video</button>' : '')
         + (isRe && a && a.fixed ? '<span style="font-size:11.5px;color:#1E3A8A">Marked fixed by ' + ndEsc(ndName(a.fixed.by)) + (a.fixed.day ? ' on Day ' + a.fixed.day : '') + ' — is it Met now?</span>' : '');
-      if (locked) h += '<div class="nx-ro ' + (v === undefined ? 'na' : 's' + v) + '">' + (v === undefined ? (fills ? 'Not scored' : '') : ND_SNAME[v]) + '</div>';
+      if (its.length) {   // MoV items: a yes / no for each; the score is worked out (SC rule)
+        var tk = ndTk((c.t || {})[id], its.length), met = tk.filter(function (x) { return x === 1; }).length;
+        h += '<span class="nx-q" style="color:#4A5A55">' + (its.length > 1 ? 'Check each thing — the score is worked out for you' : '1 thing to check') + '</span><div class="nx-mov">' + its.map(function (it, k) {
+          var t = tk[k];
+          return '<div class="nx-mi2' + (t === 0 ? ' no' : '') + '"><span' + (ndLang() === 'hi' && it.h ? ' lang="hi"' : '') + '>' + ((it.m || [])[0] ? '<em>' + ndEsc(it.m[0]) + '</em> ' : '') + ndEsc(ndItemTxt(it)) + '</span>'
+            + '<button type="button" aria-label="Yes" aria-pressed="' + (t === 1) + '" class="y' + (t === 1 ? ' on' : '') + '"' + (locked ? ' disabled' : '') + ' onclick="ndTick(\'' + id + '\',' + k + ',1)">✓</button>'
+            + '<button type="button" aria-label="No" aria-pressed="' + (t === 0) + '" class="n' + (t === 0 ? ' on' : '') + '"' + (locked ? ' disabled' : '') + ' onclick="ndTick(\'' + id + '\',' + k + ',0)">✗</button></div>';
+        }).join('') + '</div>';
+        if (v !== undefined) h += '<div class="nx-movr s' + v + '"><span>' + met + ' of ' + its.length + ' met</span><b>' + ND_SNAME[v] + '</b></div>';
+        else if (its.length > 1 && !locked) h += '<span class="nx-dim">' + ndEsc(ndRuleTxt(its.length)) + '</span>';
+        else if (locked && fills) h += '<div class="nx-ro na">Not scored</div>';
+      }
+      else if (locked) h += '<div class="nx-ro ' + (v === undefined ? 'na' : 's' + v) + '">' + (v === undefined ? (fills ? 'Not scored' : '') : ND_SNAME[v]) + '</div>';
       else h += '<div class="nx-3">' + [2, 1, 0].map(function (k) { return '<button type="button" class="s' + k + (v === k ? ' on' : '') + '" onclick="ndScore(\'' + id + '\',' + k + ')">' + ND_SNAME[k] + '</button>'; }).join('') + '</div>';
-      if (v === 0 || v === 1) {
+      if ((v === 0 || v === 1) && !its.length) {
         h += '<span class="nx-q">What is missing? (one tap)</span><div class="nx-rs nd-rs">' + ND_REASONS.map(function (x) { return '<button type="button" class="' + (rs[id] === x.k ? 'on' : '') + '"' + (locked ? ' disabled' : '') + ' onclick="ndReasonSet(\'' + id + '\',\'' + x.k + '\')">' + ndEsc(x.k === 'oth' ? 'Other (add note)' : x.t) + '</button>'; }).join('') + '</div>';
         if (rs[id] === 'oth' || nt[id]) h += '<input class="nx-in' + (rs[id] === 'oth' && !nt[id] ? ' need' : '') + '" maxlength="300" placeholder="' + (rs[id] === 'oth' ? 'What is missing? (needed for Other)' : 'What is missing?') + '" value="' + ndEsc(nt[id] || '') + '"' + (locked ? ' disabled' : '') + ' onchange="ndNote(\'' + id + '\',this.value)">';
       }
@@ -455,7 +470,7 @@ function ndMeHTML() {
   h += '<div class="nx-card" style="flex-direction:row;align-items:center;gap:12px"><i class="ti ti-message" style="width:40px;height:40px;border-radius:12px;background:#DCFCE7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none"></i><span style="flex:1;display:flex;flex-direction:column"><b style="font-size:13.5px">Need help?</b><small class="nx-dim">' + (help ? 'WhatsApp HealSol support' : 'Ask your ' + ndEsc(_nd.cfg.inChargeLabel) + ' or HealSol Academy') + '</small></span>' + help + '</div>';
   var mi = function (icon, t, js, em, cls) { return '<button type="button" class="nx-mi' + (cls ? ' ' + cls : '') + '" onclick="' + js + '"><i class="ti ' + icon + '"></i><span>' + t + '</span>' + (em ? '<em>' + em + '</em>' : '') + '</button>'; };
   var nCheck = ndChecksDue(me).length, nLead = ndEscItems(me).length + ndUnassigned(me).length;
-  h += '<div class="nx-card nx-menu">' + (ndFaCan(me) ? mi('ti-layout-dashboard', 'Facility dashboard', 'ndFaOpen()') : '') + mi('ti-language', 'Language · English <small class="nx-dim">(हिंदी coming soon)</small>', "ndToast('Hindi is coming soon for this app.','ok')")
+  h += '<div class="nx-card nx-menu">' + (ndFaCan(me) ? mi('ti-layout-dashboard', 'Facility dashboard', 'ndFaOpen()') : '') + mi('ti-language', 'Card language · ' + (ndLang() === 'hi' ? 'हिंदी' : 'English') + ' <small class="nx-dim">(checkpoints, things to check, How to fix, videos)</small>', "ndSetLang(ndLang()==='hi'?'en':'hi')")
     + (nxMyDeptIds().length ? mi('ti-layout-grid', 'Department dashboard', "ndTab('dept')") : '')
     + (!ndFaCan(me) && nxIsChecker(me) ? mi('ti-list-check', 'Cards to compare', 'nxOpenFirstCheck()', nCheck || '') : '')
     + (!ndFaCan(me) && nxLeads(me).length ? mi('ti-checklist', 'Decide &amp; assign', 'ndLeadOpen()', nLead || '') : '')
@@ -501,7 +516,10 @@ function ndCardHTML() {
   var G = function (k, t, list) { return list.length ? '<div class="nx-grp ' + k + '"><span>' + t + '</span><span>' + list.length + '</span></div>' : ''; };
   var reL = look.filter(function (x) { return x.re; }), diffL = look.filter(function (x) { return !x.re && x.kind === 'diff'; }), unL = look.filter(function (x) { return !x.re && x.kind === 'unmet'; }), spL = look.filter(function (x) { return !x.re && x.kind === 'met'; });
   h += G('re', 'Re-check of a fixed action', reL) + reL.map(function (x) { var low = x.low === null ? 0 : Math.min(x.low, 1), cur = curOf(x); return row(x, btn(x, 2, 'Confirm fixed', 's2') + btn(x, low, 'Still unmet → Supervisor', 's0'), cur === undefined ? 'Fixed by ' + ndName(((_nd.actions || {})[x.id] || {}).fixed ? _nd.actions[x.id].fixed.by : '') : cur === 2 ? 'Action closed' : 'Goes to the Facility Supervisor'); }).join('');
-  h += G('diff', 'Disagree — you decide', diffL) + diffL.map(function (x) { var cur = curOf(x); return row(x, btn(x, 2, 'Met', 's2') + btn(x, 1, 'Partial', 's1') + btn(x, 0, 'Not met', 's0') + (toLeadOk ? btn(x, 'esc', 'To lead', 'esc') : ''), cur === undefined ? (toLeadOk ? 'Choose, or send to the lead' : 'Choose the score') : cur === 'esc' ? 'The lead decides' : cur === 2 ? 'Closed as Met' : 'The lead assigns an action'); }).join('');
+  h += G('diff', 'Disagree — you decide', diffL) + diffL.map(function (x) {
+    var cur = curOf(x);
+    if (x.tks && x.dk.length) return row(x, '', '') + nxCmpItems(x, cols, tag, dept, day, can, res, sel) + (toLeadOk ? '<div class="nx-r" style="' + grid + ';border-top:0;padding-top:0"><div class="nx-3">' + btn(x, 'esc', 'Can’t tell — send to the lead', 'esc') + '</div><small class="nx-where">' + ndEsc(cur === undefined ? 'Answer the item(s) they differ on' : cur === 'esc' ? 'The lead decides' : cur === 2 ? 'Closed as Met' : ND_SNAME[cur] + ' — the lead assigns an action') + '</small></div>' : '');
+    return row(x, btn(x, 2, 'Met', 's2') + btn(x, 1, 'Partial', 's1') + btn(x, 0, 'Not met', 's0') + (toLeadOk ? btn(x, 'esc', 'To lead', 'esc') : ''), cur === undefined ? (toLeadOk ? 'Choose, or send to the lead' : 'Choose the score') : cur === 'esc' ? 'The lead decides' : cur === 2 ? 'Closed as Met' : 'The lead assigns an action'); }).join('');
   if (unL.length) { var showAll = _nd.cmpMore || unL.length <= 3; h += G('unmet', 'Agreed unmet — goes to the lead for an action', unL) + unL.slice(0, showAll ? 99 : 2).map(function (x) { return row(x, '', ''); }).join('') + (showAll ? '' : '<button type="button" class="nx-more" style="border-top:1px solid #F1F5F9" onclick="_nd.cmpMore=1;ndKeepScroll()">+' + (unL.length - 2) + ' more</button>'); }
   h += G('spot', 'Spot-check (1 in ' + ND_SPOT + ' agreed Met) · look at it yourself', spL) + spL.map(function (x) { return row(x, btn(x, 2, 'Yes, Met', 's2') + btn(x, 0, 'No — not met', 's0'), ''); }).join('');
   var auto = rows.filter(function (x) { return x.kind === 'met' && !x.look; });
@@ -514,6 +532,20 @@ function ndCardHTML() {
       + (open ? open + ' difference' + (open > 1 ? 's' : '') + ' to settle' : 'Done · ' + toLead + ' to lead · ' + forAct + ' for actions') + '</button>';
   }
   return h + '</div>';
+}
+
+// the items of a checkpoint the cards differ on: each card's ✓ / ✗, the checker answers the differing ones (Step 2d)
+function nxCmpItems(x, cols, tag, dept, day, can, res, sel) {
+  var its = ndCt(x.id).items, by = {}; x.sc.forEach(function (v, i) { by[v.m] = x.tks[i]; });
+  var ft = res.chk ? ndTk((res.ft || {})[x.id], its.length) : null;
+  var gridI = 'grid-template-columns:minmax(0,1fr)' + cols.map(function () { return ' 34px'; }).join('');
+  return '<div class="nx-cmpi">' + its.map(function (it, k) {
+    var diff = x.dk.indexOf(k) >= 0, a = sel[x.id + '#' + k];
+    var cells = cols.map(function (m) { var t = (by[m] || [])[k]; return '<span class="nx-tkc ' + (t === 1 ? 'y' : t === 0 ? 'n' : '') + '">' + (t === 1 ? '✓' : t === 0 ? '✗' : '–') + '</span>'; }).join('');
+    var h = '<div class="nx-cmpir' + (diff ? ' d' : '') + '" style="' + gridI + '"><span>' + ndEsc(ndItemTxt(it)) + (diff ? '<small>They differ here</small>' : '') + '</span>' + cells + '</div>';
+    if (diff && !res.chk) h += '<div class="nx-3 nx-cmpib"><button type="button" class="s2' + (a === 1 ? ' on' : '') + '"' + (can ? '' : ' disabled') + ' onclick="ndPickItem(\'' + dept + '\',' + day + ',\'' + x.id + '\',' + k + ',1)">Yes ✓</button><button type="button" class="s0' + (a === 0 ? ' on' : '') + '"' + (can ? '' : ' disabled') + ' onclick="ndPickItem(\'' + dept + '\',' + day + ',\'' + x.id + '\',' + k + ',0)">No ✗</button></div>';
+    return h;
+  }).join('') + '</div>';
 }
 
 // ═══ Lead › Decide & assign (full screen) ═══
@@ -546,11 +578,14 @@ function ndLeadScreenHTML() {
       var sg = ndSuggest(x.id, x.dept, x.day), cards = ndPc(x.dept, x.day), tally = {}, best = null, note = '';
       Object.keys(cards).forEach(function (m) { var c = cards[m] || {}; if (!c.done || c.absent) return; var v = (c.s || {})[x.id]; if (v === 0 || v === 1) { var k = (c.r || {})[x.id]; if (k) tally[k] = (tally[k] || 0) + 1; if ((c.note || {})[x.id] && !note) note = nxFirst(m) + ': “' + c.note[x.id] + '”'; } });
       Object.keys(tally).forEach(function (k) { if (!best || tally[k] > tally[best]) best = k; });
-      var rr = ndReason(best), other = !rr || rr.k === 'oth', how = other ? '' : sg.how;
+      var rr = ndReason(best), other = sg.src !== 'm' && (!rr || rr.k === 'oth'), how = other ? '' : sg.how, miss = ndMissed(x.id, x.dept, x.day);
       h += '<div class="nx-it nd-asg" id="nd-asg-' + x.id + '" data-dept="' + x.dept + '"><div class="nx-tg"><span>' + ndEsc(x.id) + '</span><span class="' + (x.s === 0 ? 'r' : 'a') + '">' + (x.s === 0 ? 'Not met' : 'Partial') + (rr ? ' · ' + ndEsc(rr.t) : '') + '</span>' + (leads.length > 1 ? '<span class="t">' + ndEsc(x.dept) + '</span>' : '') + '</div><b>' + ndEsc(ndCpText(x.id)) + '</b>'
-        + (other ? '<div class="nx-how a">' + (note ? ndEsc(note) + ' — write the action:' : 'No ready-made text for this one — write the action:') + '</div>' : '')
-        + '<textarea class="nx-in" data-k="how" maxlength="600" rows="2" placeholder="Type what needs to be done…"' + (other ? '' : ' style="background:#F0FDF4;border-color:#BBF7D0;color:#14532D"') + '>' + ndEsc(how) + '</textarea>'
-        + '<div class="nx-meta"><label>Owner<select data-k="owner">' + mobs.map(function (m) { return '<option value="' + m + '"' + (m === sg.owner ? ' selected' : '') + '>' + ndEsc(nxFirst(m) + ' · ' + nxRoleOf(m)) + '</option>'; }).join('') + '</select></label>'
+        + (miss.length ? '<div class="nx-miss">Not met: ' + ndItemNames(x.id, miss.join(',')).map(ndEsc).join(' · ') + '</div>' : '')
+        + (sg.src === 'm' ? '<div class="nx-how g"><b>How to fix' + (sg.k ? ' · item ' + ndEsc(sg.k) : '') + '</b> · ' + (sg.each ? 'each staff member in ' + ndEsc(ndDeptDef(x.dept).name) : 'one person fixes') + (sg.ev ? '<br>Evidence: ' + ndEsc(sg.ev) : '') + (sg.tm ? '<br>Time needed: ' + ndEsc(sg.tm) : '') + '</div>' : '')
+        + (other ? '<div class="nx-how a">' + (note ? ndEsc(note) + ' — write the action:' : 'No How to fix written by HealSol yet — write the action:') + '</div>' : '')
+        + '<textarea class="nx-in" data-k="how" maxlength="1500" rows="' + (sg.src === 'm' ? 4 : 2) + '" placeholder="Type what needs to be done…"' + (other ? '' : ' style="background:#F0FDF4;border-color:#BBF7D0;color:#14532D"') + ' data-orig="' + ndEsc(sg.src === 'm' ? sg.how : '') + '" data-mk="' + ndEsc(sg.k || '') + '" data-ev="' + ndEsc(sg.ev || '') + '" data-tm="' + ndEsc(sg.tm || '') + '" data-each="' + (sg.each ? 1 : '') + '">' + ndEsc(how) + '</textarea>'
+        + (sg.src === 'm' ? '<span class="nx-dim">Change the steps for this facility if needed — HealSol\'s master stays as it is.</span>' : '')
+        + '<div class="nx-meta">' + (sg.each ? '<label>Owner<select data-k="owner"><option value="' + ndEsc(sg.owner) + '" selected>Everyone in ' + ndEsc(ndDeptDef(x.dept).name) + '</option></select></label>' : '<label>Owner<select data-k="owner">' + mobs.map(function (m) { return '<option value="' + m + '"' + (m === sg.owner ? ' selected' : '') + '>' + ndEsc(nxFirst(m) + ' · ' + nxRoleOf(m)) + '</option>'; }).join('') + '</select></label>')
         + '<label>Due<input type="date" data-k="due" value="' + ndEsc(sg.due) + '"></label></div></div>';
     });
     h += '<div class="nx-it"><button type="button" class="nx-btn" onclick="ndAssignForm()">' + (rest ? 'Assign these ' + page.length + ' actions' : 'Assign all ' + un.length + ' action' + (un.length > 1 ? 's' : '')) + '</button>' + (rest ? '<span class="nx-dim nx-c">' + rest + ' more come up next.</span>' : '') + '<span class="nx-dim nx-c">Owners see them in "My actions". ' + ndEsc(un.length && ndChecker(un[0].dept) ? nxRoleOf(ndChecker(un[0].dept)) + ' ' + nxFirst(ndChecker(un[0].dept)) : 'The checker') + ' re-checks on the next card.</span></div></div>';
@@ -562,9 +597,12 @@ function ndAssignForm() {
   var up = {}, n = 0, skip = [];
   [].forEach.call(document.querySelectorAll('#nf-dept-app .nd-asg'), function (el) {
     var id = el.id.replace('nd-asg-', ''), dept = el.getAttribute('data-dept'), g = function (k) { var x = el.querySelector('[data-k="' + k + '"]'); return x ? String(x.value || '').trim() : ''; };
-    var how = g('how'), owner = g('owner'), due = g('due');
+    var how = g('how'), owner = g('owner'), due = g('due'), ta = el.querySelector('[data-k="how"]');
     if (how.length < 3 || !/^\d{10}$/.test(owner) || !/^\d{4}-\d{2}-\d{2}$/.test(due)) { skip.push(id); return; }
-    ndAssignUp(up, id, dept, { how: how.slice(0, 600), owner: owner, due: due }); n++;
+    var orig = ta ? ta.getAttribute('data-orig') || '' : '', x = { how: how.slice(0, 1500), owner: owner, due: due };
+    if (ta && ta.getAttribute('data-mk')) x.k = ta.getAttribute('data-mk');
+    if (orig) { x.ev = ta.getAttribute('data-ev') || ''; x.tm = ta.getAttribute('data-tm') || ''; x.each = !!ta.getAttribute('data-each'); if (orig.replace(/\s+/g, ' ').trim() === how.replace(/\s+/g, ' ').trim()) x.src = 'm'; }
+    ndAssignUp(up, id, dept, x); n++;
   });
   if (n) ndPut(up);
   if (skip.length) { ndToast((n ? n + ' assigned. ' : '') + 'Write the action for ' + skip.join(', ') + '.', 'err'); var el = document.getElementById('nd-asg-' + skip[0]); ndKeepScroll(); if (el) try { document.getElementById('nd-asg-' + skip[0]).scrollIntoView({ block: 'center' }); } catch (e) {} return; }

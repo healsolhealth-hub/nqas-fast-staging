@@ -57,7 +57,7 @@ function ndDayIds(dept, day) {
   return ids;
 }
 function ndCardsIn(dept, day) {   // who has filled / is marked not filled / is still awaited
-  var cards = ndPc(dept, day), fl = ndFillers(dept), done = [], absent = [], waiting = [];
+  var cards = ndPc(dept, day), fl = ndFillers(dept).filter(function (m) { return ndMyIds(dept, day, m).length; }), done = [], absent = [], waiting = [];   // best filled by: someone with nothing that day has no card
   Object.keys(cards).forEach(function (m) { if (fl.indexOf(m) < 0 && cards[m] && cards[m].done) fl.push(m); });   // a card from someone since moved
   fl.forEach(function (m) { var c = cards[m] || {}; if (c.absent) absent.push(m); else if (c.done) done.push(m); else waiting.push(m); });
   var last = done.reduce(function (x, m) { var a = (cards[m].done || {}).at || ''; return a > x ? a : x; }, '');
@@ -140,7 +140,7 @@ function ndKeepScroll() { var y = window.scrollY; ndRender(); try { window.scrol
 function ndScore(id, v) { var rel = {}; rel['s/' + id] = v; if (v === 2) { rel['r/' + id] = null; rel['note/' + id] = null; } ndCardWrite(rel); ndKeepScroll(); }
 function ndAllMet(list) {
   var me = ndMob(), cc = ndCur(), c = ndPc(cc.dept, cc.day)[me] || {}, s = c.s || {}, rel = {};
-  list.split(',').forEach(function (id) { if (s[id] === undefined) rel['s/' + id] = 2; });
+  list.split(',').forEach(function (id) { if (s[id] === undefined) { rel['s/' + id] = 2; var n = ndCt(id).items.length; if (n) rel['t/' + id] = new Array(n + 1).join('1'); } });
   if (Object.keys(rel).length) { ndCardWrite(rel); ndKeepScroll(); }
 }
 function ndReasonSet(id, k) { var rel = {}; rel['r/' + id] = k; ndCardWrite(rel); ndKeepScroll(); }
@@ -156,17 +156,29 @@ function ndDoneGo() { var cc = ndCur(); ndCardWrite({ done: { at: new Date().toI
 function ndCompare(dept, day) {
   var cards = ndPc(dept, day), inn = ndCardsIn(dept, day), re = ndRecheckIds(dept, day);
   return ndDayIds(dept, day).map(function (id) {
-    var sc = inn.done.map(function (m) { var c = cards[m] || {}; return { m: m, s: (c.s || {})[id], r: (c.r || {})[id], note: (c.note || {})[id] }; }).filter(function (x) { return x.s !== undefined; });
+    var sc = inn.done.map(function (m) { var c = cards[m] || {}; return { m: m, s: (c.s || {})[id], r: (c.r || {})[id], note: (c.note || {})[id], t: (c.t || {})[id] }; }).filter(function (x) { return x.s !== undefined; });
+    var n = ndCt(id).items.length, tks = n && sc.length && sc.every(function (x) { return x.t && x.t.length === n && x.t.indexOf('-') < 0; }) ? sc.map(function (x) { return ndTk(x.t, n); }) : null, dk = [];
+    if (tks) for (var k = 0; k < n; k++) { if (tks.some(function (t) { return t[k] !== tks[0][k]; })) dk.push(k); }
     var vals = sc.map(function (x) { return x.s; }), same = vals.length && vals.every(function (v) { return v === vals[0]; });
     var kind = !vals.length ? 'none' : same ? (vals[0] === 2 ? 'met' : 'unmet') : 'diff';
     var isRe = re.indexOf(id) >= 0;
-    return { id: id, sc: sc, kind: kind, spot: kind === 'met' && ndSpot(dept, day, id), re: isRe, low: vals.length ? Math.min.apply(null, vals) : null,
+    return { id: id, sc: sc, kind: kind, spot: kind === 'met' && ndSpot(dept, day, id), re: isRe, low: vals.length ? Math.min.apply(null, vals) : null, n: n, tks: tks, dk: dk,
       look: kind === 'diff' || kind === 'unmet' || isRe || (kind === 'met' && ndSpot(dept, day, id)) };
   });
 }
 function ndSelKey(dept, day) { return dept + '|' + day; }
 function ndSelOf(dept, day) { var k = ndSelKey(dept, day); return (_nd.sel[k] = _nd.sel[k] || {}); }
-function ndPick(dept, day, id, v) { ndSelOf(dept, day)[id] = v; ndKeepScroll(); }
+function ndPick(dept, day, id, v) { var S = ndSelOf(dept, day); S[id] = v; delete S['ft#' + id]; ndKeepScroll(); }
+// the checker answers an item the cards differ on; when all such items are answered the score follows (Step 2d)
+function ndPickItem(dept, day, id, k, v) {
+  var S = ndSelOf(dept, day), x = ndCompare(dept, day).find(function (r) { return r.id === id; }); if (!x || !x.tks) return;
+  S[id + '#' + k] = v;
+  if (x.dk.every(function (j) { return (id + '#' + j) in S; })) {
+    var t = x.tks[0].map(function (val, j) { return x.dk.indexOf(j) >= 0 ? S[id + '#' + j] : val; });
+    S[id] = ndMovScore(t); S['ft#' + id] = ndTkStr(t);
+  } else { delete S[id]; delete S['ft#' + id]; }
+  ndKeepScroll();
+}
 function ndAbsent(dept, day, m) {
   var up = {}; up['sc_pcards/' + _nd.code + '/' + dept + '/day_' + day + '/' + m + '/absent'] = { at: new Date().toISOString(), by: ndMob() };
   ndPut(up); ndKeepScroll();
@@ -186,6 +198,8 @@ function ndCheckDone(dept, day) {
     if (v === undefined) return;
     if (v === 'esc') { up[base + '/esc/' + x.id] = true; sent++; return; }
     up[base + '/f/' + x.id] = v; up[base + '/via/' + x.id] = (x.kind === 'met' || x.kind === 'unmet') && v === x.sc[0].s ? 'auto' : 'chk';
+    var ft = sel['ft#' + x.id] || (x.tks && !(x.id in sel) ? ndTkStr(x.tks[0].map(function (val, j) { return x.tks.every(function (t) { return t[j] === 1; }) ? 1 : 0; })) : null);
+    if (ft && v !== 2) up[base + '/ft/' + x.id] = ft;
     if (x.re) re[x.id] = v;
   });
   up[base + '/chk'] = { at: new Date().toISOString(), by: me, byName: String(ndName(me)).slice(0, 80) };
@@ -229,6 +243,8 @@ function ndDecide(dept, day, id, v) {
 }
 // ready-made action: from the most common reason on the unmet cards and the checkpoint's means of verification
 function ndSuggest(id, dept, day) {
+  var fx = ndFixFor(id, dept, day);
+  if (fx) { var owner0 = ndCpFor(dept, id)[0] || ndLead(dept) || ndMob(); return { how: fx.how, owner: owner0, due: fx.due, k: fx.k, ev: fx.ev, tm: fx.tm, each: fx.each, src: 'm' }; }
   var r = _nd.byId[id] || [], cards = ndPc(dept, day), tally = {}, low = [], best = null;
   Object.keys(cards).forEach(function (m) { var c = cards[m] || {}; if (!c.done || c.absent) return; var v = (c.s || {})[id]; if (v === 0 || v === 1) { low.push(m); var k = (c.r || {})[id]; if (k) tally[k] = (tally[k] || 0) + 1; } });
   Object.keys(tally).forEach(function (k) { if (!best || tally[k] > tally[best]) best = k; });
@@ -239,7 +255,10 @@ function ndSuggest(id, dept, day) {
 }
 function ndAssignUp(up, id, dept, x) {
   var me = ndMob();
-  up['sc_dactions/' + _nd.code + '/' + id] = { dept: dept, how: x.how, owner: x.owner, due: x.due, status: 'open', level: 'lead', at: new Date().toISOString(), by: me, byName: String(ndName(me)).slice(0, 80) };
+  var rec = { dept: dept, how: x.how, owner: x.owner, due: x.due, status: 'open', level: 'lead', at: new Date().toISOString(), by: me, byName: String(ndName(me)).slice(0, 80) };
+  if (x.k) rec.k = x.k; if (x.src === 'm') rec.src = 'm'; if (x.ev) rec.ev = String(x.ev).slice(0, 400); if (x.tm) rec.tm = String(x.tm).slice(0, 60);
+  if (x.each) { var ow = {}; ndFillers(dept).forEach(function (m) { ow[m] = true; }); if (Object.keys(ow).length > 1) { rec.owners = ow; if (!ow[rec.owner]) rec.owner = Object.keys(ow)[0]; } }
+  up['sc_dactions/' + _nd.code + '/' + id] = rec;
 }
 function ndAssignQuick(id) {
   var it = ndUnassigned(ndMob()).find(function (x) { return x.id === id; }); if (!it) return;
@@ -267,22 +286,28 @@ async function ndAssign(id) {   // change the text / owner / due before assignin
   ndPut(up); ndToast(sup ? 'Sent to ' + ndName(r.owner) + '.' : 'Action assigned.', 'ok'); ndKeepScroll();
 }
 async function ndFixAction(id) {
+  var a0 = (_nd.actions || {})[id] || {}, me0 = ndMob();
+  if (a0.owners && a0.owners[me0] && !(a0.dn || {})[me0]) {   // "each staff member": my part; the last one marks the action fixed
+    var left = Object.keys(a0.owners).filter(function (m) { return m !== me0 && !(a0.dn || {})[m]; });
+    if (left.length) { var u0 = {}; u0['sc_dactions/' + _nd.code + '/' + id + '/dn/' + me0] = { at: new Date().toISOString() }; ndPut(u0); ndToast('Your part is done. ' + left.length + ' more to do it.', 'ok'); ndKeepScroll(); return; }
+  }
   var r = null; try { r = await scDialog({ title: 'Mark fixed', icon: '✅', message: ndCpText(id), fields: [{ key: 'note', label: 'What was done? (optional)', type: 'textarea', maxLength: 300, value: '' }], okLabel: 'Mark fixed' }); } catch (e) { r = null; }
   if (!r) return; var fx = { at: new Date().toISOString(), by: ndMob(), day: ndDay() }; if (String(r.note || '').trim()) fx.note = String(r.note).trim().slice(0, 300);
   var b = 'sc_dactions/' + _nd.code + '/' + id, up = {}; up[b + '/status'] = 'fixed'; up[b + '/fixed'] = fx;
+  var a1 = (_nd.actions || {})[id] || {}; if (a1.owners && a1.owners[ndMob()] && !(a1.dn || {})[ndMob()]) up[b + '/dn/' + ndMob()] = { at: fx.at };
   ndPut(up); ndToast('Marked fixed — it comes back on the next card for a re-check.', 'ok'); ndKeepScroll();
 }
 // ── actions list (everyone) and the Supervisor's week ──
 function ndMyActions() {
   var me = ndMob(), all = ndIsInCharge(me), A = _nd.actions || {};
-  return Object.keys(A).filter(function (id) { var a = A[id]; return a && a.status === 'open' && (all || a.owner === me); }).sort(function (x, y) { return String(A[x].due).localeCompare(String(A[y].due)); });
+  return Object.keys(A).filter(function (id) { var a = A[id]; return a && a.status === 'open' && (all || (a.owners ? !!a.owners[me] && !(a.dn || {})[me] : a.owner === me)); }).sort(function (x, y) { return String(A[x].due).localeCompare(String(A[y].due)); });
 }
 function ndWaLink(mob, text) { return 'https://wa.me/91' + mob + '?text=' + encodeURIComponent(text); }
 // ── Today: one "To do today" list, then my departments ──
 function ndTodo(mob) {
-  var day = ndDay(), fill = ndDeptDefs().filter(function (d) { var c = ndPc(d.id, day)[mob] || {}; return ndFills(d.id, mob) && !c.done && !c.absent && !ndRes(d.id, day).chk && ndDayInfo(d.id, day).ids.length; });
+  var day = ndDay(), fill = ndDeptDefs().filter(function (d) { var c = ndPc(d.id, day)[mob] || {}; return ndFills(d.id, mob) && !c.done && !c.absent && !ndRes(d.id, day).chk && ndMyIds(d.id, day, mob).length; });
   var late = [];   // missed days still open (not checked) — catch up
-  ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, mob)) return; for (var n = Math.max(1, day - 13); n < Math.min(day, _nd.cfg.days + 1); n++) { var c = ndPc(d.id, n)[mob] || {}; if (!c.done && !c.absent && !ndRes(d.id, n).chk && ndDayInfo(d.id, n).ids.length) late.push({ dept: d.id, day: n }); } });
+  ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, mob)) return; for (var n = Math.max(1, day - 13); n < Math.min(day, _nd.cfg.days + 1); n++) { var c = ndPc(d.id, n)[mob] || {}; if (!c.done && !c.absent && !ndRes(d.id, n).chk && ndMyIds(d.id, n, mob).length) late.push({ dept: d.id, day: n }); } });
   return { fill: fill, late: late, check: ndChecksDue(mob), decide: ndEscItems(mob), assign: ndUnassigned(mob), fix: ndMyActions() };
 }
 function ndStreak() {   // days in a row (up to yesterday, plus today when done) with all my cards done
@@ -308,6 +333,7 @@ function ndMySt(dept, day) {
   if (!ndDayInfo(dept, day).ids.length) return 'none';
   if (day > today) return 'upcoming';
   if (res.chk || ndSoloDone(dept, day)) return 'verified';
+  if (!_nd.view && ndFills(dept, me) && !ndMyIds(dept, day, me).length && !ndCanCheck(dept, me)) return 'none';
   if (!_nd.view && ndFills(dept, me)) { var c = ndPc(dept, day)[me] || {}; return c.done ? 'awaiting' : c.absent ? 'none' : day === today ? 'today' : 'overdue'; }
   var inn = ndCardsIn(dept, day);
   if (inn.done.length) return 'awaiting';
@@ -330,7 +356,7 @@ function ndAocColor(a) { try { if (typeof getAoCDef === 'function') { var c = (g
 function ndWeekLabel(day) { var S = ndShape(); return day <= S.bN ? 'Baseline audit' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
 function ndCardDepts(day) {   // my departments with a card on this day: the ones I fill first, then the ones I check
   var me = ndMob();
-  return ndMyDepts().filter(function (d) { return ndDayIds(d.id, day).length && (_nd.view || ndFills(d.id, me) || ndCanCheck(d.id, me)); })
+  return ndMyDepts().filter(function (d) { return ndDayIds(d.id, day).length && (_nd.view || (ndFills(d.id, me) && ndMyIds(d.id, day, me).length) || ndCanCheck(d.id, me)); })
     .sort(function (a, b) { return (ndFills(b.id, me) ? 1 : 0) - (ndFills(a.id, me) ? 1 : 0); });
 }
 function ndGoCard(dept, day) { _nd.tab = 'cards'; _nd.cv = 'day'; _nd.cday = day; _nd.cdept = dept; _nd.card = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }

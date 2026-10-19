@@ -128,6 +128,7 @@ async function ndMasterSetup(cfg, cl) {
   var L = null; try { L = await ndMasterLive(T); } catch (e) { L = null; }
   var lay = nfDeptLayerRows(base, L || {});
   _nd.cl = Object.assign({}, cl, { items: lay.rows }); _nd.byId = lay.all; _nd.master = L ? { v: L.v, from: L.from } : null;
+  _nd.live = L || {}; _nd.ct = {}; _nd.anyRoles = null; _nd.base0 = {}; base.forEach(function (r) { _nd.base0[r[0]] = r; }); _nd.lang = ndLangInit();
   _nd.plans = [{ v: 0, from: '', plan: basePlan }]; _nd.plan = basePlan;
   if (!L || !L.v) return;
   var start = (_nd.fac && _nd.fac.startDate) || '', vers = Object.keys(L.vers || {}).map(function (k) { return { v: +k, from: L.vers[k] }; }).sort(function (a, b) { return a.from < b.from ? -1 : a.from > b.from ? 1 : a.v - b.v; });
