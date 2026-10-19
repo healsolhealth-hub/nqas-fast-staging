@@ -185,3 +185,9 @@ tr.on .nm-rowbtn{font-weight:600;}
 .nm-ul.vers li{font-size:13px;align-items:flex-start;} .nm-ul.vers small{display:block;color:var(--nm-mut2);}
 @media (max-width:1500px){ .nm-scroll th:nth-child(2),.nm-scroll td:nth-child(2){display:none;} }
 @media (max-width:900px){ .nm-psplit{grid-template-columns:1fr;} .nm-phases{flex-wrap:wrap;} .nm-phases button{flex:1 1 45%!important;border-radius:8px!important;} .nm-chl li{grid-template-columns:1fr auto;} .nm-chl li > .nm-tag{grid-column:1 / -1;} }
+
+/* Step 2e — Overview facility-type filter (admin app) */
+.nfo-types{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 14px;}
+.nfo-types button{border:1px solid var(--br,#E2E8F0);background:#fff;border-radius:999px;min-height:36px;padding:0 14px;font:600 13px/1 inherit;color:var(--t2,#374151);cursor:pointer;}
+.nfo-types button.on{background:var(--teal,#1E6B5E);border-color:var(--teal,#1E6B5E);color:#fff;}
+.nfo-ld{font-size:12px;color:var(--t3,#64748B);margin-left:4px;}

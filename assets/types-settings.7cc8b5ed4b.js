@@ -122,7 +122,9 @@ var NF_LEVELS={
     id:'phc', core:'dept', ready:false,
     name:'PHC', plural:'PHCs', short:'PHC', nameHi:'प्राथमिक स्वास्थ्य केंद्र',
     tagline:'Get your PHC NQAS-ready in 60 days',
-    inCharge:'MOIC', inChargeLabel:'MO In-charge', clinicalInCharge:'MOIC', coordinator:'MOIC',
+    // HealSol 19 Oct: a Facility Nodal Officer (non-clinical) oversees Laboratory and General Administration; until one is
+    // added the MO in-charge does (default leads fall back to the in-charge)
+    inCharge:'MOIC', inChargeLabel:'MO In-charge', clinicalInCharge:'MOIC', coordinator:'FacilityNodal',
     verifierRoles:[], checklist:'phc-checklist', days:60,
     plan:{base:7, implWeeks:6, end:7, ready:4},
     programmes:[{id:'nqas_phc',label:'PHC — NQAS (60 days)'}],
@@ -131,18 +133,19 @@ var NF_LEVELS={
       {id:'NHP', name:'National Health Programmes', clinical:true,  lead:'MOIC'},
       {id:'LR',  name:'Labour Room',                clinical:true,  lead:'MOIC', optional:true},
       {id:'IND', name:'Indoor',                     clinical:true,  lead:'MOIC', optional:true},
-      {id:'LAB', name:'Laboratory',                 clinical:false, lead:'MOIC'},
-      {id:'GA',  name:'General Administration',     clinical:false, lead:'MOIC'}
+      {id:'LAB', name:'Laboratory',                 clinical:false, lead:'FacilityNodal'},
+      {id:'GA',  name:'General Administration',     clinical:false, lead:'FacilityNodal'}
     ],
     defaultTeams:{
       MO:['OPD','NHP','LR','IND'], StaffNurse:['OPD'], StaffNurseIPD:['LR','IND'], ANM:['OPD','NHP'], LHV:['NHP','LR'],
       Pharmacist:['OPD','GA'], LabTech:['LAB'], OutreachSup:['NHP'], SupportStaff:['OPD','GA'], WardAttendant:['IND'], ASHA:['NHP']
     },
-    seeAll:['MOIC'],
+    seeAll:['MOIC','FacilityNodal'],
     xcheckDepts:['NHP'], xcheckRoles:['ANM','LHV','OutreachSup'],
     roles:[
       {id:'MOIC',          label:'MO In-charge',                 icon:'🩺', requireName:false},
       {id:'MO',            label:'Medical Officer',              icon:'🩺', requireName:true},
+      {id:'FacilityNodal', label:'Facility Nodal Officer (non-clinical)', icon:'🗂️', requireName:true},
       {id:'StaffNurse',    label:'Staff Nurse (OPD)',            icon:'🏥', requireName:true},
       {id:'StaffNurseIPD', label:'Staff Nurse (Labour Room / Indoor)', icon:'🏥', requireName:true},
       {id:'ANM',           label:'ANM',                          icon:'💉', requireName:true},
