@@ -66,8 +66,7 @@ async function ndOpen(acc) {
   var cl; try { cl = await nfLoadData(cfg.checklist); } catch (e) { return 'The ' + cfg.name + ' checklist could not be loaded. Check the internet and try again.'; }
   _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: {}, pcards: {}, actions: {}, sel: {}, tab: 'today', card: null };
   _nd.fa = ndIsInCharge(me) || ndSeesAll(me);   // the in-charge and MO in-charge open on the Facility dashboard; "My cards" for their own screens
-  (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id, nfDeptShape(cfg)); });
-  _nd.byId = {}; cl.items.forEach(function (r) { _nd.byId[r[0]] = r; });
+  await ndMasterSetup(cfg, cl);
   // first open by the in-charge: save the default departments set-up
   var set0 = fac.depts || {}, hasSetup = Object.keys(set0).some(function (k) { return set0[k] && (set0[k].lead || set0[k].team); });
   if (ndIsInCharge(me) && !hasSetup) {   // first open: the default leads and teams; departments switched off at enrolment stay off
@@ -96,7 +95,54 @@ async function ndReload() { if (!_nd) return; _nd.fac = (await fbGet(scFacilityP
 // ── programme day ──
 function ndDay() { return nfDeptDayNo(_nd.fac.startDate); }
 function ndShape() { return nfDeptShape(_nd.cfg); }   // the programme's phase days (60 or 90)
-function ndDayInfo(dept, day) { return nfDeptDay(_nd.plan[dept], day, ndShape()); }
+function ndDayInfo(dept, day) { return nfDeptDay(ndPlanFor(day)[dept] || [], day, ndShape()); }
+// Step 2c: which version's day plan a programme day uses — the one in force on that day's date (published versions apply from
+// the day after publishing, so days already reached keep their checkpoints)
+function ndPlanFor(day) {
+  var P = _nd.plans; if (!P || P.length < 2 || !_nd.fac.startDate) return _nd.plan;
+  var date = ndAddDays(_nd.fac.startDate, day - 1), best = P[0];
+  P.forEach(function (p) { if (p.from <= date && (p.from > best.from || (p.from === best.from && p.v >= best.v))) best = p; });
+  return best.plan;
+}
+// the published checkpoint master (Step 2c): live = {v, vers:{v: from}, edits, added, moves, …}; plans/{v} = {from, d:{dept: packed plan}}.
+// Kept on the phone per version (localStorage), so it is fetched again only after HealSol publishes.
+function ndMcGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function ndMcSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+async function ndMasterLive(T) {
+  var key = 'nd_master_' + T, cache = ndMcGet(key), v = null;
+  try { v = await fbGet('shared/dept_master/' + T + '/live/v'); } catch (e) {}
+  if (v == null) return cache;   // nothing published (or offline: the copy on the phone)
+  if (cache && cache.v === v) return cache;
+  var L = null; try { L = await fbGet('shared/dept_master/' + T + '/live'); } catch (e) {}
+  if (!L) return cache;
+  ndMcSet(key, L); return L;
+}
+async function ndMasterPlan(T, v) {
+  var key = 'nd_plan_' + T + '_' + v, c = ndMcGet(key); if (c) return c;
+  var p = null; try { p = await fbGet('shared/dept_master/' + T + '/plans/' + v); } catch (e) {}
+  if (p) ndMcSet(key, p); return p;
+}
+async function ndMasterSetup(cfg, cl) {
+  var T = cfg.id, S = nfDeptShape(cfg), base = cl.items, deps = cfg.departments || [];
+  var basePlan = {}; deps.forEach(function (d) { basePlan[d.id] = nfDeptBaseline(base, d.id, S); });
+  var L = null; try { L = await ndMasterLive(T); } catch (e) { L = null; }
+  var lay = nfDeptLayerRows(base, L || {});
+  _nd.cl = Object.assign({}, cl, { items: lay.rows }); _nd.byId = lay.all; _nd.master = L ? { v: L.v, from: L.from } : null;
+  _nd.plans = [{ v: 0, from: '', plan: basePlan }]; _nd.plan = basePlan;
+  if (!L || !L.v) return;
+  var start = (_nd.fac && _nd.fac.startDate) || '', vers = Object.keys(L.vers || {}).map(function (k) { return { v: +k, from: L.vers[k] }; }).sort(function (a, b) { return a.from < b.from ? -1 : a.from > b.from ? 1 : a.v - b.v; });
+  var atStart = null; vers.forEach(function (x) { if (start && x.from <= start) atStart = x; });
+  var need = vers.filter(function (x) { return !start || x.from > start || x === atStart; });
+  if (!start) need = vers.slice(-1);
+  for (var i = 0; i < need.length; i++) {
+    var x = need[i], p = await ndMasterPlan(T, x.v), plan = {};
+    if (p && p.d) deps.forEach(function (d) { plan[d.id] = p.d[d.id] ? nfDeptPlanUnpack(p.d[d.id], S) : basePlan[d.id]; });
+    else if (x.v === L.v) deps.forEach(function (d) { plan[d.id] = nfDeptPlan(lay.rows, d.id, S, L.moves); });   // the newest plan can be made from live itself
+    else continue;
+    _nd.plans.push({ v: x.v, from: x.from, plan: plan });
+  }
+  _nd.plan = _nd.plans[_nd.plans.length - 1].plan;
+}
 // ── render ──
 function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
@@ -241,8 +287,7 @@ async function ndOpenView(code) {
   var claims = (typeof _nfAuth !== 'undefined' && _nfAuth && _nfAuth.claims) || {}, sup = (typeof appMode !== 'undefined' && appMode === 'sc-supervisor') ? claims.sup : null, supName = '';
   if (sup) { try { supName = ((await fbGet('sc_supervisors/' + sup)) || {}).name || ''; } catch (e) {} }
   _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: {}, pcards: {}, actions: {}, sel: {}, tab: sup ? 'fix' : 'today', card: null, view: sup ? 'sup' : 'view', supId: sup, supName: supName };
-  (cfg.departments || []).forEach(function (d) { _nd.plan[d.id] = nfDeptBaseline(cl.items, d.id, nfDeptShape(cfg)); });
-  _nd.byId = {}; cl.items.forEach(function (r) { _nd.byId[r[0]] = r; });
+  await ndMasterSetup(cfg, cl);
   try { _nd.cards = (await fbGet(ndPath())) || {}; } catch (e) {}
   try { _nd.actions = (await fbGet('sc_dactions/' + code)) || {}; } catch (e) {}
   try { _nd.pcards = (await fbGet('sc_pcards/' + code)) || {}; } catch (e) {}

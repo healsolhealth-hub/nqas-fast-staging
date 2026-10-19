@@ -9,7 +9,12 @@
 // method, items, fix and roles are stored as JSON text (so empty lists and numbered keys survive the database).
 // Fields: dept aoc std me t hi method[] items[{t,h,m[]}] video videoHi fix{'1':{w,f,fh,e,eh,tm}} roles[] pk retired.
 // items = MoV items the staff tick (same shape as the SC app); fix = How to fix per MoV item (1-based, '0' = whole checkpoint).
-// Publishing the draft to facilities and the day-plan board come in Step 2c; staff screens use the content in Step 2d.
+//   shared/dept_master/{type}/draft/moves/{id} = {b, i}  day-plan board: baseline day b / implementation day i (Step 2c)
+// Publishing (Step 2c): live = {v, from, at, by, note, edits, added, moves, vers:{v: from}} (read by every signed-in user),
+//   plans/{v} = {from, d: {dept: {b:[[ids]], i:{id: day}}}} (the day plan of that version; read by every signed-in user),
+//   versions/{v} = {at, by, note, from, n, edits, added, moves} (HealSol only; roll back copies one into live and the draft).
+// A version applies from `from` (the day after publishing): a facility's days before it keep the plan they had.
+// Staff screens use the content (MoV items, How to fix, videos, best filled by) in Step 2d.
 // ══════════════════════════════════════════════════════════════
 var NM_TYPES = ['uphc', 'phc', 'chc'];
 var NM_METHODS = ['SI', 'OB', 'RR', 'PI'];
@@ -17,7 +22,7 @@ var NM_MLABEL = { SI: 'Staff interview', OB: 'Observation', RR: 'Record review',
 var NM_CPX = ['method', 'items', 'fix', 'roles'];
 var NM_FIELDS = ['dept', 'aoc', 'std', 'me', 't', 'hi', 'method', 'items', 'video', 'videoHi', 'fix', 'roles', 'pk', 'retired'];
 var NM_DAY_WARN = 40;   // publishing warns when a day holds more checkpoints than this (Step 2c)
-var _nm = { base: {}, draft: {}, loadedAt: {}, cache: {}, days: {},
+var _nm = { base: {}, draft: {}, live: {}, loadedAt: {}, cache: {}, days: {}, chg: {},
   ui: { type: 'chc', dept: '', q: '', aoc: '', std: '', method: '', show: 'active', limit: 60, sel: null, screen: 'list',
         etab: 'details', form: null, fixAt: 1, prevHi: false, tcDept: '', tcLimit: 10, imp: null, busy: false } };
 
@@ -65,15 +70,18 @@ async function nmLoad(T, force) {
   await nmLoadBase(T);
   if (!force && _nm.draft[T] && (Date.now() - (_nm.loadedAt[T] || 0)) < 60000) return;
   if (typeof db === 'undefined' || !db) { if (typeof initFirebase === 'function') initFirebase(); }
-  var P = nmPath(T), r = await Promise.all([fbGet(P + '/edits'), fbGet(P + '/added'), fbGet(P + '/updatedAt'), fbGet(P + '/updatedBy')]);
-  _nm.draft[T] = { edits: r[0] || {}, added: r[1] || {}, updatedAt: r[2] || '', updatedBy: r[3] || '' };
+  var P = nmPath(T), r = await Promise.all([fbGet(P + '/edits'), fbGet(P + '/added'), fbGet(P + '/updatedAt'), fbGet(P + '/updatedBy'), fbGet(P + '/moves'), fbGet('shared/dept_master/' + T + '/live')]);
+  _nm.draft[T] = { edits: r[0] || {}, added: r[1] || {}, updatedAt: r[2] || '', updatedBy: r[3] || '', moves: r[4] || {} };
+  var L = r[5] || {}; _nm.live[T] = { v: L.v || 0, from: L.from || '', at: L.at || '', by: L.by || '', note: L.note || '', vers: L.vers || {}, edits: L.edits || {}, added: L.added || {}, moves: L.moves || {} };
   _nm.loadedAt[T] = Date.now(); nmInval(T);
 }
-function nmInval(T) { delete _nm.cache[T]; delete _nm.days[T]; }
+function nmInval(T) { delete _nm.cache[T]; delete _nm.days[T]; delete _nm.chg[T]; }
 
 // ── reading (base + draft) ──
-function nmGet(T, id) {
-  var D = _nm.draft[T] || { edits: {}, added: {} }, B = _nm.base[T];
+function nmGet(T, id) { return nmGetL(T, id, _nm.draft[T]); }
+function nmGetLive(T, id) { return nmGetL(T, id, _nm.live[T]); }
+function nmGetL(T, id, D) {
+  D = D || { edits: {}, added: {} }; var B = _nm.base[T];
   if (D.added[id]) return nmDecRec(id, D.added[id]);
   var b = B && B.byId[id]; if (!b) return null;
   var c = JSON.parse(JSON.stringify(b)), e = D.edits[id] || {};
@@ -94,14 +102,31 @@ function nmAll(T) {
   });
   _nm.cache[T] = list; return list;
 }
-function nmStatus(T, id) {
-  var D = _nm.draft[T] || { edits: {}, added: {} };
-  if (D.added[id]) return D.added[id].retired ? 'retired' : 'new';
-  var e = D.edits[id]; if (!e) return '';
-  if (e.retired) return 'retired';
-  return Object.keys(e).length ? 'edited' : '';
+// what the draft changes compared with the published version: 'new' · 'retired' · 'edited' · 'moved' · ''
+function nmStable(o) { if (o == null) return ''; if (typeof o !== 'object') return JSON.stringify(o); var k = Object.keys(o).sort(); return '{' + k.map(function (x) { return JSON.stringify(x) + ':' + nmStable(o[x]); }).join(',') + '}'; }
+function nmStatusOf(T, id) {
+  var D = _nm.draft[T] || { edits: {}, added: {}, moves: {} }, L = _nm.live[T] || { edits: {}, added: {}, moves: {} };
+  var d = D.added[id] || D.edits[id], l = L.added[id] || L.edits[id], dm = D.moves || {}, lm = L.moves || {};
+  if (D.added[id] && !L.added[id]) return 'new';
+  if (!D.added[id] && L.added[id]) return 'edited';   // removed from the draft (shows as a change until published)
+  var dr = !!(d && d.retired), lr = !!(l && l.retired);
+  if (dr && !lr) return 'retired';
+  if (nmStable(d) !== nmStable(l)) return 'edited';
+  if (nmStable(dm[id]) !== nmStable(lm[id])) return 'moved';
+  return '';
 }
-function nmChangeCount(T) { var D = _nm.draft[T]; return D ? Object.keys(D.edits).length + Object.keys(D.added).length : 0; }
+function nmChanges(T) {
+  if (_nm.chg[T]) return _nm.chg[T];
+  var D = _nm.draft[T], L = _nm.live[T], ids = {}, out = [];
+  if (!D || !L) return [];
+  [D.edits, D.added, D.moves, L.edits, L.added, L.moves].forEach(function (o) { Object.keys(o || {}).forEach(function (id) { ids[id] = 1; }); });
+  var order = {}; nmAll(T).forEach(function (c, i) { order[c.id] = i; });
+  Object.keys(ids).forEach(function (id) { var st = nmStatusOf(T, id); if (st) out.push({ id: id, st: st }); });
+  out.sort(function (a, b) { return (order[a.id] == null ? 1e9 : order[a.id]) - (order[b.id] == null ? 1e9 : order[b.id]); });
+  _nm.chg[T] = out; return out;
+}
+function nmStatus(T, id) { var c = nmChanges(T).find(function (x) { return x.id === id; }); return c ? c.st : ''; }
+function nmChangeCount(T) { return nmChanges(T).length; }
 function nmDeptName(T, id) { var d = ((_nm.base[T] || {}).depts || []).find(function (x) { return x.id === id; }); return d ? d.name : id; }
 function nmToCheck(T) { return nmAll(T).filter(function (c) { return !c.retired && !c.method.length; }); }
 // checklist rows of the draft (active checkpoints) — the form the day plan uses
@@ -112,7 +137,7 @@ function nmDays(T) {
   var S = nfDeptShape(nmCfg(T)), rows = nmRows(T), out = {}, depts = {};
   rows.forEach(function (r) { depts[r[1]] = 1; });
   Object.keys(depts).forEach(function (dep) {
-    var plan = nfDeptBaseline(rows, dep, S);
+    var plan = nfDeptPlan(rows, dep, S, (_nm.draft[T] || {}).moves);
     plan.forEach(function (ids, i) { ids.forEach(function (id) { out[id] = { b: i + 1, i: 0, e: S.iN + i + 1 }; }); });
     for (var day = S.i1; day <= S.iN; day++) nfDeptDay(plan, day, S).ids.forEach(function (id) { if (out[id] && !out[id].i) out[id].i = day; });
   });
@@ -157,14 +182,16 @@ async function nmAdd(T, vals) {
   var id = nmNextId(T, vals.dept), o = {}; o[id] = Object.assign({ hi: '', items: [], video: '', videoHi: '', fix: {}, roles: [], pk: '', retired: false, createdAt: scNowIso() }, vals);
   return (await nmSaveMany(T, o)) ? id : null;
 }
-// undo = back to the checklist (edited) or remove (added)
+// undo = back to the published version (or to the checklist when nothing is published; a new checkpoint is removed)
 async function nmUndo(T, id) {
   if (!nmCanEdit()) return false;
-  var D = _nm.draft[T], up = {}, now = scNowIso(), was = D.added[id] ? 'added' : 'edits';
-  up[was + '/' + id] = null; up['hist/' + id + '/' + db.ref().push().key] = { at: now, by: nmBy(), f: was === 'added' ? 'removed' : 'undo' };
+  var D = _nm.draft[T], L = _nm.live[T], up = {}, now = scNowIso();
+  ['edits', 'added', 'moves'].forEach(function (k) { up[k + '/' + id] = (L[k] || {})[id] || null; });
+  up['hist/' + id + '/' + db.ref().push().key] = { at: now, by: nmBy(), f: D.added[id] && !L.added[id] ? 'removed' : 'undo' };
   up.updatedAt = now; up.updatedBy = nmBy();
   try { await db.ref(nmPath(T)).update(up); } catch (e) { showToast('Could not undo — check the connection.', 'err'); return false; }
-  delete D[was][id]; nmInval(T); return true;
+  ['edits', 'added', 'moves'].forEach(function (k) { D[k] = D[k] || {}; var v = (L[k] || {})[id]; if (v) D[k][id] = JSON.parse(JSON.stringify(v)); else delete D[k][id]; });
+  nmInval(T); return true;
 }
 async function nmHist(T, id) {
   var h = await fbGet(nmPath(T) + '/hist/' + id) || {};
@@ -184,4 +211,87 @@ function nmContentStats(T) {
     if (c.video || c.videoHi) s.video++; if (c.roles.length) s.roles++;
   });
   return s;
+}
+
+// ── Step 2c: day-plan board (moves) ──
+function nmPlan(T, dept) { return nfDeptPlan(nmRows(T), dept, nfDeptShape(nmCfg(T)), (_nm.draft[T] || {}).moves); }
+// move a checkpoint: kind 'b' = baseline day (its implementation week and end-line day follow), 'i' = implementation day
+async function nmMove(T, id, kind, day) {
+  if (!nmCanEdit()) return false;
+  var D = _nm.draft[T], cur = Object.assign({}, (D.moves || {})[id] || {}), now = scNowIso();
+  cur[kind] = +day;
+  if (kind === 'b') delete cur.i;   // a new baseline day puts it in that day's implementation week again
+  var up = {}; up['moves/' + id] = cur; up['hist/' + id + '/' + db.ref().push().key] = { at: now, by: nmBy(), f: kind === 'b' ? 'baseline day ' + day : 'implementation day ' + day };
+  up.updatedAt = now; up.updatedBy = nmBy();
+  try { await db.ref(nmPath(T)).update(up); } catch (e) { showToast('Could not move — check the connection.', 'err'); return false; }
+  D.moves = D.moves || {}; D.moves[id] = cur; nmInval(T); return true;
+}
+// put a department back to the even spread (removes its moves)
+async function nmRespread(T, dept) {
+  if (!nmCanEdit()) return false;
+  var D = _nm.draft[T], up = {}, n = 0;
+  Object.keys(D.moves || {}).forEach(function (id) { var c = nmGet(T, id); if (c && c.dept === dept) { up['moves/' + id] = null; n++; } });
+  if (!n) return true;
+  up.updatedAt = scNowIso(); up.updatedBy = nmBy();
+  try { await db.ref(nmPath(T)).update(up); } catch (e) { showToast('Could not save — check the connection.', 'err'); return false; }
+  Object.keys(up).forEach(function (k) { if (k.indexOf('moves/') === 0) delete D.moves[k.slice(6)]; }); nmInval(T); return true;
+}
+// days holding more than NM_DAY_WARN checkpoints: [{dept, day, n}]
+function nmHeavy(T) {
+  var S = nfDeptShape(nmCfg(T)), out = [], depts = {};
+  nmRows(T).forEach(function (r) { depts[r[1]] = 1; });
+  Object.keys(depts).forEach(function (dep) {
+    var plan = nmPlan(T, dep);
+    plan.forEach(function (ids, i) { if (ids.length > NM_DAY_WARN) out.push({ dept: dep, day: i + 1, n: ids.length }); });
+    for (var d = S.i1; d <= S.iN; d++) { var n = nfDeptDay(plan, d, S).ids.length; if (n > NM_DAY_WARN) out.push({ dept: dep, day: d, n: n }); }
+  });
+  return out;
+}
+
+// ── Step 2c: publish · discard · roll back ──
+function nmIsoDay(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function nmTomorrow() { var d = new Date(); d.setDate(d.getDate() + 1); return nmIsoDay(d); }
+function nmPlansOf(T, items, moves) {
+  var S = nfDeptShape(nmCfg(T)), d = {};
+  (_nm.base[T].depts || []).forEach(function (x) { d[x.id] = nfDeptPlanPack(nfDeptPlan(items, x.id, S, moves)); });
+  return d;
+}
+function nmCopy(o) { return o ? JSON.parse(JSON.stringify(o)) : {}; }
+// write a new published version from a layer {edits, added, moves}; also makes the draft equal to it when toDraft
+async function nmWriteVersion(T, layer, note, n, toDraft) {
+  var L = _nm.live[T], v = (L.v || 0) + 1, now = scNowIso(), by = nmBy(), from = nmTomorrow();
+  var items = nfDeptLayerRows(_nm.base[T].data.items, layer).rows;
+  var vers = Object.assign({}, L.vers || {}); vers[v] = from;
+  var rec = { at: now, by: by, note: note || '', from: from, n: n || 0, edits: nmCopy(layer.edits), added: nmCopy(layer.added), moves: nmCopy(layer.moves) };
+  var up = {};
+  up.live = Object.assign({ v: v, vers: vers }, rec);
+  up['plans/' + v] = { from: from, d: nmPlansOf(T, items, layer.moves) };
+  up['versions/' + v] = rec;
+  if (toDraft) { up['draft/edits'] = rec.edits; up['draft/added'] = rec.added; up['draft/moves'] = rec.moves; up['draft/updatedAt'] = now; up['draft/updatedBy'] = by; }
+  try { await db.ref('shared/dept_master/' + T).update(up); }
+  catch (e) { console.warn('[NM] publish failed', e); showToast('Could not publish — check the connection and try again.', 'err'); return 0; }
+  _nm.live[T] = Object.assign({ vers: vers }, nmCopy(up.live));
+  if (toDraft) { var D = _nm.draft[T]; D.edits = nmCopy(rec.edits); D.added = nmCopy(rec.added); D.moves = nmCopy(rec.moves); D.updatedAt = now; D.updatedBy = by; }
+  nmInval(T); return v;
+}
+async function nmPublish(T, note) {
+  if (!nmCanEdit()) return 0;
+  var D = _nm.draft[T], n = nmChangeCount(T);
+  if (!n) { showToast('Nothing to publish — the draft is the same as the published version.', ''); return 0; }
+  return nmWriteVersion(T, { edits: D.edits, added: D.added, moves: D.moves }, note, n, false);
+}
+async function nmDiscard(T) {
+  if (!nmCanEdit()) return false;
+  var L = _nm.live[T], D = _nm.draft[T], now = scNowIso(), up = { edits: nmCopy(L.edits), added: nmCopy(L.added), moves: nmCopy(L.moves), updatedAt: now, updatedBy: nmBy() };
+  try { await db.ref(nmPath(T)).update(up); } catch (e) { showToast('Could not discard — check the connection.', 'err'); return false; }
+  D.edits = nmCopy(L.edits); D.added = nmCopy(L.added); D.moves = nmCopy(L.moves); D.updatedAt = now; D.updatedBy = nmBy(); nmInval(T); return true;
+}
+async function nmVersions(T) {
+  var V = await fbGet('shared/dept_master/' + T + '/versions') || {};
+  return Object.keys(V).map(function (k) { var x = V[k] || {}; return { v: +k, at: x.at, by: x.by, note: x.note, from: x.from, n: x.n }; }).sort(function (a, b) { return b.v - a.v; });
+}
+async function nmRollback(T, v) {
+  if (!nmCanEdit()) return 0;
+  var V = +v === 0 ? {} : await fbGet('shared/dept_master/' + T + '/versions/' + v); if (!V) { showToast('That version was not found.', 'err'); return 0; }
+  return nmWriteVersion(T, { edits: V.edits || {}, added: V.added || {}, moves: V.moves || {} }, +v === 0 ? 'Back to the checklist' : 'Rolled back to v' + v, 0, true);
 }

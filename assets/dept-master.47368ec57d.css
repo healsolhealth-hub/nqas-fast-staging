@@ -154,3 +154,34 @@ tr.on .nm-rowbtn{font-weight:600;}
   .nm-tc li{grid-template-columns:1fr;} .nm-types{width:100%;} .nm-types button{flex:1;padding:0 8px;} }
 .nm-card label > input,.nm-card label > select,.nm-card label > textarea{width:100%;min-width:0;max-width:100%;}
 .nm-card .nm-inl > input{width:160px;} .nm-card .nm-chk > input{width:18px;}
+/* Step 2c — day-plan board, publish */
+.nm-tag.mv{background:#E8EEF9;color:#23407A;}
+.nm-btn.big{min-height:52px;font-size:16px;} .nm-btn.danger{color:var(--nm-rd);border-color:#E8C4C4;}
+.nm-lbl{font-size:13px;color:var(--nm-mut);display:flex;align-items:center;gap:6px;} .nm-lbl.col{flex-direction:column;align-items:stretch;font-weight:600;color:var(--nm-ink);}
+.nm-lbl.col input{width:100%;}
+.nm-phases{display:flex;gap:4px;}
+.nm-phases button{border:0;min-height:44px;font-size:12px;font-weight:600;border-radius:0;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:84px;}
+.nm-phases button:first-child{border-radius:8px 0 0 8px;} .nm-phases button:last-child{border-radius:0 8px 8px 0;}
+.nm-phases .ph-baseline{background:#E8EEF9;color:#23407A;} .nm-phases .ph-impl{background:var(--nm-tl);color:var(--nm-td);} .nm-phases .ph-endline{background:#EFEAF8;color:#4B2F86;} .nm-phases .ph-ready{background:var(--nm-aml);color:var(--nm-am);}
+.nm-phases button.on{box-shadow:inset 0 0 0 2px var(--nm-t);}
+.nm-wk{display:flex;gap:6px;flex-wrap:wrap;}
+.nm-wk button{border:1px solid var(--nm-bd2);background:#fff;border-radius:9px;min-height:40px;padding:0 12px;font-size:13px;color:var(--nm-ink);}
+.nm-wk button small{color:var(--nm-mut2);} .nm-wk button.on{background:var(--nm-t);border-color:var(--nm-t);color:#fff;font-weight:600;} .nm-wk button.on small{color:#D7ECE6;}
+.nm-psplit{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start;margin-top:14px;}
+.nm-pcols-wrap{background:#fff;border:1px solid var(--nm-bd);border-radius:14px;padding:12px;overflow-x:auto;min-width:0;}
+.nm-pcols{display:grid;gap:8px;}
+.nm-pcol{display:flex;flex-direction:column;gap:8px;border-radius:10px;padding:4px;min-width:0;} .nm-pcol.heavy{background:#FFF8EC;}
+.nm-pch{display:flex;justify-content:space-between;font-size:13px;font-weight:600;padding:2px 2px 0;} .nm-pch em{font-style:normal;color:var(--nm-mut2);font-weight:500;} .nm-pcol.heavy .nm-pch em{color:var(--nm-am);font-weight:600;}
+.nm-pcl{display:flex;flex-direction:column;gap:6px;max-height:560px;overflow-y:auto;padding-right:2px;}
+.nm-chip{border:1px solid var(--nm-bd);background:#fff;border-radius:9px;padding:7px 8px;font-size:11.5px;line-height:1.35;text-align:left;color:var(--nm-ink);cursor:grab;display:block;min-height:40px;flex-shrink:0;}
+.nm-ct{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;} .nm-chip em{display:block;margin-top:2px;}
+.nm-chip:hover{border-color:var(--nm-t);} .nm-chip.on{border:2px solid var(--nm-t);background:#EAF4F1;}
+.nm-chip.new{border-style:dashed;border-color:#0F7A45;background:#F1FBF5;} .nm-chip.moved{border-color:#6B85C4;} .nm-chip em{font-style:normal;font-weight:600;color:var(--nm-gr);} .nm-chip.moved em{color:#23407A;}
+.nm-chl{list-style:none;margin:0;padding:0;}
+.nm-chl li{padding:12px 18px;border-bottom:1px solid var(--nm-ln);display:grid;grid-template-columns:78px minmax(0,1fr) auto;gap:12px;align-items:start;}
+.nm-chl li > .nm-tag{justify-self:start;margin-top:2px;} .nm-chl b{font-size:14px;display:block;font-weight:600;} .nm-chl small{font-size:13px;color:var(--nm-mut);}
+.nm-checks > div{display:flex;gap:10px;align-items:flex-start;font-size:14px;} .nm-checks .ok svg{color:#0F7A45;flex:0 0 auto;} .nm-checks .w svg{color:#B45309;flex:0 0 auto;}
+.nm-bul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.5;}
+.nm-ul.vers li{font-size:13px;align-items:flex-start;} .nm-ul.vers small{display:block;color:var(--nm-mut2);}
+@media (max-width:1500px){ .nm-scroll th:nth-child(2),.nm-scroll td:nth-child(2){display:none;} }
+@media (max-width:900px){ .nm-psplit{grid-template-columns:1fr;} .nm-phases{flex-wrap:wrap;} .nm-phases button{flex:1 1 45%!important;border-radius:8px!important;} .nm-chl li{grid-template-columns:1fr auto;} .nm-chl li > .nm-tag{grid-column:1 / -1;} }

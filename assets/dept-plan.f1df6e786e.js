@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-// DEPARTMENT CORE — day plan (UPHC now; PHC / CHC later). Plain functions, no screen code.
+// DEPARTMENT CORE — day plan (UPHC, PHC, CHC). Plain functions, no screen code.
 // Agreed 16 Oct 2026: same 60-day shape as SC, run by every department on its own checklist; all departments start the
 // baseline together (one facility start date).
 //   Days 1–7    baseline: the department's checkpoints in the order structure → process → outcome
@@ -67,7 +67,12 @@ function nfDeptDay(plan, day, S) {
     var base = nfDeptWeekBase(S)[week - 1] || [], ids = [];
     base.forEach(function (b) { ids = ids.concat(plan[b - 1] || []); });
     var spread = nfDeptSplit(ids.map(function (id) { return [id]; }), 7, function (x) { return x[0]; });
-    return { phase: 'impl', day: day, week: week, ids: spread[dayInWeek].map(function (x) { return x[0]; }), base: base };
+    var out = spread[dayInWeek].map(function (x) { return x[0]; }), imp = plan.imp;
+    if (imp) {   // HealSol moved some checkpoints to another implementation day (Step 2c day-plan board)
+      out = out.filter(function (id) { return !imp[id] || imp[id] === day; });
+      Object.keys(imp).forEach(function (id) { if (imp[id] === day && out.indexOf(id) < 0) out.push(id); });
+    }
+    return { phase: 'impl', day: day, week: week, ids: out, base: base };
   }
   if (day >= S.r1 && day <= S.rN) return { phase: 'ready', day: day, ids: [], base: [] };
   return { phase: day < 1 ? 'before' : 'after', day: day, ids: [], base: [] };
@@ -99,4 +104,51 @@ function nfDeptReadiness(items, latest, opts) {
   Object.keys(res.byAoc).forEach(function (a) { var p = res.byAoc[a].pct; if (p === null || p < mark) res.fails.push('aoc:' + a); });
   res.meets = !res.fails.length && all.n === all.of;
   return res;
+}
+
+// ── Step 2c: HealSol's checkpoint master on top of the checklist ──
+function nfDeptPlanIds(plan) { var a = []; (plan || []).forEach(function (d) { a = a.concat(d || []); }); return a; }
+// a department's plan with HealSol's moves: moves = {id: {b: baseline day, i: implementation day}}.
+// b moves the checkpoint to another baseline day (so its implementation week and end-line day follow); i pins its implementation day.
+function nfDeptPlan(items, dept, S, moves) {
+  var plan = nfDeptBaseline(items, dept, S); moves = moves || {};
+  var mine = {}; plan.forEach(function (d) { d.forEach(function (id) { mine[id] = 1; }); });
+  Object.keys(moves).sort().forEach(function (id) {
+    var m = moves[id]; if (!mine[id] || !m || !m.b) return;
+    var k = Math.min(Math.max(1, +m.b), S.base) - 1;
+    plan = plan.map(function (d) { return d.filter(function (x) { return x !== id; }); }); plan[k].push(id);
+  });
+  var imp = {}; Object.keys(moves).forEach(function (id) { var m = moves[id]; if (mine[id] && m && +m.i >= S.i1 && +m.i <= S.iN) imp[id] = +m.i; });
+  if (Object.keys(imp).length) plan.imp = imp;
+  return plan;
+}
+// plan stored in the database {b: [[ids]…], i: {id: day}} ⇄ plan array
+function nfDeptPlanPack(plan) { var o = { b: plan.map(function (d) { return d.length ? d : ['']; }) }; if (plan.imp) o.i = plan.imp; return o; }
+function nfDeptPlanUnpack(o, S) {
+  var b = (o && o.b) || [], plan = [];
+  for (var k = 0; k < S.base; k++) plan.push(((b[k] || [])).filter(function (x) { return x; }));
+  if (o && o.i) plan.imp = o.i;
+  return plan;
+}
+// checklist rows with a published layer {edits, added} (values as the master stores them: method/items/… as JSON text)
+// → {rows: active rows, all: {id: row incl. retired}, retired: {id: true}}
+function nfDeptLayerRows(items, layer) {
+  layer = layer || {}; var E = layer.edits || {}, A = layer.added || {}, all = {}, retired = {}, order = [];
+  var j = function (v, d) { if (typeof v !== 'string') return v || d; try { return JSON.parse(v); } catch (e) { return d; } };
+  var row = function (r, e) {
+    r = r.slice(); if (!e) return r;
+    if (e.dept) r[1] = e.dept; if (e.aoc) r[2] = e.aoc; if (e.std) r[3] = e.std; if (e.me) r[4] = e.me; if (e.t) r[5] = e.t;
+    if (e.method !== undefined) r[6] = j(e.method, []).join('/');
+    if (e.items !== undefined) r[7] = j(e.items, []).map(function (x) { return x.t; }).join('; ');
+    return r;
+  };
+  items.forEach(function (r) { var x = row(r, E[r[0]]); all[x[0]] = x; order.push(x); if (E[r[0]] && E[r[0]].retired) retired[x[0]] = true; });
+  Object.keys(A).sort().forEach(function (id) {
+    var a = A[id] || {}, x = row([id, a.dept, a.aoc, a.std, a.me, a.t, '', '', a.ord || 9999], a);
+    var at = -1; order.forEach(function (o, i) { if (o[1] === x[1] && (o[3] === x[3] || (at < 0 && o[2] === x[2]))) at = i; });
+    if (at < 0) order.forEach(function (o, i) { if (o[1] === x[1]) at = i; });
+    if (at < 0) order.push(x); else order.splice(at + 1, 0, x);
+    all[id] = x; if (a.retired) retired[id] = true;
+  });
+  return { rows: order.filter(function (r) { return !retired[r[0]]; }), all: all, retired: retired };
 }

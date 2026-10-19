@@ -12,6 +12,7 @@ var NM_I = {
   x: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   play: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
   ok: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-9"/></svg>',
+  cal: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   warn: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>'
 };
 function nmBox() {
@@ -34,7 +35,7 @@ async function nmOpen(T) {
 function nmRender() {
   var box = nmBox(); if (!box || !_nm.base[_nm.ui.type]) return;
   var s = _nm.ui.screen;
-  box.innerHTML = s === 'edit' ? nmEditHTML() : s === 'tocheck' ? nmToCheckHTML() : s === 'excel' ? nmExcelHTML() : nmListHTML();
+  box.innerHTML = s === 'edit' ? nmEditHTML() : s === 'tocheck' ? nmToCheckHTML() : s === 'excel' ? nmExcelHTML() : s === 'plan' ? nmPlanHTML() : s === 'publish' ? nmPubHTML() : nmListHTML();
 }
 function nmGo(screen) { _nm.ui.screen = screen; nmRender(); try { window.scrollTo(0, 0); } catch (e) {} }
 function nmUi(k, v) { _nm.ui[k] = v; if (k !== 'limit') _nm.ui.limit = 60; if (k === 'dept' || k === 'aoc') _nm.ui.std = ''; nmRender(); }
@@ -43,14 +44,15 @@ function nmQ(v) { _nm.ui.q = v; clearTimeout(window._nmT); window._nmT = setTime
 // ── small pieces ──
 function nmChip(m, off) { return '<span class="nm-m ' + (off ? 'off' : m.toLowerCase()) + '">' + nmE(m) + '</span>'; }
 function nmTag(st) {
-  return st === 'new' ? '<span class="nm-tag new">New</span>' : st === 'edited' ? '<span class="nm-tag ed">Edited</span>' : st === 'retired' ? '<span class="nm-tag ret">Retired</span>' : '';
+  return st === 'new' ? '<span class="nm-tag new">New</span>' : st === 'edited' ? '<span class="nm-tag ed">Edited</span>' : st === 'retired' ? '<span class="nm-tag ret">Retired</span>' : st === 'moved' ? '<span class="nm-tag mv">Moved</span>' : '';
 }
 function nmOpt(v, l, cur) { return '<option value="' + nmE(v) + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + nmE(l) + '</option>'; }
 function nmDayTxt(T, id) { var d = nmDays(T)[id]; return d ? 'B ' + d.b + (d.i ? ' · I ' + d.i : '') : '—'; }
 function nmTopHTML(title, sub) {
   var T = _nm.ui.type, n = nmChangeCount(T);
   return '<div class="nm-top"><div><h1>' + title + '</h1><small>' + sub + '</small></div>'
-    + '<span class="nm-draft' + (n ? '' : ' none') + '">' + (n ? 'Draft · ' + n + ' change' + (n === 1 ? '' : 's') : 'No changes') + '</span></div>';
+    + '<span class="nm-draft' + (n ? '' : ' none') + '">' + (n ? 'Draft · ' + n + ' change' + (n === 1 ? '' : 's') : 'Nothing to publish') + '</span>'
+    + '<button type="button" class="nm-btn pri" onclick="nmPubOpen()">Review &amp; publish</button></div>';
 }
 function nmTypeTabs() {
   var u = _nm.ui;
@@ -82,10 +84,10 @@ function nmListHTML() {
   var tc = nmToCheck(T).length, cfg = nmCfg(T), D = _nm.draft[T];
   var stds = {}; all.forEach(function (c) { if ((!u.dept || c.dept === u.dept) && (!u.aoc || c.aoc === u.aoc)) stds[c.std] = 1; });
   var stdList = Object.keys(stds).sort(function (a, b) { return a.localeCompare(b, 'en', { numeric: true }); });
-  var h = nmTopHTML('Checkpoints', 'UPHC · PHC · CHC — HealSol only · changes are saved in a draft; publishing to facilities comes with the day-plan update')
+  var h = nmTopHTML('Checkpoints', 'UPHC · PHC · CHC — HealSol only · changes stay in the draft until you publish them')
     + '<div class="nm-bar">' + nmTypeTabs()
-    + '<div class="nm-live">' + nmE(cfg.short || T) + ' · ' + (cfg.days || nfDeptShape(cfg).days) + '-day plan' + (D.updatedAt ? ' · last change ' + nmE(String(D.updatedAt).slice(0, 10)) + ' by ' + nmE(D.updatedBy) : '') + '</div>'
-    + '<div class="nm-acts"><button type="button" class="nm-btn" onclick="nmGo(\'excel\')">' + NM_I.down + 'Excel</button>'
+    + '<div class="nm-live">' + nmLiveTxt(T) + '</div>'
+    + '<div class="nm-acts"><button type="button" class="nm-btn" onclick="nmPlanOpen()">' + NM_I.cal + 'Day plans</button><button type="button" class="nm-btn" onclick="nmGo(\'excel\')">' + NM_I.down + 'Excel</button>'
     + '<button type="button" class="nm-btn pri" onclick="nmEditOpen(null)">' + NM_I.plus + 'New checkpoint</button></div></div>'
     + '<div class="nm-body">'
     + '<aside class="nm-depts" aria-label="Departments"><div class="nm-cap">Departments</div><div class="nm-dl">'
@@ -137,7 +139,7 @@ function nmFacs(T) {
 }
 async function nmUndoAsk(id) {
   var T = _nm.ui.type, st = nmStatus(T, id);
-  var ok = await showConfirm(st === 'new' ? 'Remove the new checkpoint ' + id + ' from the draft?' : 'Undo every draft change to ' + id + '? It goes back to the checklist wording.', '↩️', st === 'new' ? 'Remove checkpoint' : 'Undo change', st === 'new' ? 'Remove' : 'Undo', 'var(--teal)');
+  var ok = await showConfirm(st === 'new' ? 'Remove the new checkpoint ' + id + ' from the draft?' : 'Undo every draft change to ' + id + '? It goes back to ' + (_nm.live[T].v ? 'the published version (v' + _nm.live[T].v + ')' : 'the checklist') + '.', '↩️', st === 'new' ? 'Remove checkpoint' : 'Undo change', st === 'new' ? 'Remove' : 'Undo', 'var(--teal)');
   if (!ok) return;
   if (await nmUndo(T, id)) { if (st === 'new') _nm.ui.sel = null; showToast('Done.', 'ok'); if (_nm.ui.screen === 'edit') _nm.ui.screen = 'list'; nmRender(); }
 }
@@ -202,7 +204,7 @@ function nmDetailsHTML() {
     + '<button type="button" aria-pressed="' + !!f.retired + '" class="nm-pill' + (f.retired ? ' on' : '') + '" onclick="nmFR(\'retired\',true)">Retired</button></div>'
     + (f.retired ? '<span class="nm-hint">Leaves future days; past answers stay in reports.</span>' : '') + '</fieldset>'
     + '<label>Package tag <span class="nm-hint">Optional — LaQshya, MusQan</span><select onchange="nmF(\'pk\',this.value)">' + nmOpt('', 'None (core NQAS)', f.pk) + nmOpt('LaQshya', 'LaQshya', f.pk) + nmOpt('MusQan', 'MusQan', f.pk) + '</select></label></div>'
-    + (id ? '<div class="nm-days"><b>Days in the plan</b><div>' + (d && !f.retired ? '<span class="b">Baseline · Day ' + d.b + '</span>' + (d.i ? '<span class="i">Implementation · Day ' + d.i + '</span>' : '') + '<span class="e">End-line · Day ' + d.e + '</span>' : '<span>Not on any day</span>') + '</div><small>Moving a checkpoint to another day comes with the day-plan board (next update).</small></div>' : '')
+    + (id ? '<div class="nm-days"><b>Days in the plan</b><div>' + (d && !f.retired ? '<span class="b">Baseline · Day ' + d.b + '</span>' + (d.i ? '<span class="i">Implementation · Day ' + d.i + '</span>' : '') + '<span class="e">End-line · Day ' + d.e + '</span>' : '<span>Not on any day</span>') + '</div><small>Move it on the <button type="button" class="nm-lnk" onclick="nmPlanOpen(\'' + nmJ(f.dept) + '\',\'' + nmJ(id) + '\')">day-plan board</button>.</small></div>' : '')
     + (id ? '<div class="nm-efoot"><span>Past answers stay linked to ' + nmE(id) + '.</span></div>' : '<div class="nm-efoot"><span>New checkpoints get an ID like ' + nmE(nmNextId(T, f.dept || 'X')) + ' and are placed after the last checkpoint of their Standard.</span></div>')
     + '</form>';
 }
@@ -304,7 +306,7 @@ function nmUsedHTML() {
   return '<section class="nm-card"><b class="nm-h">Where it is used · ' + F.length + ' ' + nmE(nmCfg(T).short || T) + (F.length === 1 ? '' : 's') + '</b>'
     + (F.length ? '<ul class="nm-ul">' + F.slice(0, 30).map(row).join('') + '</ul>' + (F.length > 30 ? '<small class="nm-hint">and ' + (F.length - 30) + ' more</small>' : '') : '<div class="nm-hint">No ' + nmE(nmCfg(T).short || T) + ' uses the checklist yet.</div>')
     + (d ? '<div class="nm-hint">On baseline day ' + d.b + (d.i ? ', implementation day ' + d.i : '') + ' and end-line day ' + d.e + ' of each facility’s plan.</div>' : '')
-    + '<div class="nm-note">Days already filled keep the old wording. Changes reach facilities when the draft is published (next update).</div></section>'
+    + '<div class="nm-note">Changes reach facilities when the draft is published, from the next day. Days a facility has already reached keep their checkpoints.</div></section>'
     + '<section class="nm-card"><b class="nm-h">History</b>' + (u.hist == null ? '<div class="nm-hint">Loading…</div>' : u.hist.length ? '<ul class="nm-ul hist">' + u.hist.slice(0, 20).map(function (h) {
       return '<li><span><b>' + nmE(h.by) + '</b> · ' + nmE(nmFieldNames(h.f)) + '</span><span class="nm-mut">' + nmE(String(h.at || '').slice(0, 10)) + '</span></li>'; }).join('') + '</ul>' : '<div class="nm-hint">As in the checklist — no changes yet.</div>') + '</section>';
 }
@@ -489,3 +491,144 @@ function nmExcelHTML() {
   var oView = nfAdminView;
   nfAdminView = function (v) { if (_nfOv.view === 'dm' && v !== 'dm' && _nm.ui.dirty) { _nm.ui.dirty = false; } var r = oView.apply(this, arguments); if (v === 'dm') nmOpen(); return r; };
 })();
+
+// ══ Step 2c: published version line, day-plan board, review & publish ══
+function nmLiveTxt(T) {
+  var L = _nm.live[T] || {}, cfg = nmCfg(T), days = nfDeptShape(cfg).days, today = nmIsoDay(new Date());
+  if (!L.v) return nmE(cfg.short || T) + ' · ' + days + '-day plan · not published yet — facilities use the checklist as it is';
+  return nmE(cfg.short || T) + ' · ' + days + '-day plan · published <b>v' + L.v + '</b> ' + (L.from > today ? 'starts ' + nmE(nmDmy(L.from)) : 'in use since ' + nmE(nmDmy(L.from))) + (L.by ? ' · by ' + nmE(L.by) : '');
+}
+function nmDmy(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : (iso || ''); }
+async function nmLeaveEdit() { if (_nm.ui.screen === 'edit' && _nm.ui.dirty && !await showConfirm('Leave without saving? Your changes to this checkpoint will be lost.', '✏️', 'Unsaved changes', 'Leave', 'var(--red)')) return false; _nm.ui.dirty = false; return true; }
+// ── day-plan board ──
+async function nmPlanOpen(dept, id) {
+  if (!await nmLeaveEdit()) return;
+  var u = _nm.ui, T = u.type, S = nfDeptShape(nmCfg(T));
+  u.pdept = dept || u.pdept || u.dept; if (!(_nm.base[T].depts || []).some(function (d) { return d.id === u.pdept; })) u.pdept = u.dept;
+  u.psel = id || null; u.pphase = u.pphase || 'impl'; u.pweek = u.pweek || 1; u.ppage = u.ppage || 0;
+  if (id) { var d = nmDays(T)[id]; if (d && d.i) { u.pphase = 'impl'; u.pweek = Math.floor((d.i - S.i1) / 7) + 1; } else if (d) { u.pphase = 'baseline'; u.ppage = Math.floor((d.b - 1) / 7); } }
+  nmGo('plan');
+}
+function nmPlanUi(k, v) { _nm.ui[k] = v; nmRender(); }
+function nmPlanCols(T) {
+  var u = _nm.ui, S = nfDeptShape(nmCfg(T)), plan = nmPlan(T, u.pdept), cols = [];
+  if (u.pphase === 'baseline') { for (var d = u.ppage * 7 + 1; d <= Math.min(S.base, u.ppage * 7 + 7); d++) cols.push({ day: d, kind: 'b', ids: plan[d - 1] || [] }); }
+  else if (u.pphase === 'impl') { var w1 = S.i1 + (u.pweek - 1) * 7; for (var e = w1; e < w1 + 7 && e <= S.iN; e++) cols.push({ day: e, kind: 'i', ids: nfDeptDay(plan, e, S).ids }); }
+  return cols;
+}
+function nmPlanChip(T, id) {
+  var c = nmGet(T, id); if (!c) return '';
+  var st = nmStatus(T, id), u = _nm.ui;
+  return '<button type="button" draggable="true" class="nm-chip' + (u.psel === id ? ' on' : '') + (st ? ' ' + st : '') + '" ondragstart="event.dataTransfer.setData(\'text/plain\',\'' + nmJ(id) + '\')" onclick="nmPlanUi(\'psel\',\'' + nmJ(id) + '\')">'
+    + '<span class="nm-ct"><b>' + nmE(c.me) + '</b> ' + nmE(c.t) + '</span>' + (st === 'new' ? '<em>New</em>' : st === 'moved' ? '<em>Moved</em>' : '') + '</button>';
+}
+async function nmPlanDrop(ev, kind, day) {
+  ev.preventDefault(); var id = ev.dataTransfer.getData('text/plain'); if (!id) return;
+  _nm.ui.psel = id; await nmPlanMove(kind, day);
+}
+async function nmPlanMove(kind, day) {
+  var u = _nm.ui, T = u.type, id = u.psel; if (!id || !day) return;
+  var d = nmDays(T)[id] || {};
+  if ((kind === 'b' && d.b === +day) || (kind === 'i' && d.i === +day)) { showToast('It is already on Day ' + day + '.', ''); return; }
+  if (await nmMove(T, id, kind, day)) { showToast(id + ' → Day ' + day + ' (in the draft).', 'ok'); nmRender(); }
+}
+async function nmPlanRespread() {
+  var u = _nm.ui, T = u.type;
+  if (!await showConfirm('Put ' + nmDeptName(T, u.pdept) + ' back to the even spread? Every move made on this board for the department is removed from the draft.', '↺', 'Re-spread evenly', 'Re-spread', 'var(--teal)')) return;
+  if (await nmRespread(T, u.pdept)) { showToast('Back to the even spread.', 'ok'); nmRender(); }
+}
+function nmPlanHTML() {
+  var u = _nm.ui, T = u.type, cfg = nmCfg(T), S = nfDeptShape(cfg), B = _nm.base[T], wb = nfDeptWeekBase(S);
+  var all = nmRows(T).filter(function (r) { return r[1] === u.pdept; }).length, cols = nmPlanCols(T);
+  var moved = Object.keys((_nm.draft[T] || {}).moves || {}).filter(function (id) { var c = nmGet(T, id); return c && c.dept === u.pdept; }).length;
+  var ph = function (k, l, from, to, fr) { return '<button type="button" class="ph-' + k + (u.pphase === k ? ' on' : '') + '" style="flex:' + fr + '" onclick="nmPlanUi(\'pphase\',\'' + k + '\')">' + l + ' · ' + from + '–' + to + '</button>'; };
+  var rng = function (a) { return a.length ? (a.length > 1 ? a[0] + '–' + a[a.length - 1] : a[0]) : ''; };
+  var sub = '';
+  if (u.pphase === 'baseline' && S.base > 7) { sub = '<div class="nm-wk" role="tablist" aria-label="Baseline days">'; for (var p = 0; p * 7 < S.base; p++) sub += '<button type="button" role="tab" aria-selected="' + (u.ppage === p) + '" class="' + (u.ppage === p ? 'on' : '') + '" onclick="nmPlanUi(\'ppage\',' + p + ')">Days ' + (p * 7 + 1) + '–' + Math.min(S.base, p * 7 + 7) + '</button>'; sub += '</div>'; }
+  if (u.pphase === 'impl') { sub = '<div class="nm-wk" role="tablist" aria-label="Implementation week">'; for (var w = 1; w <= S.implWeeks; w++) sub += '<button type="button" role="tab" aria-selected="' + (u.pweek === w) + '" class="' + (u.pweek === w ? 'on' : '') + '" onclick="nmPlanUi(\'pweek\',' + w + ')">Wk ' + w + ' <small>· B ' + rng(wb[w - 1]) + '</small></button>'; sub += '</div>'; }
+  var sel = u.psel ? nmGet(T, u.psel) : null, sd = sel ? nmDays(T)[sel.id] : null;
+  var opts = function (kind) { var o = ''; if (kind === 'b') { for (var d = 1; d <= S.base; d++) o += nmOpt(d, 'Baseline day ' + d + ' (' + (nmPlan(T, u.pdept)[d - 1] || []).length + ')', sd && sd.b); }
+    else { var plan = nmPlan(T, u.pdept); for (var e = S.i1; e <= S.iN; e++) o += nmOpt(e, 'Day ' + e + ' · week ' + (Math.floor((e - S.i1) / 7) + 1) + ' (' + nfDeptDay(plan, e, S).ids.length + ')', sd && sd.i); } return o; };
+  var kind = u.pphase === 'baseline' ? 'b' : 'i';
+  return '<div class="nm-ehd"><button type="button" class="nm-ib" aria-label="Back to checkpoint list" onclick="nmGo(\'list\')">' + NM_I.back + '</button>'
+    + '<div class="nm-et"><b>Day plans · ' + nmE(cfg.short || T) + ' · ' + S.days + ' days</b><small>Moves are saved in the draft and reach facilities when you publish</small></div>'
+    + '<span class="nm-draft' + (nmChangeCount(T) ? '' : ' none') + '">' + (nmChangeCount(T) ? 'Draft · ' + nmChangeCount(T) + ' change' + (nmChangeCount(T) === 1 ? '' : 's') : 'Nothing to publish') + '</span>'
+    + '<button type="button" class="nm-btn pri" onclick="nmPubOpen()">Review &amp; publish</button></div>'
+    + '<div class="nm-bar"><label class="nm-lbl">Department<select onchange="_nm.ui.psel=null;nmPlanUi(\'pdept\',this.value)">' + B.depts.map(function (d) { return nmOpt(d.id, d.name, u.pdept); }).join('') + '</select></label>'
+    + '<span class="nm-live">' + all + ' checkpoints' + (moved ? ' · ' + moved + ' moved on this board' : '') + '</span>'
+    + '<div class="nm-acts"><button type="button" class="nm-btn"' + (moved ? '' : ' disabled') + ' onclick="nmPlanRespread()">Re-spread evenly</button></div></div>'
+    + '<section class="nm-card"><div class="nm-phases">' + ph('baseline', 'Baseline', 1, S.bN, S.base) + ph('impl', 'Implementation · ' + S.implWeeks + ' weeks', S.i1, S.iN, S.implWeeks * 7) + ph('endline', 'End-line', S.e1, S.eN, S.end) + ph('ready', 'Ready', S.r1, S.rN, S.ready) + '</div>' + sub + '</section>'
+    + '<div class="nm-psplit"><div class="nm-pcols-wrap">'
+    + (cols.length ? '<div class="nm-pcols" style="grid-template-columns:repeat(' + cols.length + ',minmax(104px,1fr));min-width:' + (cols.length * 112) + 'px">' + cols.map(function (c) {
+        var heavy = c.ids.length > NM_DAY_WARN;
+        return '<div class="nm-pcol' + (heavy ? ' heavy' : '') + '" ondragover="event.preventDefault()" ondrop="nmPlanDrop(event,\'' + c.kind + '\',' + c.day + ')"><div class="nm-pch"><span>Day ' + c.day + '</span><em>' + c.ids.length + (heavy ? ' · over ' + NM_DAY_WARN : '') + '</em></div>'
+          + '<div class="nm-pcl">' + c.ids.map(function (id) { return nmPlanChip(T, id); }).join('') + (c.ids.length ? '' : '<div class="nm-hint">No checkpoints</div>') + '</div></div>';
+      }).join('') + '</div>'
+      : '<div class="nm-empty">' + (u.pphase === 'endline' ? 'End-line days ' + S.e1 + '–' + S.eN + ' repeat the baseline days 1–' + S.bN + ' in the same order. Move a checkpoint on the baseline to change its end-line day too.' : 'Readiness days ' + S.r1 + '–' + S.rN + ': end-line verification, final team review and graduation — no checklist cards.') + '</div>')
+    + '</div><aside class="nm-ecol">'
+    + (sel ? '<section class="nm-card"><div class="nm-sh"><span>' + nmE(sel.id + ' · ' + sel.me) + '</span>' + nmTag(nmStatus(T, sel.id)) + '</div><div class="nm-st">' + nmE(sel.t) + '</div>'
+        + (sd ? '<div class="nm-days"><div><span class="b">Baseline · Day ' + sd.b + '</span>' + (sd.i ? '<span class="i">Impl. · Day ' + sd.i + '</span>' : '') + '<span class="e">End-line · Day ' + sd.e + '</span></div></div>' : '')
+        + (u.pphase === 'baseline' || u.pphase === 'impl' ? '<label>Move to<select id="nm-mvto">' + opts(kind) + '</select></label><button type="button" class="nm-btn pri" onclick="nmPlanMove(\'' + kind + '\',document.getElementById(\'nm-mvto\').value)">Move</button>'
+          + '<small class="nm-hint">' + (kind === 'b' ? 'A new baseline day also changes its implementation week and its end-line day.' : 'Only its implementation day changes; baseline and end-line stay.') + ' Or drag the card onto another day.</small>' : '')
+        + (nmStatus(T, sel.id) ? '<button type="button" class="nm-btn" onclick="nmUndoAsk(\'' + nmJ(sel.id) + '\')">Undo changes to ' + nmE(sel.id) + '</button>' : '') + '</section>'
+      : '<section class="nm-card"><b class="nm-h">Move a checkpoint</b><small class="nm-hint">Click a checkpoint, then choose its new day — or drag it onto another day.</small></section>')
+    + '<section class="nm-card"><small class="nm-hint"><b>Baseline</b> and <b>End-line</b> spread every checkpoint of the department over ' + S.base + ' days. <b>Implementation</b> week n revisits baseline day(s) shown on its tab, spread over 7 days. Days over ' + NM_DAY_WARN + ' checkpoints are marked; you are warned before publishing.</small></section>'
+    + '</aside></div>';
+}
+
+// ── review & publish ──
+function nmPubOpen() { nmLeaveEdit().then(function (ok) { if (!ok) return; _nm.ui.vers = null; _nm.ui.plimit = 50; nmGo('publish'); var T = _nm.ui.type; nmVersions(T).then(function (v) { _nm.ui.vers = v; if (_nm.ui.screen === 'publish' && _nm.ui.type === T) nmRender(); }); }); }
+function nmChangeDetail(T, x) {
+  var d = nmGet(T, x.id), l = nmGetLive(T, x.id);
+  if (x.st === 'new') return d ? [d.me, d.method.join('/'), nmDeptName(T, d.dept)].filter(Boolean).join(' · ') : '';
+  if (x.st === 'retired') return 'Leaves future days; past answers stay in reports';
+  if (x.st === 'moved') { var m = ((_nm.draft[T] || {}).moves || {})[x.id] || {}; return 'Day plan: ' + [m.b ? 'baseline day ' + m.b : '', m.i ? 'implementation day ' + m.i : ''].filter(Boolean).join(', ') + (!m.b && !m.i ? 'back to the even spread' : ''); }
+  if (!d) return 'Removed from the draft';
+  var f = NM_FIELDS.filter(function (k) { return !nmSame(k, d[k], l ? l[k] : null); }).map(function (k) { return NM_FNAME[k] || k; });
+  var mv = nmStable(((_nm.draft[T] || {}).moves || {})[x.id]) !== nmStable(((_nm.live[T] || {}).moves || {})[x.id]);
+  return (f.length ? 'Changed: ' + f.join(', ') : '') + (mv ? (f.length ? ' · ' : '') + 'day plan' : '');
+}
+async function nmPubGo() {
+  var T = _nm.ui.type, n = nmChangeCount(T), heavy = nmHeavy(T), facs = nmFacs(T).length, note = (document.getElementById('nm-pnote') || {}).value || '';
+  if (heavy.length && !await showConfirm(heavy.length + ' day' + (heavy.length === 1 ? ' has' : 's have') + ' more than ' + NM_DAY_WARN + ' checkpoints. Publish anyway?', '⚠️', 'Heavy days', 'Publish anyway', 'var(--amber-dk)')) return;
+  if (!await showConfirm('Publish v' + ((_nm.live[T].v || 0) + 1) + ' with ' + n + ' change' + (n === 1 ? '' : 's') + '? It reaches ' + facs + ' ' + (nmCfg(T).short || T) + (facs === 1 ? '' : 's') + ' from ' + nmDmy(nmTomorrow()) + '.', '🚀', 'Publish', 'Publish', 'var(--teal)')) return;
+  _nm.ui.busy = true; nmRender();
+  var v = await nmPublish(T, note.trim()); _nm.ui.busy = false;
+  if (v) { showToast('Published v' + v + ' — facilities get it from ' + nmDmy(nmTomorrow()) + '.', 'ok'); nmPubOpen(); } else nmRender();
+}
+async function nmDiscardAsk() {
+  var T = _nm.ui.type;
+  if (!await showConfirm('Discard all ' + nmChangeCount(T) + ' draft changes? The draft goes back to the published version' + (_nm.live[T].v ? ' (v' + _nm.live[T].v + ')' : ' (the checklist)') + '.', '🗑️', 'Discard draft', 'Discard', 'var(--red)')) return;
+  if (await nmDiscard(T)) { showToast('Draft discarded.', 'ok'); nmRender(); }
+}
+async function nmRollbackAsk(v) {
+  var T = _nm.ui.type, n = nmChangeCount(T);
+  if (!await showConfirm((v ? 'Roll back to v' + v : 'Go back to the checklist as it is') + '? It is published as a new version from ' + nmDmy(nmTomorrow()) + ' and becomes the draft too' + (n ? ' — the ' + n + ' unpublished draft change' + (n === 1 ? '' : 's') + ' will be lost' : '') + '.', '↩️', 'Roll back', 'Roll back', 'var(--red)')) return;
+  var nv = await nmRollback(T, v); if (nv) { showToast('Published v' + nv + ' (' + (v ? 'same as v' + v : 'the checklist') + ').', 'ok'); nmPubOpen(); }
+}
+function nmPubHTML() {
+  var u = _nm.ui, T = u.type, L = _nm.live[T] || {}, ch = nmChanges(T), heavy = nmHeavy(T), tc = nmToCheck(T).length, facs = nmFacs(T).length, cnt = {};
+  ch.forEach(function (x) { cnt[x.st] = (cnt[x.st] || 0) + 1; });
+  var nv = (L.v || 0) + 1, tag = function (st, n, l) { return n ? '<span class="nm-tag ' + ({ new: 'new', edited: 'ed', retired: 'ret', moved: 'mv' })[st] + '">' + n + ' ' + l + '</span>' : ''; };
+  var V = u.vers;
+  return '<div class="nm-ehd"><button type="button" class="nm-ib" aria-label="Back" onclick="nmGo(\'list\')">' + NM_I.back + '</button><div class="nm-et"><b>Review &amp; publish · ' + nmE(nmCfg(T).short || T) + '</b><small>' + nmLiveTxt(T).replace(/<[^>]+>/g, '') + '</small></div></div>'
+    + '<div class="nm-esplit"><section class="nm-card p0" aria-label="Changes in this draft"><div class="nm-ch pad"><div><b class="nm-h">Draft v' + nv + ' — ' + ch.length + ' change' + (ch.length === 1 ? '' : 's') + '</b><small>Compared with ' + (L.v ? 'published v' + L.v + ' (' + nmDmy(L.from) + ')' : 'the checklist (nothing published yet)') + '</small></div>'
+    + '<div class="nm-acts">' + tag('new', cnt.new, 'new') + tag('edited', cnt.edited, 'edited') + tag('retired', cnt.retired, 'retired') + tag('moved', cnt.moved, 'moved') + '</div></div>'
+    + (ch.length ? '<ul class="nm-chl">' + ch.slice(0, u.plimit || 50).map(function (x) { var c = nmGet(T, x.id) || nmGetLive(T, x.id) || { t: '' };
+        return '<li>' + nmTag(x.st) + '<div><b>' + nmE(x.id) + ' · ' + nmE(c.t) + '</b><small>' + nmE(nmChangeDetail(T, x)) + '</small></div><button type="button" class="nm-lnk" onclick="nmUndoAsk(\'' + nmJ(x.id) + '\')">Undo</button></li>'; }).join('') + '</ul>'
+        + (ch.length > (u.plimit || 50) ? '<div class="nm-foot pad"><span></span><button type="button" class="nm-lnk" onclick="_nm.ui.plimit=(_nm.ui.plimit||50)+100;nmRender()">Show ' + Math.min(100, ch.length - (u.plimit || 50)) + ' more</button></div>' : '')
+      : '<div class="nm-empty sm">' + NM_I.ok + ' The draft is the same as the published version.</div>')
+    + '</section><aside class="nm-ecol">'
+    + '<section class="nm-card nm-checks" aria-label="Checks before publishing"><b class="nm-h">Checks</b>'
+    + '<div class="ok">' + NM_I.ok + 'Every active checkpoint has a day</div>'
+    + (heavy.length ? '<div class="w">' + NM_I.warn + '<span>' + heavy.length + ' day' + (heavy.length === 1 ? '' : 's') + ' over ' + NM_DAY_WARN + ' checkpoints: ' + heavy.slice(0, 4).map(function (h) { return nmE(h.dept) + ' day ' + h.day + ' (' + h.n + ')'; }).join(', ') + (heavy.length > 4 ? '…' : '') + '</span></div>' : '<div class="ok">' + NM_I.ok + 'No day over ' + NM_DAY_WARN + ' checkpoints</div>')
+    + (tc ? '<div class="w">' + NM_I.warn + '<span>' + tc + ' checkpoint' + (tc === 1 ? ' has' : 's have') + ' no method — <button type="button" class="nm-lnk" onclick="nmGo(\'tocheck\')">To check</button></span></div>' : '<div class="ok">' + NM_I.ok + 'Every checkpoint has a method</div>') + '</section>'
+    + '<section class="nm-card"><b class="nm-h">When you publish</b><ul class="nm-bul"><li>v' + nv + ' goes to all <b>' + facs + ' ' + nmE(nmCfg(T).short || T) + (facs === 1 ? '' : 's') + '</b> from <b>' + nmE(nmDmy(nmTomorrow())) + '</b>.</li><li>Days a facility has already reached keep their checkpoints.</li><li>Phones pick it up the next time they open the app.</li><li>' + (L.v ? 'v' + L.v + ' is kept — you can roll back.' : 'The checklist stays available — you can roll back to it.') + '</li></ul></section>'
+    + '<label class="nm-lbl col">Note for this version<input type="text" id="nm-pnote" maxlength="200" placeholder="e.g. Methods for LAB-027, EM-012; OPD wording"></label>'
+    + '<button type="button" class="nm-btn pri big"' + (ch.length && !u.busy ? '' : ' disabled') + ' onclick="nmPubGo()">' + (u.busy ? 'Publishing…' : 'Publish v' + nv) + '</button>'
+    + '<button type="button" class="nm-btn danger"' + (ch.length ? '' : ' disabled') + ' onclick="nmDiscardAsk()">Discard draft</button>'
+    + '<section class="nm-card" aria-label="Versions"><b class="nm-h">Versions</b>'
+    + (V == null ? '<div class="nm-hint">Loading…</div>' : '<ul class="nm-ul vers">' + V.map(function (x) { return '<li><span><b>v' + x.v + '</b>' + (x.v === L.v ? ' · live' : '') + ' · ' + nmE(nmDmy(x.from)) + ' · ' + nmE(x.by || '') + (x.note ? '<small>' + nmE(x.note) + '</small>' : '') + '</span>' + (x.v === L.v ? '<span class="nm-mut">' + facs + ' in use</span>' : '<button type="button" class="nm-lnk" onclick="nmRollbackAsk(' + x.v + ')">Roll back</button>') + '</li>'; }).join('')
+      + '<li><span><b>v0</b> · the checklist as it is</span>' + (L.v ? '<button type="button" class="nm-lnk" onclick="nmRollbackAsk(0)">Roll back</button>' : '<span class="nm-mut">live</span>') + '</li></ul>') + '</section>'
+    + '</aside></div>';
+}
