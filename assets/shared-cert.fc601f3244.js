@@ -200,7 +200,7 @@ async function nfVerifyBoot(){
 async function nfEnsureCertSetup(){
   if(appMode!=='sc-admin') return; var main=document.querySelector('#admin-app .admin-main'); if(!main||document.getElementById('nf-certset')) return;
   var c=document.createElement('div'); c.id='nf-certset'; c.className='nf-certset'; c.dataset.nfv='setup';
-  c.innerHTML='<h3><i class="ti ti-certificate"></i> Certificate signatory</h3><p>Signs every new certificate for HealSol Academy, next to the facility\'s Mentor (Supervisor) and Quality Champion. Certificates already issued keep the names they were signed with.</p>'
+  c.innerHTML='<h3><i class="ti ti-certificate"></i> Certificate signatory</h3><p>Signs every new certificate for HealSol Academy. Sub-Centres: next to the facility\'s Mentor (Supervisor) and Quality Champion. UPHC · PHC · CHC: next to the facility in-charge (MO In-charge / UPHC Coordinator) and the Quality Mentor. Until a name is saved, certificates show “Programme Coordinator”. Certificates already issued keep the names they were signed with.</p>'
     +'<div class="row"><label>Name<input id="nf-cs-name" placeholder="e.g. Meera Kapoor" maxlength="60"></label><label>Title<input id="nf-cs-title" placeholder="Programme Coordinator" maxlength="60"></label><button type="button" onclick="nfSaveCertSetup(this)">Save</button></div>';
   main.appendChild(c);
   var cfg=await fbGet('shared/sc_cert_config')||{}; var n=document.getElementById('nf-cs-name'), t=document.getElementById('nf-cs-title'); if(n) n.value=cfg.coordName||''; if(t) t.value=cfg.coordTitle||'';
