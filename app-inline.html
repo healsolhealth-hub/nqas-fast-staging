@@ -16489,6 +16489,16 @@ var _nfCert={rec:null,code:'',mob:'',loaded:false};
 function nfCertGradeOf(p){ return p>=80?'Distinction':p>=70?'Merit':'Completion'; }
 function nfCertTitle(g){ return g==='Completion'?'CERTIFICATE OF COMPLETION':'CERTIFICATE OF ACHIEVEMENT'; }
 function nfCertBase(){ return NF_CERT_VERIFY_BASE; }
+// the programme sentence and the third score box (Sub-Centre or department core: UPHC / PHC / CHC, Step 3)
+function nfCertText(r){
+  if(r.kind==='dept') return 'has completed the '+(r.programmeDays||90)+'-day NQAS | FAST readiness programme ('+(r.packageLabel||r.tier)+')'+(r.depts?' in '+r.depts:'')+', '+scFmtDate(r.startDate)+' – '+scFmtDate(r.endDate)+', meeting every condition: '
+    +(r.lead?r.daysVerified+' of '+r.totalDays+' department-days checked as lead.':r.daysDone+' of '+r.totalDays+' card days done and '+r.daysVerified+' checked by the department lead.');
+  return 'has completed the 60-day NQAS | FAST readiness programme ('+(r.packageLabel||r.tier)+'), '+scFmtDate(r.startDate)+' – '+scFmtDate(r.endDate)+', meeting every condition: baseline '+r.baselineDays+'/7, '+r.daysDone+' of '+r.totalDays+' daily cards done and '+r.daysVerified+' verified by mentors.';
+}
+function nfCertBoxes(r){
+  var d=r.kind==='dept';
+  return {staff:d?'MY DEPARTMENTS':'STAFF READINESS',third:d?(r.lead?'DAYS CHECKED':'CARD DAYS'):'DAILY CARDS',val:(d&&r.lead?r.daysVerified:r.daysDone)+'/'+r.totalDays,sub:d?(r.lead?'as lead':r.daysVerified+' checked'):r.daysVerified+' verified'};
+}
 function nfCertEval(){
   var cards=(choState&&choState.cards)||{}, done=0, ver=0, base=0;
   Object.keys(cards).forEach(function(k){ var i=+k, c=cards[k]; if(!c||!c.taskDone||i>=NF_CERT.days) return; done++; if(c.verified) ver++; if(i<NF_CERT.baseline) base++; });
@@ -16551,9 +16561,9 @@ function nfCertHTML(r){
     +'<h1>'+nfCertTitle(g)+'</h1>'+(g!=='Completion'?'<div class="gr">with '+scEsc(g)+'</div>':'<div class="gr">NQAS | FAST readiness programme</div>')
     +'<div class="ct">This is to certify that</div><div class="nm">'+scEsc(r.name)+'</div>'
     +'<div class="fc">'+scEsc(r.role)+' · '+scEsc(r.facilityName)+' ('+scEsc(r.code)+')'+(r.district?' · '+scEsc([r.district,r.state].filter(Boolean).join(', ')):'')+' <span class="nf-pro"><i class="p">PRO</i><i class="t">'+scEsc(r.tier)+'</i></span></div>'
-    +'<div class="tx">has completed the 60-day NQAS | FAST readiness programme ('+scEsc(r.packageLabel||r.tier)+'), '+scEsc(scFmtDate(r.startDate))+' – '+scEsc(scFmtDate(r.endDate))+', meeting every condition: baseline '+r.baselineDays+'/7, '+r.daysDone+' of '+r.totalDays+' daily cards done and '+r.daysVerified+' verified by mentors.</div>'
-    +'<div class="sc"><div><small>Facility score</small><b>'+r.facPct+'%</b>'+gain(r.facPct,r.facBase)+'</div><div><small>Staff readiness</small><b>'+r.staffPct+'%</b>'+gain(r.staffPct,r.staffBase)+'</div>'
-    +'<div><small>Daily cards</small><b>'+r.daysDone+'/'+r.totalDays+'</b><em>'+r.daysVerified+' verified</em></div></div>'
+    +'<div class="tx">'+scEsc(nfCertText(r))+'</div>'
+    +(function(){ var bx=nfCertBoxes(r), cap=function(t){ return t.charAt(0)+t.slice(1).toLowerCase(); }; return '<div class="sc"><div><small>Facility score</small><b>'+r.facPct+'%</b>'+gain(r.facPct,r.facBase)+'</div><div><small>'+cap(bx.staff)+'</small><b>'+r.staffPct+'%</b>'+gain(r.staffPct,r.staffBase)+'</div>'
+    +'<div><small>'+cap(bx.third)+'</small><b>'+bx.val+'</b><em>'+scEsc(bx.sub)+'</em></div></div>'; })()
     +'<div class="sg">'+(r.signers||[]).map(function(s){ return '<div><div class="s">'+scEsc(s.name)+'</div><hr><b>'+scEsc(s.name)+'</b><small>'+scEsc(s.role)+(s.title&&s.title!==s.role?' · '+scEsc(s.title):'')+'</small><small>Digitally signed · '+scEsc(signed)+'</small></div>'; }).join('')+'</div></div>'
     +'<div class="ft"><span>Certificate No. <b>'+scEsc(r.certId)+'</b> · Issued '+scEsc(signed)+'</span><span>Verify: '+scEsc(String(r.verifyUrl||'').replace(/^https:\/\/(www\.)?/,''))+'</span></div></div>';
 }
@@ -16592,10 +16602,10 @@ async function nfCertPdf(r){
   doc.setFont(F,'normal'); doc.setFontSize(10.5); doc.setTextColor(61,75,73); doc.text(fl,cx-(fw+tw+3)/2,80);
   nfPdfProTag(doc,r.tier,cx-(fw+tw+3)/2+fw+3,76.9);
   doc.setFont(F,'normal'); doc.setFontSize(9.5); doc.setTextColor(61,75,73);
-  var tx='has completed the 60-day NQAS | FAST readiness programme ('+(r.packageLabel||r.tier)+'), '+scFmtDate(r.startDate)+' – '+scFmtDate(r.endDate)+', meeting every condition: baseline '+r.baselineDays+'/7, '+r.daysDone+' of '+r.totalDays+' daily cards done and '+r.daysVerified+' verified by mentors.';
+  var tx=nfCertText(r), bx=nfCertBoxes(r);
   doc.text(doc.splitTextToSize(T(tx),190),cx,88,{align:'center'});
   // scores
-  var boxes=[['FACILITY SCORE',r.facPct+'%',r.facBase!=null?'Baseline '+r.facBase+'% · '+(r.facPct-r.facBase>=0?'+':'')+(r.facPct-r.facBase):''],['STAFF READINESS',r.staffPct+'%',r.staffBase!=null?'Baseline '+r.staffBase+'% · '+(r.staffPct-r.staffBase>=0?'+':'')+(r.staffPct-r.staffBase):''],['DAILY CARDS',r.daysDone+'/'+r.totalDays,r.daysVerified+' verified']];
+  var boxes=[['FACILITY SCORE',r.facPct+'%',r.facBase!=null?'Baseline '+r.facBase+'% · '+(r.facPct-r.facBase>=0?'+':'')+(r.facPct-r.facBase):''],[bx.staff,r.staffPct+'%',r.staffBase!=null?'Baseline '+r.staffBase+'% · '+(r.staffPct-r.staffBase>=0?'+':'')+(r.staffPct-r.staffBase):''],[bx.third,bx.val,bx.sub]];
   var bw=44, gap=6, bx=cx-(bw*3+gap*2)/2, by=101;
   boxes.forEach(function(b,i){ var x=bx+i*(bw+gap); doc.setDrawColor(221,230,228); doc.setLineWidth(0.3); doc.roundedRect(x,by,bw,23,2.5,2.5,'S');
     doc.setFont(F,'normal'); doc.setFontSize(7); doc.setTextColor.apply(doc,GREY); doc.text(b[0],x+bw/2,by+5.5,{align:'center',charSpace:0.3});
@@ -20999,7 +21009,7 @@ async function nfDPreview(pid){ showToast('Opening the dashboard…','ok'); var 
 })();
 </script>
 <style id="nf-dept-css">/* Department core (UPHC …) — full-screen app #nf-dept-app; uses the app's colour tokens (--teal, --bg, --br, --t1…) */
-body.nd-on > *:not(#nf-dept-app):not(.scx-ov):not(#nf-toast):not(#toast):not([id$="-ov"]):not([id$="-overlay"]):not(#nf-stage-ribbon){display:none!important;}
+body.nd-on > *:not(#nf-dept-app):not(.scx-ov):not(.nfcv-ov):not(#nf-toast):not(#toast):not([id$="-ov"]):not([id$="-overlay"]):not(#nf-stage-ribbon){display:none!important;}
 #nf-dept-app{display:none;min-height:100vh;background:var(--bg,#F0F4F3);color:var(--t1,#0F172A);font-family:'NF Poppins','Poppins',system-ui,sans-serif;padding-bottom:84px;}
 #nf-dept-app .nd-hd{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--teal,#1E6B5E);color:#fff;padding:12px 16px;}
 #nf-dept-app .nd-hd>div{flex:1;min-width:0;display:flex;flex-direction:column;}
@@ -21655,7 +21665,7 @@ function nfMovSplit(s) {
 // ══════════════════════════════════════════════════════════════
 var _nd = null;
 var ND_SCORE = [{ v: 2, k: 'met', t: 'Met' }, { v: 1, k: 'part', t: 'Partial' }, { v: 0, k: 'not', t: 'Not met' }];
-var ND_PHASE = { baseline: 'Baseline', impl: 'Implementation', endline: 'End-line', ready: 'Readiness week', before: 'Not started', after: 'Programme closed' };
+var ND_PHASE = { baseline: 'Baseline', impl: 'Implementation', endline: 'End-line', ready: 'Readiness week', before: 'Not started', after: 'Programme closed', catchup: 'Catch-up', recheck: 'Catch-up re-check' };
 var ND_METHOD = { SI: 'Staff interview', RR: 'Record review', OB: 'Observation', PI: 'Patient interview' };
 
 function ndEsc(s) { return typeof scEsc === 'function' ? scEsc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -21717,8 +21727,9 @@ async function ndOpen(acc) {
   try { _nd.actions = (await fbGet('sc_dactions/' + code)) || {}; } catch (e) { _nd.actions = {}; }
   try { _nd.pcards = (await fbGet('sc_pcards/' + code)) || {}; } catch (e) { _nd.pcards = {}; }
   ndQStart();
+  try { await ndGradLoad(); } catch (e) {}
   var ls = document.getElementById('login-screen'); if (ls) ls.style.display = 'none';
-  ndShow(); return '';
+  ndShow(); ndGradMaybe(); return '';
 }
 function ndShow() {
   var app = document.getElementById('nf-dept-app');
@@ -21733,9 +21744,9 @@ async function ndLogout() {
 async function ndReload() { if (!_nd) return; _nd.fac = (await fbGet(scFacilityPath(_nd.code))) || _nd.fac; _nd.cards = (await fbGet(ndPath())) || {}; try { _nd.actions = (await fbGet('sc_dactions/' + _nd.code)) || {}; } catch (e) {} try { _nd.pcards = (await fbGet('sc_pcards/' + _nd.code)) || {}; } catch (e) {} ndRender(); }
 
 // ── programme day ──
-function ndDay() { return nfDeptDayNo(_nd.fac.startDate); }
+function ndDay() { if (typeof ndCuStarted === 'function' && ndCuStarted()) return ND_GRAD.cuBase + ndCuDay(); return nfDeptDayNo(_nd.fac.startDate); }   // Step 3: catch-up card days 101–128
 function ndShape() { return nfDeptShape(_nd.cfg); }   // the programme's phase days (60 or 90)
-function ndDayInfo(dept, day) { return nfDeptDay(ndPlanFor(day)[dept] || [], day, ndShape()); }
+function ndDayInfo(dept, day) { if (day > 100 && typeof ndCuDayInfo === 'function') return ndCuDayInfo(dept, day); return nfDeptDay(ndPlanFor(day)[dept] || [], day, ndShape()); }
 // Step 2c: which version's day plan a programme day uses — the one in force on that day's date (published versions apply from
 // the day after publishing, so days already reached keep their checkpoints)
 function ndPlanFor(day) {
@@ -21789,6 +21800,7 @@ function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
   if (_nd.card) { app.innerHTML = ndCardHTML(); ndQBadge(); return; }                                   // Compare the cards (full screen)
   if (_nd.screen === 'lead' && !_nd.view) { app.innerHTML = ndLeadScreenHTML(); ndQBadge(); return; }   // Decide & assign (full screen)
+  if (_nd.screen === 'grad' || _nd.screen === 'end' || _nd.screen === 'review' || _nd.screen === 'admin') { app.innerHTML = ndGradScreenHTML(); ndQBadge(); return; }   // Step 3: programme end
   if (ndFaOn()) { app.innerHTML = ndFaHTML(); ndQBadge(); return; }                                       // Facility dashboard (in-charge, MO in-charge)
   var t = _nd.tab, body = t === 'cards' ? ndCardsHTML() : t === 'ready' ? ndReadyHTML() : t === 'actions' ? ndActionsPageHTML() : t === 'setup' ? ndSetupPageHTML() : t === 'dept' ? ndDeptDashHTML()
     : t === 'me' ? ndMeHTML() : t === 'fix' ? ndSupHTML() : ndTodayHTML();
@@ -21932,7 +21944,8 @@ async function ndOpenView(code) {
   try { _nd.cards = (await fbGet(ndPath())) || {}; } catch (e) {}
   try { _nd.actions = (await fbGet('sc_dactions/' + code)) || {}; } catch (e) {}
   try { _nd.pcards = (await fbGet('sc_pcards/' + code)) || {}; } catch (e) {}
-  ndShow();
+  try { await ndGradLoad(); } catch (e) {}
+  ndShow(); ndGradMaybe();
 }
 function ndCloseView() { ndClose(); _nd = null; nfSetLevel(NF_LEVEL_DEFAULT); try { if (typeof scRenderMasterDashboard === 'function') scRenderMasterDashboard(); } catch (e) {} }
 
@@ -22183,10 +22196,10 @@ function ndUnassigned(mob) {   // unmet (checked) checkpoints with no live actio
     .map(function (id) { return { id: id, dept: F[id].dept, day: F[id].day, s: F[id].s }; });
 }
 function ndChecksDue(mob) {   // department-days ready to check (or overdue, for the lead)
-  var out = [], today = ndDay();
+  var out = [], today = ndDay(), S = ndShape(), from = today > S.eN && today <= S.days + 30 ? Math.min(S.e1, today - 13) : today - 13;   // readiness week: every end-line day
   ndDeptDefs().forEach(function (d) {
-    for (var n = Math.max(1, today - 13); n <= Math.min(today, _nd.cfg.days); n++) {
-      var res = ndRes(d.id, n); if (res.chk) continue;
+    for (var n = Math.max(1, from); n <= Math.min(today, ndLastDay()); n++) {
+      var res = ndRes(d.id, n); if (res.chk || ndGradLocked(n)) continue;
       var inn = ndCardsIn(d.id, n); if (!inn.done.length) continue;
       var solo = ndSolo(d.id);
       if (solo && !ndCompare(d.id, n).some(function (x) { return x.re || x.spot; })) continue;   // one card: nothing to spot-check or re-check
@@ -22269,11 +22282,11 @@ function ndWaLink(mob, text) { return 'https://wa.me/91' + mob + '?text=' + enco
 function ndTodo(mob) {
   var day = ndDay(), fill = ndDeptDefs().filter(function (d) { var c = ndPc(d.id, day)[mob] || {}; return ndFills(d.id, mob) && !c.done && !c.absent && !ndRes(d.id, day).chk && ndMyIds(d.id, day, mob).length; });
   var late = [];   // missed days still open (not checked) — catch up
-  ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, mob)) return; for (var n = Math.max(1, day - 13); n < Math.min(day, _nd.cfg.days + 1); n++) { var c = ndPc(d.id, n)[mob] || {}; if (!c.done && !c.absent && !ndRes(d.id, n).chk && ndMyIds(d.id, n, mob).length) late.push({ dept: d.id, day: n }); } });
+  ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, mob)) return; for (var n = Math.max(1, day - 13); n < Math.min(day, ndLastDay() + 1); n++) { var c = ndPc(d.id, n)[mob] || {}; if (!c.done && !c.absent && !ndRes(d.id, n).chk && !ndGradLocked(n) && ndMyIds(d.id, n, mob).length) late.push({ dept: d.id, day: n }); } });
   return { fill: fill, late: late, check: ndChecksDue(mob), decide: ndEscItems(mob), assign: ndUnassigned(mob), fix: ndMyActions() };
 }
 function ndStreak() {   // days in a row (up to yesterday, plus today when done) with all my cards done
-  var me = ndMob(), t = Math.min(ndDay(), _nd.cfg.days), n = 0;
+  var me = ndMob(), t = Math.min(ndDay(), ndLastDay()), n = 0;
   var full = function (day) { var ds = ndDeptDefs().filter(function (d) { return ndFills(d.id, me) && ndDayInfo(d.id, day).ids.length; }); if (!ds.length) return null; return ds.every(function (d) { var c = ndPc(d.id, day)[me] || {}; return c.done || c.absent; }); };
   var today = full(t); if (today) n++;
   for (var d = t - 1; d >= 1; d--) { var f = full(d); if (f === null) continue; if (!f) break; n++; }
@@ -22287,7 +22300,7 @@ var ND_ST = {
   verified: { t: 'Checked', i: 'ti-shield-check' }, overdue: { t: 'Missed — catch up', i: 'ti-alert-triangle' }, none: { t: 'No card', i: 'ti-minus' }
 };
 var _ndWkOpen = {};
-function ndDateOf(day) { return _nd.fac.startDate ? ndAddDays(_nd.fac.startDate, day - 1) : ''; }
+function ndDateOf(day) { var cu = day > 100 && typeof ndCu === 'function' ? ndCu() : null; if (cu && cu.start) return ndAddDays(cu.start, day - 101); return _nd.fac.startDate ? ndAddDays(_nd.fac.startDate, day - 1) : ''; }
 function ndShortDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m[2] - 1] : ''; }
 // my status for one department on one day
 function ndMySt(dept, day) {
@@ -22309,13 +22322,13 @@ function ndDaySt(day) {
 }
 function ndDayTitle(day) {
   var d0 = ndMyDepts()[0] || (_nd.cfg.departments || [])[0], info = d0 ? ndDayInfo(d0.id, day) : { phase: 'baseline' };
-  var S = ndShape(); if (day >= S.r1 && day <= S.rN) { var k = day - S.r1, n = S.ready; return k >= n - 1 ? 'Graduation' : k === n - 2 ? 'Final team review' : 'End-line verification'; }
+  var S = ndShape(); if (day > 100) return ndWeekLabel(day); if (day >= S.r1 && day <= S.rN) { var k = day - S.r1, n = S.ready; return k >= n - 1 ? 'Graduation' : k === n - 2 ? 'Final team review' : 'End-line verification'; }
   return ND_PHASE[info.phase] + (info.week ? ' · week ' + info.week : '');
 }
 // ═══ Cards tab in the SC design (17 Oct): Cards head · Day / Timeline switch · facility bar · day strip · the day card ═══
 function ndCur() { return _nd.card || { dept: _nd.cdept, day: _nd.cday }; }
 function ndAocColor(a) { try { if (typeof getAoCDef === 'function') { var c = (getAoCDef(a) || {}).color; if (c) return c; } } catch (e) {} return '#1E6B5E'; }
-function ndWeekLabel(day) { var S = ndShape(); return day <= S.bN ? 'Baseline audit' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
+function ndWeekLabel(day) { var S = ndShape(); if (day > 100) return day - 100 > ND_GRAD.cuWork ? 'Catch-up re-check' : 'Catch-up week ' + Math.ceil((day - 100) / 7); return day <= S.bN ? 'Baseline audit' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
 function ndCardDepts(day) {   // my departments with a card on this day: the ones I fill first, then the ones I check
   var me = ndMob();
   return ndMyDepts().filter(function (d) { return ndDayIds(d.id, day).length && (_nd.view || (ndFills(d.id, me) && ndMyIds(d.id, day, me).length) || ndCanCheck(d.id, me)); })
@@ -22503,7 +22516,7 @@ function ndTodayHTML() {
     ? '<div class="nx-card"><b>Set the programme start date</b><span class="nx-dim">All departments start the baseline together on this date (Day 1).</span>' + ndStartForm() + '</div>'
     : '<div class="nx-hero"><div class="nx-hero-k">Programme not started</div><div class="nx-hero-t">Waiting for the start date</div><div class="nx-hero-k">The ' + ndEsc(_nd.cfg.inChargeLabel) + ' sets it.</div></div>') + '</div>';
   if (day < 1) return '<div class="nx">' + top + '<div class="nx-hero"><div class="nx-hero-k">Programme starts · ' + ndEsc(nxLongDate(_nd.fac.startDate)) + '</div><div class="nx-hero-t">' + (1 - day) + ' day' + (1 - day > 1 ? 's' : '') + ' to go</div><div class="nx-hero-k">The baseline starts on Day 1 for every department.</div></div></div>';
-  var d0 = Math.min(day, n), mine = nxMineIds(), all = ndDeptDefs().map(function (d) { return d.id; });
+  var cuD = day > 100, d0 = cuD ? day : Math.min(day, n), mine = nxMineIds(), all = ndDeptDefs().map(function (d) { return d.id; });
   var S = ndShape(), R = nxReady(mine), F = nxReady(all), B = nxReady(mine, S.bN);
   var my = R.overall === null ? 0 : R.overall, gain = day > S.bN && B.overall !== null && R.overall !== null ? R.overall - B.overall : null;
   var t = _nd.view ? null : ndTodo(me), fillToday = ndCardDepts(d0).filter(function (d) { return !_nd.view && ndFills(d.id, me); });
@@ -22513,13 +22526,15 @@ function ndTodayHTML() {
     : t.fill.length ? '<button type="button" class="nx-cta" onclick="ndGoCard(\'' + t.fill[0].id + '\',' + day + ')">Continue today\'s card · ' + scored + ' of ' + total + ' done ›</button>'
     : '<button type="button" class="nx-cta" onclick="ndTab(\'cards\')">All done for today ✓</button>';
   var h = '<div class="nx">' + top
-    + '<div class="nx-hero"><div class="nx-hero-row"><div class="nx-hero-txt"><div class="nx-hero-k">Day ' + d0 + ' / ' + n + ' · ' + ndEsc(ndWeekLabel(d0)) + '</div>'
-    + '<div class="nx-hero-t">' + ndEsc(day > n ? 'Programme complete' : nxTheme(d0)) + '</div>'
+    + '<div class="nx-hero"><div class="nx-hero-row"><div class="nx-hero-txt"><div class="nx-hero-k">' + (cuD ? 'Catch-up · day ' + Math.min(day - 100, ND_GRAD.cuDays) + ' / ' + ND_GRAD.cuDays : 'Day ' + d0 + ' / ' + n) + ' · ' + ndEsc(ndWeekLabel(d0)) + '</div>'
+    + '<div class="nx-hero-t">' + ndEsc((cuD ? day > ndLastDay() : day > n) ? (_nd.fac.graduation ? 'Programme complete · ' + (ND_GRAD_RES[_nd.fac.graduation.result] || {}).t : 'Programme complete') : nxTheme(d0)) + '</div>'
     + '<div class="nx-hero-n"><div><b>' + (R.overall === null ? '–' : R.overall + '%') + '</b><small>' + (_nd.view || !nxFillIds().length ? 'Facility readiness' : 'My readiness') + '</small></div><i></i>'
     + (gain !== null ? '<div><b class="acc">' + (gain >= 0 ? '+' : '') + gain + '</b><small>since baseline</small></div>' : '<div><b>' + R.n + '</b><small>of ' + R.of + ' assessed</small></div>') + '</div></div>'
     + '<div class="nx-ring">' + nxRing(my, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + my + '%</b><small>Facility ' + (F.overall === null ? '–' : F.overall + '%') + '</small></span></div></div>' + cta + '</div>';
-  // closing date and team status
-  if (day <= n) h += '<div class="nx-ban o"><b>Programme closes on ' + ndEsc(nxLongDate(nxDateOf(n))) + '</b><span>Finish any missing cards and comparisons before then.</span></div>';
+  // Step 3: programme end (readiness week, graduation result, catch-up); HealSol / District: the programme block
+  if (_nd.view) h += ndGradAdminHTML();
+  h += ndGradTodayHTML();
+  if (day <= n && day < ndShape().e1) h += '<div class="nx-ban o"><b>Graduation on Day ' + n + ' · ' + ndEsc(nxLongDate(nxDateOf(n))) + '</b><span>Finish any missing cards and comparisons as you go — the end-line starts on Day ' + ndShape().e1 + '.</span></div>';
   if (!_nd.view && nxFillIds().length) {
     var ts = nxTeamOnTime(), late = t.late.length, chips = [];
     if (ts !== null) chips.push('<span class="nx-chip ' + (ts >= 80 ? 'g' : ts >= 60 ? 'a' : 'r') + '">Team: ' + (ts >= 80 ? 'On track' : ts >= 60 ? 'Slightly behind' : 'Behind') + ' · ' + ts + '% cards in</span>');
@@ -22527,7 +22542,7 @@ function ndTodayHTML() {
     if (chips.length) h += '<div class="nx-chips">' + chips.join('') + '</div>';
   }
   if (!_nd.view && !ndFaCan(me)) h += nxJobsHTML(me);
-  if (day > n) return h + '</div>';
+  if (cuD ? day > ndLastDay() : day > n) return h + '</div>';
   if (!_nd.view) h += nxTodoHTML(me, t) + nxTabsHTML(me) + nxMissionsHTML();
   if (_nd.view) h += nxDeptListHTML();
   return h + '</div>';
@@ -22538,7 +22553,7 @@ function nxTheme(day) {   // "Week 4 · Outreach, General Clinic"
   return (ds.length > 2 ? ds.slice(0, 2).join(', ') + ' +' + (ds.length - 2) : ds.join(', '));
 }
 function nxTeamOnTime() {   // of the cards due so far in my departments (yesterday and before), how many came in
-  var me = ndMob(), day = Math.min(ndDay(), _nd.cfg.days + 1), due = 0, inn = 0;
+  var me = ndMob(), day = Math.min(ndDay(), ndLastDay() + 1), due = 0, inn = 0;
   nxFillIds().forEach(function (dept) {
     for (var d = Math.max(1, day - 14); d < day; d++) {
       if (!ndDayInfo(dept, d).ids.length) continue; var cards = ndPc(dept, d);
@@ -22635,7 +22650,7 @@ function nxActCard(id) {
 }
 // team missions: this week's checkpoints Met; this week's actions closed
 function nxMissions() {
-  var day = Math.min(ndDay(), _nd.cfg.days), ws = day - ((day - 1) % 7), we = Math.min(ws + 6, _nd.cfg.days), depts = nxFillIds(), out = [];
+  var day = Math.min(ndDay(), ndLastDay()), ws = day - ((day - 1) % 7), we = Math.min(ws + 6, ndLastDay()), depts = nxFillIds(), out = [];
   if (!depts.length) return out;
   var L = ndLatest(), seen = {}, met = 0, tot = 0;
   depts.forEach(function (dp) { for (var d = ws; d <= we; d++) ndDayInfo(dp, d).ids.forEach(function (id) { if (seen[id]) return; seen[id] = 1; tot++; if (L[id] === 2 && d <= day) met++; }); });
@@ -22653,7 +22668,7 @@ function nxMissionsHTML() {
 }
 // in-charge / viewer: every department's status today
 function nxDeptListHTML() {
-  var day = ndDay(), list = ndMyDepts(); if (day > _nd.cfg.days || !list.length) return '';
+  var day = ndDay(), list = ndMyDepts(); if (day > ndLastDay() || (day > ndShape().eN && day <= 100) || !list.length) return '';   // readiness week: no day cards
   return '<div class="nx-sec"><b>Departments · Day ' + day + '</b><span>' + list.length + '</span></div><div class="nx-card p0 nx-list">' + list.map(function (d) {
     var s = ndDeptStatus(d.id, day), cls = s.k === 'ok' ? 'g' : s.k === 'back' ? 'r' : s.k === 'done' ? 'b' : 'a';
     return '<button type="button" class="nx-li nd-dept-row" onclick="ndOpenDept(\'' + d.id + '\',' + day + ')"><i class="ti ' + (s.k === 'ok' ? 'ti-shield-check' : s.k === 'done' ? 'ti-clock' : 'ti-clipboard-list') + ' ' + cls + '"></i><span><b>' + ndEsc(d.name) + '</b><small>' + ndDayIds(d.id, day).length + ' checkpoints · checker ' + ndEsc(nxFirst(ndChecker(d.id)) || '—') + '</small></span><span class="nx-chip ' + cls + '">' + ndEsc(s.t) + '</span></button>';
@@ -22689,21 +22704,23 @@ function ndRemindHTML() {
 
 // ═══ CARDS › Daily card ═══
 function nxCardsHead() {
-  var today = Math.min(ndDay(), _nd.cfg.days), cv = _nd.cv || 'day';
+  var today = Math.min(ndDay(), ndLastDay()), cv = _nd.cv || 'day';
   return '<div class="nx-ph"><div class="nx-ph-in"><div class="nx-ph-r"><h1>Cards</h1><span class="nd-qb" id="nd-q" hidden></span>'
-    + ndLangSeg() + '<span class="nx-chip t">' + ndEsc(nxPkgLabel()) + '</span><span class="nx-chip o">Day ' + Math.max(today, 0) + '</span></div>'
+    + ndLangSeg() + '<span class="nx-chip t">' + ndEsc(nxPkgLabel()) + '</span><span class="nx-chip o">' + (today > 100 ? 'Catch-up · day ' + (today - 100) : 'Day ' + Math.max(today, 0)) + '</span></div>'
     + '<div class="nx-ul"><button type="button" class="' + (cv === 'day' ? 'on' : '') + '" onclick="ndCv(\'day\')">Daily Cards</button><button type="button" class="' + (cv === 'timeline' ? 'on' : '') + '" onclick="ndCv(\'timeline\')">Timeline</button></div></div></div>';
 }
 function ndCardsHTML() {
   var today = ndDay(), n = _nd.cfg.days;
   if (!_nd.fac.startDate || today < 1) return ndTodayHTML();
-  if (!_nd.cday) _nd.cday = Math.min(today, n);
+  if (!_nd.cday) _nd.cday = Math.min(today, ndLastDay());
   var day = _nd.cday, cv = _nd.cv || 'day', h = nxCardsHead() + '<div class="nx">';
   if (cv === 'timeline') return h + ndTimelineHTML() + '</div>';
+  var cuOn = ndCuStarted(), seg = cuOn ? (day > 100 ? 'cu' : 'prog') : 'prog', d1 = seg === 'cu' ? 101 : 1, dN = seg === 'cu' ? ndLastDay() : n;   // Step 3: catch-up days
+  if (cuOn) h += '<div class="nx-seg ng-seg"><button type="button" class="' + (seg === 'prog' ? 'on' : '') + '" onclick="_nd.cday=' + n + ';ndRender()">Programme · ' + n + ' days</button><button type="button" class="' + (seg === 'cu' ? 'on' : '') + '" onclick="_nd.cday=' + Math.min(today, ndLastDay()) + ';ndRender()">Catch-up · ' + ND_GRAD.cuDays + ' days</button></div>';
   h += '<div class="nx-strip" id="nd-ds">';
-  for (var d = 1; d <= n; d++) {
+  for (var d = d1; d <= dN; d++) {
     var st = _nd.view ? nxFacSt(d) : ndDaySt(d), can = d <= today;
-    h += '<button type="button" class="nx-d ds-day ' + st + (d === day ? ' sel' : '') + '" title="Day ' + d + ' · ' + ndEsc(nxLongDate(nxDateOf(d))) + ' · ' + ndEsc(ND_ST[st].t) + '"' + (can ? ' onclick="ndOpenDay(' + d + ')"' : ' disabled') + '><small>' + ndEsc(nxWd(d)) + '</small><b>' + d + '</b></button>';
+    h += '<button type="button" class="nx-d ds-day ' + st + (d === day ? ' sel' : '') + '" title="' + (d > 100 ? 'Catch-up day ' + (d - 100) : 'Day ' + d) + ' · ' + ndEsc(nxLongDate(nxDateOf(d))) + ' · ' + ndEsc(ND_ST[st].t) + '"' + (can ? ' onclick="ndOpenDay(' + d + ')"' : ' disabled') + '><small>' + ndEsc(nxWd(d)) + '</small><b>' + (d > 100 ? d - 100 : d) + '</b></button>';
   }
   h += '</div><div class="nx-leg"><span><i class="g">●</i> Checked</span><span><i class="a">●</i> Waiting for the check</span><span><i class="r">●</i> Missed — still open</span></div>';
   var depts = ndCardDepts(day);
@@ -22712,9 +22729,9 @@ function ndCardsHTML() {
   var me = ndMob(), fillD = depts.filter(function (x) { return !_nd.view && ndFills(x.id, me); }), sc = 0, tot = 0;
   fillD.forEach(function (x) { var c = ndPc(x.id, day)[me] || {}, ids = ndMyIds(x.id, day, me); tot += ids.length; sc += ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length; });
   var info = ndDayInfo(_nd.cdept, day), cur = ndDeptDef(_nd.cdept);
-  h += '<div class="nx-ban b"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:13.5px">' + ndEsc(ND_PHASE[info.phase] || ndWeekLabel(day)) + ' · Day ' + day + ' · ' + ndEsc(cur.name) + '</b>' + (tot ? '<b style="font-size:12.5px">' + sc + '/' + tot + '</b>' : '') + '</div>'
+  h += '<div class="nx-ban b"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:13.5px">' + ndEsc(ND_PHASE[info.phase] || ndWeekLabel(day)) + ' · ' + (day > 100 ? 'Catch-up day ' + (day - 100) : 'Day ' + day) + ' · ' + ndEsc(cur.name) + '</b>' + (tot ? '<b style="font-size:12.5px">' + sc + '/' + tot + '</b>' : '') + '</div>'
     + (tot ? '<span class="nx-bar b"><span style="width:' + Math.round(100 * sc / tot) + '%"></span></span>' : '')
-    + '<span style="font-size:11.5px;color:#1E3A8A">' + (day === Math.min(today, n) ? 'Today' : 'Day ' + day) + ': ' + depts.length + ' department' + (depts.length > 1 ? 's' : '') + (fillD.length ? ' for your role' : '') + ' · ' + ndEsc(depts.map(function (x) { return x.id; }).join(', ')) + '</span></div>';
+    + '<span style="font-size:11.5px;color:#1E3A8A">' + (day === Math.min(today, ndLastDay()) ? 'Today' : day > 100 ? 'Catch-up day ' + (day - 100) : 'Day ' + day) + ': ' + depts.length + ' department' + (depts.length > 1 ? 's' : '') + (fillD.length ? ' for your role' : '') + ' · ' + ndEsc(depts.map(function (x) { return x.id; }).join(', ')) + '</span></div>';
   if (depts.length > 1) h += '<div class="nx-pills">' + depts.map(function (x) {
     var lab = x.name; if (!_nd.view && ndFills(x.id, me)) { var c = ndPc(x.id, day)[me] || {}, ids = ndMyIds(x.id, day, me); lab += ' · ' + ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length + '/' + ids.length; } else if (!_nd.view && ndCanCheck(x.id, me)) lab += ' · compare';
     return '<button type="button" class="nx-pill' + (x.id === _nd.cdept ? ' on' : '') + '" onclick="_nd.cdept=\'' + x.id + '\';ndRender()">' + ndEsc(lab) + '</button>';
@@ -22725,7 +22742,7 @@ function ndDayCardHTML(dept, day) {
   var me = ndMob(), today = ndDay(), d = ndDeptDef(dept), info = ndDayInfo(dept, day), ids = ndDayIds(dept, day), res = ndRes(dept, day);
   if (!_nd.view && ndFills(dept, me)) { var mine = ndMyIds(dept, day, me); if (mine.length) ids = mine; }   // best filled by: my checkpoints only
   var fills = !_nd.view && ndFills(dept, me) && ndMyIds(dept, day, me).length > 0, c = fills ? (ndPc(dept, day)[me] || {}) : {}, s = c.s || {}, rs = c.r || {}, nt = c.note || {};
-  var locked = !fills || !!res.chk || day > today, n = ids.filter(function (i) { return s[i] !== undefined; }).length, st = ndMySt(dept, day);
+  var locked = !fills || !!res.chk || day > today || ndGradLocked(day), n = ids.filter(function (i) { return s[i] !== undefined; }).length, st = ndMySt(dept, day);
   var aocs = [], stds = []; ids.forEach(function (id) { var r = _nd.byId[id]; if (!r) return; if (aocs.indexOf(r[2]) < 0) aocs.push(r[2]); if (stds.indexOf(r[3]) < 0) stds.push(r[3]); });
   var lead = ndLead(dept), ck = ndChecker(dept), myRole = nxRoleOf(me);
   var h = '<div class="nx-dc"><div class="nx-dc-hd"><div class="nx-dn"><small>DAY</small><b>' + day + '</b></div><div><b>' + ndEsc(d.name) + '</b><small>' + ndEsc((nxWd(day) ? nxWd(day) + ', ' : '') + ndShortDate(nxDateOf(day))) + (lead ? ' · lead: ' + ndEsc(ndName(lead)) + ' (' + ndEsc(nxRoleOf(lead)) + ')' : '') + '</small></div></div>'
@@ -22902,11 +22919,8 @@ function ndMeHTML() {
     return '<span class="nx-chip' + (ndFills(d.id, me) ? ' t' : '') + '">' + ndEsc(lab) + '</span>'; }).join('') : '<span class="nx-dim">None yet — the ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you in Set-up.</span>') + '</div></div>';
   if (fillIds.length) {
     h += '<div class="nx-card"><b>My impact</b><div class="nx-stat c3" style="gap:4px"><div style="border:0;padding:4px"><b style="color:#135A55">' + I.checked + '</b><small>checked</small></div><div style="border:0;padding:4px"><b style="color:#166534">' + I.fixed + '</b><small>gaps fixed</small></div><div style="border:0;padding:4px"><b style="color:#9A5A12">' + (I.onTime === null ? '–' : I.onTime + '%') + '</b><small>days on time</small></div></div></div>';
-    var E = ndDay() >= ndShape().e1 ? nxReady(fillIds, 999, ndShape().e1) : null;
-    var crit = [['Baseline cards complete', nxBaselineDone()], ['At least 80% of days on time', I.onTime !== null && I.onTime >= 80 && ndDay() > ndShape().bN], ['All your actions closed', I.open === 0 && I.fixed > 0], ['Endline readiness 70%+', !!(E && E.overall !== null && E.overall >= 70)]];
-    h += '<div class="nx-card nx-cert"><div style="display:flex;gap:10px;align-items:center"><i class="ti ti-award" style="font-size:26px;color:#E8963A"></i><b style="font-size:14px;flex:1">Certificate of Achievement</b><span style="font-size:11px;font-weight:700;color:#9A5A12">' + crit.filter(function (c) { return c[1]; }).length + ' of ' + crit.length + '</span></div>'
-      + crit.map(function (c) { return '<div class="nx-ck' + (c[1] ? ' on' : '') + '"><i>●</i>' + ndEsc(c[0]) + '</div>'; }).join('') + '</div>';
   }
+  h += ndCertCardHTML();   // Step 3: the real certificate (issueCertificate)
   var help = ''; try { if (typeof nfSupportOn === 'function' && nfSupportOn()) help = '<button type="button" class="nx-btn sm" style="background:#16A34A" onclick="nfOpenSupport(\'me\')">Chat</button>'; } catch (e) {}
   h += '<div class="nx-card" style="flex-direction:row;align-items:center;gap:12px"><i class="ti ti-message" style="width:40px;height:40px;border-radius:12px;background:#DCFCE7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none"></i><span style="flex:1;display:flex;flex-direction:column"><b style="font-size:13.5px">Need help?</b><small class="nx-dim">' + (help ? 'WhatsApp HealSol support' : 'Ask your ' + ndEsc(_nd.cfg.inChargeLabel) + ' or HealSol Academy') + '</small></span>' + help + '</div>';
   var mi = function (icon, t, js, em, cls) { return '<button type="button" class="nx-mi' + (cls ? ' ' + cls : '') + '" onclick="' + js + '"><i class="ti ' + icon + '"></i><span>' + t + '</span>' + (em ? '<em>' + em + '</em>' : '') + '</button>'; };
@@ -23173,7 +23187,7 @@ function ndNavHTML() {
 }
 function ndFab() {
   var me = ndMob(), day = ndDay(); if (!_nd.fac.startDate || day < 1) { ndTab('today'); return; }
-  var t = ndTodo(me); if (t.fill.length) ndGoCard(t.fill[0].id, day); else if (t.late.length) ndGoCard(t.late[0].dept, t.late[0].day); else { _nd.cday = Math.min(day, _nd.cfg.days); ndTab('cards'); }
+  var t = ndTodo(me); if (t.fill.length) ndGoCard(t.fill[0].id, day); else if (t.late.length) ndGoCard(t.late[0].dept, t.late[0].day); else { _nd.cday = Math.min(day, ndLastDay()); ndTab('cards'); }
 }
 
 // ═══ FACILITY DASHBOARD (UPHC Coordinator · MO in-charge) — own header and menu like the SC facility dashboard ═══
@@ -23225,6 +23239,7 @@ function nxFaHomeHTML() {
     + '<div class="nx-hero-n"><div><b class="acc">' + (B.overall === null ? '–' : B.overall + '%') + '</b><small>Baseline</small></div><i></i><div><b>' + (gain === null ? '–' : (gain >= 0 ? '+' : '') + gain) + '</b><small>Growth</small></div><i></i><div><b>' + R.n + '<small style="font-size:13px;opacity:.8">/' + R.of + '</small></b><small>Checkpoints</small></div></div>'
     + '<div class="nx-fa-nq">' + nq + '</div>'
     + (_nd.fac.startDate ? '<button type="button" class="nx-cta" onclick="ndFaTab(\'ready\')">Open readiness</button>' : '<div class="nx-card" style="color:#0F172A"><b>Set the programme start date</b><span class="nx-dim">All departments start the baseline together on this date (Day 1).</span>' + ndStartForm() + '</div>') + '</div>';
+  h += ndGradTodayHTML();   // Step 3: readiness week / graduation result / catch-up
   var items = nxFaItems();
   h += '<div class="nx-sec"><b>Needs your attention</b>' + (items.length ? '<span class="nx-dim">' + items.length + '</span>' : '') + '</div>';
   h += items.length ? '<div class="nx-card p0 nx-list">' + items.map(function (x) { return nxLi(x.ic, x.cls === 'v' ? 'b' : x.cls, x.t, x.s, x.go); }).join('') + '</div>'
@@ -24442,7 +24457,7 @@ function nmPubHTML() {
 //   • HealSol Overview / Reports compute it live for each department-core facility (dept/admin.js).
 //   • The nightly summary (functions/summary.js) opens this page on the server and calls nfDeptSumAsync() → sc_summary/fac/{code}.
 // Record: {v, type, code, name, state, district, block, staff, startDate, day, days, phase, pct, base, assessed, total, meets,
-//   byAoc, byStd, byDept, noAct, acts:{open, od, fixed, sup, closed}, checksDue, master, suspended, sub, demo, at}
+//   byAoc, byStd, byDept, noAct, acts:{open, od, fixed, sup, closed}, checksDue, master, suspended, sub, demo, at, grad, catchup, nhsrc, laqshya, musqan}
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════
 var ND_SUM_VER = 1;
 function nfDeptSumFacility(st) {   // synchronous; st = {code, fac, cl (checklist data), live (published master or null), pcards, dcards, actions, today}
@@ -24465,9 +24480,13 @@ function nfDeptSumFacility(st) {   // synchronous; st = {code, fac, cl (checklis
     if (day) ndDeptDefs().forEach(function (d) { for (var n = 1; n <= Math.min(day, S.days); n++) { if (ndRes(d.id, n).chk) continue; var c = ndPc(d.id, n); if (Object.keys(c).some(function (m) { return c[m] && c[m].done; }) && !ndSoloDone(d.id, n)) checksDue++; } });
     var staff = Object.keys(f.staff || {}).filter(function (m) { return f.staff[m] && !f.staff[m].disabled; }).length;
     return JSON.parse(JSON.stringify({ v: ND_SUM_VER, type: T, code: st.code, name: f.name || st.code, state: f.state || '', district: f.district || '', block: f.block || '',
-      staff: staff, startDate: f.startDate || null, day: day, days: S.days, phase: !day || day < 1 ? 'notstarted' : day > S.days ? 'complete' : 'running',
+      staff: staff, startDate: f.startDate || null, day: day, days: S.days, phase: !day || day < 1 ? 'notstarted' : f.catchup && f.catchup.on && !f.catchup.done ? 'catchup' : f.graduation || day > S.days ? 'complete' : 'running',
       pct: R.overall, base: B.n ? B.overall : null, assessed: R.n || 0, total: R.of || 0, meets: !!R.meets, byAoc: byAoc, byStd: byStd, byDept: byDept,
-      noAct: noAct, acts: acts, checksDue: checksDue, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString() }));
+      noAct: noAct, acts: acts, checksDue: checksDue, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
+      // Step 3: graduation, catch-up, certification records (roll-ups count graduated / ready / almost / notyet / catch-up / certified)
+      grad: f.graduation ? { result: f.graduation.result, overall: f.graduation.overall, base: f.graduation.base, round: f.graduation.round || 0, at: f.graduation.at || null, deptFails: f.graduation.deptFails || [] } : null,
+      catchup: f.catchup && f.catchup.on ? { round: f.catchup.round || 1, start: f.catchup.start || null, end: f.catchup.end || null, done: !!f.catchup.done, depts: f.catchup.depts || [] } : null,
+      nhsrc: f.nhsrc ? { status: f.nhsrc.status || '' } : null, laqshya: f.laqshya ? { status: f.laqshya.status || '' } : null, musqan: f.musqan ? { status: f.musqan.status || '' } : null }));
   } finally { _nd = keep; }
 }
 // the server's entry: loads the type's checklist from this page, then works it out
@@ -24615,6 +24634,540 @@ async function nfDeptReport() {
   if (typeof nfAdminApply !== 'function') return;
   var oA = nfAdminApply; nfAdminApply = function () { try { nfEnsureDeptReportCard(); } catch (e) {} return oA.apply(this, arguments); };
 })();
+</script>
+<style id="nf-dept-grad-css">/* Step 3 (20 Oct 2026): readiness week, end-line check, final team review, graduation result, HealSol programme block, certificate */
+#nf-dept-app .ng-row{display:flex;align-items:center;gap:8px;}
+#nf-dept-app .ng-pad{padding:12px 14px;}
+#nf-dept-app .ng-k{color:#1E6B5E;font-size:13.5px;}
+#nf-dept-app .ng-txt{font-size:12.5px;color:#475569;line-height:1.45;margin-top:6px;}
+#nf-dept-app .ng-wide{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;box-sizing:border-box;}
+#nf-dept-app a.nx-btn.ghost{color:#134A41;}
+#nf-dept-app .ng-ring{position:relative;width:64px;height:64px;flex:none;}
+#nf-dept-app .ng-ring>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#0F172A;}
+/* readiness week band */
+#nf-dept-app .ng-rw{background:#134A41;color:#fff;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;}
+#nf-dept-app .ng-rw>small{font-size:11.5px;letter-spacing:.06em;opacity:.85;}
+#nf-dept-app .ng-rw>b{font-size:17px;}
+#nf-dept-app .ng-ph{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:11.5px;}
+#nf-dept-app .ng-ph li{background:rgba(255,255,255,.14);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:2px;}
+#nf-dept-app .ng-ph li.on{background:#fff;color:#134A41;}
+#nf-dept-app .ng-ph li span{font-weight:400;line-height:1.3;}
+/* department rows */
+#nf-dept-app .ng-dl{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid #F0F4F2;}
+#nf-dept-app .ng-dl>span{flex:1;min-width:0;display:flex;flex-direction:column;}
+#nf-dept-app .ng-dl>span b{font-size:13.5px;color:#0F172A;}
+#nf-dept-app .ng-dl>span small{font-size:12px;color:#64748B;}
+#nf-dept-app .ng-dot{width:10px;height:10px;border-radius:50%;flex:none;background:#D97706;}
+#nf-dept-app .ng-dot.r{background:#C2410C;}
+#nf-dept-app .ng-lnk{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 6px;font-size:13px;font-weight:700;color:#1E6B5E;text-decoration:none;background:none;border:0;}
+#nf-dept-app .ng-go{min-height:40px;padding:0 14px;border-radius:10px;border:0;background:#1E6B5E;color:#fff;font-size:13px;font-weight:700;flex:none;}
+#nf-dept-app .ng-go.ghost{background:#fff;color:#134A41;border:1px solid #C9D6D2;}
+#nf-dept-app .ng-day{width:44px;height:46px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;background:#FDF1DC;color:#7A4A04;}
+#nf-dept-app .ng-day.r{background:#FDE8E8;color:#9B1C1C;}
+#nf-dept-app .ng-day small{font-size:9px;letter-spacing:.08em;}
+#nf-dept-app .ng-day b{font-size:16px;line-height:1;}
+#nf-dept-app .ng-chips{display:flex;flex-wrap:wrap;gap:6px;}
+#nf-dept-app .ng-chips span,#nf-dept-app .ng-ok{background:#DDF3E6;color:#0F5132;font-size:12.5px;font-weight:700;border-radius:8px;padding:6px 10px;}
+#nf-dept-app .ng-chips .ng-bad{background:#FDE8E8;color:#9B1C1C;}
+#nf-dept-app .ng-chips .ng-mid{background:#FDF1DC;color:#7A4A04;}
+#nf-dept-app .ng-ul{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.6;color:#1E293B;}
+/* scores */
+#nf-dept-app .ng-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center;}
+#nf-dept-app .ng-3>div{background:#F4F7F6;border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;}
+#nf-dept-app .nx-card.ng-3>div{background:none;padding:0;}
+#nf-dept-app .ng-3 small{font-size:11.5px;color:#64748B;}
+#nf-dept-app .ng-3 b{font-size:19px;color:#0F172A;}
+#nf-dept-app .ng-3 b.t{color:#1E6B5E;} #nf-dept-app .ng-3 b.g{color:#0F5132;}
+#nf-dept-app .ng-bars{display:flex;flex-direction:column;gap:8px;font-size:13px;}
+#nf-dept-app .ng-bar{display:grid;grid-template-columns:minmax(0,118px) minmax(0,1fr) 42px;gap:8px;align-items:center;}
+#nf-dept-app .ng-bar>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#nf-dept-app .ng-bar>i{position:relative;height:8px;background:#EAF0EE;border-radius:99px;}
+#nf-dept-app .ng-bar>i em{display:block;height:100%;background:#1E6B5E;border-radius:99px;}
+#nf-dept-app .ng-bar>i em.r{background:#C2410C;}
+#nf-dept-app .ng-bar>i u{position:absolute;top:-3px;width:2px;height:14px;background:#0F172A;}
+#nf-dept-app .ng-bar>b{text-align:right;} #nf-dept-app .ng-bar>b.r{color:#9B1C1C;}
+#nf-dept-app .ng-aoc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;font-size:12.5px;text-align:center;}
+#nf-dept-app .ng-aoc span{border-radius:8px;padding:6px 0;background:#DDF3E6;color:#0F5132;}
+#nf-dept-app .ng-aoc span.r{background:#FDE8E8;color:#9B1C1C;}
+/* result */
+#nf-dept-app .ng-res{flex-direction:row;align-items:center;gap:12px;text-align:left;width:100%;cursor:pointer;font:inherit;color:inherit;}
+#nf-dept-app .ng-res>span>small{display:block;font-size:12px;color:#64748B;}
+#nf-dept-app .ng-res>span>b{display:block;font-size:17px;}
+#nf-dept-app .ng-res.a>span>b{color:#7A4A04;} #nf-dept-app .ng-res.g>span>b{color:#0F5132;} #nf-dept-app .ng-res.r>span>b{color:#9B1C1C;}
+#nf-dept-app .ng-ic{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;font-size:22px;background:#E3F1ED;color:#134A41;}
+#nf-dept-app .a>.ng-ic{background:#FDF1DC;color:#7A4A04;} #nf-dept-app .g>.ng-ic{background:#DDF3E6;color:#0F5132;} #nf-dept-app .r>.ng-ic{background:#FDE8E8;color:#9B1C1C;}
+#nf-dept-app .ng-big{align-items:center;text-align:center;gap:4px;}
+#nf-dept-app .ng-big>.ng-ic{width:56px;height:56px;font-size:28px;}
+#nf-dept-app .ng-big>small{font-size:12px;letter-spacing:.06em;color:#64748B;margin-top:6px;}
+#nf-dept-app .ng-big>b{font-size:24px;}
+#nf-dept-app .ng-big.a>b{color:#7A4A04;} #nf-dept-app .ng-big.g>b{color:#0F5132;} #nf-dept-app .ng-big.r>b{color:#9B1C1C;}
+#nf-dept-app .ng-big>span{font-size:13px;color:#475569;line-height:1.5;}
+#nf-dept-app .ng-big>.ng-3{width:100%;margin-top:10px;}
+#nf-dept-app .ng-crit{list-style:none;margin:0;padding:0 0 4px;}
+#nf-dept-app .ng-crit li{display:flex;gap:10px;align-items:center;padding:8px 14px;font-size:13px;border-top:1px solid #F0F4F2;}
+#nf-dept-app .ng-crit li:first-child{border-top:0;}
+#nf-dept-app .ng-crit li>span{flex:1;display:flex;flex-direction:column;}
+#nf-dept-app .ng-crit li small{font-size:12px;color:#64748B;}
+#nf-dept-app .ng-crit i{font-size:18px;} #nf-dept-app .ng-crit i.g{color:#0F5132;} #nf-dept-app .ng-crit i.r{color:#9B1C1C;} #nf-dept-app .ng-crit i.a{color:#B45309;}
+#nf-dept-app .ng-crit b.r{color:#9B1C1C;}
+#nf-dept-app .ng-progs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px;}
+#nf-dept-app .ng-progs>div{border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px;border:1px solid #BFE3CD;background:#F3FBF6;}
+#nf-dept-app .ng-progs>div.r{border-color:#F3C9C9;background:#FFF6F6;}
+#nf-dept-app .ng-progs small{font-size:12px;color:#475569;}
+#nf-dept-app .ng-progs em{font-style:normal;font-size:12px;font-weight:700;color:#0F5132;} #nf-dept-app .ng-progs .r em{color:#9B1C1C;}
+/* HealSol programme block */
+#nf-dept-app .ng-tl{display:flex;height:30px;border-radius:8px;overflow:hidden;font-size:11px;font-weight:700;}
+#nf-dept-app .ng-tl span{display:flex;align-items:center;justify-content:center;background:#C4DED7;color:#134A41;white-space:nowrap;overflow:hidden;padding:0 4px;}
+#nf-dept-app .ng-tl span:first-child{background:#DCEBE7;} #nf-dept-app .ng-tl span:nth-child(3){background:#A9D0C6;} #nf-dept-app .ng-tl span.on{background:#1E6B5E;color:#fff;}
+#nf-dept-app .ng-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0;}
+#nf-dept-app .ng-kpis>div{background:#F4F7F6;border-radius:12px;padding:10px;display:flex;flex-direction:column;}
+#nf-dept-app .ng-kpis>div.a{background:#FFF8EC;color:#7A4A04;} #nf-dept-app .ng-kpis>div.g{background:#F0FDF4;color:#0F5132;} #nf-dept-app .ng-kpis>div.r{background:#FEF2F2;color:#9B1C1C;}
+#nf-dept-app .ng-kpis small{font-size:12px;opacity:.8;} #nf-dept-app .ng-kpis b{font-size:15px;}
+#nf-dept-app .ng-tbl{overflow-x:auto;}
+#nf-dept-app .ng-tbl table{width:100%;border-collapse:collapse;font-size:13px;}
+#nf-dept-app .ng-tbl th{text-align:left;font-size:12px;color:#64748B;font-weight:600;padding:6px;}
+#nf-dept-app .ng-tbl td{padding:7px 6px;border-top:1px solid #EDF2F0;} #nf-dept-app .ng-tbl td.r{color:#9B1C1C;font-weight:700;}
+#nf-dept-app .ng-seg{margin-bottom:8px;}
+/* certificate card (Me) */
+#nf-dept-app .ng-cert .ng-ch{display:flex;gap:12px;align-items:center;padding:14px;border-bottom:1px solid #EDF2F0;}
+#nf-dept-app .ng-ci{width:44px;height:44px;border-radius:12px;background:#134A41;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;}
+#nf-dept-app .ng-cert .ng-ch b{display:block;font-size:15px;}
+#nf-dept-app .ng-cert .ng-ch small{display:block;font-size:12px;color:#64748B;} #nf-dept-app .ng-cert .ng-ch small.g{color:#0F5132;font-weight:700;}
+#nf-dept-app .ng-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px;}
+#nf-dept-app .ng-cert .nx-btn.ng-wide{margin-top:10px;}
+#nf-dept-app .ng-crit li>b{max-width:48%;text-align:right;}
+#nf-dept-app .ng-dl>span.ng-day{flex:none;}
+#nf-dept-app .ng-dl>.nx-chip{flex:none;}
+#nf-dept-app .nd-main>.nx-card,#nf-dept-app .nd-main>.nx-ban,#nf-dept-app .nd-main>.nx-btn{margin-bottom:10px;}
+#nf-dept-app .ng-tbl td.r{background:none;}
+</style>
+<script id="nf-dept-grad">// ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+// DEPARTMENT CORE — PROGRAMME END (Step 3, HealSol 20 Oct 2026): UPHC / PHC / CHC.  Loaded after dept/summary.js.
+//   Readiness week (Days 57–60; CHC 85–90): the leads finish checking every end-line day (end-line verification), the
+//   in-charge holds the final team review the day before, graduation on the last day.
+//   Graduation (server: graduateFacility) runs by itself when someone opens the facility on the last day with every
+//   end-line day checked, or on the close date (last day + grace) with what is done. Result: NQAS Ready (overall, every
+//   department and every Area of Concern ≥ 70, every Standard ≥ 50) · Almost ready · Not yet ready · Incomplete (end-line
+//   not filled). CHC: LaQshya (Labour Room, Maternity OT) and MusQan (Paediatric OPD, NBSU) shown beside NQAS.
+//   Close date: after it the cards are view-only (once graduated, the days before the end-line too).
+//   Catch-up (HealSol): sc_facilities/{code}/catchup = {on, round, start, end (start + 27), depts:[3 weakest], free, paid, at, by}
+//     card days 101–128: weeks 1–3 the departments' checkpoints, week 4 (122–128) their end-line again; graduation re-runs at the end.
+//   Final team review: sc_facilities/{code}/finalReview = {at, by, byName} (in-charge).
+//   Certificates: see the end of this file (issueCertificate decides).
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+var ND_GRAD = { grace: 7, std: 50, cuDays: 28, cuWork: 21, cuBase: 100 };
+var ND_GRAD_RES = { ready: { t: 'NQAS Ready', c: 'g', ic: 'ti-award' }, almost: { t: 'Almost ready', c: 'a', ic: 'ti-award' }, notyet: { t: 'Not yet ready', c: 'r', ic: 'ti-hourglass' }, incomplete: { t: 'Incomplete', c: 'r', ic: 'ti-alert-triangle' } };
+var ND_CERT_ST = [['ready', 'Ready (not applied yet)'], ['applied', 'Applied'], ['state', 'State assessment done'], ['national', 'National assessment done'], ['certified', 'Certified'], ['notcertified', 'Not certified']];
+var _ndCrit = null;
+async function ndGradLoad() {
+  try { var c = await fbGet('shared/sc_grad_config'); if (c && c.grace != null && !isNaN(+c.grace)) ND_GRAD.grace = +c.grace; } catch (e) {}
+  try { _ndCrit = await fbGet('shared/dept_criteria'); } catch (e) { _ndCrit = null; }
+}
+function ndCrit() {
+  var p = _nd.cfg.passMark || {}, k = _ndCrit || {}, n = function (key, d) { return k[key] != null && !isNaN(+k[key]) ? +k[key] : d; };
+  return { overall: n('overall', p.overall || 70), aoc: n('aoc', p.aoc || 70), dept: n('dept', p.dept || 70), std: n('stdDefault', ND_GRAD.std) };
+}
+function ndProgDay() { return _nd.fac.startDate ? nfDeptDayNo(_nd.fac.startDate) : 0; }   // the programme day by date (not the catch-up day)
+function ndGradDates() {
+  var s = _nd.fac.startDate, S = ndShape(); if (!s) return null;
+  return { last: ndAddDays(s, S.days - 1), close: ndAddDays(s, S.days - 1 + ND_GRAD.grace), lastDay: S.days, closeDay: S.days + ND_GRAD.grace };
+}
+// ── catch-up ──
+function ndCu() { var c = _nd && _nd.fac && _nd.fac.catchup; return c && c.on ? c : null; }
+function ndCuStarted() { var c = ndCu(); return !!(c && c.start && ndToday() >= c.start); }
+function ndCuActive() { var c = ndCu(); return !!(c && !c.done && c.start && c.end && ndToday() >= c.start && ndToday() <= c.end); }
+function ndCuDay() { var c = ndCu(); return c && c.start ? nfDeptDayNo(c.start) : 0; }   // 1 = first catch-up day
+function ndCuDepts() { return ((ndCu() || {}).depts || []).filter(function (d) { return typeof d === 'string'; }); }
+function ndLastDay() { return ndCuStarted() ? ND_GRAD.cuBase + ND_GRAD.cuDays : _nd.cfg.days; }   // the last card day in use
+var _ndCuPlan = {};
+function ndCuDayInfo(dept, day) {
+  var k = day - ND_GRAD.cuBase, out = { phase: k > ND_GRAD.cuWork ? 'recheck' : 'catchup', day: day, week: Math.min(4, Math.ceil(k / 7)), ids: [], base: [] };
+  if (k < 1 || k > ND_GRAD.cuDays || ndCuDepts().indexOf(dept) < 0) return out;
+  var key = dept + '|' + ((ndCu() || {}).round || 1);
+  if (!_ndCuPlan[key]) {
+    var S = ndShape(), plan = ndPlanFor(S.bN)[dept] || [], list = nfDeptPlanIds(plan.slice(0, S.base)), aoc = function (id) { var r = _nd.byId[id]; return r ? r[2] : ''; };
+    _ndCuPlan[key] = { work: nfDeptSplit(list, ND_GRAD.cuWork, aoc), re: nfDeptSplit(list, ND_GRAD.cuDays - ND_GRAD.cuWork, aoc) };
+  }
+  var P = _ndCuPlan[key]; out.ids = (k <= ND_GRAD.cuWork ? P.work[k - 1] : P.re[k - ND_GRAD.cuWork - 1]) || [];
+  return out;
+}
+// ── close date: cards become view-only ──
+function ndGradLocked(day) {
+  var D = ndGradDates(); if (!D) return false; var t = ndToday();
+  if (day > ND_GRAD.cuBase) { var c = ndCu(); return !c || !!c.done || !c.end || t < c.start || t > ndAddDays(c.end, ND_GRAD.grace); }
+  if (t > D.close) return true;
+  return !!_nd.fac.graduation && day < ndShape().e1;
+}
+function ndGradLockMsg() { var D = ndGradDates() || {}; ndToast('The programme has closed' + (D.close ? ' (' + ndShortDate(D.close) + ')' : '') + ' — these cards are view-only now.', 'err'); }
+(function () {
+  var oPut = ndPut;
+  ndPut = function (up) {
+    var bad = Object.keys(up || {}).some(function (p) { var m = /^sc_[pd]cards\/[^/]+\/[^/]+\/day_(\d+)/.exec(p); return !!m && ndGradLocked(+m[1]); });
+    if (bad) { ndGradLockMsg(); return Promise.resolve(false); }
+    return oPut.apply(this, arguments);
+  };
+})();
+
+// ── end-line status per department: every end-line day filled (a card in) and checked (lead's check, or one filler) ──
+function ndEndStat(cuOnly) {
+  var S = ndShape(), out = { list: [], all: 0, done: 0, filled: 0, notVer: [] }, first = S.e1, last = S.eN, depts = ndDeptDefs();
+  if (cuOnly) { first = ND_GRAD.cuBase + ND_GRAD.cuWork + 1; last = ND_GRAD.cuBase + ND_GRAD.cuDays; depts = depts.filter(function (d) { return ndCuDepts().indexOf(d.id) >= 0; }); }
+  depts.forEach(function (d) {
+    var e = { id: d.id, name: d.name, lead: ndLead(d.id), checker: ndChecker(d.id), days: [], tot: 0, chk: 0, filled: 0 };
+    for (var n = first; n <= last; n++) {
+      if (!ndDayInfo(d.id, n).ids.length) continue;
+      var inn = ndCardsIn(d.id, n), c = !!ndRes(d.id, n).chk || ndSoloDone(d.id, n), st = c ? 'chk' : !inn.done.length ? 'none' : inn.waiting.length ? 'part' : 'ready';
+      e.tot++; if (c) e.chk++; if (c || inn.done.length) e.filled++;
+      e.days.push({ day: n, st: st, inn: inn });
+    }
+    e.ok = e.tot > 0 && e.chk === e.tot; e.full = e.filled === e.tot;
+    out.list.push(e); if (e.tot) { out.all++; if (e.ok) out.done++; else out.notVer.push(d.id); if (e.full) out.filled++; }
+  });
+  out.complete = out.all > 0 && out.done === out.all; out.endlineDone = out.all > 0 && out.filled === out.all;
+  return out;
+}
+// ── scores (the same numbers as every dashboard) and the result by the same rule as the server ──
+function ndGradScores() {
+  var S = ndShape(), deps = ndDeptDefs().map(function (d) { return d.id; }), pass = ndCrit().overall, L = ndLatest();
+  var R = nfDeptReadiness(_nd.cl.items, L, { pass: pass, depts: deps }), B = nfDeptReadiness(_nd.cl.items, ndLatest(S.bN), { pass: pass, depts: deps });
+  var std = {}; _nd.cl.items.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]]; if (v === undefined || v === null || v === '') return; var x = std[r[3]] = std[r[3]] || { g: 0, m: 0 }; x.g += +v; x.m += 2; });
+  var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k)) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
+  var byAoc = {}; Object.keys(R.byAoc || {}).forEach(function (a) { if (/^[A-H]$/.test(a) && R.byAoc[a].pct !== null) byAoc[a] = R.byAoc[a].pct; });
+  var byDept = {}; Object.keys(R.byDept || {}).forEach(function (d) { if (R.byDept[d].pct !== null) byDept[d] = R.byDept[d].pct; });
+  var bDept = {}; Object.keys(B.byDept || {}).forEach(function (d) { if (B.byDept[d].pct !== null) bDept[d] = B.byDept[d].pct; });
+  var F = ndLatestFinal(), A = _nd.actions || {}, gaps = Object.keys(F).filter(function (id) { return F[id].s < 2; });
+  var open = {}; Object.keys(A).forEach(function (id) { var a = A[id]; if (a && a.status !== 'closed') open[a.dept] = (open[a.dept] || 0) + 1; });
+  return { overall: R.overall, base: B.n ? B.overall : null, byAoc: byAoc, byStd: byStd, byDept: byDept, baseDept: bDept, openGaps: gaps.length, openByDept: open, n: R.n, of: R.of };
+}
+function ndGradRule(sc, endlineDone) {
+  var C = ndCrit(), f = function (o, m) { return Object.keys(o || {}).filter(function (k) { return o[k] < m; }).sort(); };
+  var deptFails = f(sc.byDept, C.dept), aocFails = f(sc.byAoc, C.aoc), stdFails = f(sc.byStd, C.std), ok = sc.overall !== null && sc.overall >= C.overall;
+  return { result: !endlineDone ? 'incomplete' : ok && !deptFails.length && !aocFails.length && !stdFails.length ? 'ready' : ok ? 'almost' : 'notyet', deptFails: deptFails, aocFails: aocFails, stdFails: stdFails, crit: C };
+}
+function ndProgs(byDept) {   // CHC: LaQshya / MusQan from the departments' prog setting
+  var C = ndCrit(), out = {};
+  ndDeptDefs().forEach(function (d) { var p = ndDeptDef(d.id).prog; if (!p || byDept[d.id] == null) return; var x = out[p] = out[p] || { ok: true, byDept: {} }; x.byDept[d.id] = byDept[d.id]; if (byDept[d.id] < C.dept) x.ok = false; });
+  return out;
+}
+// ── graduation: runs by itself (anyone who opens the facility) ──
+var _ndGradTried = {};
+async function ndGradMaybe() {
+  try {
+    if (!_nd || !_nd.fac || !_nd.fac.startDate) return null;
+    var D = ndGradDates(), day = ndProgDay(), g = _nd.fac.graduation, cu = ndCu(), t = ndToday(); if (day < D.lastDay) return null;
+    var cuDue = !!(g && cu && !cu.done && (+cu.round || 1) > (+g.round || 0) && cu.end && t >= cu.end);
+    if (g && !cuDue) return null;
+    if (_ndGradTried[_nd.code] && Date.now() - _ndGradTried[_nd.code] < 600000) return null;
+    var E = ndEndStat(cuDue);
+    if (cuDue) { if (t === cu.end && !E.complete) return null; }
+    else if (!E.complete && day < D.closeDay) return null;
+    _ndGradTried[_nd.code] = Date.now();
+    var sc = ndGradScores(); if (sc.overall === null) return null;
+    var r = await nfCall('graduateFacility', { code: _nd.code, complete: E.complete, endlineDone: E.endlineDone, verified: E.complete, notVerified: E.notVer, openGaps: sc.openGaps,
+      scores: { overall: sc.overall, base: sc.base, byAoc: sc.byAoc, byStd: sc.byStd, byDept: sc.byDept } });
+    if (r && r.graduation) {
+      _nd.fac.graduation = r.graduation; _nd.fac.phase = 'complete'; if (cu && r.graduation.round) cu.done = true;
+      if (!r.already) ndToast('Graduation result: ' + (ND_GRAD_RES[r.graduation.result] || {}).t + ' · ' + r.graduation.overall + '%', 'ok');
+      ndRender(); return r.graduation;
+    }
+  } catch (e) { console.warn('[dept] graduation', e && e.message); }
+  return null;
+}
+
+// ── screens ──
+function ndGradOpen(s, dept) { _nd.screen = s; if (dept) _nd.endDept = dept; _nd.card = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndGradClose() { _nd.screen = null; ndRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function ndGradIsOver(mob) { return !!_nd.view || ndIsInCharge(mob) || ndSeesAll(mob); }   // sees every department's end-line
+function ndGradRemindLink(e) {
+  var who = e.checker || e.lead, nm = nxFirst(who), left = e.tot - e.chk;
+  return who && who !== ndMob() ? ndWaLink(who, 'Namaste ' + nm + ', ' + left + ' end-line day' + (left > 1 ? 's' : '') + ' of ' + e.name + ' still need your check in NQAS | FAST. Please finish by Day ' + (ndShape().rN - 2) + ' so that ' + (_nd.fac.name || 'our facility') + ' can graduate on Day ' + ndShape().days + '.') : '';
+}
+function ndGradPhaseStrip() {
+  var S = ndShape(), day = ndProgDay(), r = S.ready, D = ndGradDates();
+  var cell = function (on, t, s) { return '<li class="' + (on ? 'on' : '') + '"><b>' + ndEsc(t) + '</b><span>' + ndEsc(s) + '</span></li>'; };
+  return '<ol class="ng-ph">' + cell(day <= S.rN - 2, 'Days ' + S.r1 + '–' + (S.rN - 2), 'Leads check end-line cards') + cell(day === S.rN - 1, 'Day ' + (S.rN - 1), 'Final team review')
+    + cell(day >= S.rN, 'Day ' + S.rN + ' · ' + ndShortDate(D.last), 'Graduation') + '</ol>';
+}
+function ndGradPreviewHTML() {
+  var sc = ndGradScores(), E = ndEndStat(), R = ndGradRule(sc, true), res = ND_GRAD_RES[R.result], why = [];
+  R.deptFails.forEach(function (d) { why.push('<b>' + ndEsc(ndDeptDef(d).name) + ' ' + sc.byDept[d] + '%</b>'); });
+  R.aocFails.forEach(function (a) { why.push('Area of Concern <b>' + a + ' ' + sc.byAoc[a] + '%</b>'); });
+  var txt = sc.overall === null ? 'Scores appear once the end-line cards are in.' : R.result === 'ready' ? 'Overall ' + sc.overall + '% and every department and Area of Concern at ' + R.crit.dept + '% or more.'
+    : R.result === 'almost' ? 'Overall is ' + R.crit.overall + '% or more, but ' + (why.length ? why.slice(0, 3).join(' and ') + ' ' + (why.length > 1 ? 'are' : 'is') + ' below ' + R.crit.dept + '%' : 'a Standard is below ' + R.crit.std + '%') + '.'
+    : 'Overall ' + sc.overall + '% — needs ' + R.crit.overall + '%.';
+  return '<div class="nx-card"><div class="ng-row"><b style="flex:1">If we graduated today</b><small class="nx-dim">from checked cards</small></div><div class="ng-row" style="gap:12px">'
+    + '<div class="ng-ring">' + nxRing(sc.overall || 0, 64, 7, '#1E6B5E', '#EAF0EE') + '<span>' + (sc.overall === null ? '–' : sc.overall + '%') + '</span></div>'
+    + '<div style="flex:1"><span class="nx-chip ' + res.c + '">' + ndEsc(res.t) + '</span><div class="ng-txt">' + txt + '</div>' + (E.complete ? '' : '<div class="ng-txt nx-dim">' + (E.all - E.done) + ' department' + (E.all - E.done > 1 ? 's' : '') + ' still to check.</div>') + '</div></div></div>';
+}
+// the card on Today / the Facility dashboard
+function ndGradTodayHTML() {
+  if (!_nd.fac.startDate) return '';
+  var me = ndMob(), S = ndShape(), day = ndProgDay(), D = ndGradDates(), g = _nd.fac.graduation, cu = ndCu(), over = ndGradIsOver(me), h = '';
+  if (cu && cu.start && !cu.done) {
+    var k = ndCuDay(), names = ndCuDepts().map(function (d) { return ndDeptDef(d).name; }).join(', ');
+    if (k < 1) h += '<div class="nx-ban b"><b>Catch-up starts ' + ndEsc(nxLongDate(cu.start)) + '</b><span>' + ND_GRAD.cuDays + ' days on ' + ndEsc(names) + ', then their end-line again and graduation re-runs.</span></div>';
+    else if (k <= ND_GRAD.cuDays) h += '<div class="nx-ban b"><b>Catch-up · day ' + k + ' of ' + ND_GRAD.cuDays + (k > ND_GRAD.cuWork ? ' · re-check' : ' · week ' + Math.ceil(k / 7)) + '</b><span>' + ndEsc(names) + (k > ND_GRAD.cuWork ? ' — the end-line again; leads check every day by ' + ndShortDate(cu.end) + '.' : ' — work on the gaps; the re-check starts on day ' + (ND_GRAD.cuWork + 1) + '.') + '</span></div>';
+  }
+  if (g) {
+    var r = ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete;
+    h += '<button type="button" class="nx-card ng-res ' + r.c + '" onclick="ndGradOpen(\'grad\')"><span class="ng-ic"><i class="ti ' + r.ic + '"></i></span><span style="flex:1;min-width:0"><small>Graduation result' + (g.round ? ' · after catch-up' : '') + '</small><b>' + ndEsc(r.t) + '</b>'
+      + '<small>' + g.overall + '% overall' + (g.base != null ? ' · baseline ' + g.base + '% (' + (g.overall - g.base >= 0 ? '+' : '') + (g.overall - g.base) + ')' : '') + '</small></span><i class="ti ti-chevron-right"></i></button>';
+    if (!_nd.view && day <= D.closeDay) h += '<div class="nx-ban o"><b>Cards open until ' + ndEsc(nxLongDate(D.close)) + '</b><span>Then they become view-only.</span></div>';
+    return h;
+  }
+  if (day > S.days) {   // after the last day, waiting for the end-line check or the close date
+    var E0 = ndEndStat();
+    return h + '<div class="nx-card"><b>Graduation is waiting</b><span class="nx-dim">' + (E0.all - E0.done) + ' of ' + E0.all + ' departments still have end-line days to check. Graduation runs as soon as all are checked — or by itself on the close date, ' + ndEsc(nxLongDate(D.close)) + ', with what is done.</span>'
+      + (over ? '<button type="button" class="nx-btn sm" onclick="ndGradOpen(\'end\')">See the end-line check</button>' : '') + '</div>';
+  }
+  if (day >= S.e1 && day <= S.eN) {
+    var mineE = ndDeptDefs().filter(function (d) { return ndChecker(d.id) === me || ndLead(d.id) === me; });
+    return h + '<div class="nx-ban b"><b>End-line · Days ' + S.e1 + '–' + S.eN + '</b><span>The baseline days again — the scores that decide graduation. ' + (mineE.length ? 'Check every end-line card of ' + ndEsc(mineE.map(function (d) { return d.name; }).join(', ')) + ' by Day ' + (S.rN - 2) + '.' : 'Fill every card; your lead checks them by Day ' + (S.rN - 2) + '.') + '</span></div>';
+  }
+  if (day < S.r1 || day > S.rN) return h;
+  // readiness week
+  var E = ndEndStat();
+  h += '<div class="ng-rw"><small>READINESS WEEK · DAYS ' + S.r1 + '–' + S.rN + '</small><b>' + ndEsc(day >= S.rN ? 'Graduation day' : day === S.rN - 1 ? 'Final team review' : 'End-line verification') + '</b>' + ndGradPhaseStrip() + '</div>';
+  var mine = E.list.filter(function (e) { return e.tot && (e.checker === me || e.lead === me); });
+  if (!_nd.view && mine.length && !ndFaOn()) h += '<div class="nx-card p0 nx-list">' + mine.map(function (e) { return nxLi(e.ok ? 'ti-circle-check' : 'ti-list-check', e.ok ? 'g' : 'a', 'End-line check · ' + e.name, e.chk + ' of ' + e.tot + ' days checked' + (e.ok ? ' — done' : ' · finish by Day ' + (S.rN - 2)), "ndGradOpen('end','" + e.id + "')"); }).join('') + '</div>';
+  if (over) {
+    var left = E.list.filter(function (e) { return e.tot && !e.ok; });
+    h += '<div class="nx-card p0"><div class="ng-row ng-pad"><b style="flex:1">End-line cards checked</b><b class="ng-k">' + E.done + ' of ' + E.all + ' departments</b></div><div class="ng-pad" style="padding-top:0"><span class="nx-bar"><span style="width:' + Math.round(100 * E.done / Math.max(1, E.all)) + '%"></span></span></div>'
+      + left.map(function (e) { var nf = e.days.filter(function (x) { return x.st === 'none'; }).length, wa = ndGradRemindLink(e);
+        return '<div class="ng-dl"><i class="ng-dot ' + (e.tot - e.chk > 2 ? 'r' : 'a') + '"></i><span><b>' + ndEsc(e.name) + '</b><small>' + (e.tot - e.chk) + ' end-line day' + (e.tot - e.chk > 1 ? 's' : '') + ' to check' + (nf ? ' · ' + nf + ' not filled' : '') + ' · ' + ndEsc((e.checker || e.lead) ? nxFirst(e.checker || e.lead) : 'no lead') + '</small></span>'
+          + (wa ? '<a class="ng-lnk" href="' + ndEsc(wa) + '" target="_blank" rel="noopener"><i class="ti ti-send"></i>Remind</a>' : '<button type="button" class="ng-lnk" onclick="ndGradOpen(\'end\',\'' + e.id + '\')">Open</button>') + '</div>'; }).join('')
+      + (E.done ? '<div class="ng-dl"><i class="ti ti-check" style="color:#0F5132"></i><span><small>' + E.done + ' department' + (E.done > 1 ? 's' : '') + ' fully checked — ' + ndEsc(E.list.filter(function (e) { return e.ok; }).map(function (e) { return e.name; }).join(', ')) + '</small></span></div>' : '')
+      + '<div class="ng-pad" style="padding-top:4px"><button type="button" class="nx-btn sm ghost" onclick="ndGradOpen(\'end\')">See every department</button></div></div>';
+    h += ndGradPreviewHTML();
+    var fr = _nd.fac.finalReview;
+    h += '<div class="nx-card"><b>Before Day ' + S.rN + '</b><ul class="ng-ul"><li>Ask the leads to finish the end-line checks by <b>Day ' + (S.rN - 2) + '</b>.</li><li>Close the open actions in the weakest departments.</li><li>Day ' + (S.rN - 1) + ': hold the final team review with all leads.' + (fr ? ' <b style="color:#0F5132">✓ Held ' + ndEsc(ndShortDate(String(fr.at).slice(0, 10))) + '</b>' : '') + '</li></ul>'
+      + '<span class="nx-dim">Graduation runs by itself on Day ' + S.rN + ' when every end-line card is checked — or on the close date, ' + ndEsc(nxLongDate(D.close)) + ', with what is done.</span>'
+      + (day >= S.rN - 2 || _nd.view ? '<button type="button" class="nx-btn sm" onclick="ndGradOpen(\'review\')">Final team review</button>' : '') + '</div>';
+  } else if (!mine.length) h += '<div class="nx-card"><span class="nx-dim">Your leads are checking the end-line cards. Graduation is on Day ' + S.rN + ' (' + ndEsc(nxLongDate(D.last)) + ').</span></div>';
+  return h;
+}
+// full screens: end-line check (lead / all), final team review, graduation result
+function ndGradScreenHTML() {
+  var s = _nd.screen;
+  if (s === 'end') return ndGradEndHTML();
+  if (s === 'review') return ndGradReviewHTML();
+  if (s === 'admin') return ndGradAdminScreenHTML();
+  return ndGradResultHTML();
+}
+function ndGradEndHTML() {
+  var me = ndMob(), S = ndShape(), E = ndEndStat(ndCuStarted() && !!_nd.fac.graduation), one = _nd.endDept && E.list.find(function (e) { return e.id === _nd.endDept; });
+  var list = one ? [one] : E.list.filter(function (e) { return e.tot; });
+  var h = nxBk('ndGradClose()', one ? 'End-line check · ' + one.name : 'End-line check', one ? (one.lead === me || one.checker === me ? 'You check this department · finish by Day ' + (S.rN - 2) : 'Lead: ' + (ndName(one.lead) || '—')) : E.done + ' of ' + E.all + ' departments fully checked') + '<main class="nd-main">';
+  list.forEach(function (e) {
+    var can = !_nd.view && ndCanCheck(e.id, me), todo = e.days.filter(function (x) { return x.st !== 'chk'; }), done = e.days.filter(function (x) { return x.st === 'chk'; });
+    h += '<div class="nx-card"><div class="ng-row"><b style="flex:1">' + (one ? 'End-line days ' + (e.days[0] || {}).day + '–' + (e.days[e.days.length - 1] || {}).day : ndEsc(e.name)) + '</b><b class="ng-k">' + e.chk + ' of ' + e.tot + ' checked</b></div><span class="nx-bar"><span style="width:' + Math.round(100 * e.chk / Math.max(1, e.tot)) + '%"></span></span>'
+      + (one ? '<span class="nx-dim">The end-line repeats the baseline days. Compare the cards your staff filled and settle the differences — the same check as every other day.</span>' : '') + '</div>';
+    if (todo.length) h += '<div class="nx-card p0"><div class="ng-row ng-pad"><b>Still to check</b></div>' + todo.map(function (x) {
+      var sub = x.st === 'none' ? 'No cards yet' : x.st === 'part' ? x.inn.done.length + ' of ' + x.inn.fillers.length + ' cards in · ' + x.inn.waiting.map(nxFirst).join(', ') + ' not yet' : x.inn.done.length + ' card' + (x.inn.done.length > 1 ? 's' : '') + ' in · ready to compare';
+      var btn = can && x.st !== 'none' ? '<button type="button" class="ng-go" onclick="ndOpenDept(\'' + e.id + '\',' + x.day + ')">Check</button>' : x.st === 'none' || x.st === 'part' ? '' : '<button type="button" class="ng-go ghost" onclick="ndOpenDept(\'' + e.id + '\',' + x.day + ')">Open</button>';
+      return '<div class="ng-dl"><span class="ng-day ' + (x.st === 'none' ? 'r' : 'a') + '"><small>DAY</small><b>' + (x.day > ND_GRAD.cuBase ? 'C' + (x.day - ND_GRAD.cuBase) : x.day) + '</b></span><span><b>' + ndEsc(sub) + '</b><small>' + ndEsc(ndShortDate(ndDateOf(x.day))) + '</small></span>' + btn + '</div>';
+    }).join('') + '</div>';
+    if (done.length) h += '<div class="nx-card"><b>Checked</b><div class="ng-chips">' + done.map(function (x) { return '<span class="ng-ok">' + (x.day > ND_GRAD.cuBase ? 'C' + (x.day - ND_GRAD.cuBase) : x.day) + (ndRes(e.id, x.day).chk ? ' ✓' : ' · one filler') + '</span>'; }).join('') + '</div>' + (done.some(function (x) { return !ndRes(e.id, x.day).chk; }) ? '<span class="nx-dim">“One filler”: only one person fills this department, so her card counts as checked.</span>' : '') + '</div>';
+  });
+  var D = ndGradDates();
+  h += '<div class="nx-ban o"><b>Not checked by the close date?</b><span>Unchecked days count as filled on ' + ndEsc(nxLongDate(D.close)) + ', but the department shows “end-line not verified” on the graduation result.</span></div>';
+  return h + '</main>';
+}
+function ndGradBars(map, base, mark, names, max) {
+  var keys = Object.keys(map).sort(function (a, b) { return map[a] - map[b]; }), shown = keys.slice(0, max || 99), more = keys.length - shown.length;
+  return '<div class="ng-bars">' + shown.map(function (k) { var v = map[k], low = v < mark;
+    return '<div class="ng-bar"><span>' + ndEsc(names ? names(k) : k) + '</span><i><em class="' + (low ? 'r' : '') + '" style="width:' + v + '%"></em><u style="left:' + mark + '%"></u></i><b class="' + (low ? 'r' : '') + '">' + v + '%</b></div>'; }).join('')
+    + (more > 0 ? '<small class="nx-dim">+ ' + more + ' more, all ' + Math.min.apply(null, keys.slice(shown.length).map(function (k) { return map[k]; })) + '% or above</small>' : '') + '</div>';
+}
+function ndGradAocChips(byAoc, mark) { return '<div class="ng-aoc">' + Object.keys(byAoc).sort().map(function (a) { return '<span class="' + (byAoc[a] < mark ? 'r' : 'g') + '"><b>' + a + '</b> ' + byAoc[a] + '</span>'; }).join('') + '</div>'; }
+function ndGradReviewHTML() {
+  var S = ndShape(), sc = ndGradScores(), C = ndCrit(), E = ndEndStat(), me = ndMob(), fr = _nd.fac.finalReview, R = ndGradRule(sc, true);
+  var gain = sc.overall !== null && sc.base !== null ? sc.overall - sc.base : null;
+  var h = nxBk('ndGradClose()', 'Final team review · Day ' + (S.rN - 1), (E.complete ? 'All ' + E.all + ' departments checked' : E.done + ' of ' + E.all + ' departments checked') + ' · graduation on Day ' + S.rN) + '<main class="nd-main">';
+  h += '<div class="nx-card ng-3"><div><small>Baseline</small><b>' + (sc.base === null ? '–' : sc.base + '%') + '</b></div><div><small>End-line</small><b class="t">' + (sc.overall === null ? '–' : sc.overall + '%') + '</b></div><div><small>Gain</small><b class="g">' + (gain === null ? '–' : (gain >= 0 ? '+' : '') + gain) + '</b></div></div>';
+  h += '<div class="nx-card"><div class="ng-row"><b style="flex:1">Departments</b><small class="nx-dim">pass ' + C.dept + '%</small></div>' + ndGradBars(sc.byDept, sc.baseDept, C.dept, function (k) { return ndDeptDef(k).name; }, 5) + '</div>';
+  h += '<div class="nx-card"><b>Areas of Concern</b>' + ndGradAocChips(sc.byAoc, C.aoc) + (R.stdFails.length ? '<span class="nx-dim">Standards below ' + C.std + '%: <b>' + R.stdFails.map(function (s) { return s + ' ' + sc.byStd[s] + '%'; }).join(', ') + '</b></span>' : '<span class="nx-dim">Every Standard at ' + C.std + '% or more.</span>') + '</div>';
+  var talk = [];
+  Object.keys(sc.openByDept).sort(function (a, b) { return sc.openByDept[b] - sc.openByDept[a]; }).slice(0, 2).forEach(function (d) { talk.push(ndDeptDef(d).name + ' — ' + sc.openByDept[d] + ' open action' + (sc.openByDept[d] > 1 ? 's' : '')); });
+  R.stdFails.slice(0, 2).forEach(function (s) { talk.push(s + ' — ' + String((_nd.cl.stds || {})[s] || 'Standard below ' + C.std + '%').slice(0, 70)); });
+  R.deptFails.forEach(function (d) { if (!sc.openByDept[d]) talk.push(ndDeptDef(d).name + ' — ' + sc.byDept[d] + '%, below ' + C.dept + '%'); });
+  h += '<div class="nx-card"><div class="ng-row"><b style="flex:1">Talk through today</b><small class="nx-dim">from open gaps</small></div>' + (talk.length ? '<ol class="ng-ul">' + talk.slice(0, 4).map(function (t) { return '<li>' + ndEsc(t) + '</li>'; }).join('') + '</ol>' : '<span class="nx-dim">No open gaps — well done.</span>') + '</div>';
+  var txt = 'NQAS | FAST final team review — ' + (_nd.fac.name || '') + ': end-line ' + (sc.overall === null ? '–' : sc.overall + '%') + (sc.base !== null ? ' (baseline ' + sc.base + '%)' : '') + '. ' + (R.deptFails.length ? 'Below ' + C.dept + '%: ' + R.deptFails.map(function (d) { return ndDeptDef(d).name + ' ' + sc.byDept[d] + '%'; }).join(', ') + '. ' : '') + 'Graduation on Day ' + S.rN + '.';
+  h += '<a class="nx-btn ghost ng-wide" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener"><i class="ti ti-send"></i> Share summary with the team</a>';
+  if (!_nd.view && ndIsInCharge(me)) h += fr ? '<div class="nx-ban g"><b>Review held · ' + ndEsc(ndShortDate(String(fr.at).slice(0, 10))) + '</b><span>' + ndEsc(fr.byName || ndName(fr.by)) + '</span></div>'
+    : '<button type="button" class="nx-btn ng-wide" onclick="ndGradReviewHeld()">Mark review held</button><span class="nx-dim" style="text-align:center;display:block">Optional. The result on Day ' + S.rN + ' uses the scores as they are then.</span>';
+  return h + '</main>';
+}
+async function ndGradReviewHeld() {
+  var rec = { at: new Date().toISOString(), by: ndMob(), byName: String(ndName(ndMob())).slice(0, 80) };
+  try { await db.ref(scFacilityPath(_nd.code) + '/finalReview').set(rec); _nd.fac.finalReview = rec; ndToast('Final team review marked as held.', 'ok'); ndRender(); } catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
+}
+function ndGradResultHTML() {
+  var g = _nd.fac.graduation; if (!g) { _nd.screen = null; return ndTodayHTML(); }
+  var r = ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete, C = g.criteria || ndCrit(), dm = C.dept || 70, D = ndGradDates(), names = function (k) { return ndDeptDef(k).name; };
+  var gain = g.base != null ? g.overall - g.base : null, fails = (g.deptFails || []).length + (g.aocFails || []).length;
+  var line = g.result === 'ready' ? g.overall + '% overall — every department, Area of Concern and Standard at its mark.' : g.result === 'almost' ? g.overall + '% overall — above ' + C.overall + '%. ' + (fails ? fails + ' department' + ((g.deptFails || []).length === 1 && !(g.aocFails || []).length ? '' : 's / Areas of Concern') + ' below ' + dm + '%.' : 'A Standard is below ' + (C.stdDefault || 50) + '%.')
+    : g.result === 'notyet' ? g.overall + '% overall — needs ' + C.overall + '%.' : 'The end-line was not filled for every department.';
+  var h = nxBk('ndGradClose()', 'Graduation result', (_nd.fac.name || '') + ' · Day ' + (g.day || '') + ' · ' + ndShortDate(String(g.at || '').slice(0, 10))) + '<main class="nd-main">';
+  h += '<div class="nx-card ng-big ' + r.c + '"><span class="ng-ic"><i class="ti ' + r.ic + '"></i></span><small>GRADUATION RESULT' + (g.round ? ' · AFTER CATCH-UP' : '') + '</small><b>' + ndEsc(r.t) + '</b><span>' + ndEsc(line) + '</span>'
+    + '<div class="ng-3"><div><small>Baseline</small><b>' + (g.base == null ? '–' : g.base + '%') + '</b></div><div><small>End-line</small><b class="t">' + g.overall + '%</b></div><div><small>Gain</small><b class="g">' + (gain === null ? '–' : (gain >= 0 ? '+' : '') + gain) + '</b></div></div>'
+    + (g.override ? '<small class="nx-dim">Result set by HealSol: ' + ndEsc(g.reason || '') + '</small>' : '') + '</div>';
+  var row = function (ok, t, v) { return '<li><i class="ti ' + (ok ? 'ti-check g' : 'ti-x r') + '"></i><span>' + ndEsc(t) + '</span><b class="' + (ok ? '' : 'r') + '">' + ndEsc(v) + '</b></li>'; };
+  var low = function (list, map) { return (list || []).map(function (k) { return (names && map === g.byDept ? names(k) : k) + ' ' + map[k] + '%'; }).slice(0, 2).join(', '); };
+  var allD = Object.keys(g.byDept || {}).length, nv = (g.notVerified || []).length;
+  h += '<div class="nx-card p0"><div class="ng-row ng-pad"><b>NQAS criteria</b></div><ul class="ng-crit">'
+    + row(g.overall >= C.overall, 'Overall at least ' + C.overall + '%', g.overall + '%')
+    + row(!(g.deptFails || []).length, 'Every department at least ' + dm + '%', (g.deptFails || []).length ? low(g.deptFails, g.byDept) : allD + ' / ' + allD)
+    + row(!(g.aocFails || []).length, 'Every Area of Concern at least ' + C.aoc + '%', (g.aocFails || []).length ? low(g.aocFails, g.byAoc) : '✓')
+    + row(!(g.stdFails || []).length, 'Every Standard at least ' + (C.stdDefault || 50) + '%', (g.stdFails || []).length ? low(g.stdFails, g.byStd) : '✓')
+    + row(g.endlineDone && !nv, 'End-line filled and checked', g.endlineDone ? (nv ? nv + ' not verified' : 'all') : 'not filled') + '</ul></div>';
+  if (g.progs) h += '<div class="nx-card"><b>' + Object.keys(g.progs).join(' · ') + '</b><span class="nx-dim">shown beside NQAS · each department at least ' + dm + '%</span><div class="ng-progs">' + Object.keys(g.progs).map(function (p) { var x = g.progs[p];
+    return '<div class="' + (x.ok ? 'g' : 'r') + '"><b>' + ndEsc(p) + '</b><small>' + Object.keys(x.byDept).map(function (d) { return ndEsc(names(d)) + ' ' + x.byDept[d] + '%'; }).join(' · ') + '</small><em>' + (x.ok ? 'Ready' : 'Not yet') + '</em></div>'; }).join('') + '</div></div>';
+  h += '<div class="nx-card"><div class="ng-row"><b style="flex:1">Departments</b><small class="nx-dim">end-line · pass ' + dm + '%</small></div>' + ndGradBars(g.byDept || {}, null, dm, names) + '</div>';
+  var cu = ndCu(), next = [];
+  if (D && ndToday() <= D.close) next.push('Cards stay open until the close date, <b>' + ndEsc(nxLongDate(D.close)) + '</b>, then become view-only.');
+  if (g.result !== 'ready' && !cu) next.push('HealSol may offer a <b>' + ND_GRAD.cuDays + '-day catch-up</b> on the weakest departments, then re-check.');
+  if (cu && !cu.done) next.push('Catch-up on <b>' + ndEsc(ndCuDepts().map(names).join(', ')) + '</b> from ' + ndEsc(nxLongDate(cu.start)) + ' to ' + ndEsc(nxLongDate(cu.end)) + '; graduation re-runs at the end.');
+  if (g.result === 'ready') next.push('Your District can now apply for <b>NQAS certification</b> (NHSRC).');
+  next.push('Staff who earned it can get their certificate in <b>Me</b>.');
+  h += '<div class="nx-card"><b>What happens next</b><ul class="ng-ul">' + next.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul></div>';
+  var txt = (_nd.fac.name || '') + ' completed the NQAS | FAST programme: ' + r.t + ' · ' + g.overall + '%' + (g.base != null ? ' (baseline ' + g.base + '%)' : '') + '.';
+  h += '<a class="nx-btn ghost ng-wide" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener"><i class="ti ti-send"></i> Share the result on WhatsApp</a>';
+  return h + '</main>';
+}
+
+// ═══ HealSol / District: the facility's programme block (view mode) ═══
+function ndGradIsHS() { return typeof appMode !== 'undefined' && appMode === 'sc-admin'; }
+function ndGradCanRecords() { if (ndGradIsHS()) return true; try { return typeof appMode !== 'undefined' && appMode === 'sc-district' && !(typeof _scSup !== 'undefined' && _scSup && _scSup.scope === 'block'); } catch (e) { return false; } }
+function ndGradAdminHTML() {   // short block at the top of the facility view
+  if (!_nd.view || !_nd.fac.startDate) return '';
+  var g = _nd.fac.graduation, r = g ? ND_GRAD_RES[g.result] : null, D = ndGradDates(), cu = ndCu();
+  var st = g ? r.t + ' · ' + g.overall + '%' : ndProgDay() > ndShape().days ? 'Waiting for graduation' : 'Day ' + Math.max(0, Math.min(ndProgDay(), ndShape().days)) + ' of ' + ndShape().days;
+  return '<button type="button" class="nx-card ng-res ' + (r ? r.c : 'b') + '" onclick="ndGradOpen(\'admin\')"><span class="ng-ic"><i class="ti ti-timeline"></i></span><span style="flex:1;min-width:0"><small>Programme · ' + ndShape().days + ' days · close date ' + ndEsc(ndShortDate(D.close)) + '</small><b>' + ndEsc(st) + '</b><small>'
+    + (cu ? 'Catch-up ' + (cu.done ? 'done' : 'on') + ' · ' : '') + 'Graduation, catch-up, certification records, certificates</small></span><i class="ti ti-chevron-right"></i></button>';
+}
+var _ndCerts = { code: '', list: null };
+async function ndGradLoadCerts() { if (_ndCerts.code === _nd.code && _ndCerts.list) return; _ndCerts = { code: _nd.code, list: {} }; try { _ndCerts.list = (await fbGet('sc_certs/' + _nd.code)) || {}; } catch (e) { _ndCerts.list = {}; } if (_nd.screen === 'admin') ndRender(); }
+function ndGradAdminScreenHTML() {
+  var S = ndShape(), g = _nd.fac.graduation, D = ndGradDates(), cu = ndCu(), hs = ndGradIsHS(), names = function (k) { return ndDeptDef(k).name; };
+  var h = nxBk('ndGradClose()', 'Programme · ' + S.days + ' days', 'Started ' + ndShortDate(_nd.fac.startDate) + ' · Day ' + S.days + ' on ' + ndShortDate(D.last) + ' · close date ' + ndShortDate(D.close)) + '<main class="nd-main">';
+  h += '<div class="nx-card"><div class="ng-tl"><span style="flex:' + S.base + '">Baseline 1–' + S.bN + '</span><span style="flex:' + S.implWeeks * 7 + '">Implementation · ' + S.implWeeks + ' weeks · ' + S.i1 + '–' + S.iN + '</span><span style="flex:' + S.end + '">End-line ' + S.e1 + '–' + S.eN + '</span><span class="on" style="flex:' + S.ready + '">' + S.r1 + '–' + S.rN + '</span></div></div>';
+  // graduation
+  if (g) {
+    var r = ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete, below = [].concat((g.deptFails || []).map(function (d) { return names(d) + ' ' + g.byDept[d]; }), (g.aocFails || []).map(function (a) { return a + ' ' + g.byAoc[a]; }), (g.stdFails || []).map(function (s) { return s + ' ' + g.byStd[s]; }));
+    h += '<div class="nx-card"><div class="ng-row"><b style="flex:1">Graduation</b>' + (hs ? '<button type="button" class="ng-go ghost" onclick="ndGradRerun(false)">Run again…</button><button type="button" class="ng-go ghost" onclick="ndGradRerun(true)">Change result…</button>' : '') + '</div>'
+      + '<span class="nx-dim">' + (g.round ? 'Re-run after catch-up' : 'Ran on Day ' + (g.day || '')) + ' · ' + ndEsc(String(g.at || '').slice(0, 16).replace('T', ' ')) + ' · ' + ndEsc(g.by || '') + (g.byRole ? ' (' + ndEsc(g.byRole) + ')' : '') + (g.reason ? ' · “' + ndEsc(g.reason) + '”' : '') + '</span>'
+      + '<div class="ng-kpis"><div class="' + r.c + '"><small>Result</small><b>' + ndEsc(r.t) + '</b></div><div><small>Overall</small><b>' + (g.base != null ? g.base + ' → ' : '') + g.overall + '%</b></div><div><small>Below the mark</small><b>' + ndEsc(below.slice(0, 4).join(' · ') || 'none') + '</b></div><div><small>End-line</small><b>' + (g.endlineDone ? 'filled' : 'not filled') + ((g.notVerified || []).length ? ' · ' + g.notVerified.length + ' not verified' : ' · checked') + '</b></div></div>'
+      + '<div class="ng-tbl"><table><thead><tr><th>Department</th><th>End-line</th><th>Also counts for</th></tr></thead><tbody>' + Object.keys(g.byDept || {}).sort(function (a, b) { return g.byDept[a] - g.byDept[b]; }).map(function (d) {
+        return '<tr><td>' + ndEsc(names(d)) + '</td><td class="' + (g.byDept[d] < (g.criteria || {}).dept ? 'r' : '') + '">' + g.byDept[d] + '%</td><td>' + ndEsc(ndDeptDef(d).prog || '—') + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  } else h += '<div class="nx-card"><b>Graduation</b><span class="nx-dim">Runs by itself on Day ' + S.days + ' (' + ndEsc(nxLongDate(D.last)) + ') when every end-line day is checked, or on the close date with what is done.</span>' + ndGradPreviewHTML().replace(/^<div class="nx-card">/, '<div>') + '</div>';
+  // catch-up
+  if (g && hs) {
+    var weak = Object.keys(g.byDept || {}).sort(function (a, b) { return g.byDept[a] - g.byDept[b]; }).slice(0, 3);
+    h += '<div class="nx-card"><div class="ng-row"><b style="flex:1">Catch-up</b>' + (!cu ? '<button type="button" class="ng-go" onclick="ndGradCuOffer()">Offer catch-up…</button>' : cu.done ? '' : (!cu.paid && !cu.free ? '<button type="button" class="ng-go ghost" onclick="ndGradCuPaid()">Mark paid</button>' : '')) + '</div>'
+      + (cu ? '<span class="nx-dim">' + ndEsc(ndCuDepts().map(names).join(', ')) + ' · ' + ndEsc(nxLongDate(cu.start)) + ' – ' + ndEsc(nxLongDate(cu.end)) + ' · ' + (cu.free ? 'free' : cu.paid ? 'paid' : 'fee not marked yet') + (cu.done ? ' · done, result ' + ndEsc((ND_GRAD_RES[cu.result] || {}).t || '') : '') + '</span>'
+        : '<span class="nx-dim">' + ND_GRAD.cuDays + ' days on the weakest departments: weeks 1–3 their checkpoints, week 4 their end-line again; graduation re-runs at the end.</span><div class="ng-chips">' + weak.map(function (d) { return '<span class="' + (g.byDept[d] < 70 ? 'ng-bad' : 'ng-mid') + '">' + ndEsc(names(d)) + ' ' + g.byDept[d] + '%</span>'; }).join('') + '</div>') + '</div>';
+  }
+  // certification records
+  var recs = [['nhsrc', 'NQAS (NHSRC)']]; Object.keys(ndProgs(g ? g.byDept || {} : {})).forEach(function (p) { recs.push([p.toLowerCase(), p]); });
+  if (_nd.cfg.id === 'chc' && recs.length === 1) { recs.push(['laqshya', 'LaQshya'], ['musqan', 'MusQan']); }
+  var can = ndGradCanRecords();
+  h += '<div class="nx-card p0"><div class="ng-row ng-pad"><b>Certification records</b></div>' + recs.map(function (x) { var rec = _nd.fac[x[0]] || {}, st = (ND_CERT_ST.find(function (s) { return s[0] === rec.status; }) || [0, 'Not applied yet'])[1];
+    return '<div class="ng-dl"><span><b>' + ndEsc(x[1]) + '</b><small>' + ndEsc(st + (rec.appliedOn ? ' · applied ' + ndShortDate(rec.appliedOn) : '') + (rec.certifiedOn ? ' · certified ' + ndShortDate(rec.certifiedOn) : '') + (rec.certNo ? ' · ' + rec.certNo : '')) + '</small></span>' + (can ? '<button type="button" class="ng-go ghost" onclick="ndGradRecEdit(\'' + x[0] + '\',\'' + ndEsc(x[1]) + '\')">Update</button>' : '') + '</div>'; }).join('')
+    + '<div class="ng-pad nx-dim" style="font-size:12px">District Admins can update these too.</div></div>';
+  // certificates
+  ndGradLoadCerts();
+  var L = _ndCerts.code === _nd.code ? _ndCerts.list : null, staffN = Object.keys(ndStaff()).length;
+  h += '<div class="nx-card p0"><div class="ng-row ng-pad"><b style="flex:1">Certificates</b><small class="nx-dim">' + (L ? Object.keys(L).length + ' issued · ' + staffN + ' staff' : 'Loading…') + '</small></div>'
+    + (L && Object.keys(L).length ? Object.keys(L).map(function (m) { var c = L[m]; return '<div class="ng-dl"><span><b>' + ndEsc(c.name) + '</b><small>' + ndEsc(c.role + (c.lead ? ' · lead' : '') + ' · ' + c.certId) + '</small></span><span class="nx-chip g">' + ndEsc(c.grade) + '</span></div>'; }).join('') : L ? '<div class="ng-pad nx-dim">None yet — staff get theirs in Me once the facility has graduated.</div>' : '') + '</div>';
+  return h + '</main>';
+}
+async function ndGradRerun(change) {
+  if (!ndGradIsHS()) return;
+  var f = [{ key: 'why', label: change ? 'Why are you changing the result?' : 'Why are you running graduation again? It uses the scores as they are now.', type: 'textarea', maxLength: 300, required: true, value: '' }];
+  if (change) f.unshift({ key: 'res', label: 'New result', type: 'select', value: (_nd.fac.graduation || {}).result || 'ready', options: Object.keys(ND_GRAD_RES).map(function (k) { return { value: k, label: ND_GRAD_RES[k].t }; }) });
+  var v = null; try { v = await scDialog({ title: change ? 'Change the graduation result' : 'Run graduation again', icon: '🎓', fields: f, okLabel: change ? 'Change result' : 'Run again', validate: function (x) { return String(x.why || '').trim() ? '' : 'Write the reason.'; } }); } catch (e) { v = null; }
+  if (!v) return;
+  var sc = ndGradScores(), E = ndEndStat(), data = { code: _nd.code, reason: String(v.why).trim().slice(0, 300), complete: E.complete, endlineDone: E.endlineDone, verified: E.complete, notVerified: E.notVer, openGaps: sc.openGaps, scores: { overall: sc.overall, base: sc.base, byAoc: sc.byAoc, byStd: sc.byStd, byDept: sc.byDept } };
+  if (change && v.res) data.result = v.res;
+  try { var r = await nfCall('graduateFacility', data);
+    if (r && r.graduation) { _nd.fac.graduation = r.graduation; ndToast('Saved: ' + ND_GRAD_RES[r.graduation.result].t + ' · ' + r.graduation.overall + '%', 'ok'); ndRender(); } } catch (e) { ndToast(nfErrText(e), 'err'); }
+}
+async function ndGradCuOffer() {
+  var g = _nd.fac.graduation; if (!ndGradIsHS() || !g) return;
+  var ids = Object.keys(g.byDept || {}).sort(function (a, b) { return g.byDept[a] - g.byDept[b]; }), weak = ids.slice(0, 3);
+  var v = null; try { v = await scDialog({ title: 'Offer a catch-up', icon: '🔁', message: ND_GRAD.cuDays + ' days: weeks 1–3 the chosen departments\' checkpoints, week 4 their end-line again; graduation re-runs at the end.', fields: [
+    { key: 'depts', label: 'Departments (the weakest are ticked)', type: 'checklist', value: weak, options: ids.map(function (d) { return { value: d, label: ndDeptDef(d).name + ' · ' + g.byDept[d] + '%' }; }) },
+    { key: 'start', label: 'Starts on', type: 'date', value: ndAddDays(ndToday(), 1), required: true },
+    { key: 'fee', label: 'Fee', type: 'select', value: 'paid', options: [{ value: 'paid', label: 'Paid catch-up (mark paid later)' }, { value: 'free', label: 'Free of charge' }] }], okLabel: 'Offer catch-up',
+    validate: function (x) { return !(x.depts || []).length ? 'Tick at least one department.' : !/^\d{4}-\d{2}-\d{2}$/.test(x.start || '') ? 'Choose the start date.' : ''; } }); } catch (e) { v = null; }
+  if (!v) return;
+  var rec = { on: true, round: (+g.round || 0) + 1, start: v.start, end: ndAddDays(v.start, ND_GRAD.cuDays - 1), depts: v.depts.slice(0, 6), free: v.fee === 'free', at: new Date().toISOString(), by: 'HealSol' };
+  try { await db.ref(scFacilityPath(_nd.code) + '/catchup').set(rec); _nd.fac.catchup = rec; _ndCuPlan = {}; ndToast('Catch-up offered — ' + ndShortDate(rec.start) + ' to ' + ndShortDate(rec.end) + '.', 'ok'); ndRender(); } catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
+}
+async function ndGradCuPaid() { if (!ndGradIsHS() || !ndCu()) return; if (!(await showConfirm('Mark the catch-up fee as paid?', '💳', 'Catch-up fee', 'Mark paid', 'var(--teal)'))) return; try { await db.ref(scFacilityPath(_nd.code) + '/catchup/paid').set(true); _nd.fac.catchup.paid = true; ndRender(); } catch (e) { ndToast(nfErrText(e), 'err'); } }
+async function ndGradRecEdit(key, label) {
+  var rec = _nd.fac[key] || {}, v = null;
+  try { v = await scDialog({ title: label, icon: '🏅', fields: [
+    { key: 'status', label: 'Status', type: 'select', value: rec.status || 'ready', options: ND_CERT_ST.map(function (s) { return { value: s[0], label: s[1] }; }) },
+    { key: 'appliedOn', label: 'Applied on', type: 'date', value: rec.appliedOn || '' }, { key: 'certifiedOn', label: 'Certified on', type: 'date', value: rec.certifiedOn || '' },
+    { key: 'certNo', label: 'Certificate number', value: rec.certNo || '', maxLength: 40 }, { key: 'note', label: 'Note', type: 'textarea', value: rec.note || '', maxLength: 300 }], okLabel: 'Save' }); } catch (e) { v = null; }
+  if (!v) return;
+  var out = { status: v.status, at: new Date().toISOString() };
+  ['appliedOn', 'certifiedOn'].forEach(function (k) { if (/^\d{4}-\d{2}-\d{2}$/.test(v[k] || '')) out[k] = v[k]; });
+  if (String(v.certNo || '').trim()) out.certNo = String(v.certNo).trim().slice(0, 40); if (String(v.note || '').trim()) out.note = String(v.note).trim().slice(0, 300);
+  try { await db.ref(scFacilityPath(_nd.code) + '/' + key).set(out); _nd.fac[key] = out; ndToast(label + ' saved.', 'ok'); ndRender(); } catch (e) { ndToast('Not saved — ' + nfErrText(e), 'err'); }
+}
+
+// ═══ CERTIFICATES (department core) — earned; the server (issueCertificate) checks the same conditions ═══
+//   Staff who fill: every baseline card day done · ≥ 80% of their card days done · ≥ half of the done cards checked.
+//   Leads (do not fill): ≥ 80% of their department-days checked · every end-line day checked.  From the last day, once graduated.
+var _ndCert = { code: '', mob: '', rec: null, loaded: false };
+async function ndCertLoad() { var me = ndMob(); if (_ndCert.loaded && _ndCert.code === _nd.code && _ndCert.mob === me) return; _ndCert = { code: _nd.code, mob: me, rec: null, loaded: false }; try { _ndCert.rec = await fbGet('sc_certs/' + _nd.code + '/' + me); } catch (e) {} _ndCert.loaded = true; if (_nd && _nd.tab === 'me' && !_nd.screen) ndRender(); }
+function ndCertEval() {
+  var me = ndMob(), S = ndShape(), fill = ndDeptDefs().filter(function (d) { return ndFills(d.id, me); }).map(function (d) { return d.id; });
+  var lead = ndDeptDefs().filter(function (d) { return ndLead(d.id) === me || ndChecker(d.id) === me; }).map(function (d) { return d.id; });
+  var doneOf = function (d, n) { var c = ndPc(d, n), out = 0; Object.keys(c).forEach(function (m) { if (c[m] && c[m].done && !c[m].absent) out++; }); return out; };
+  var isChk = function (d, n) { return !!ndRes(d, n).chk || doneOf(d, n) === 1; };
+  var o = { fill: fill, lead: lead, exp: 0, expBase: 0, done: 0, base: 0, chk: 0, toCheck: 0, lChk: 0, endPairs: 0, endChk: 0 };
+  Object.keys(_nd.pcards || {}).forEach(function (d) { if (fill.indexOf(d) >= 0 || !(_nd.pcards[d])) return; Object.keys(_nd.pcards[d]).forEach(function (k) { if (((_nd.pcards[d][k] || {})[me] || {}).done && fill.indexOf(d) < 0) fill.push(d); }); });
+  fill.forEach(function (d) { for (var n = 1; n <= S.eN; n++) { if (ndMyIds(d, n, me).length) { o.exp++; if (n <= S.bN) o.expBase++; } var c = ndPc(d, n)[me] || {}; if (c.done && !c.absent) { o.done++; if (n <= S.bN) o.base++; if (isChk(d, n)) o.chk++; } } });
+  lead.forEach(function (d) { for (var n = 1; n <= S.eN; n++) { if (!doneOf(d, n)) continue; o.toCheck++; var ck = isChk(d, n); if (ck) o.lChk++; if (n >= S.e1) { o.endPairs++; if (ck) o.endChk++; } } });
+  o.role = o.done > 0 || (fill.length && !lead.length) ? 'fill' : lead.length ? 'lead' : 'none';
+  o.exp = Math.max(o.exp, o.done ? 1 : 0);
+  if (o.role === 'fill') { o.needDone = Math.ceil(o.exp * 0.8); o.needChk = Math.max(1, Math.ceil(o.done * 0.5)); o.items = [['Baseline card days done', 'every baseline day in your departments', o.base >= o.expBase, o.base + ' / ' + o.expBase], ['Day cards done', 'at least 80% of your ' + o.exp + ' card days', o.done >= o.needDone && o.done > 0, o.done + ' / ' + o.needDone], ['Checked by your lead', 'at least half of your done cards', o.chk >= o.needChk, o.chk + ' / ' + o.needChk]]; }
+  else if (o.role === 'lead') { o.need = Math.max(1, Math.ceil(o.toCheck * 0.8)); o.items = [['Department days checked', 'at least 80% of the days with cards', o.lChk >= o.need, o.lChk + ' / ' + o.need], ['End-line days checked', 'every end-line day', o.endChk >= o.endPairs, o.endChk + ' / ' + o.endPairs]]; }
+  else o.items = [['You fill or lead a department', 'the in-charge sets this in Set-up', false, '—']];
+  var D = ndGradDates(); o.dayOk = !!D && ndProgDay() >= D.lastDay; o.grad = !!_nd.fac.graduation;
+  o.items.push(['Facility graduated', 'from Day ' + ndShape().days + ' · any result', o.grad, o.grad ? ndShortDate(String(_nd.fac.graduation.at || '').slice(0, 10)) : D ? ndShortDate(D.last) : '—']);
+  o.ok = o.items.every(function (x) { return x[2]; });
+  return o;
+}
+function ndCertPro() { var s = _nd.fac.subscriptionStatus || 'contract'; return s === 'paid' || s === 'contract'; }
+function ndCertCardHTML() {
+  var rec = _ndCert.loaded && _ndCert.code === _nd.code ? _ndCert.rec : null; if (!_ndCert.loaded) ndCertLoad();
+  var head = function (sub, cls) { return '<div class="ng-ch"><span class="ng-ci"><i class="ti ti-certificate"></i></span><span style="flex:1"><b>My NQAS | FAST certificate</b><small class="' + (cls || '') + '">' + ndEsc(sub) + '</small></span></div>'; };
+  if (rec) return '<div class="nx-card p0 ng-cert">' + head('You earned it · ' + rec.certId, 'g') + '<div class="ng-pad"><div class="ng-row"><span class="nx-dim" style="flex:1">Grade (facility ' + rec.facPct + '%)</span><b>' + ndEsc(rec.grade) + '</b></div>'
+    + '<div class="ng-2"><button type="button" class="nx-btn" onclick="nfShowCert(_ndCert.rec)">View certificate</button><button type="button" class="nx-btn ghost" onclick="nfCertDownload(_ndCert.rec,this)">Download PDF</button></div></div></div>';
+  if (!ndCertPro()) return '<div class="nx-card p0 ng-cert">' + head('Certificates are for facilities with full access (PRO).') + '</div>';
+  var E = ndCertEval(), sub = E.ok ? 'Earned — ready to get' : !E.dayOk ? 'Unlocks on Day ' + ndShape().days + ' — earn it:' : 'Not earned yet — complete what is still open';
+  return '<div class="nx-card p0 ng-cert">' + head(sub, E.ok ? 'g' : '') + '<ul class="ng-crit">' + E.items.map(function (x) { return '<li><i class="ti ' + (x[2] ? 'ti-check g' : 'ti-hourglass a') + '"></i><span>' + ndEsc(x[0]) + '<small>' + ndEsc(x[1]) + '</small></span><b>' + ndEsc(x[3]) + '</b></li>'; }).join('') + '</ul>'
+    + (E.ok ? '<div class="ng-pad"><div class="ng-row"><span class="nx-dim" style="flex:1">Grade (facility end-line ' + _nd.fac.graduation.overall + '%)</span><b>' + nfCertGradeOf(_nd.fac.graduation.overall) + '</b></div><button type="button" class="nx-btn ng-wide" onclick="ndClaimCert(this)">Get my certificate</button></div>'
+      : '<div class="ng-pad nx-dim" style="font-size:12px">' + (E.role === 'lead' ? 'Leads don’t fill cards, so your conditions come from checking.' : 'Grade comes from the facility’s graduation score: Distinction 80%+, Merit 70–79%.') + '</div>') + '</div>';
+}
+async function ndClaimCert(btn) {
+  var old = btn ? btn.innerHTML : ''; if (btn) { btn.disabled = true; btn.textContent = 'Preparing…'; }
+  try {
+    var E = ndCertEval(), me = ndMob(), ids = E.role === 'lead' ? E.lead : E.fill, S = ndShape();
+    var R = nfDeptReadiness(_nd.cl.items, ndLatest(), { pass: 70, depts: ids }), B = nfDeptReadiness(_nd.cl.items, ndLatest(S.bN), { pass: 70, depts: ids });
+    var prog = (_nd.cfg.programmes || []).find(function (p) { return p.id === _nd.fac.progId; });
+    var r = await nfCall('issueCertificate', { code: _nd.code, base: typeof nfCertBase === 'function' ? nfCertBase() : '', expected: { fill: E.exp, base: E.expBase },
+      scores: { staffPct: R.overall === null ? _nd.fac.graduation.overall : R.overall, staffBase: B.n ? B.overall : null }, depts: ids.map(function (d) { return ndDeptDef(d).name; }).join(', ').slice(0, 160),
+      roleLabel: nxRoleOf(me), packageLabel: prog ? String(prog.label).replace(/\s*\(\d+ days\)\s*$/, '') : (_nd.cfg.name || '') });
+    _ndCert = { code: _nd.code, mob: me, rec: r.cert, loaded: true }; ndRender(); nfShowCert(r.cert);
+  } catch (e) { ndToast(nfErrText(e), 'err'); }
+  finally { if (btn && document.body.contains(btn)) { btn.disabled = false; btn.innerHTML = old; } }
+}
 </script>
 <script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no
 // serviceWorker there), not on a page without the manifest. ?nosw skips it once; ?nosw=reset removes it and its caches.

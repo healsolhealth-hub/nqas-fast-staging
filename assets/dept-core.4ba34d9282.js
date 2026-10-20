@@ -15,7 +15,7 @@
 // ══════════════════════════════════════════════════════════════
 var _nd = null;
 var ND_SCORE = [{ v: 2, k: 'met', t: 'Met' }, { v: 1, k: 'part', t: 'Partial' }, { v: 0, k: 'not', t: 'Not met' }];
-var ND_PHASE = { baseline: 'Baseline', impl: 'Implementation', endline: 'End-line', ready: 'Readiness week', before: 'Not started', after: 'Programme closed' };
+var ND_PHASE = { baseline: 'Baseline', impl: 'Implementation', endline: 'End-line', ready: 'Readiness week', before: 'Not started', after: 'Programme closed', catchup: 'Catch-up', recheck: 'Catch-up re-check' };
 var ND_METHOD = { SI: 'Staff interview', RR: 'Record review', OB: 'Observation', PI: 'Patient interview' };
 
 function ndEsc(s) { return typeof scEsc === 'function' ? scEsc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -77,8 +77,9 @@ async function ndOpen(acc) {
   try { _nd.actions = (await fbGet('sc_dactions/' + code)) || {}; } catch (e) { _nd.actions = {}; }
   try { _nd.pcards = (await fbGet('sc_pcards/' + code)) || {}; } catch (e) { _nd.pcards = {}; }
   ndQStart();
+  try { await ndGradLoad(); } catch (e) {}
   var ls = document.getElementById('login-screen'); if (ls) ls.style.display = 'none';
-  ndShow(); return '';
+  ndShow(); ndGradMaybe(); return '';
 }
 function ndShow() {
   var app = document.getElementById('nf-dept-app');
@@ -93,9 +94,9 @@ async function ndLogout() {
 async function ndReload() { if (!_nd) return; _nd.fac = (await fbGet(scFacilityPath(_nd.code))) || _nd.fac; _nd.cards = (await fbGet(ndPath())) || {}; try { _nd.actions = (await fbGet('sc_dactions/' + _nd.code)) || {}; } catch (e) {} try { _nd.pcards = (await fbGet('sc_pcards/' + _nd.code)) || {}; } catch (e) {} ndRender(); }
 
 // ── programme day ──
-function ndDay() { return nfDeptDayNo(_nd.fac.startDate); }
+function ndDay() { if (typeof ndCuStarted === 'function' && ndCuStarted()) return ND_GRAD.cuBase + ndCuDay(); return nfDeptDayNo(_nd.fac.startDate); }   // Step 3: catch-up card days 101–128
 function ndShape() { return nfDeptShape(_nd.cfg); }   // the programme's phase days (60 or 90)
-function ndDayInfo(dept, day) { return nfDeptDay(ndPlanFor(day)[dept] || [], day, ndShape()); }
+function ndDayInfo(dept, day) { if (day > 100 && typeof ndCuDayInfo === 'function') return ndCuDayInfo(dept, day); return nfDeptDay(ndPlanFor(day)[dept] || [], day, ndShape()); }
 // Step 2c: which version's day plan a programme day uses — the one in force on that day's date (published versions apply from
 // the day after publishing, so days already reached keep their checkpoints)
 function ndPlanFor(day) {
@@ -149,6 +150,7 @@ function ndRender() {
   var app = document.getElementById('nf-dept-app'); if (!app || !_nd) return;
   if (_nd.card) { app.innerHTML = ndCardHTML(); ndQBadge(); return; }                                   // Compare the cards (full screen)
   if (_nd.screen === 'lead' && !_nd.view) { app.innerHTML = ndLeadScreenHTML(); ndQBadge(); return; }   // Decide & assign (full screen)
+  if (_nd.screen === 'grad' || _nd.screen === 'end' || _nd.screen === 'review' || _nd.screen === 'admin') { app.innerHTML = ndGradScreenHTML(); ndQBadge(); return; }   // Step 3: programme end
   if (ndFaOn()) { app.innerHTML = ndFaHTML(); ndQBadge(); return; }                                       // Facility dashboard (in-charge, MO in-charge)
   var t = _nd.tab, body = t === 'cards' ? ndCardsHTML() : t === 'ready' ? ndReadyHTML() : t === 'actions' ? ndActionsPageHTML() : t === 'setup' ? ndSetupPageHTML() : t === 'dept' ? ndDeptDashHTML()
     : t === 'me' ? ndMeHTML() : t === 'fix' ? ndSupHTML() : ndTodayHTML();
@@ -292,7 +294,8 @@ async function ndOpenView(code) {
   try { _nd.cards = (await fbGet(ndPath())) || {}; } catch (e) {}
   try { _nd.actions = (await fbGet('sc_dactions/' + code)) || {}; } catch (e) {}
   try { _nd.pcards = (await fbGet('sc_pcards/' + code)) || {}; } catch (e) {}
-  ndShow();
+  try { await ndGradLoad(); } catch (e) {}
+  ndShow(); ndGradMaybe();
 }
 function ndCloseView() { ndClose(); _nd = null; nfSetLevel(NF_LEVEL_DEFAULT); try { if (typeof scRenderMasterDashboard === 'function') scRenderMasterDashboard(); } catch (e) {} }
 

@@ -1,0 +1,105 @@
+/* Step 3 (20 Oct 2026): readiness week, end-line check, final team review, graduation result, HealSol programme block, certificate */
+#nf-dept-app .ng-row{display:flex;align-items:center;gap:8px;}
+#nf-dept-app .ng-pad{padding:12px 14px;}
+#nf-dept-app .ng-k{color:#1E6B5E;font-size:13.5px;}
+#nf-dept-app .ng-txt{font-size:12.5px;color:#475569;line-height:1.45;margin-top:6px;}
+#nf-dept-app .ng-wide{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;box-sizing:border-box;}
+#nf-dept-app a.nx-btn.ghost{color:#134A41;}
+#nf-dept-app .ng-ring{position:relative;width:64px;height:64px;flex:none;}
+#nf-dept-app .ng-ring>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#0F172A;}
+/* readiness week band */
+#nf-dept-app .ng-rw{background:#134A41;color:#fff;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;}
+#nf-dept-app .ng-rw>small{font-size:11.5px;letter-spacing:.06em;opacity:.85;}
+#nf-dept-app .ng-rw>b{font-size:17px;}
+#nf-dept-app .ng-ph{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:11.5px;}
+#nf-dept-app .ng-ph li{background:rgba(255,255,255,.14);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:2px;}
+#nf-dept-app .ng-ph li.on{background:#fff;color:#134A41;}
+#nf-dept-app .ng-ph li span{font-weight:400;line-height:1.3;}
+/* department rows */
+#nf-dept-app .ng-dl{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid #F0F4F2;}
+#nf-dept-app .ng-dl>span{flex:1;min-width:0;display:flex;flex-direction:column;}
+#nf-dept-app .ng-dl>span b{font-size:13.5px;color:#0F172A;}
+#nf-dept-app .ng-dl>span small{font-size:12px;color:#64748B;}
+#nf-dept-app .ng-dot{width:10px;height:10px;border-radius:50%;flex:none;background:#D97706;}
+#nf-dept-app .ng-dot.r{background:#C2410C;}
+#nf-dept-app .ng-lnk{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 6px;font-size:13px;font-weight:700;color:#1E6B5E;text-decoration:none;background:none;border:0;}
+#nf-dept-app .ng-go{min-height:40px;padding:0 14px;border-radius:10px;border:0;background:#1E6B5E;color:#fff;font-size:13px;font-weight:700;flex:none;}
+#nf-dept-app .ng-go.ghost{background:#fff;color:#134A41;border:1px solid #C9D6D2;}
+#nf-dept-app .ng-day{width:44px;height:46px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;background:#FDF1DC;color:#7A4A04;}
+#nf-dept-app .ng-day.r{background:#FDE8E8;color:#9B1C1C;}
+#nf-dept-app .ng-day small{font-size:9px;letter-spacing:.08em;}
+#nf-dept-app .ng-day b{font-size:16px;line-height:1;}
+#nf-dept-app .ng-chips{display:flex;flex-wrap:wrap;gap:6px;}
+#nf-dept-app .ng-chips span,#nf-dept-app .ng-ok{background:#DDF3E6;color:#0F5132;font-size:12.5px;font-weight:700;border-radius:8px;padding:6px 10px;}
+#nf-dept-app .ng-chips .ng-bad{background:#FDE8E8;color:#9B1C1C;}
+#nf-dept-app .ng-chips .ng-mid{background:#FDF1DC;color:#7A4A04;}
+#nf-dept-app .ng-ul{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.6;color:#1E293B;}
+/* scores */
+#nf-dept-app .ng-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center;}
+#nf-dept-app .ng-3>div{background:#F4F7F6;border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;}
+#nf-dept-app .nx-card.ng-3>div{background:none;padding:0;}
+#nf-dept-app .ng-3 small{font-size:11.5px;color:#64748B;}
+#nf-dept-app .ng-3 b{font-size:19px;color:#0F172A;}
+#nf-dept-app .ng-3 b.t{color:#1E6B5E;} #nf-dept-app .ng-3 b.g{color:#0F5132;}
+#nf-dept-app .ng-bars{display:flex;flex-direction:column;gap:8px;font-size:13px;}
+#nf-dept-app .ng-bar{display:grid;grid-template-columns:minmax(0,118px) minmax(0,1fr) 42px;gap:8px;align-items:center;}
+#nf-dept-app .ng-bar>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#nf-dept-app .ng-bar>i{position:relative;height:8px;background:#EAF0EE;border-radius:99px;}
+#nf-dept-app .ng-bar>i em{display:block;height:100%;background:#1E6B5E;border-radius:99px;}
+#nf-dept-app .ng-bar>i em.r{background:#C2410C;}
+#nf-dept-app .ng-bar>i u{position:absolute;top:-3px;width:2px;height:14px;background:#0F172A;}
+#nf-dept-app .ng-bar>b{text-align:right;} #nf-dept-app .ng-bar>b.r{color:#9B1C1C;}
+#nf-dept-app .ng-aoc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;font-size:12.5px;text-align:center;}
+#nf-dept-app .ng-aoc span{border-radius:8px;padding:6px 0;background:#DDF3E6;color:#0F5132;}
+#nf-dept-app .ng-aoc span.r{background:#FDE8E8;color:#9B1C1C;}
+/* result */
+#nf-dept-app .ng-res{flex-direction:row;align-items:center;gap:12px;text-align:left;width:100%;cursor:pointer;font:inherit;color:inherit;}
+#nf-dept-app .ng-res>span>small{display:block;font-size:12px;color:#64748B;}
+#nf-dept-app .ng-res>span>b{display:block;font-size:17px;}
+#nf-dept-app .ng-res.a>span>b{color:#7A4A04;} #nf-dept-app .ng-res.g>span>b{color:#0F5132;} #nf-dept-app .ng-res.r>span>b{color:#9B1C1C;}
+#nf-dept-app .ng-ic{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;font-size:22px;background:#E3F1ED;color:#134A41;}
+#nf-dept-app .a>.ng-ic{background:#FDF1DC;color:#7A4A04;} #nf-dept-app .g>.ng-ic{background:#DDF3E6;color:#0F5132;} #nf-dept-app .r>.ng-ic{background:#FDE8E8;color:#9B1C1C;}
+#nf-dept-app .ng-big{align-items:center;text-align:center;gap:4px;}
+#nf-dept-app .ng-big>.ng-ic{width:56px;height:56px;font-size:28px;}
+#nf-dept-app .ng-big>small{font-size:12px;letter-spacing:.06em;color:#64748B;margin-top:6px;}
+#nf-dept-app .ng-big>b{font-size:24px;}
+#nf-dept-app .ng-big.a>b{color:#7A4A04;} #nf-dept-app .ng-big.g>b{color:#0F5132;} #nf-dept-app .ng-big.r>b{color:#9B1C1C;}
+#nf-dept-app .ng-big>span{font-size:13px;color:#475569;line-height:1.5;}
+#nf-dept-app .ng-big>.ng-3{width:100%;margin-top:10px;}
+#nf-dept-app .ng-crit{list-style:none;margin:0;padding:0 0 4px;}
+#nf-dept-app .ng-crit li{display:flex;gap:10px;align-items:center;padding:8px 14px;font-size:13px;border-top:1px solid #F0F4F2;}
+#nf-dept-app .ng-crit li:first-child{border-top:0;}
+#nf-dept-app .ng-crit li>span{flex:1;display:flex;flex-direction:column;}
+#nf-dept-app .ng-crit li small{font-size:12px;color:#64748B;}
+#nf-dept-app .ng-crit i{font-size:18px;} #nf-dept-app .ng-crit i.g{color:#0F5132;} #nf-dept-app .ng-crit i.r{color:#9B1C1C;} #nf-dept-app .ng-crit i.a{color:#B45309;}
+#nf-dept-app .ng-crit b.r{color:#9B1C1C;}
+#nf-dept-app .ng-progs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px;}
+#nf-dept-app .ng-progs>div{border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px;border:1px solid #BFE3CD;background:#F3FBF6;}
+#nf-dept-app .ng-progs>div.r{border-color:#F3C9C9;background:#FFF6F6;}
+#nf-dept-app .ng-progs small{font-size:12px;color:#475569;}
+#nf-dept-app .ng-progs em{font-style:normal;font-size:12px;font-weight:700;color:#0F5132;} #nf-dept-app .ng-progs .r em{color:#9B1C1C;}
+/* HealSol programme block */
+#nf-dept-app .ng-tl{display:flex;height:30px;border-radius:8px;overflow:hidden;font-size:11px;font-weight:700;}
+#nf-dept-app .ng-tl span{display:flex;align-items:center;justify-content:center;background:#C4DED7;color:#134A41;white-space:nowrap;overflow:hidden;padding:0 4px;}
+#nf-dept-app .ng-tl span:first-child{background:#DCEBE7;} #nf-dept-app .ng-tl span:nth-child(3){background:#A9D0C6;} #nf-dept-app .ng-tl span.on{background:#1E6B5E;color:#fff;}
+#nf-dept-app .ng-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0;}
+#nf-dept-app .ng-kpis>div{background:#F4F7F6;border-radius:12px;padding:10px;display:flex;flex-direction:column;}
+#nf-dept-app .ng-kpis>div.a{background:#FFF8EC;color:#7A4A04;} #nf-dept-app .ng-kpis>div.g{background:#F0FDF4;color:#0F5132;} #nf-dept-app .ng-kpis>div.r{background:#FEF2F2;color:#9B1C1C;}
+#nf-dept-app .ng-kpis small{font-size:12px;opacity:.8;} #nf-dept-app .ng-kpis b{font-size:15px;}
+#nf-dept-app .ng-tbl{overflow-x:auto;}
+#nf-dept-app .ng-tbl table{width:100%;border-collapse:collapse;font-size:13px;}
+#nf-dept-app .ng-tbl th{text-align:left;font-size:12px;color:#64748B;font-weight:600;padding:6px;}
+#nf-dept-app .ng-tbl td{padding:7px 6px;border-top:1px solid #EDF2F0;} #nf-dept-app .ng-tbl td.r{color:#9B1C1C;font-weight:700;}
+#nf-dept-app .ng-seg{margin-bottom:8px;}
+/* certificate card (Me) */
+#nf-dept-app .ng-cert .ng-ch{display:flex;gap:12px;align-items:center;padding:14px;border-bottom:1px solid #EDF2F0;}
+#nf-dept-app .ng-ci{width:44px;height:44px;border-radius:12px;background:#134A41;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;}
+#nf-dept-app .ng-cert .ng-ch b{display:block;font-size:15px;}
+#nf-dept-app .ng-cert .ng-ch small{display:block;font-size:12px;color:#64748B;} #nf-dept-app .ng-cert .ng-ch small.g{color:#0F5132;font-weight:700;}
+#nf-dept-app .ng-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px;}
+#nf-dept-app .ng-cert .nx-btn.ng-wide{margin-top:10px;}
+#nf-dept-app .ng-crit li>b{max-width:48%;text-align:right;}
+#nf-dept-app .ng-dl>span.ng-day{flex:none;}
+#nf-dept-app .ng-dl>.nx-chip{flex:none;}
+#nf-dept-app .nd-main>.nx-card,#nf-dept-app .nd-main>.nx-ban,#nf-dept-app .nd-main>.nx-btn{margin-bottom:10px;}
+#nf-dept-app .ng-tbl td.r{background:none;}

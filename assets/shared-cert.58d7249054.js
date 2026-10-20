@@ -14,6 +14,16 @@ var _nfCert={rec:null,code:'',mob:'',loaded:false};
 function nfCertGradeOf(p){ return p>=80?'Distinction':p>=70?'Merit':'Completion'; }
 function nfCertTitle(g){ return g==='Completion'?'CERTIFICATE OF COMPLETION':'CERTIFICATE OF ACHIEVEMENT'; }
 function nfCertBase(){ return NF_CERT_VERIFY_BASE; }
+// the programme sentence and the third score box (Sub-Centre or department core: UPHC / PHC / CHC, Step 3)
+function nfCertText(r){
+  if(r.kind==='dept') return 'has completed the '+(r.programmeDays||90)+'-day NQAS | FAST readiness programme ('+(r.packageLabel||r.tier)+')'+(r.depts?' in '+r.depts:'')+', '+scFmtDate(r.startDate)+' – '+scFmtDate(r.endDate)+', meeting every condition: '
+    +(r.lead?r.daysVerified+' of '+r.totalDays+' department-days checked as lead.':r.daysDone+' of '+r.totalDays+' card days done and '+r.daysVerified+' checked by the department lead.');
+  return 'has completed the 60-day NQAS | FAST readiness programme ('+(r.packageLabel||r.tier)+'), '+scFmtDate(r.startDate)+' – '+scFmtDate(r.endDate)+', meeting every condition: baseline '+r.baselineDays+'/7, '+r.daysDone+' of '+r.totalDays+' daily cards done and '+r.daysVerified+' verified by mentors.';
+}
+function nfCertBoxes(r){
+  var d=r.kind==='dept';
+  return {staff:d?'MY DEPARTMENTS':'STAFF READINESS',third:d?(r.lead?'DAYS CHECKED':'CARD DAYS'):'DAILY CARDS',val:(d&&r.lead?r.daysVerified:r.daysDone)+'/'+r.totalDays,sub:d?(r.lead?'as lead':r.daysVerified+' checked'):r.daysVerified+' verified'};
+}
 function nfCertEval(){
   var cards=(choState&&choState.cards)||{}, done=0, ver=0, base=0;
   Object.keys(cards).forEach(function(k){ var i=+k, c=cards[k]; if(!c||!c.taskDone||i>=NF_CERT.days) return; done++; if(c.verified) ver++; if(i<NF_CERT.baseline) base++; });
@@ -76,9 +86,9 @@ function nfCertHTML(r){
     +'<h1>'+nfCertTitle(g)+'</h1>'+(g!=='Completion'?'<div class="gr">with '+scEsc(g)+'</div>':'<div class="gr">NQAS | FAST readiness programme</div>')
     +'<div class="ct">This is to certify that</div><div class="nm">'+scEsc(r.name)+'</div>'
     +'<div class="fc">'+scEsc(r.role)+' · '+scEsc(r.facilityName)+' ('+scEsc(r.code)+')'+(r.district?' · '+scEsc([r.district,r.state].filter(Boolean).join(', ')):'')+' <span class="nf-pro"><i class="p">PRO</i><i class="t">'+scEsc(r.tier)+'</i></span></div>'
-    +'<div class="tx">has completed the 60-day NQAS | FAST readiness programme ('+scEsc(r.packageLabel||r.tier)+'), '+scEsc(scFmtDate(r.startDate))+' – '+scEsc(scFmtDate(r.endDate))+', meeting every condition: baseline '+r.baselineDays+'/7, '+r.daysDone+' of '+r.totalDays+' daily cards done and '+r.daysVerified+' verified by mentors.</div>'
-    +'<div class="sc"><div><small>Facility score</small><b>'+r.facPct+'%</b>'+gain(r.facPct,r.facBase)+'</div><div><small>Staff readiness</small><b>'+r.staffPct+'%</b>'+gain(r.staffPct,r.staffBase)+'</div>'
-    +'<div><small>Daily cards</small><b>'+r.daysDone+'/'+r.totalDays+'</b><em>'+r.daysVerified+' verified</em></div></div>'
+    +'<div class="tx">'+scEsc(nfCertText(r))+'</div>'
+    +(function(){ var bx=nfCertBoxes(r), cap=function(t){ return t.charAt(0)+t.slice(1).toLowerCase(); }; return '<div class="sc"><div><small>Facility score</small><b>'+r.facPct+'%</b>'+gain(r.facPct,r.facBase)+'</div><div><small>'+cap(bx.staff)+'</small><b>'+r.staffPct+'%</b>'+gain(r.staffPct,r.staffBase)+'</div>'
+    +'<div><small>'+cap(bx.third)+'</small><b>'+bx.val+'</b><em>'+scEsc(bx.sub)+'</em></div></div>'; })()
     +'<div class="sg">'+(r.signers||[]).map(function(s){ return '<div><div class="s">'+scEsc(s.name)+'</div><hr><b>'+scEsc(s.name)+'</b><small>'+scEsc(s.role)+(s.title&&s.title!==s.role?' · '+scEsc(s.title):'')+'</small><small>Digitally signed · '+scEsc(signed)+'</small></div>'; }).join('')+'</div></div>'
     +'<div class="ft"><span>Certificate No. <b>'+scEsc(r.certId)+'</b> · Issued '+scEsc(signed)+'</span><span>Verify: '+scEsc(String(r.verifyUrl||'').replace(/^https:\/\/(www\.)?/,''))+'</span></div></div>';
 }
@@ -117,10 +127,10 @@ async function nfCertPdf(r){
   doc.setFont(F,'normal'); doc.setFontSize(10.5); doc.setTextColor(61,75,73); doc.text(fl,cx-(fw+tw+3)/2,80);
   nfPdfProTag(doc,r.tier,cx-(fw+tw+3)/2+fw+3,76.9);
   doc.setFont(F,'normal'); doc.setFontSize(9.5); doc.setTextColor(61,75,73);
-  var tx='has completed the 60-day NQAS | FAST readiness programme ('+(r.packageLabel||r.tier)+'), '+scFmtDate(r.startDate)+' – '+scFmtDate(r.endDate)+', meeting every condition: baseline '+r.baselineDays+'/7, '+r.daysDone+' of '+r.totalDays+' daily cards done and '+r.daysVerified+' verified by mentors.';
+  var tx=nfCertText(r), bx=nfCertBoxes(r);
   doc.text(doc.splitTextToSize(T(tx),190),cx,88,{align:'center'});
   // scores
-  var boxes=[['FACILITY SCORE',r.facPct+'%',r.facBase!=null?'Baseline '+r.facBase+'% · '+(r.facPct-r.facBase>=0?'+':'')+(r.facPct-r.facBase):''],['STAFF READINESS',r.staffPct+'%',r.staffBase!=null?'Baseline '+r.staffBase+'% · '+(r.staffPct-r.staffBase>=0?'+':'')+(r.staffPct-r.staffBase):''],['DAILY CARDS',r.daysDone+'/'+r.totalDays,r.daysVerified+' verified']];
+  var boxes=[['FACILITY SCORE',r.facPct+'%',r.facBase!=null?'Baseline '+r.facBase+'% · '+(r.facPct-r.facBase>=0?'+':'')+(r.facPct-r.facBase):''],[bx.staff,r.staffPct+'%',r.staffBase!=null?'Baseline '+r.staffBase+'% · '+(r.staffPct-r.staffBase>=0?'+':'')+(r.staffPct-r.staffBase):''],[bx.third,bx.val,bx.sub]];
   var bw=44, gap=6, bx=cx-(bw*3+gap*2)/2, by=101;
   boxes.forEach(function(b,i){ var x=bx+i*(bw+gap); doc.setDrawColor(221,230,228); doc.setLineWidth(0.3); doc.roundedRect(x,by,bw,23,2.5,2.5,'S');
     doc.setFont(F,'normal'); doc.setFontSize(7); doc.setTextColor.apply(doc,GREY); doc.text(b[0],x+bw/2,by+5.5,{align:'center',charSpace:0.3});

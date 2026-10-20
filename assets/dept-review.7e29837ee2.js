@@ -221,10 +221,10 @@ function ndUnassigned(mob) {   // unmet (checked) checkpoints with no live actio
     .map(function (id) { return { id: id, dept: F[id].dept, day: F[id].day, s: F[id].s }; });
 }
 function ndChecksDue(mob) {   // department-days ready to check (or overdue, for the lead)
-  var out = [], today = ndDay();
+  var out = [], today = ndDay(), S = ndShape(), from = today > S.eN && today <= S.days + 30 ? Math.min(S.e1, today - 13) : today - 13;   // readiness week: every end-line day
   ndDeptDefs().forEach(function (d) {
-    for (var n = Math.max(1, today - 13); n <= Math.min(today, _nd.cfg.days); n++) {
-      var res = ndRes(d.id, n); if (res.chk) continue;
+    for (var n = Math.max(1, from); n <= Math.min(today, ndLastDay()); n++) {
+      var res = ndRes(d.id, n); if (res.chk || ndGradLocked(n)) continue;
       var inn = ndCardsIn(d.id, n); if (!inn.done.length) continue;
       var solo = ndSolo(d.id);
       if (solo && !ndCompare(d.id, n).some(function (x) { return x.re || x.spot; })) continue;   // one card: nothing to spot-check or re-check
@@ -307,11 +307,11 @@ function ndWaLink(mob, text) { return 'https://wa.me/91' + mob + '?text=' + enco
 function ndTodo(mob) {
   var day = ndDay(), fill = ndDeptDefs().filter(function (d) { var c = ndPc(d.id, day)[mob] || {}; return ndFills(d.id, mob) && !c.done && !c.absent && !ndRes(d.id, day).chk && ndMyIds(d.id, day, mob).length; });
   var late = [];   // missed days still open (not checked) — catch up
-  ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, mob)) return; for (var n = Math.max(1, day - 13); n < Math.min(day, _nd.cfg.days + 1); n++) { var c = ndPc(d.id, n)[mob] || {}; if (!c.done && !c.absent && !ndRes(d.id, n).chk && ndMyIds(d.id, n, mob).length) late.push({ dept: d.id, day: n }); } });
+  ndDeptDefs().forEach(function (d) { if (!ndFills(d.id, mob)) return; for (var n = Math.max(1, day - 13); n < Math.min(day, ndLastDay() + 1); n++) { var c = ndPc(d.id, n)[mob] || {}; if (!c.done && !c.absent && !ndRes(d.id, n).chk && !ndGradLocked(n) && ndMyIds(d.id, n, mob).length) late.push({ dept: d.id, day: n }); } });
   return { fill: fill, late: late, check: ndChecksDue(mob), decide: ndEscItems(mob), assign: ndUnassigned(mob), fix: ndMyActions() };
 }
 function ndStreak() {   // days in a row (up to yesterday, plus today when done) with all my cards done
-  var me = ndMob(), t = Math.min(ndDay(), _nd.cfg.days), n = 0;
+  var me = ndMob(), t = Math.min(ndDay(), ndLastDay()), n = 0;
   var full = function (day) { var ds = ndDeptDefs().filter(function (d) { return ndFills(d.id, me) && ndDayInfo(d.id, day).ids.length; }); if (!ds.length) return null; return ds.every(function (d) { var c = ndPc(d.id, day)[me] || {}; return c.done || c.absent; }); };
   var today = full(t); if (today) n++;
   for (var d = t - 1; d >= 1; d--) { var f = full(d); if (f === null) continue; if (!f) break; n++; }
@@ -325,7 +325,7 @@ var ND_ST = {
   verified: { t: 'Checked', i: 'ti-shield-check' }, overdue: { t: 'Missed — catch up', i: 'ti-alert-triangle' }, none: { t: 'No card', i: 'ti-minus' }
 };
 var _ndWkOpen = {};
-function ndDateOf(day) { return _nd.fac.startDate ? ndAddDays(_nd.fac.startDate, day - 1) : ''; }
+function ndDateOf(day) { var cu = day > 100 && typeof ndCu === 'function' ? ndCu() : null; if (cu && cu.start) return ndAddDays(cu.start, day - 101); return _nd.fac.startDate ? ndAddDays(_nd.fac.startDate, day - 1) : ''; }
 function ndShortDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m[2] - 1] : ''; }
 // my status for one department on one day
 function ndMySt(dept, day) {
@@ -347,13 +347,13 @@ function ndDaySt(day) {
 }
 function ndDayTitle(day) {
   var d0 = ndMyDepts()[0] || (_nd.cfg.departments || [])[0], info = d0 ? ndDayInfo(d0.id, day) : { phase: 'baseline' };
-  var S = ndShape(); if (day >= S.r1 && day <= S.rN) { var k = day - S.r1, n = S.ready; return k >= n - 1 ? 'Graduation' : k === n - 2 ? 'Final team review' : 'End-line verification'; }
+  var S = ndShape(); if (day > 100) return ndWeekLabel(day); if (day >= S.r1 && day <= S.rN) { var k = day - S.r1, n = S.ready; return k >= n - 1 ? 'Graduation' : k === n - 2 ? 'Final team review' : 'End-line verification'; }
   return ND_PHASE[info.phase] + (info.week ? ' · week ' + info.week : '');
 }
 // ═══ Cards tab in the SC design (17 Oct): Cards head · Day / Timeline switch · facility bar · day strip · the day card ═══
 function ndCur() { return _nd.card || { dept: _nd.cdept, day: _nd.cday }; }
 function ndAocColor(a) { try { if (typeof getAoCDef === 'function') { var c = (getAoCDef(a) || {}).color; if (c) return c; } } catch (e) {} return '#1E6B5E'; }
-function ndWeekLabel(day) { var S = ndShape(); return day <= S.bN ? 'Baseline audit' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
+function ndWeekLabel(day) { var S = ndShape(); if (day > 100) return day - 100 > ND_GRAD.cuWork ? 'Catch-up re-check' : 'Catch-up week ' + Math.ceil((day - 100) / 7); return day <= S.bN ? 'Baseline audit' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
 function ndCardDepts(day) {   // my departments with a card on this day: the ones I fill first, then the ones I check
   var me = ndMob();
   return ndMyDepts().filter(function (d) { return ndDayIds(d.id, day).length && (_nd.view || (ndFills(d.id, me) && ndMyIds(d.id, day, me).length) || ndCanCheck(d.id, me)); })
