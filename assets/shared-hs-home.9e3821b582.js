@@ -327,10 +327,9 @@ function hsEnsureTabs() {
   var cur = _nfOv.view === 'stdon' ? 'partners' : _nfOv.view === 'recog' ? 'recog' : _hs.stab;
   st.innerHTML = '<h1 class="hs-h1">Settings</h1>' + HS_STABS.map(function (x) { return '<button type="button" role="tab" aria-selected="' + (cur === x[0]) + '" class="' + (cur === x[0] ? 'on' : '') + (x[0] === 'danger' ? ' danger' : '') + '" onclick="hsSetTab(\'' + x[0] + '\')">' + hsE(x[1]) + '</button>'; }).join('');
   var ct = document.getElementById('hs-ctabs'); if (!ct) { ct = document.createElement('div'); ct.id = 'hs-ctabs'; ct.dataset.nfv = 'hstabs'; ct.className = 'hs-tabs hs-ctabs'; ct.setAttribute('role', 'tablist'); main.insertBefore(ct, main.firstChild); }
-  ct.innerHTML = '<h1 class="hs-h1">Content</h1><button type="button" role="tab" aria-selected="' + (_nfOv.view === 'editor') + '" class="' + (_nfOv.view === 'editor' ? 'on' : '') + '" onclick="nfAdminView(\'editor\')">Sub-Centre (Card editor)</button>'
-    + '<button type="button" role="tab" aria-selected="' + (_nfOv.view === 'dm') + '" class="' + (_nfOv.view === 'dm' ? 'on' : '') + '" onclick="nfAdminView(\'dm\')">UPHC · PHC · CHC (Checkpoints)</button>';
+  ct.innerHTML = typeof scdTypeTabs === 'function' ? scdTypeTabs() : '<h1 class="hs-h1">Checkpoints</h1>';
   if (!document.getElementById('hs-rules')) { var r = document.createElement('div'); r.id = 'hs-rules'; r.dataset.nfv = 'setup'; r.className = 'nfo-card hs-rules';
-    r.innerHTML = '<b><i class="ti ti-adjustments"></i> Programme rules</b><p>NQAS criteria (overall, Area of Concern, Standard minimums) are set in Content → Card editor → NQAS criteria; UPHC / PHC / CHC use 70% overall, per department and per Area of Concern, 50% per Standard. Timeline — grace days after the last day, catch-up, on-time thresholds — is set separately for Sub-Centres, UPHCs, PHCs and CHCs:</p>'
+    r.innerHTML = '<b><i class="ti ti-adjustments"></i> Programme rules</b><p>NQAS criteria (overall, Area of Concern, Standard minimums) are set in Content → Checkpoints → Sub-Centre → NQAS criteria; UPHC / PHC / CHC use 70% overall, per department and per Area of Concern, 50% per Standard. Timeline — grace days after the last day, catch-up, on-time thresholds — is set separately for Sub-Centres, UPHCs, PHCs and CHCs:</p>'
       + '<button type="button" class="hs-btn p" onclick="nfgSettings()">Timeline settings</button>';
     main.appendChild(r); }
   if (main.firstChild !== ct) main.insertBefore(ct, main.firstChild); if (main.firstChild !== st) main.insertBefore(st, main.firstChild);

@@ -1835,7 +1835,7 @@ textarea.scx-in{resize:vertical;min-height:70px;}
       <!-- Header -->
       <div style="background:var(--teal,#1E6B5E);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:15px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">✏️ Card Editor</span>
+          <span style="font-size:15px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">✏️ Sub-Centre editor</span>
           <span id="ae-edit-count" style="font-size:11px;color:rgba(255,255,255,0.7);font-weight:600;">0 cards edited</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -22245,7 +22245,7 @@ function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
     + '</div><div class="mfc-pct" style="color:var(--teal);font-size:13px;text-align:right;line-height:1.2;">' + (day && day >= 1 && day <= days ? 'Day ' + day + '<br><span style="font-size:9.5px;font-weight:700;color:var(--t3);">' + e(phase) + '</span>' : '') + '</div></div>'
     + '<div style="height:6px;border-radius:10px;background:var(--br);margin:8px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:' + pct + '%;background:var(--teal);"></div></div>'
     + '<div class="mfc-meta"><span>' + e(when) + '</span><span>' + e(LV.inChargeLabel || LV.inCharge) + ': ' + e(fac.choName || (function () { var st = fac.staff || {}, m = Object.keys(st).find(function (k) { return st[k] && !st[k].disabled && (st[k].role || LV.inCharge) === LV.inCharge; }); return m ? (st[m].name || m) : 'Not set'; })()) + '</span></div>'
-    + '<div style="display:flex;gap:6px;margin-top:8px;"><button class="mfc-btn mfc-open" onclick="ndOpenView(\'' + e(code) + '\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>' + (adminBtns || '') + '</div>';
+    + '<div style="display:flex;gap:6px;margin-top:8px;"><button class="mfc-btn mfc-open" onclick="scDrillIn(\'' + e(code) + '\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>' + (adminBtns || '') + '</div>';
 }
 
 nfRegisterCore('dept', { open: { staff: ndOpen } });
@@ -25873,10 +25873,9 @@ function hsEnsureTabs() {
   var cur = _nfOv.view === 'stdon' ? 'partners' : _nfOv.view === 'recog' ? 'recog' : _hs.stab;
   st.innerHTML = '<h1 class="hs-h1">Settings</h1>' + HS_STABS.map(function (x) { return '<button type="button" role="tab" aria-selected="' + (cur === x[0]) + '" class="' + (cur === x[0] ? 'on' : '') + (x[0] === 'danger' ? ' danger' : '') + '" onclick="hsSetTab(\'' + x[0] + '\')">' + hsE(x[1]) + '</button>'; }).join('');
   var ct = document.getElementById('hs-ctabs'); if (!ct) { ct = document.createElement('div'); ct.id = 'hs-ctabs'; ct.dataset.nfv = 'hstabs'; ct.className = 'hs-tabs hs-ctabs'; ct.setAttribute('role', 'tablist'); main.insertBefore(ct, main.firstChild); }
-  ct.innerHTML = '<h1 class="hs-h1">Content</h1><button type="button" role="tab" aria-selected="' + (_nfOv.view === 'editor') + '" class="' + (_nfOv.view === 'editor' ? 'on' : '') + '" onclick="nfAdminView(\'editor\')">Sub-Centre (Card editor)</button>'
-    + '<button type="button" role="tab" aria-selected="' + (_nfOv.view === 'dm') + '" class="' + (_nfOv.view === 'dm' ? 'on' : '') + '" onclick="nfAdminView(\'dm\')">UPHC · PHC · CHC (Checkpoints)</button>';
+  ct.innerHTML = typeof scdTypeTabs === 'function' ? scdTypeTabs() : '<h1 class="hs-h1">Checkpoints</h1>';
   if (!document.getElementById('hs-rules')) { var r = document.createElement('div'); r.id = 'hs-rules'; r.dataset.nfv = 'setup'; r.className = 'nfo-card hs-rules';
-    r.innerHTML = '<b><i class="ti ti-adjustments"></i> Programme rules</b><p>NQAS criteria (overall, Area of Concern, Standard minimums) are set in Content → Card editor → NQAS criteria; UPHC / PHC / CHC use 70% overall, per department and per Area of Concern, 50% per Standard. Timeline — grace days after the last day, catch-up, on-time thresholds — is set separately for Sub-Centres, UPHCs, PHCs and CHCs:</p>'
+    r.innerHTML = '<b><i class="ti ti-adjustments"></i> Programme rules</b><p>NQAS criteria (overall, Area of Concern, Standard minimums) are set in Content → Checkpoints → Sub-Centre → NQAS criteria; UPHC / PHC / CHC use 70% overall, per department and per Area of Concern, 50% per Standard. Timeline — grace days after the last day, catch-up, on-time thresholds — is set separately for Sub-Centres, UPHCs, PHCs and CHCs:</p>'
       + '<button type="button" class="hs-btn p" onclick="nfgSettings()">Timeline settings</button>';
     main.appendChild(r); }
   if (main.firstChild !== ct) main.insertBefore(ct, main.firstChild); if (main.firstChild !== st) main.insertBefore(st, main.firstChild);
@@ -26039,6 +26038,676 @@ function hsxFilterBar(el, parts) {
 function hsxDistItems(state, district) {
   var low = function (x) { return String(x || '').trim().toLowerCase(); };
   return hsxFacItems().filter(function (it) { return (!state || low(it.state) === low(state)) && (!district || low(it.district) === low(district)); });
+}
+</script>
+<style id="nf-fac-page-css">/* Step 4 — one facility page (fac-page.js) */
+#sc-drill-panel.fp{font-family:'Poppins',sans-serif;}
+#sc-drill-panel.fp > *{display:none!important;}
+#sc-drill-panel.fp > #fp-top{display:block!important;}
+#sc-drill-panel.fp.fp-sc[data-fptab="ready"] > #sc-drill-insights,
+#sc-drill-panel.fp.fp-sc[data-fptab="act"] > #sc-drill-insights,
+#sc-drill-panel.fp.fp-sc[data-fptab="staff"] > #sc-drill-staff,
+#sc-drill-panel.fp.fp-sc[data-fptab="staff"] > #sc-drill-insights,
+#sc-drill-panel.fp.fp-sc[data-fptab="prog"] > #fp-prog,
+#sc-drill-panel.fp.fp-dp > #fp-dept{display:block!important;}
+#sc-drill-panel.fp #sc-drill-insights > .scx-tabs{display:none;}
+#sc-drill-panel.fp #sc-drill-staff{margin-bottom:14px;}
+#fp-top .fp-head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-bottom:14px;}
+#fp-top h1{margin:0;font-size:22px;color:var(--t1);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.fp-type{font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 8px;background:#E8EEF9;color:#23407A;}
+.fp-type.sc{background:#E9F4EC;color:#1F5A33;} .fp-type.uphc{background:#F3EAF7;color:#5B2A75;} .fp-type.phc{background:#FDF1DC;color:#7A4B0B;}
+.fp-line{font-size:12.5px;color:var(--t2);margin-top:3px;} .fp-line .nfl-drill{display:inline;}
+.fp-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.fp-btn{height:38px;padding:0 14px;border-radius:10px;border:1px solid #C9D6D2;background:#fff;font:inherit;font-size:12.5px;font-weight:600;color:#134A41;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.fp-btn.sm{height:32px;padding:0 10px;font-size:12px;}
+.fp-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px;}
+.fp-tile{background:#fff;border:1px solid var(--br);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0;}
+.fp-tile small{font-size:11.5px;color:var(--t2);} .fp-tile b{font-size:19px;color:var(--t1);}
+.fp-tile b.g{color:#1F5A33;} .fp-tile b.a{color:#7A4B0B;} .fp-tile b.r{color:#8A2A1B;}
+.fp-tabs{display:flex;gap:22px;border-bottom:1px solid #DCE4E1;margin-bottom:14px;flex-wrap:wrap;}
+.fp-tabs button{border:0;background:none;font:inherit;font-size:14px;padding:10px 0;color:var(--t3);cursor:pointer;border-bottom:3px solid transparent;}
+.fp-tabs button.on{color:#134A41;font-weight:600;border-bottom-color:#1E6B5E;}
+.fp-grid{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;}
+.fp-col{flex:3 1 480px;min-width:0;display:flex;flex-direction:column;gap:14px;} .fp-col + .fp-col{flex:2 1 300px;}
+.fp-card{background:#fff;border:1px solid var(--br);border-radius:14px;padding:14px 16px;font-size:13px;color:var(--t1);}
+.fp-card.p0{padding:0;} .fp-card > b{font-size:14.5px;display:block;margin-bottom:8px;}
+.fp-ch{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;} .fp-ch b{font-size:14.5px;} .fp-ch small{font-size:11.5px;color:var(--t2);}
+.fp-dim{color:var(--t2);font-size:12px;margin:8px 0 0;}
+.fp-rows{display:flex;flex-direction:column;gap:8px;}
+.fp-row{display:grid;grid-template-columns:minmax(150px,200px) minmax(0,1fr) 92px 130px;gap:10px;align-items:center;}
+.fp-row em{font-style:normal;font-size:10.5px;background:#F1F4F3;border-radius:6px;padding:1px 6px;color:var(--t2);}
+.fp-row b{text-align:right;font-size:12.5px;} .fp-row small{font-size:11.5px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fp-bar{height:8px;background:#EDF2F0;border-radius:6px;overflow:hidden;display:block;} .fp-bar span{display:block;height:8px;border-radius:6px;background:#C8553D;}
+.fp-bar span.g{background:#2E8B57;} .fp-bar span.a{background:#D4912A;}
+b.g,td.g{color:#1F5A33;} b.a,td.a{color:#7A4B0B;} b.r,td.r{color:#8A2A1B;}
+.fp-aoc{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;}
+.fp-aoc div{border-radius:10px;padding:8px 4px;text-align:center;background:#FDF1DC;color:#7A4B0B;} .fp-aoc div.g{background:#E9F4EC;color:#1F5A33;}
+.fp-aoc b{display:block;font-size:12.5px;} .fp-aoc span{font-size:15px;font-weight:600;}
+.fp-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;}
+.fp-chips span{border-radius:8px;padding:3px 9px;font-size:12px;background:#E9F4EC;color:#1F5A33;} .fp-chips span.a{background:#FDF1DC;color:#7A4B0B;} .fp-chips span.r{background:#FBE9E7;color:#8A2A1B;}
+.fp-trend{width:100%;height:130px;}
+.fp-ul{margin:4px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px;}
+.fp-chiprow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;}
+.fp-chip{height:34px;padding:0 13px;border-radius:17px;border:1px solid #C9D6D2;background:#fff;font:inherit;font-size:12.5px;font-weight:600;color:var(--t2);cursor:pointer;}
+.fp-chip.on{background:#134A41;color:#fff;border-color:#134A41;}
+.fp-legend{font-size:11.5px;color:var(--t2);display:inline-flex;gap:6px;align-items:center;} .fp-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;}
+.fp-note{border-radius:12px;padding:10px 12px;font-size:12.5px;margin-bottom:12px;} .fp-note.a{background:#FDF6E7;border:1px solid #F0D9A8;}
+.fp-tw{overflow-x:auto;}
+.fp-t{width:100%;border-collapse:collapse;font-size:12.5px;min-width:760px;}
+.fp-t.sm{min-width:0;margin-top:8px;}
+.fp-t th{text-align:left;font-size:11.5px;color:var(--t2);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--br);}
+.fp-t td{padding:9px 12px;border-bottom:1px solid #EEF2F1;vertical-align:top;} .fp-t td small{display:block;color:var(--t2);font-size:11.5px;}
+.fp-t tr.grp td{background:#F4F7F6;font-weight:600;}
+.fp-st{border-radius:8px;padding:2px 8px;font-size:11.5px;white-space:nowrap;background:#E8EEF9;color:#23407A;}
+.fp-st.r{background:#FBE9E7;color:#8A2A1B;} .fp-st.a{background:#FDF1DC;color:#7A4B0B;} .fp-st.g{background:#E9F4EC;color:#1F5A33;} .fp-st.n{background:#F1F4F3;color:#4A5A55;}
+.fp-strip{display:inline-flex;gap:2px;} .fp-strip i{display:inline-block;width:6px;height:16px;border-radius:2px;}
+.fp-tl{display:flex;gap:3px;margin:4px 0 8px;font-size:11.5px;}
+.fp-tl div{background:#DCE4E1;color:var(--t1);padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.fp-tl div:first-child{border-radius:8px 0 0 8px;} .fp-tl div:last-child{border-radius:0 8px 8px 0;}
+.fp-tl div.done{background:#2E8B57;color:#fff;} .fp-tl div.now{background:#1E6B5E;color:#fff;font-weight:600;}
+.fp-res{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-radius:12px;padding:10px 12px;background:#FDF6E7;}
+.fp-res b{font-size:19px;color:#7A4B0B;} .fp-res.g{background:#E9F4EC;} .fp-res.g b{color:#1F5A33;} .fp-res.r{background:#FBE9E7;} .fp-res.r b{color:#8A2A1B;}
+.fp-recs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;} .fp-recs li{display:flex;justify-content:space-between;gap:8px;}
+@media(max-width:900px){.fp-tiles{grid-template-columns:repeat(3,minmax(0,1fr));}.fp-row{grid-template-columns:minmax(0,1fr) 90px;}.fp-row .fp-bar,.fp-row small{display:none;}.fp-aoc{grid-template-columns:repeat(4,minmax(0,1fr));}}
+@media(max-width:560px){.fp-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}}
+/* Step 4 — Sub-Centre draft / publish (sc-draft.js) */
+.scd-bar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--br);border-radius:14px;padding:12px 16px;margin-bottom:12px;font-family:'Poppins',sans-serif;}
+.scd-bar b{display:block;font-size:14.5px;color:var(--t1);} .scd-bar small{font-size:12px;color:var(--t2);}
+.scd-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.scd-badge{font-size:12.5px;font-weight:600;border-radius:8px;padding:6px 10px;background:#F1F4F3;color:var(--t2);} .scd-badge.on{background:#FDF1DC;color:#7A4B0B;}
+.fp-btn.pri{background:#1E6B5E;color:#fff;border-color:#1E6B5E;} .fp-btn[disabled]{opacity:.5;cursor:not-allowed;}
+#admin-editor-section.scd-hide{display:none!important;}
+.scd-pub{font-family:'Poppins',sans-serif;} .scd-pub h2{margin:8px 0 2px;font-size:22px;color:var(--t1);}
+.scd-back{border:0;background:none;color:#1E6B5E;font:inherit;font-size:13px;cursor:pointer;padding:0;}
+.scd-ch{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:start;border-top:1px solid #EEF2F1;padding:10px 0 2px;}
+.scd-ch .fp-st{text-align:center;} .scd-ch small{display:block;color:var(--t2);font-size:12px;}
+.scd-chk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;} .scd-chk .g{color:#1F5A33;} .scd-chk .a{color:#7A4B0B;} .scd-chk .r{color:#8A2A1B;}
+.scd-note{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--t2);margin:8px 0 10px;} .scd-note textarea{border:1px solid #C9D6D2;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;}
+.scd-vers{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;} .scd-vers li{display:flex;justify-content:space-between;gap:8px;align-items:center;}
+.scd-vers small{display:block;color:var(--t2);font-size:11.5px;} .scd-vers em{font-style:normal;font-size:12px;color:#1F5A33;}
+body.hs-admin #nf-dm .nm-types{display:none;}
+body.hs-admin #admin-editor-section button[onclick="toggleAdminEditor()"]{display:none!important;}
+body.hs-admin #admin-editor-section[data-scdtab="master"] button[onclick="aeSaveDay()"],body.hs-admin #admin-editor-section[data-scdtab="master"] button[onclick="aeResetDay()"]{display:none!important;}
+</style>
+<script id="nf-fac-page">// ══════════════════════════════════════════════════════════════
+// STEP 4 — ONE FACILITY PAGE for SC · UPHC · PHC · CHC (HealSol, Supervisor, District Admin; canvas
+// "Step 4 — One Facility Page & Shared Checkpoints", approved 21 Oct 2026)
+//   Header (name, type, ID, place, package, access, start, in-charge) · six tiles · tabs
+//   Readiness · Actions · Staff & cards · Programme. Every role keeps its usual view-only limits.
+//   Sub-Centre: the existing drill-in pieces are shown under the tabs (Readiness / Review & Action Plan / By staff
+//   insights, the staff list, the Programme block) — nothing about them changes.
+//   UPHC · PHC · CHC: worked out here from the facility's cards with the department-core functions (_nd swapped
+//   while computing, as dept/summary.js does); "Open the facility app" opens the phone view (ndOpenView).
+// ══════════════════════════════════════════════════════════════
+var _fp = { code: null, tab: 'ready', type: 'sc', D: null, act: 'open' };
+function fpE(s) { return scEsc(s == null ? '' : s); }
+function fpJ(s) { return scJs(s == null ? '' : String(s)); }
+function fpRole() { try { return nfAdminRole(); } catch (e) { return ''; } }
+function fpShortDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? (+m[3]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m[2] - 1] : ''; }
+function fpPctCls(v) { return v == null ? '' : v >= 70 ? 'g' : v >= 50 ? 'a' : 'r'; }
+function fpTypeChip(f) { var t = nfTypeOf(f), L = NF_LEVELS[t] || NF_LEVELS.sc, k = t === 'chc' && typeof nfChcKindLabel === 'function' ? nfChcKindLabel(f) : '';
+  return '<span class="fp-type ' + t + '">' + fpE(k || L.name) + '</span>'; }
+function fpAccess(f) { var s = f.subscriptionStatus; return s === 'paid' ? 'Paid' : s === 'trial' ? 'Trial' : s === 'contract' ? 'Contract' : ''; }
+function fpPkg(f) { var t = nfTypeOf(f); if (t === 'sc') return scPkgLabel(f.progId || 'nqas_12A');
+  var p = ((NF_LEVELS[t] || {}).programmes || []).find(function (x) { return x.id === f.progId; }); return p ? String(p.label).replace(/^[^—]*—\s*/, '') : (f.progId || ''); }
+function fpInCharge(f) { var t = nfTypeOf(f), L = NF_LEVELS[t] || NF_LEVELS.sc, st = f.staff || {}, ic = L.inCharge || 'CHO';
+  var m = Object.keys(st).find(function (k) { return st[k] && !st[k].disabled && (st[k].role || ic) === ic; }); return { label: L.inChargeLabel || ic, name: m ? (st[m].name || m) : (f.choName || '') }; }
+
+// ── the page frame ──
+function fpPanel() { return document.getElementById('sc-drill-panel'); }
+function fpEnsure() {
+  var p = fpPanel(); if (!p) return null;
+  if (!document.getElementById('fp-top')) { var t = document.createElement('div'); t.id = 'fp-top'; p.insertBefore(t, p.firstChild); }
+  ['fp-prog', 'fp-dept'].forEach(function (id) { if (!document.getElementById(id)) { var d = document.createElement('div'); d.id = id; p.appendChild(d); } });
+  p.classList.add('fp');
+  return p;
+}
+function fpTopHTML(code, f, tiles, extra) {
+  var role = fpRole(), ic = fpInCharge(f), dept = nfTypeOf(f) !== 'sc', nAct = _fp.nAct;
+  var line = [code, [f.district, f.state].filter(Boolean).join(', '), fpPkg(f), fpAccess(f), f.startDate ? 'started ' + fpShortDate(f.startDate) : 'start date not set', ic.name ? ic.label + ' ' + ic.name : 'no ' + ic.label].filter(Boolean).join(' · ');
+  var btns = (dept ? '<button type="button" class="fp-btn" onclick="fpOpenApp(\'' + fpJ(code) + '\')"><i class="ti ti-device-mobile"></i> ' + (role === 'supervisor' ? 'Open the facility app' : 'See it as the ' + fpE(ic.label) + ' sees it') + '</button>' : '')
+    + (!dept ? '<button type="button" class="fp-btn" onclick="scGenerateReport(\'facility\',\'' + fpJ(code) + '\')"><i class="ti ti-file-text"></i> PDF report</button>' : '')
+    + (role === 'admin' && typeof nfFacMenu === 'function' ? '<button type="button" class="fp-btn" aria-label="Manage facility" onclick="nfFacMenu(this,\'' + fpJ(code) + '\')">Manage ⋯</button>' : '');
+  var tab = function (k, l) { return '<button type="button" role="tab" aria-selected="' + (_fp.tab === k) + '" class="' + (_fp.tab === k ? 'on' : '') + '" onclick="fpTab(\'' + k + '\')">' + l + '</button>'; };
+  return '<div class="fp-head"><div><h1>' + fpE(f.name || code) + ' ' + fpTypeChip(f) + '</h1><div class="fp-line">' + fpE(line) + '</div>' + (extra || '') + '</div><div class="fp-btns">' + btns + '</div></div>'
+    + '<div class="fp-tiles">' + tiles.map(function (k) { return '<div class="fp-tile"><small>' + k.l + '</small><b class="' + (k.c || '') + '">' + k.v + '</b><small>' + (k.s || '') + '</small></div>'; }).join('') + '</div>'
+    + '<div class="fp-tabs" role="tablist" aria-label="Facility">' + tab('ready', 'Readiness') + tab('act', 'Actions' + (nAct != null ? ' · ' + nAct : '')) + tab('staff', 'Staff &amp; cards') + tab('prog', 'Programme') + '</div>';
+}
+function fpApplyTab() {
+  var p = fpPanel(); if (!p) return; p.setAttribute('data-fptab', _fp.tab); p.classList.toggle('fp-sc', _fp.type === 'sc'); p.classList.toggle('fp-dp', _fp.type !== 'sc');
+  document.querySelectorAll('#fp-top .fp-tabs button').forEach(function (b) { var on = (b.getAttribute('onclick') || '').indexOf("'" + _fp.tab + "'") > 0; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+}
+function fpTab(t) {
+  _fp.tab = t; fpApplyTab();
+  if (_fp.type === 'sc') { var st = _scIns['sc-drill-insights']; if (t === 'prog') fpScProg(); else if (st) { st.tab = t === 'ready' ? 'readiness' : t === 'act' ? 'gaps' : 'staff'; scInsRender('sc-drill-insights'); } }
+  else fpDeptRender();
+  try { window.scrollTo(0, 0); } catch (e) {}
+}
+async function fpOpenApp(code) { if (typeof ndOpenView === 'function') await ndOpenView(code); }
+
+// ── Sub-Centre ──
+function fpScTiles(code) {
+  var o = null; try { o = hsInfo(code); } catch (e) {}
+  if (!o) return [];
+  var ch = o.pct != null && o.base != null ? o.pct - o.base : null, res, rs = '';
+  if (o.grad) { var R = HS_RES[o.grad.result] || HS_RES.incomplete; res = R[0]; rs = 'graduated ' + fpShortDate(String(o.grad.at || '').slice(0, 10)); }
+  else { var n = o.agg && o.agg.nqas; res = !o.assessed ? '—' : n && n.meets ? 'Ready' : 'Almost'; rs = !o.assessed ? 'no cards yet' : n && n.meets ? 'meets NQAS today' : (n && n.aocFails && n.aocFails.length ? 'Area ' + n.aocFails.slice(0, 2).join(', ') + ' below' : n && n.stdFails && n.stdFails.length ? n.stdFails.length + ' Standards below' : 'overall below 70%'); }
+  var ov = o.overdue || 0, open = 0; try { open = scRvList((_scRvAll || {})[code] || {}).filter(function (x) { return x.status !== 'draft' && x.status !== 'closed'; }).length; } catch (e) {}
+  _fp.nAct = open;
+  return [{ l: 'Day', v: o.phase === 'notstarted' ? '—' : (o.phase === 'catchup' ? o.days : o.day) + ' / ' + o.days, s: HS_PHASE[o.phase] || '' },
+    { l: 'Readiness', v: o.pct == null ? '—' : o.pct + '%', s: o.base != null ? 'baseline ' + o.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') : '', c: fpPctCls(o.pct) },
+    { l: o.grad ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: o.grad ? (o.grad.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === 'Almost' ? 'a' : '' },
+    { l: 'On time', v: o.onTime == null ? '—' : o.onTime + '%', s: o.behind ? 'behind schedule' : o.comp && o.inProg ? 'on track' : '', c: o.behind ? 'r' : '' },
+    { l: 'Open actions', v: String(open), s: ov ? ov + ' overdue' : 'none overdue', c: ov ? 'r' : '' },
+    { l: 'Staff', v: String(o.staffN), s: o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : 'no ' + o.inChargeLabel }];
+}
+function fpScMount(code) {
+  var p = fpEnsure(), f = (scMasterFacilities || {})[code]; if (!p || !f) return;
+  _fp.code = code; _fp.type = 'sc'; _fp.D = null;
+  var links = document.querySelector('#sc-drill-info .nfl-drill'), extra = links ? '<div class="fp-line">' + links.innerHTML + '</div>' : '';
+  document.getElementById('fp-top').innerHTML = fpTopHTML(code, f, fpScTiles(code), extra);
+  document.getElementById('fp-dept').innerHTML = '';
+  if (_fp.tab === 'prog') fpScProg(); else { var st = _scIns['sc-drill-insights']; if (st) { var want = _fp.tab === 'ready' ? 'readiness' : _fp.tab === 'act' ? 'gaps' : 'staff'; if (st.tab !== want) { st.tab = want; scInsRender('sc-drill-insights'); } } }
+  fpApplyTab();
+}
+function fpPeopleHTML(code) {
+  var out = [];
+  try { var S = _scSupervisors || {}; Object.keys(S).forEach(function (k) { var s = S[k]; if (s && !s.disabled && s.facilities && s.facilities[code]) out.push('Quality Mentor (Supervisor): ' + (s.name || k)); }); } catch (e) {}
+  try { if (fpRole() === 'supervisor' && typeof _scSup !== 'undefined' && _scSup && !_scSup.district) out.push('Quality Mentor (Supervisor): ' + (_scSup.name || _scSup.id) + ' — you'); } catch (e) {}
+  try { var C = (_scq && _scq.champions) || {}; Object.keys(C).forEach(function (k) { var c = C[k]; if (c && !c.disabled && c.facilities && c.facilities[code]) out.push('Quality Champion: ' + (c.name || k)); }); } catch (e) {}
+  try { var Dd = _scDistricts || {}; Object.keys(Dd).forEach(function (k) { var d = Dd[k]; if (d && !d.disabled && d.facilities && d.facilities[code]) out.push((d.scope === 'block' ? 'Block MOIC view: ' : 'District Admin: ') + (d.name || k) + (d.auto ? ' · all of ' + (d.district || 'the district') : '')); }); } catch (e) {}
+  var f = (scMasterFacilities || {})[code] || {}; if (f.nin) out.push('Govt. facility ID (NIN / HFR): ' + f.nin);
+  return '<div class="fp-card"><b>People around this facility</b>' + (out.length ? '<ul class="fp-ul">' + out.map(function (x) { return '<li>' + fpE(x) + '</li>'; }).join('') + '</ul>' : '<p class="fp-dim">No Supervisor, Champion or District Admin linked yet.</p>') + '</div>';
+}
+async function fpCertsHTML(code) {
+  var C = {}; try { C = (await fbGet('sc_certs/' + code)) || {}; } catch (e) {}
+  var L = Object.keys(C).map(function (m) { return C[m]; }).filter(Boolean);
+  return '<div class="fp-card"><b>Certificates issued · ' + L.length + '</b>' + (L.length ? '<p>' + L.slice(0, 8).map(function (c) { return fpE((c.name || '') + (c.grade ? ' (' + c.grade + ')' : '')); }).join(' · ') + (L.length > 8 ? ' · ' + (L.length - 8) + ' more' : '') + '</p>' : '<p class="fp-dim">None yet — staff claim theirs from the last programme day.</p>') + '</div>';
+}
+async function fpScProg() {
+  var host = document.getElementById('fp-prog'), st = _scIns['sc-drill-insights'], code = _fp.code; if (!host || !code) return;
+  var h = '<div class="fp-grid"><div class="fp-col">' + (st ? nfgProgHTML(st) + nfgCompHTML(st) : '') + '</div><div class="fp-col">' + fpPeopleHTML(code) + '<div id="fp-certs"></div></div></div>';
+  host.innerHTML = h;
+  var c = await fpCertsHTML(code), el = document.getElementById('fp-certs'); if (el && _fp.code === code) el.innerHTML = c;
+}
+
+// ── UPHC · PHC · CHC: data ──
+async function fpDeptLoad(code) {
+  var fac = await fbGet(scFacilityPath(code)); if (!fac) return null;
+  var t = nfTypeOf(fac), cfg = NF_LEVELS[t]; if (!cfg || cfg.core !== 'dept') return null;
+  var cl = await nfLoadData(cfg.checklist);
+  var r = await Promise.all([fbGet('sc_dcards/' + code), fbGet('sc_pcards/' + code), fbGet('sc_dactions/' + code), fbGet('sc_certs/' + code).catch(function () { return null; })]);
+  var keep = typeof _nd !== 'undefined' ? _nd : null, D = { code: code, fac: fac, cfg: cfg, type: t, certs: r[3] || {} };
+  try {
+    _nd = { code: code, fac: fac, cfg: cfg, cl: cl, plan: {}, cards: r[0] || {}, pcards: r[1] || {}, actions: r[2] || {}, sel: {}, view: 'fp' };
+    await ndMasterSetup(cfg, cl);
+    try { await ndGradLoad(); } catch (e) {}
+    D.ctx = _nd; fpDeptCompute(D);
+  } finally { _nd = keep; }
+  return D;
+}
+function fpDeptCompute(D) {
+  var S = nfDeptShape(D.cfg), today = ndToday(), day = D.fac.startDate ? nfDeptDayNo(D.fac.startDate, today) : null, cur = day ? Math.min(day, S.days) : 0;
+  D.S = S; D.day = day; D.cur = cur;
+  var sc = ndGradScores(), crit = ndCrit(); D.sc = sc; D.crit = crit; D.rule = ndGradRule(sc, true);
+  D.depts = ndDeptDefs().map(function (d) {
+    var due = 0; for (var n = 1; n <= cur; n++) { if (ndRes(d.id, n).chk) continue; var c = ndPc(d.id, n); if (Object.keys(c).some(function (m) { return c[m] && c[m].done; }) && !ndSoloDone(d.id, n)) due++; }
+    var def = ndDeptDef(d.id); return { id: d.id, name: def.name, prog: def.prog || '', now: sc.byDept[d.id], base: sc.baseDept[d.id], lead: ndLead(d.id) ? ndName(ndLead(d.id)) : '', due: due };
+  });
+  // weekly readiness
+  var rows = _nd.cl.items, deps = ndDeptDefs().map(function (d) { return d.id; }), pts = [];
+  if (cur >= 1) { var marks = [Math.min(S.bN, cur)]; for (var w = S.bN + 7; w < cur; w += 7) marks.push(w); if (marks[marks.length - 1] !== cur) marks.push(cur);
+    marks.forEach(function (m) { var R = nfDeptReadiness(rows, ndLatest(m), { pass: crit.overall, depts: deps }); if (R.overall != null) pts.push({ d: m, v: R.overall }); }); }
+  D.trend = pts;
+  // actions
+  var A = _nd.actions || {}, staff = ndStaff();
+  D.acts = Object.keys(A).map(function (id) { var a = A[id] || {}, od = a.status === 'open' && a.due && a.due < today;
+    var owners = a.owners ? Object.keys(a.owners).map(ndName).join(', ') : (a.owner ? ndName(a.owner) : '');
+    return { id: id, dept: a.dept || '', deptName: ndDeptDef(a.dept).name, cp: ndCpText(id), how: a.how || '', owner: owners, due: a.due || '', st: od ? 'od' : a.status || 'open', level: a.level || '' }; });
+  var F = ndLatestFinal(); D.noAct = Object.keys(F).filter(function (id) { var a = A[id]; return F[id].s < 2 && (!a || a.status === 'closed'); }).length;
+  // staff
+  var lo = Math.max(1, cur - 29), hi = cur - 1;
+  D.staff = Object.keys(staff).map(function (m) {
+    var mine = ndDeptDefs().filter(function (d) { return ndFills(d.id, m); }), leads = ndDeptDefs().filter(function (d) { return ndLead(d.id) === m; });
+    var exp = 0, done = 0, chk = 0, strip = [];
+    for (var n = 1; n <= hi; n++) { var e = false, dn = false, late = false, c1 = false;
+      mine.forEach(function (d) { if (!ndMyIds(d.id, n, m).length) return; e = true; var c = ndPc(d.id, n)[m] || {}; if (c.done) { dn = true; var at = String((c.done || {}).at || '').slice(0, 10); if (at && at > ndAddDays(D.fac.startDate, n - 1)) late = true; if (ndRes(d.id, n).chk || ndSolo(d.id)) c1 = true; } });
+      if (e) { exp++; if (dn) { done++; if (c1) chk++; } }
+      if (n >= lo) strip.push(!e ? 'n' : dn ? (late ? 'l' : 'd') : 'm'); }
+    var lchk = null; if (leads.length) { var all = 0, ok = 0; leads.forEach(function (d) { for (var n2 = 1; n2 <= hi; n2++) { var c = ndPc(d.id, n2); if (!Object.keys(c).some(function (k) { return c[k] && c[k].done; })) continue; all++; if (ndRes(d.id, n2).chk || ndSoloDone(d.id, n2)) ok++; } }); lchk = all ? Math.round(100 * ok / all) : null; }
+    var st = staff[m] || {};
+    return { mob: m, name: st.name || m, role: ndRoleLabel(st.role || D.cfg.inCharge), depts: mine.map(function (d) { return d.name; }).concat(leads.filter(function (d) { return mine.indexOf(d) < 0; }).map(function (d) { return d.name + ' (lead)'; })),
+      lead: leads.length > 0, exp: exp, done: done, pct: exp ? Math.round(100 * done / exp) : null, chk: done ? Math.round(100 * chk / done) : null, lchk: lchk, strip: strip, cert: !!(D.certs || {})[m] };
+  }).sort(function (a, b) { return (b.lead - a.lead) || String(a.name).localeCompare(String(b.name)); });
+  D.checksDue = D.depts.reduce(function (s, d) { return s + d.due; }, 0);
+  // on time (Timeline settings of this type)
+  var G = typeof nfgCfgFor === 'function' ? nfgCfgFor(D.type) : { green: 80, amber: 60 }, ex = 0, dn2 = 0;
+  D.staff.forEach(function (s) { ex += s.exp; dn2 += s.done; }); D.onTime = ex ? Math.round(100 * dn2 / ex) : null;
+  D.onState = D.onTime == null ? '' : D.onTime < G.amber ? 'r' : D.onTime < G.green ? 'a' : 'g';
+}
+function fpDeptTiles(D) {
+  var S = D.S, f = D.fac, g = f.graduation, d = D.day, phase = !f.startDate || !d || d < 1 ? 'Not started' : g ? 'Graduated' : d <= S.bN ? 'Baseline' : d <= S.iN ? 'Implementation' : d <= S.eN ? 'End-line' : d <= S.days ? 'Readiness week' : 'Waiting for graduation';
+  var sc = D.sc, ch = sc.overall != null && sc.base != null ? sc.overall - sc.base : null, R = D.rule, res, rs;
+  if (g) { res = (ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete).t; rs = 'graduated ' + fpShortDate(String(g.at || '').slice(0, 10)); }
+  else if (sc.overall == null) { res = '—'; rs = 'no cards yet'; }
+  else { res = R.result === 'ready' ? 'Ready' : R.result === 'almost' ? 'Almost' : 'Not yet'; rs = R.deptFails.length ? ndDeptDefName(D, R.deptFails[0]) + ' ' + sc.byDept[R.deptFails[0]] + '%' : R.aocFails.length ? 'Area ' + R.aocFails.join(', ') + ' below' : R.stdFails.length ? R.stdFails.length + ' Standards below' : R.result === 'ready' ? 'meets NQAS today' : 'overall below ' + D.crit.overall + '%'; }
+  var open = D.acts.filter(function (a) { return a.st !== 'closed'; }).length, od = D.acts.filter(function (a) { return a.st === 'od'; }).length; _fp.nAct = open;
+  var on = D.depts.length;
+  return [{ l: 'Day', v: !d || d < 1 ? '—' : Math.min(d, S.days) + ' / ' + S.days, s: phase },
+    { l: 'Readiness', v: sc.overall == null ? '—' : sc.overall + '%', s: sc.base != null ? 'baseline ' + sc.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') : '', c: fpPctCls(sc.overall) },
+    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === '—' ? '' : 'a' },
+    { l: 'On time', v: D.onTime == null ? '—' : D.onTime + '%', s: D.onState === 'r' ? 'behind schedule' : D.onState === 'a' ? 'slipping' : D.onState ? 'on track' : '', c: D.onState === 'r' ? 'r' : '' },
+    { l: 'Open actions', v: String(open), s: od ? od + ' overdue' : 'none overdue', c: od ? 'r' : '' },
+    { l: 'Staff', v: String(D.staff.length), s: on + ' department' + (on === 1 ? '' : 's') + ' on' }];
+}
+function ndDeptDefName(D, id) { var d = (D.cfg.departments || []).find(function (x) { return x.id === id; }); return d ? d.name : id; }
+
+// ── UPHC · PHC · CHC: tabs ──
+function fpBar(v) { return '<span class="fp-bar"><span class="' + fpPctCls(v) + '" style="width:' + (v == null ? 0 : Math.max(2, v)) + '%"></span></span>'; }
+function fpTrendSvg(pts, mark) {
+  if (!pts.length) return '<p class="fp-dim">Shows once cards are in.</p>';
+  var W = 320, H = 120, x = function (i) { return pts.length === 1 ? W / 2 : 10 + i * (W - 20) / (pts.length - 1); }, y = function (v) { return H - 10 - (v / 100) * (H - 20); };
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="fp-trend" role="img" aria-label="Readiness ' + pts[0].v + '% to ' + pts[pts.length - 1].v + '%"><line x1="0" y1="' + y(mark) + '" x2="' + W + '" y2="' + y(mark) + '" stroke="#9FB7B0" stroke-dasharray="4 4"></line><text x="2" y="' + (y(mark) - 4) + '" font-size="10" fill="#4A5A55">' + mark + '%</text>'
+    + '<polyline points="' + pts.map(function (p, i) { return x(i) + ',' + y(p.v); }).join(' ') + '" fill="none" stroke="#1E6B5E" stroke-width="3"></polyline>'
+    + pts.map(function (p, i) { return '<circle cx="' + x(i) + '" cy="' + y(p.v) + '" r="3.5" fill="#1E6B5E"><title>Day ' + p.d + ': ' + p.v + '%</title></circle>'; }).join('') + '</svg>';
+}
+function fpDeptReadyHTML(D) {
+  var sc = D.sc, std = Object.keys(sc.byStd || {}).map(function (k) { return [k, sc.byStd[k]]; }).sort(function (a, b) { return a[1] - b[1]; }).slice(0, 4);
+  var att = [];
+  D.depts.forEach(function (d) { if (d.due) att.push(d.name + ': ' + d.due + ' day' + (d.due === 1 ? '' : 's') + ' to check' + (d.lead ? ' (' + d.lead + ', lead)' : '')); });
+  var od = D.acts.filter(function (a) { return a.st === 'od'; }); if (od.length) att.push(od.length + ' action' + (od.length === 1 ? '' : 's') + ' overdue — ' + od.slice(0, 2).map(function (a) { return a.cp; }).join('; '));
+  if (D.noAct) att.push(D.noAct + ' gap' + (D.noAct === 1 ? '' : 's') + ' checked as unmet with no action yet');
+  std.filter(function (s) { return s[1] < 50; }).forEach(function (s) { att.push('Standard ' + s[0] + ' at ' + s[1] + '%'); });
+  var aoc = 'ABCDEFGH'.split('').filter(function (a) { return sc.byAoc[a] != null; });
+  return '<div class="fp-grid"><div class="fp-col">'
+    + '<div class="fp-card"><div class="fp-ch"><b>Departments</b><small>baseline → now · pass ' + D.crit.dept + '% · lead · days to check</small></div>'
+    + (D.depts.length ? '<div class="fp-rows">' + D.depts.map(function (d) { return '<div class="fp-row"><span>' + fpE(d.name) + (d.prog ? ' <em>' + fpE(d.prog) + '</em>' : '') + '</span>' + fpBar(d.now) + '<b class="' + fpPctCls(d.now) + '">' + (d.base != null ? d.base + ' → ' : '') + (d.now == null ? '—' : d.now + '%') + '</b><small>' + fpE(d.lead || 'no lead') + ' · ' + d.due + '</small></div>'; }).join('') + '</div>' : '<p class="fp-dim">No departments switched on.</p>')
+    + '<p class="fp-dim">Departments switched off at this facility are not listed.' + (D.type === 'chc' ? ' LaQshya (Labour Room, Maternity OT) and MusQan (Paediatric OPD, NBSU) are marked beside NQAS.' : '') + '</p></div>'
+    + '<div class="fp-card"><b>Areas of Concern</b><div class="fp-aoc">' + (aoc.length ? aoc.map(function (a) { var v = sc.byAoc[a]; return '<div class="' + (v >= D.crit.aoc ? 'g' : 'a') + '"><b>' + a + '</b><span>' + v + '</span></div>'; }).join('') : '<p class="fp-dim">No scores yet.</p>') + '</div>'
+    + (std.length ? '<div class="fp-chips"><b>Weakest Standards</b>' + std.map(function (s) { return '<span class="' + (s[1] < 50 ? 'r' : s[1] < 70 ? 'a' : 'g') + '">' + s[0] + ' · ' + s[1] + '%</span>'; }).join('') + '</div>' : '') + '</div>'
+    + '</div><div class="fp-col">'
+    + '<div class="fp-card"><b>Readiness over time</b>' + fpTrendSvg(D.trend, D.crit.overall) + (D.trend.length ? '<small class="fp-dim">' + (D.sc.base != null ? D.sc.base + '% baseline → ' : '') + (D.sc.overall == null ? '—' : D.sc.overall + '% now') + ' · weekly</small>' : '') + '</div>'
+    + '<div class="fp-card"><b>Needs attention here</b>' + (att.length ? '<ul class="fp-ul">' + att.slice(0, 6).map(function (x) { return '<li>' + fpE(x) + '</li>'; }).join('') + '</ul>' : '<p class="fp-dim">✓ Nothing pending.</p>') + '</div>'
+    + '</div></div>';
+}
+var FP_ST = { od: ['Overdue', 'r'], open: ['Open', 'b'], fixed: ['Fixed · re-check', 'g'], sup: ['With Supervisor', 'a'], closed: ['Closed', 'n'] };
+function fpAct(k) { _fp.act = k; fpDeptRender(); }
+function fpDeptActHTML(D) {
+  var cnt = function (k) { return D.acts.filter(function (a) { return k === 'open' ? a.st !== 'closed' : a.st === k; }).length; };
+  var chip = function (k, l) { return '<button type="button" class="fp-chip' + (_fp.act === k ? ' on' : '') + '" onclick="fpAct(\'' + k + '\')">' + l + ' · ' + cnt(k) + '</button>'; };
+  var L = D.acts.filter(function (a) { return _fp.act === 'open' ? a.st !== 'closed' : a.st === _fp.act; });
+  var by = {}; L.forEach(function (a) { (by[a.deptName] = by[a.deptName] || []).push(a); });
+  var role = fpRole();
+  var h = '<div class="fp-chiprow">' + chip('open', 'All open') + chip('od', 'Overdue') + chip('sup', 'With Supervisor') + chip('fixed', 'Fixed, waiting re-check') + chip('closed', 'Closed') + '</div>';
+  if (D.noAct) h += '<div class="fp-note a"><b>' + D.noAct + ' gap' + (D.noAct === 1 ? '' : 's') + ' have no action yet</b> — checked as unmet and nobody owns them. The department lead assigns them in the facility app.</div>';
+  if (!L.length) return h + '<div class="fp-card"><p class="fp-dim">No actions here.</p></div>';
+  h += '<div class="fp-card p0 fp-tw"><table class="fp-t"><thead><tr><th>Checkpoint</th><th>What to fix</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead><tbody>';
+  Object.keys(by).sort().forEach(function (dn) { h += '<tr class="grp"><td colspan="5">' + fpE(dn) + ' · ' + by[dn].length + '</td></tr>';
+    by[dn].sort(function (a, b) { return String(a.due).localeCompare(String(b.due)); }).forEach(function (a) { var s = FP_ST[a.st] || FP_ST.open;
+      h += '<tr><td><b>' + fpE(a.id) + '</b><small>' + fpE(a.cp) + '</small></td><td>' + fpE(a.how || '—') + '</td><td>' + fpE(a.owner || '—') + '</td><td class="' + (a.st === 'od' ? 'r' : '') + '">' + fpE(a.due ? fpShortDate(a.due) : '—') + '</td><td><span class="fp-st ' + s[1] + '">' + s[0] + '</span></td></tr>'; }); });
+  h += '</tbody></table></div><p class="fp-dim">' + (role === 'supervisor' ? 'To write How to fix for actions sent to you, open the facility app.' : 'View only — department leads assign actions in the facility app; the Supervisor answers the ones sent up.') + '</p>';
+  return h;
+}
+function fpDeptStaffHTML(D) {
+  var C = { d: '#2E8B57', l: '#8BC4A0', m: '#C8553D', n: '#E2E8E6' };
+  var h = '<div class="fp-chiprow"><span class="fp-legend"><i style="background:#2E8B57"></i> done <i style="background:#8BC4A0"></i> done late <i style="background:#C8553D"></i> missed <i style="background:#E2E8E6"></i> no card</span></div>';
+  if (!D.staff.length) return h + '<div class="fp-card"><p class="fp-dim">No staff yet — the ' + fpE(D.cfg.inChargeLabel) + ' adds them in the app.</p></div>';
+  h += '<div class="fp-card p0 fp-tw"><table class="fp-t"><thead><tr><th>Name</th><th>Departments</th><th>Card days (last 30)</th><th>Done</th><th>Checked</th><th>Certificate</th></tr></thead><tbody>';
+  D.staff.forEach(function (s) {
+    h += '<tr><td><b>' + fpE(s.name) + '</b><small>' + fpE(s.role) + '</small></td><td>' + fpE(s.depts.join(', ') || '—') + '</td>'
+      + '<td><span class="fp-strip">' + s.strip.map(function (x) { return '<i style="background:' + C[x] + '"></i>'; }).join('') + '</span></td>'
+      + (s.exp ? '<td class="' + (s.pct < 80 ? 'r' : 'g') + '"><b>' + s.pct + '%</b><small>' + s.done + ' of ' + s.exp + ' card days</small></td>' : '<td><small>' + (s.lead ? 'checks, does not fill' : 'no card days yet') + '</small></td>')
+      + '<td>' + (s.lead ? 'leads ' + (s.lchk == null ? '—' : s.lchk + '%') : s.chk == null ? '—' : s.chk + '% of her / his cards') + '</td>'
+      + '<td>' + (s.cert ? '🎓 issued' : D.day && D.day >= D.S.days ? (s.pct != null && s.pct >= 80 ? 'can claim' : 'needs 80% done') : 'Day ' + D.S.days) + '</td></tr>';
+  });
+  return h + '</tbody></table></div><p class="fp-dim">Reset password and staff changes stay with the ' + fpE(D.cfg.inChargeLabel) + ' (facility app) and HealSol.</p>';
+}
+function fpDeptProgHTML(D) {
+  var S = D.S, f = D.fac, g = f.graduation, cu = f.catchup && f.catchup.on ? f.catchup : null, role = fpRole(), C = fpJ(D.code);
+  var seg = function (n, l, cls) { return '<div class="' + cls + '" style="flex:' + n + '">' + l + '</div>'; };
+  var d = D.day || 0, st = function (a, b) { return d > b ? 'done' : d >= a ? 'now' : ''; };
+  var grace = (typeof nfgCfgFor === 'function' ? nfgCfgFor(D.type) : { grace: 7 }).grace;
+  var h = '<div class="fp-card"><b>Timeline</b><div class="fp-tl">' + seg(S.bN, 'Baseline 1–' + S.bN, st(1, S.bN)) + seg(S.iN - S.bN, 'Implementation ' + (S.bN + 1) + '–' + S.iN, st(S.bN + 1, S.iN)) + seg(S.eN - S.iN, 'End-line ' + (S.iN + 1) + '–' + S.eN, st(S.iN + 1, S.eN)) + seg(S.days - S.eN, 'Ready', st(S.eN + 1, S.days)) + seg(Math.max(2, grace), 'Grace ' + grace, d > S.days ? 'now' : 'g') + '</div>'
+    + '<small class="fp-dim">' + (f.startDate ? 'Started ' + fpShortDate(f.startDate) + ' · graduation ' + fpShortDate(ndAddDays(f.startDate, S.days - 1)) + ' · close date ' + fpShortDate(ndAddDays(f.startDate, S.days - 1 + grace)) : 'Start date not set — the ' + fpE(D.cfg.inChargeLabel) + ' sets it') + ' · Timeline settings for ' + fpE(D.cfg.plural) + ' apply.</small></div>';
+  h += '<div class="fp-grid"><div class="fp-col"><div class="fp-card"><div class="fp-ch"><b>Graduation result</b>' + (role === 'admin' || role === 'district' ? '<button type="button" class="fp-btn sm" onclick="fpOpenProg(\'' + C + '\')">' + (role === 'admin' ? 'Run again · change · catch-up…' : 'Certification records…') + '</button>' : '') + '</div>';
+  if (g) { var R = ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete, cr = g.criteria || {};
+    h += '<div class="fp-res ' + R.c + '"><b>' + fpE(R.t) + '</b><span>Overall ' + g.overall + '%' + (g.base != null ? ' (baseline ' + g.base + '%)' : '') + (g.deptFails && g.deptFails.length ? ' · below: ' + g.deptFails.map(function (x) { return ndDeptDefName(D, x) + ' ' + ((g.byDept || {})[x] != null ? g.byDept[x] + '%' : ''); }).join(', ') : '') + ' · ' + fpE(fpShortDate(String(g.at || '').slice(0, 10))) + (g.round ? ' · after catch-up' : '') + '</span></div>'
+      + '<table class="fp-t sm"><thead><tr><th>Rule</th><th>Needed</th><th>Here</th></tr></thead><tbody>'
+      + '<tr><td>Overall</td><td>' + (cr.overall || 70) + '%</td><td class="' + (g.overall >= (cr.overall || 70) ? 'g' : 'r') + '">' + g.overall + '%</td></tr>'
+      + '<tr><td>Every department</td><td>' + (cr.dept || 70) + '%</td><td class="' + ((g.deptFails || []).length ? 'r' : 'g') + '">' + ((g.deptFails || []).length ? g.deptFails.length + ' below' : '✓') + '</td></tr>'
+      + '<tr><td>Every Area of Concern</td><td>' + (cr.aoc || 70) + '%</td><td class="' + ((g.aocFails || []).length ? 'r' : 'g') + '">' + ((g.aocFails || []).length ? g.aocFails.join(', ') : '✓') + '</td></tr>'
+      + '<tr><td>Every Standard</td><td>' + (cr.stdDefault || 50) + '%</td><td class="' + ((g.stdFails || []).length ? 'r' : 'g') + '">' + ((g.stdFails || []).length ? g.stdFails.length + ' below' : '✓') + '</td></tr></tbody></table>'; }
+  else h += '<p class="fp-dim">Runs by itself on Day ' + S.days + (f.startDate ? ' (' + fpShortDate(ndAddDays(f.startDate, S.days - 1)) + ')' : '') + ' when every end-line day is checked, or on the close date with what is done.</p>'
+    + (D.sc.overall != null ? '<p>On today\'s scores: <b>' + fpE(D.rule.result === 'ready' ? 'NQAS Ready' : D.rule.result === 'almost' ? 'Almost ready' : 'Not yet ready') + '</b> · ' + D.sc.overall + '%</p>' : '');
+  h += '<div class="fp-ch" style="margin-top:10px"><b>Catch-up</b><small>' + (cu ? fpE(fpShortDate(cu.start) + ' – ' + fpShortDate(cu.end) + ' · ' + (cu.free ? 'free' : cu.paid ? 'paid' : 'fee not marked') + (cu.done ? ' · done' : '')) : g && g.result !== 'ready' ? '28 days on the weakest departments, then their end-line again' : '—') + '</small></div></div></div>';
+  var rec = function (k, l) { var x = f[k]; return '<li><span>' + l + '</span><span class="fp-st ' + (x && x.status === 'certified' ? 'g' : x ? 'b' : 'n') + '">' + fpE(x ? (x.status || 'recorded') + (x.certifiedOn ? ' ' + fpShortDate(x.certifiedOn) : x.appliedOn ? ' ' + fpShortDate(x.appliedOn) : '') : 'Not yet') + '</span></li>'; };
+  var certs = Object.keys(D.certs || {}).map(function (m) { return D.certs[m]; }).filter(Boolean);
+  h += '<div class="fp-col"><div class="fp-card"><b>Certification records</b><ul class="fp-recs">' + rec('nhsrc', 'NHSRC (NQAS)') + (D.type === 'chc' ? rec('laqshya', 'LaQshya') + rec('musqan', 'MusQan') : '') + '</ul></div>'
+    + '<div class="fp-card"><b>Certificates issued · ' + certs.length + '</b>' + (certs.length ? '<p>' + certs.slice(0, 8).map(function (c) { return fpE((c.name || '') + (c.grade ? ' (' + c.grade + ')' : '')); }).join(' · ') + '</p>' : '<p class="fp-dim">None yet — staff claim theirs from Day ' + S.days + '.</p>') + '</div>'
+    + fpPeopleHTML(D.code) + '</div></div>';
+  return h;
+}
+async function fpOpenProg(code) { if (typeof ndOpenView !== 'function') return; await ndOpenView(code); try { if (typeof ndGradOpen === 'function') ndGradOpen('admin'); } catch (e) {} }
+function fpDeptRender() {
+  var host = document.getElementById('fp-dept'), D = _fp.D; if (!host) return;
+  if (!D) { host.innerHTML = '<div class="fp-card"><p class="fp-dim">Loading…</p></div>'; return; }
+  var keep = typeof _nd !== 'undefined' ? _nd : null;
+  try { _nd = D.ctx;
+    host.innerHTML = _fp.tab === 'act' ? fpDeptActHTML(D) : _fp.tab === 'staff' ? fpDeptStaffHTML(D) : _fp.tab === 'prog' ? fpDeptProgHTML(D) : fpDeptReadyHTML(D);
+  } catch (e) { console.warn('[FP] render', e); host.innerHTML = '<div class="fp-card"><p class="fp-dim">Could not show this tab.</p></div>'; }
+  finally { _nd = keep; }
+}
+async function fpDeptOpen(code) {
+  var role = fpRole();
+  if (appMode === 'sc-supervisor' && !scSupAllowed(code)) { showToast('This facility is not assigned to you.', 'err'); return; }
+  var f = (scMasterFacilities || {})[code]; if (!f) { showToast('Facility not found.', 'err'); return; }
+  if (role && _nfOv.view !== 'drill') _nfOv.prev = _nfOv.view;
+  var p = fpEnsure(); if (!p) return;
+  _fp.code = code; _fp.type = nfTypeOf(f); _fp.D = null; _fp.nAct = null; if (_fp.lastCode !== code) { _fp.tab = 'ready'; _fp.act = 'open'; } _fp.lastCode = code;
+  var stub = { day: null }, tiles = [{ l: 'Day', v: '…' }, { l: 'Readiness', v: '…' }, { l: 'If graduated today', v: '…' }, { l: 'On time', v: '…' }, { l: 'Open actions', v: '…' }, { l: 'Staff', v: String(Object.keys(f.staff || {}).filter(function (m) { return f.staff[m] && !f.staff[m].disabled; }).length) }];
+  document.getElementById('fp-top').innerHTML = fpTopHTML(code, f, tiles); document.getElementById('fp-prog').innerHTML = '';
+  document.getElementById('sc-drill-code').textContent = code;
+  p.style.display = ''; var g = document.getElementById('sc-master-grid'); if (g) g.style.display = 'none'; var b = document.getElementById('sc-master-back'); if (b) b.style.display = '';
+  fpApplyTab(); fpDeptRender();
+  if (role) { _nfOv.view = 'drill'; try { nfAdminApply(); } catch (e) {} } try { window.scrollTo(0, 0); } catch (e) {}
+  var D = null; try { D = await fpDeptLoad(code); } catch (e) { console.warn('[FP] load', e); }
+  if (_fp.code !== code) return;
+  if (!D) { document.getElementById('fp-dept').innerHTML = '<div class="fp-card"><p class="fp-dim">Could not load this facility — check the internet and try again.</p></div>'; return; }
+  _fp.D = D;
+  var keep = typeof _nd !== 'undefined' ? _nd : null; try { _nd = D.ctx; document.getElementById('fp-top').innerHTML = fpTopHTML(code, D.fac, fpDeptTiles(D)); } finally { _nd = keep; }
+  fpApplyTab(); fpDeptRender();
+}
+
+// ── wiring: every facility opens here (HealSol, Supervisor, District Admin) ──
+(function () {
+  if (typeof scDrillIn !== 'function') return;
+  var oIn = scDrillIn;
+  scDrillIn = async function (code) {
+    var f = (scMasterFacilities || {})[code];
+    if (f && nfTypeOf(f) !== 'sc' && NF_LEVELS[nfTypeOf(f)] && NF_LEVELS[nfTypeOf(f)].core === 'dept') return fpDeptOpen(code);
+    if (_fp.lastCode !== code) { _fp.tab = 'ready'; } _fp.lastCode = code;
+    _fp.type = 'sc'; _fp.code = code; try { fpEnsure(); fpApplyTab(); } catch (e) {}
+    var r = await oIn.apply(this, arguments);
+    try { var p = fpPanel(); if (p && p.style.display !== 'none') fpScMount(code); } catch (e) { console.warn('[FP] mount', e); }
+    return r;
+  };
+  // the Sub-Centre insights keep their own tab strip and Programme block for other screens; on the facility page the
+  // Programme block lives in the Programme tab
+  var oR = scInsRender;
+  scInsRender = function (hostId) { var r = oR.apply(this, arguments);
+    try { if (hostId === 'sc-drill-insights' && _fp.type === 'sc' && fpPanel() && fpPanel().classList.contains('fp')) { var h = document.getElementById(hostId); if (h) h.querySelectorAll('.nfg-prog,.nfg-comp').forEach(function (x) { x.remove(); }); } } catch (e) {}
+    return r; };
+})();
+</script>
+<script id="nf-sc-draft">// ══════════════════════════════════════════════════════════════
+// STEP 4 — SUB-CENTRES IN THE SHARED CHECKPOINTS EDITOR (draft · review & publish · versions)
+// Content → Checkpoints has four tabs (Sub-Centre · UPHC · PHC · CHC). The Sub-Centre tab keeps its own tools
+// (Checkpoint master with Standards & MEs, Checks, linked checks, NQAS criteria; Day cards), but every change now
+// goes into a DRAFT; Publish writes it to the places the Sub-Centre app (and the live pilot app) already read:
+//   shared/cp_master/{edits, added, links, registry} · shared/admin_edits · shared/edits
+// Draft: shared/dept_master/sc/draft/ops/{key} = {p (path under shared/), v (JSON text), at (ms), by}
+//   — each op replaces the value at its path, applied in time order on top of what is published.
+// Versions: shared/dept_master/sc/versions/{v} = {at, by, note, from, n, snap (JSON text of the content)}; live meta
+//   shared/dept_master/sc/live = {v, at, by, note, from, vers}. v1 = the Sub-Centre content as it was before Step 4.
+// Safety: a publish (or roll back) that changes which checkpoints are on a day is refused while any running
+//   Sub-Centre has already reached that day — days a facility has passed keep the checkpoints they had.
+// ══════════════════════════════════════════════════════════════
+var SCD = { on: false, ops: {}, live: null, meta: null, vers: null, busy: false, screen: '' };
+var SCD_BASE = 'shared/dept_master/sc';
+var SCD_RX = /^shared\/(cp_master\/(edits|added|links|registry)|admin_edits|edits)(\/|$)/;
+var SCD_META_RX = /^shared\/cp_master\/(updatedAt|updatedBy|importedAt|lastImport)$/;
+function scdRel(p) { return String(p).replace(/^shared\//, ''); }
+function scdKey(rel) { return encodeURIComponent(rel).replace(/\./g, '%2E').replace(/%/g, '~'); }
+function scdBy() { try { return (typeof nmBy === 'function' && nmBy()) || 'HealSol'; } catch (e) { return 'HealSol'; } }
+function scdParts(rel) { return String(rel).split('/').filter(Boolean); }
+function scdClone(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
+function scdSetIn(root, parts, v) {   // returns the new root (parts relative to root)
+  if (!parts.length) return scdClone(v);
+  var o = root && typeof root === 'object' ? root : {}, cur = o;
+  for (var i = 0; i < parts.length - 1; i++) { if (!cur[parts[i]] || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {}; cur = cur[parts[i]]; }
+  if (v == null) delete cur[parts[parts.length - 1]]; else cur[parts[parts.length - 1]] = scdClone(v);
+  return o;
+}
+function scdGetIn(root, parts) { var o = root; for (var i = 0; i < parts.length; i++) { if (o == null || typeof o !== 'object') return null; o = o[parts[i]]; } return o === undefined ? null : o; }
+function scdOpList() { return Object.keys(SCD.ops || {}).map(function (k) { return Object.assign({ k: k }, SCD.ops[k]); }).sort(function (a, b) { return a.at - b.at; }); }
+// the draft applied on top of a value read at `rel`
+function scdApply(rel, val, ops) {
+  var P = scdParts(rel), out = scdClone(val);
+  (ops || scdOpList()).forEach(function (op) {
+    var Q = scdParts(op.p), v; try { v = JSON.parse(op.v); } catch (e) { v = null; }
+    if (Q.length >= P.length && P.every(function (x, i) { return Q[i] === x; })) out = scdSetIn(out, Q.slice(P.length), v);
+    else if (Q.length < P.length && Q.every(function (x, i) { return P[i] === x; })) out = scdClone(scdGetIn(v, P.slice(Q.length)));
+  });
+  return out === undefined ? null : out;
+}
+function scdTouches(rel) { var P = scdParts(rel); return scdOpList().some(function (op) { var Q = scdParts(op.p); var n = Math.min(P.length, Q.length); for (var i = 0; i < n; i++) if (P[i] !== Q[i]) return false; return true; }); }
+
+// ── the read / write switch (only while the Sub-Centre tab is open) ──
+(function () {
+  var oSet = fbSet, oGet = fbGet;
+  window.scdRealSet = oSet; window.scdRealGet = oGet;
+  fbSet = async function (p, v) {
+    if (!SCD.on || typeof p !== 'string') return oSet.apply(this, arguments);
+    if (SCD_META_RX.test(p)) return true;   // "updated" stamps follow the publish
+    if (!SCD_RX.test(p)) return oSet.apply(this, arguments);
+    var rel = scdRel(p), k = scdKey(rel), op = { p: rel, v: JSON.stringify(v === undefined ? null : v), at: Date.now() + (SCD._seq = ((SCD._seq || 0) + 1) % 1000) / 1000, by: scdBy() };
+    var ok = await oSet(SCD_BASE + '/draft/ops/' + k, op); if (ok) { SCD.ops[k] = op; scdBadge(); }
+    return ok;
+  };
+  fbGet = async function (p) {
+    var r = await oGet.apply(this, arguments);
+    if (!SCD.on || typeof p !== 'string' || !/^shared\/(cp_master|admin_edits|edits)(\/|$)/.test(p)) return r;
+    var rel = scdRel(p); return scdTouches(rel) ? scdApply(rel, r) : r;
+  };
+})();
+async function scdLoad() {
+  var r = await Promise.all([scdRealGet(SCD_BASE + '/draft/ops'), scdRealGet(SCD_BASE + '/live'), scdRealGet('shared/cp_master'), scdRealGet('shared/admin_edits'), scdRealGet('shared/edits')]);
+  SCD.ops = r[0] || {}; SCD.meta = r[1] || null; SCD.live = { cp: r[2] || {}, ae: r[3] || {}, ed: r[4] || {} };
+}
+// v1: the Sub-Centre content as it was before Step 4 (made the first time the tab opens)
+async function scdEnsureV1() {
+  if (SCD.meta && SCD.meta.v) return;
+  var now = new Date().toISOString(), from = nmIsoDay(new Date()), snap = scdSnap(SCD.live);
+  var ok = await scdRealSet(SCD_BASE + '/versions/1', { at: now, by: scdBy(), note: 'Sub-Centre master as it was before Step 4', from: from, n: 0, snap: JSON.stringify(snap) });
+  if (ok) { SCD.meta = { v: 1, at: now, by: scdBy(), note: 'Sub-Centre master as it was before Step 4', from: from, vers: { 1: from } }; await scdRealSet(SCD_BASE + '/live', SCD.meta); }
+}
+function scdSnap(L) { var cp = L.cp || {}; return { cp: { edits: cp.edits || null, added: cp.added || null, links: cp.links || null, registry: cp.registry || null }, ae: L.ae || null, ed: L.ed || null }; }
+async function scdReloadContent() {
+  try { if (typeof scCpmLoad === 'function') await scCpmLoad(true); } catch (e) {}
+  try { if (typeof scEnsureAdminEdits === 'function') await scEnsureAdminEdits(true); } catch (e) {}
+  try { if (typeof scCpmInvalidate === 'function') scCpmInvalidate(); } catch (e) {}
+}
+async function scdOn() {
+  if (SCD.on || typeof appMode === 'undefined' || appMode !== 'sc-admin') return;
+  try { await scdLoad(); await scdEnsureV1(); } catch (e) { console.warn('[SCD] load', e); }
+  SCD.on = true; await scdReloadContent();
+  try { if (typeof scCpmTab === 'function') scCpmTab('master'); } catch (e) {}
+  try { if (typeof buildAeDayStrip === 'function') buildAeDayStrip(); } catch (e) {}
+  scdBar();
+}
+async function scdOff() { if (!SCD.on) return; SCD.on = false; SCD.screen = ''; scdShowPub(false); await scdReloadContent(); }
+
+// ── which checkpoints are on each day (both packages), for the safety check ──
+function scdDayLists() {
+  var out = {}; ['nqas_12A', 'nqas_12B'].forEach(function (pid) { out[pid] = [];
+    for (var di = 0; di < 60; di++) { var d = null; try { d = scDayDef(pid, di); } catch (e) {} var ids = ((d && d.cps) || []).map(function (c) { return (c && (c.id || (typeof scCpmMatch === 'function' ? scCpmMatch(c) : ''))) || (c && c.t) || ''; }); out[pid].push(ids.join('|')); } });
+  return out;
+}
+async function scdListsFor(state) {   // state: null = published, 'draft', or a snapshot {cp, ae, ed}
+  var keepOn = SCD.on, keepOps = SCD.ops;
+  if (state && state !== 'draft') { SCD.on = true; SCD.ops = {}; var t = Date.now();
+    [['cp_master/edits', state.cp.edits], ['cp_master/added', state.cp.added], ['cp_master/links', state.cp.links], ['cp_master/registry', state.cp.registry], ['admin_edits', state.ae], ['edits', state.ed]]
+      .forEach(function (x, i) { SCD.ops['s' + i] = { p: x[0], v: JSON.stringify(x[1] == null ? null : x[1]), at: t + i }; }); }
+  else SCD.on = state === 'draft';
+  try { await scdReloadContent(); return scdDayLists(); }
+  finally { SCD.on = keepOn; SCD.ops = keepOps; await scdReloadContent(); }
+}
+function scdRunning() {   // Sub-Centres in their programme: {code, name, pid, idx (0-based day reached)}
+  var F = scMasterFacilities || {}, today = scTodayStr(), out = [];
+  Object.keys(F).forEach(function (c) { var f = F[c]; if (!f || f.migratedTo || nfTypeOf(f) !== 'sc' || !f.startDate || f.graduation) return;
+    var idx = Math.floor((Date.parse(today) - Date.parse(f.startDate)) / 86400000); if (idx < 0) return; out.push({ code: c, name: f.name || c, pid: f.progId || 'nqas_12A', idx: Math.min(idx, 59) }); });
+  return out;
+}
+function scdConflicts(A, B) {   // days whose checkpoints differ between A and B, reached by a running Sub-Centre
+  var run = scdRunning(), out = [];
+  Object.keys(A).forEach(function (pid) { (A[pid] || []).forEach(function (s, di) { if (s === (B[pid] || [])[di]) return;
+    var who = run.filter(function (r) { return r.pid === pid && r.idx >= di; }); if (who.length) out.push({ pid: pid, day: di + 1, who: who }); }); });
+  return out;
+}
+function scdChangedDays(A, B) { var n = 0; Object.keys(A).forEach(function (pid) { (A[pid] || []).forEach(function (s, di) { if (s !== (B[pid] || [])[di]) n++; }); }); return n; }
+
+// ── the change list ──
+function scdItems() {
+  var L = SCD.live || { cp: {}, ae: {}, ed: {} }, items = {}, ops = scdOpList();
+  ops.forEach(function (op) { var P = scdParts(op.p), key;
+    if (P[0] === 'cp_master' && (P[1] === 'edits' || P[1] === 'added') && P[2]) key = 'cp:' + P[2];
+    else if (P[0] === 'cp_master' && P[1] === 'links') key = 'links';
+    else if (P[0] === 'cp_master' && P[1] === 'registry') key = 'registry';
+    else if (P[0] === 'admin_edits') key = 'days';
+    else if (P[0] === 'edits') key = 'olddays';
+    else key = 'other';
+    (items[key] = items[key] || { key: key, ops: [] }).ops.push(op); });
+  return Object.keys(items).map(function (k) { var it = items[k];
+    if (k.indexOf('cp:') === 0) { var id = k.slice(3), was = (L.cp.added || {})[id] ? Object.assign({}, L.cp.added[id]) : Object.assign({}, (L.cp.edits || {})[id] || {}), isAdd = !(L.cp.added || {})[id] && scdApply('cp_master/added/' + id, null, it.ops);
+      var now = isAdd ? scdApply('cp_master/added/' + id, null, it.ops) : scdApply((L.cp.added || {})[id] ? 'cp_master/added/' + id : 'cp_master/edits/' + id, (L.cp.added || {})[id] || (L.cp.edits || {})[id] || null, it.ops) || {};
+      var flds = {}; Object.keys(was).concat(Object.keys(now || {})).forEach(function (f) { if (JSON.stringify(was[f] == null ? '' : was[f]) !== JSON.stringify((now || {})[f] == null ? '' : now[f])) flds[f] = 1; });
+      var c = null; try { c = scCpmGet(id); } catch (e) {}
+      it.kind = isAdd ? 'New' : flds.retired && now && now.retired ? 'Retired' : (flds.blDay || flds.implDay) ? 'Moved' : 'Edited';
+      it.title = id + ' · ' + ((c && c.t) || (now && now.t) || ''); it.what = isAdd ? [(now && now.me) || '', (now && now.svc) || '', ((now && now.pk) || []).join(' + ')].filter(Boolean).join(' · ') : 'Changed: ' + (Object.keys(flds).map(function (f) { return SCD_FN[f] || f; }).join(', ') || 'no difference'); }
+    else if (k === 'days' || k === 'olddays') { var aeL = k === 'days' ? (L.ae || {}) : (L.ed || {}), aeN = scdApply(k === 'days' ? 'admin_edits' : 'edits', aeL, it.ops) || {}, keys = {};
+      Object.keys(aeL).concat(Object.keys(aeN)).forEach(function (x) { if (JSON.stringify(aeL[x] || null) !== JSON.stringify(aeN[x] || null)) keys[x] = 1; });
+      it.kind = 'Day cards'; it.title = 'Day card title, task or checkpoints'; it.what = Object.keys(keys).slice(0, 12).map(function (x) { var m = /^([A-Z])_(\d+)$/.exec(x); return m ? (m[1] === 'D' ? '12B' : '12A') + ' Day ' + (+m[2] + 1) : x; }).join(', ') || 'no difference'; }
+    else if (k === 'links') { it.kind = 'Linked checks'; it.title = 'Linked checks (answers that must agree)'; it.what = it.ops.length + ' change' + (it.ops.length === 1 ? '' : 's'); }
+    else if (k === 'registry') { it.kind = 'Titles'; it.title = 'Standard and ME titles'; it.what = it.ops.length + ' change' + (it.ops.length === 1 ? '' : 's'); }
+    else { it.kind = 'Other'; it.title = it.ops.map(function (o) { return o.p; }).join(', '); it.what = ''; }
+    return it; }).sort(function (a, b) { return String(a.title).localeCompare(String(b.title)); });
+}
+var SCD_FN = { t: 'wording', hi: 'Hindi', me: 'ME', aoc: 'Area of Concern', svc: 'service package', r: 'best filled by', method: 'method', video: 'English video', videoHi: 'Hindi video', pk: '12A / 12B', kind: 'kind', retired: 'retired', items: 'things to tick', fix: 'How to fix', cc: 'cross-cutting areas', blDay: 'baseline day', implDay: 'implementation day', mov: 'means of verification' };
+function scdCount() { return scdItems().length; }
+
+// ── screens ──
+function scdBar() {
+  var main = document.querySelector('#admin-app .admin-main'); if (!main) return;
+  var b = document.getElementById('scd-bar'); if (!b) { b = document.createElement('div'); b.id = 'scd-bar'; b.dataset.nfv = 'editor'; var ed = document.getElementById('admin-editor-section'); main.insertBefore(b, ed || main.firstChild); }
+  var n = SCD.on ? scdCount() : 0, m = SCD.meta || {};
+  b.innerHTML = '<div class="scd-bar"><div><b>Sub-Centre checkpoints</b><small>Published: v' + (m.v || 1) + (m.at ? ' · ' + fpShortDate(String(m.at).slice(0, 10)) + (m.by ? ' · ' + scEsc(m.by) : '') : '') + '. Changes wait in a draft until you publish them.</small></div>'
+    + '<div class="scd-acts"><span class="scd-badge' + (n ? ' on' : '') + '" id="scd-badge">' + (n ? 'Draft · ' + n + ' change' + (n === 1 ? '' : 's') : 'No draft changes') + '</span>'
+    + '<button type="button" class="fp-btn" onclick="scdOpenPub(\'vers\')">Versions</button><button type="button" class="fp-btn pri" onclick="scdOpenPub(\'pub\')">Review &amp; publish</button></div></div>';
+}
+function scdBadge() { var el = document.getElementById('scd-badge'); if (!el) return; var n = scdCount(); el.className = 'scd-badge' + (n ? ' on' : ''); el.textContent = n ? 'Draft · ' + n + ' change' + (n === 1 ? '' : 's') : 'No draft changes'; }
+function scdShowPub(on) {
+  var main = document.querySelector('#admin-app .admin-main'); if (!main) return;
+  var p = document.getElementById('scd-pub'); if (!p) { p = document.createElement('div'); p.id = 'scd-pub'; p.dataset.nfv = 'editor'; var b = document.getElementById('scd-bar'); main.insertBefore(p, b ? b.nextSibling : main.firstChild); }
+  p.style.display = on ? '' : 'none'; var ed = document.getElementById('admin-editor-section'); if (ed) ed.classList.toggle('scd-hide', !!on); var bar = document.getElementById('scd-bar'); if (bar) bar.style.display = on ? 'none' : '';
+}
+async function scdOpenPub(which) {
+  SCD.screen = which || 'pub'; scdShowPub(true);
+  var p = document.getElementById('scd-pub'); p.innerHTML = '<div class="fp-card"><p class="fp-dim">Checking…</p></div>';
+  try { var v = await scdRealGet(SCD_BASE + '/versions'); SCD.vers = v || {}; } catch (e) { SCD.vers = {}; }
+  SCD.check = null; if (scdCount()) { try { var A = await scdListsFor(null), B = await scdListsFor('draft'); SCD.check = { conflicts: scdConflicts(A, B), days: scdChangedDays(A, B) }; } catch (e) { console.warn('[SCD] check', e); SCD.check = { err: true }; } }
+  scdPubRender();
+}
+function scdClosePub() { SCD.screen = ''; scdShowPub(false); scdBar(); try { scCpmRender(); } catch (e) {} }
+function scdPubRender() {
+  var p = document.getElementById('scd-pub'); if (!p) return;
+  var items = scdItems(), m = SCD.meta || {}, C = SCD.check || {}, crit = 0;
+  try { crit = scCpmChecks('all').filter(function (c) { return c.level === 'error'; }).length; } catch (e) {}
+  var cls = { New: 'b', Edited: 'a', Moved: 'a', Retired: 'r' };
+  var h = '<div class="scd-pub"><button type="button" class="scd-back" onclick="scdClosePub()">← Checkpoints · Sub-Centre</button>'
+    + '<h2>Review &amp; publish — Sub-Centre</h2><p class="fp-dim">Published now: v' + (m.v || 1) + (m.at ? ' (' + fpShortDate(String(m.at).slice(0, 10)) + (m.by ? ', ' + scEsc(m.by) : '') + ')' : '') + '. This draft becomes v' + ((m.v || 1) + 1) + '.</p>'
+    + '<div class="fp-grid"><div class="fp-col"><div class="fp-card"><b>' + items.length + ' change' + (items.length === 1 ? '' : 's') + ' in the draft</b>'
+    + (items.length ? items.map(function (it) { return '<div class="scd-ch"><span class="fp-st ' + (cls[it.kind] || 'n') + '">' + scEsc(it.kind) + '</span><div><b>' + scEsc(it.title) + '</b><small>' + scEsc(it.what || '') + '</small></div><button type="button" class="fp-btn sm" onclick="scdUndo(\'' + scJs(it.key) + '\')">Undo</button></div>'; }).join('') : '<p class="fp-dim">Nothing to publish — edit checkpoints or day cards in the Sub-Centre tab first.</p>') + '</div></div>'
+    + '<div class="fp-col"><div class="fp-card"><b>Checks</b><ul class="scd-chk">'
+    + (C.err ? '<li class="a">! The day check could not run — try again.</li>' : !items.length ? '<li>Nothing to check.</li>' : C.conflicts && C.conflicts.length ? C.conflicts.slice(0, 6).map(function (x) { return '<li class="r">✗ ' + (x.pid === 'nqas_12B' ? '12B' : '12A') + ' Day ' + x.day + ' changes, but ' + scEsc(x.who.slice(0, 3).map(function (w) { return w.name; }).join(', ')) + (x.who.length > 3 ? ' and ' + (x.who.length - 3) + ' more' : '') + ' already reached it.</li>'; }).join('') + (C.conflicts.length > 6 ? '<li class="r">… ' + (C.conflicts.length - 6) + ' more days</li>' : '') : '<li class="g">✓ ' + (C.days ? C.days + ' day card' + (C.days === 1 ? '' : 's') + ' change, none reached yet by a running Sub-Centre' : 'No day card changes which checkpoints it holds') + '</li>')
+    + (crit ? '<li class="a">! ' + crit + ' checkpoint problem' + (crit === 1 ? '' : 's') + ' in Checks (Checkpoint master → Checks)</li>' : '<li class="g">✓ No errors in Checks</li>') + '</ul>'
+    + (C.conflicts && C.conflicts.length ? '<p class="fp-dim">Days a facility has passed keep their checkpoints: undo the move (or the day-card change), or publish it after those Sub-Centres finish.</p>' : '') + '</div>'
+    + '<div class="fp-card"><b>Who sees it, and when</b><p>Sub-Centres see the new wording, things to tick and How to fix on every card they open from the moment you publish. Scores already given are never changed.</p>'
+    + '<label class="scd-note">Note (kept with the version)<textarea id="scd-note" rows="2" maxlength="300"></textarea></label>'
+    + '<div class="fp-btns"><button type="button" class="fp-btn pri" ' + (!items.length || (C.conflicts && C.conflicts.length) || C.err ? 'disabled' : '') + ' onclick="scdPublish()">Publish v' + ((m.v || 1) + 1) + '</button>'
+    + (items.length ? '<button type="button" class="fp-btn" style="color:#8A2A1B" onclick="scdDiscard()">Discard draft</button>' : '') + '</div></div>'
+    + '<div class="fp-card" id="scd-vers"><b>Versions</b>' + scdVersHTML() + '</div></div></div></div>';
+  p.innerHTML = h;
+  if (SCD.screen === 'vers') try { document.getElementById('scd-vers').scrollIntoView({ block: 'start' }); } catch (e) {}
+}
+function scdVersHTML() {
+  var V = SCD.vers || {}, cur = (SCD.meta || {}).v || 1, ks = Object.keys(V).map(Number).sort(function (a, b) { return b - a; });
+  if (!ks.length) return '<p class="fp-dim">No versions yet.</p>';
+  return '<ul class="scd-vers">' + ks.map(function (v) { var x = V[v] || {}; return '<li><span><b>v' + v + '</b> · ' + fpShortDate(String(x.at || '').slice(0, 10)) + (x.by ? ' · ' + scEsc(x.by) : '') + (x.note ? '<small>' + scEsc(x.note) + '</small>' : '') + '</span>' + (v === cur ? '<em>in use</em>' : '<button type="button" class="fp-btn sm" onclick="scdRollback(' + v + ')">Roll back</button>') + '</li>'; }).join('') + '</ul>';
+}
+async function scdUndo(key) {
+  var it = scdItems().find(function (x) { return x.key === key; }); if (!it) return;
+  for (var i = 0; i < it.ops.length; i++) { await scdRealSet(SCD_BASE + '/draft/ops/' + it.ops[i].k, null); delete SCD.ops[it.ops[i].k]; }
+  await scdReloadContent(); showToast('Undone — back to the published version.', 'ok'); await scdOpenPub('pub');
+}
+async function scdDiscard() {
+  if (!await showConfirm('Discard every change in the Sub-Centre draft? The published version stays as it is.', '🗑️', 'Discard draft', 'Discard', 'var(--red)')) return;
+  await scdRealSet(SCD_BASE + '/draft', null); SCD.ops = {}; await scdReloadContent(); showToast('Draft discarded.', 'ok'); await scdOpenPub('pub');
+}
+async function scdWriteContent(snap) {   // a whole snapshot onto the published paths
+  var w = [['shared/cp_master/edits', snap.cp.edits], ['shared/cp_master/added', snap.cp.added], ['shared/cp_master/links', snap.cp.links], ['shared/cp_master/registry', snap.cp.registry], ['shared/admin_edits', snap.ae], ['shared/edits', snap.ed]];
+  for (var i = 0; i < w.length; i++) { if (!await scdRealSet(w[i][0], w[i][1] == null ? null : w[i][1])) return false; } return true;
+}
+async function scdNewVersion(note, n) {
+  var L = { cp: (await scdRealGet('shared/cp_master')) || {}, ae: (await scdRealGet('shared/admin_edits')) || {}, ed: (await scdRealGet('shared/edits')) || {} };
+  var m = SCD.meta || { v: 1, vers: {} }, v = (m.v || 1) + 1, now = new Date().toISOString(), from = nmIsoDay(new Date()), by = scdBy();
+  await scdRealSet(SCD_BASE + '/versions/' + v, { at: now, by: by, note: note || '', from: from, n: n || 0, snap: JSON.stringify(scdSnap(L)) });
+  var vers = Object.assign({}, m.vers || {}); vers[v] = from;
+  SCD.meta = { v: v, at: now, by: by, note: note || '', from: from, vers: vers }; await scdRealSet(SCD_BASE + '/live', SCD.meta);
+  await scdRealSet('shared/cp_master/updatedAt', now); await scdRealSet('shared/cp_master/updatedBy', by);
+  SCD.live = L; return v;
+}
+async function scdPublish() {
+  if (SCD.busy) return; var items = scdItems(); if (!items.length) return;
+  var C = SCD.check || {}; if (C.err || (C.conflicts && C.conflicts.length)) { showToast('Fix the checks first.', 'err'); return; }
+  SCD.busy = true;
+  try {
+    var ops = scdOpList(), note = ((document.getElementById('scd-note') || {}).value || '').trim().slice(0, 300);
+    for (var i = 0; i < ops.length; i++) { var v; try { v = JSON.parse(ops[i].v); } catch (e) { v = null; } if (!await scdRealSet('shared/' + ops[i].p, v)) { showToast('Could not publish — check the connection. Nothing was lost; try again.', 'err'); return; } }
+    var nv = await scdNewVersion(note, items.length);
+    await scdRealSet(SCD_BASE + '/draft', null); SCD.ops = {};
+    await scdReloadContent(); showToast('Published v' + nv + ' — Sub-Centres see it now.', 'ok'); await scdOpenPub('pub');
+  } finally { SCD.busy = false; }
+}
+async function scdRollback(v) {
+  if (scdCount()) { showToast('Publish or discard the draft first.', 'err'); return; }
+  var x = (SCD.vers || {})[v]; if (!x || !x.snap) return; var snap; try { snap = JSON.parse(x.snap); } catch (e) { return; }
+  var A = await scdListsFor(null), B = await scdListsFor(snap), cf = scdConflicts(A, B);
+  if (cf.length) { await scAlert('Rolling back to v' + v + ' would change ' + cf.length + ' day card' + (cf.length === 1 ? '' : 's') + ' that running Sub-Centres have already reached (for example ' + (cf[0].pid === 'nqas_12B' ? '12B' : '12A') + ' Day ' + cf[0].day + ' — ' + cf[0].who[0].name + '). Days a facility has passed keep their checkpoints, so this roll back is not possible now.', 'Roll back', '⚠️'); return; }
+  if (!await showConfirm('Make v' + v + ' the Sub-Centre content again? It is published as a new version straight away.', '↩', 'Roll back', 'Roll back', 'var(--teal)')) return;
+  if (!await scdWriteContent(snap)) { showToast('Could not roll back — check the connection.', 'err'); return; }
+  var nv = await scdNewVersion('Roll back to v' + v, 0); await scdReloadContent(); showToast('v' + v + ' is back (published as v' + nv + ').', 'ok'); await scdOpenPub('vers');
+}
+
+// ── Content → Checkpoints: one strip of type tabs; the Sub-Centre tab is the Sub-Centre editor in draft mode ──
+function scdTypeTabs() {
+  var cur = _nfOv.view === 'editor' ? 'sc' : ((typeof _nm !== 'undefined' && _nm.ui && _nm.ui.type) || 'uphc');
+  var b = function (t, l) { return '<button type="button" role="tab" aria-selected="' + (cur === t) + '" class="' + (cur === t ? 'on' : '') + '" onclick="' + (t === 'sc' ? "nfAdminView('editor')" : "nfAdminView('dm');nmOpen('" + t + "')") + '">' + l + '</button>'; };
+  return '<h1 class="hs-h1">Checkpoints</h1>' + b('sc', 'Sub-Centre') + b('uphc', 'UPHC') + b('phc', 'PHC') + b('chc', 'CHC');
+}
+(function () {
+  if (typeof nfAdminView !== 'function') return;
+  var oV = nfAdminView;
+  nfAdminView = function (v) {
+    var was = typeof _nfOv !== 'undefined' ? _nfOv.view : '';
+    var r = oV.apply(this, arguments);
+    try { if (appMode === 'sc-admin') {
+      if (_nfOv.view === 'editor' && was !== 'editor') scdOn().then(function () { scdTabsPaint(); });
+      if (_nfOv.view !== 'editor' && was === 'editor') scdOff();
+      scdTabsPaint(); } } catch (e) { console.warn('[SCD] view', e); }
+    return r;
+  };
+  var oA = nfAdminApply;
+  nfAdminApply = function () { var r = oA.apply(this, arguments); try { scdTabsPaint(); } catch (e) {} return r; };
+  if (typeof nmOpen === 'function') { var oO = nmOpen; nmOpen = async function () { var r = await oO.apply(this, arguments); try { scdTabsPaint(); } catch (e) {} return r; }; }
+})();
+(function () { if (typeof scCpmTab !== 'function') return; var oT = scCpmTab; scCpmTab = function (t) { var r = oT.apply(this, arguments); try { var sec = document.getElementById('admin-editor-section'); if (sec) sec.setAttribute('data-scdtab', t); } catch (e) {} return r; }; })();
+function scdTabsPaint() {
+  if (typeof appMode === 'undefined' || appMode !== 'sc-admin') return;
+  var ct = document.getElementById('hs-ctabs'); if (ct && (_nfOv.view === 'editor' || _nfOv.view === 'dm')) ct.innerHTML = scdTypeTabs();
+  if (_nfOv.view === 'editor' && SCD.on && !document.getElementById('scd-bar')) scdBar();
+  // the old Card editor's tab order: Checkpoints first, then Day cards
+  var t = document.getElementById('scm-tabs'); if (t && !t.dataset.scd) { t.dataset.scd = '1'; var a = t.querySelector('[data-t="days"]'), m = t.querySelector('[data-t="master"]');
+    if (a && m) { m.innerHTML = '<i class="ti ti-list-details"></i> Checkpoints'; a.innerHTML = '<i class="ti ti-cards"></i> Day cards (titles &amp; tasks)'; t.insertBefore(m, a); } }
 }
 </script>
 <script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no
