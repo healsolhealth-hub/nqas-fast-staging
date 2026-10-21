@@ -16,8 +16,8 @@ function nfDeptSumFacility(st) {   // synchronous; st = {code, fac, cl (checklis
     st.cl.items.forEach(function (r) { _nd.base0[r[0]] = r; });
     var deps = ndDeptDefs().map(function (d) { return d.id; }), pass = (cfg.passMark || {}).overall || 70, today = st.today || ndToday();
     var L = ndLatest(), R = nfDeptReadiness(lay.rows, L, { pass: pass, depts: deps }), B = nfDeptReadiness(lay.rows, ndLatest(S.bN), { pass: pass, depts: deps });
-    var std = {}; lay.rows.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]]; if (v === undefined || v === null || v === '') return; var x = std[r[3]] = std[r[3]] || { g: 0, m: 0 }; x.g += +v; x.m += 2; });
-    var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k)) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
+    var std = {}; lay.rows.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]], x = std[r[3]] = std[r[3]] || { g: 0, m: 0, n: 0 }; x.m += 2; if (v === undefined || v === null || v === '') return; x.g += +v; x.n++; });   // whole Standard, not-yet-checked = 0
+    var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k) && std[k].n) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
     var byAoc = {}; Object.keys(R.byAoc || {}).forEach(function (a) { if (R.byAoc[a].pct !== null) byAoc[a] = R.byAoc[a].pct; });
     var byDept = {}; Object.keys(R.byDept || {}).forEach(function (d) { if (R.byDept[d].pct !== null) byDept[d] = R.byDept[d].pct; });
     var A = _nd.actions || {}, acts = { open: 0, od: 0, fixed: 0, sup: 0, closed: 0 };

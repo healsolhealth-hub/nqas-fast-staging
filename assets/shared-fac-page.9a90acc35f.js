@@ -35,6 +35,7 @@ function fpTopHTML(code, f, tiles, extra) {
   var role = fpRole(), ic = fpInCharge(f), dept = nfTypeOf(f) !== 'sc', nAct = _fp.nAct;
   var line = [code, [f.district, f.state].filter(Boolean).join(', '), fpPkg(f), fpAccess(f), f.startDate ? 'started ' + fpShortDate(f.startDate) : 'start date not set', ic.name ? ic.label + ' ' + ic.name : 'no ' + ic.label].filter(Boolean).join(' · ');
   var btns = (dept ? '<button type="button" class="fp-btn" onclick="fpOpenApp(\'' + fpJ(code) + '\')"><i class="ti ti-device-mobile"></i> ' + (role === 'supervisor' ? 'Open the facility app' : 'See it as the ' + fpE(ic.label) + ' sees it') + '</button>' : '')
+    + (!dept ? '<button type="button" class="fp-btn" onclick="fpScViewAs(\'' + fpJ(code) + '\')"><i class="ti ti-eye"></i> See it as the ' + fpE(ic.label) + ' sees it</button>' : '')
     + (!dept ? '<button type="button" class="fp-btn" onclick="scGenerateReport(\'facility\',\'' + fpJ(code) + '\')"><i class="ti ti-file-text"></i> PDF report</button>' : '')
     + (role === 'admin' && typeof nfFacMenu === 'function' ? '<button type="button" class="fp-btn" aria-label="Manage facility" onclick="nfFacMenu(this,\'' + fpJ(code) + '\')">Manage ⋯</button>' : '');
   var tab = function (k, l) { return '<button type="button" role="tab" aria-selected="' + (_fp.tab === k) + '" class="' + (_fp.tab === k ? 'on' : '') + '" onclick="fpTab(\'' + k + '\')">' + l + '</button>'; };
@@ -43,12 +44,13 @@ function fpTopHTML(code, f, tiles, extra) {
     + '<div class="fp-tabs" role="tablist" aria-label="Facility">' + tab('ready', 'Readiness') + tab('act', 'Actions' + (nAct != null ? ' · ' + nAct : '')) + tab('staff', 'Staff &amp; cards') + tab('prog', 'Programme') + '</div>';
 }
 function fpApplyTab() {
-  var p = fpPanel(); if (!p) return; p.setAttribute('data-fptab', _fp.tab); p.classList.toggle('fp-sc', _fp.type === 'sc'); p.classList.toggle('fp-dp', _fp.type !== 'sc');
+  var p = fpPanel(); if (!p) return; p.setAttribute('data-fptab', _fp.tab); p.classList.toggle('fp-sc', _fp.type === 'sc'); p.classList.toggle('fp-dp', _fp.type !== 'sc'); p.classList.toggle('fp-work', !!_fp.work && _fp.type === 'sc' && _fp.tab === 'act');
   document.querySelectorAll('#fp-top .fp-tabs button').forEach(function (b) { var on = (b.getAttribute('onclick') || '').indexOf("'" + _fp.tab + "'") > 0; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
 }
 function fpTab(t) {
   _fp.tab = t; fpApplyTab();
-  if (_fp.type === 'sc') { var st = _scIns['sc-drill-insights']; if (t === 'prog') fpScProg(); else if (st) { st.tab = t === 'ready' ? 'readiness' : t === 'act' ? 'gaps' : 'staff'; scInsRender('sc-drill-insights'); } }
+  if (t !== 'act' && _fp.work) { _fp.work = false; fpApplyTab(); }
+  if (_fp.type === 'sc') { if (t === 'prog') fpScProg(); else fpScRender(); }
   else fpDeptRender();
   try { window.scrollTo(0, 0); } catch (e) {}
 }
@@ -60,11 +62,12 @@ function fpScTiles(code) {
   if (!o) return [];
   var ch = o.pct != null && o.base != null ? o.pct - o.base : null, res, rs = '';
   if (o.grad) { var R = HS_RES[o.grad.result] || HS_RES.incomplete; res = R[0]; rs = 'graduated ' + fpShortDate(String(o.grad.at || '').slice(0, 10)); }
+  else if (o.assessed && o.cov != null && o.cov < 50) { res = 'Too early'; rs = o.cov + '% of the checklist checked'; }
   else { var n = o.agg && o.agg.nqas; res = !o.assessed ? '—' : n && n.meets ? 'Ready' : 'Almost'; rs = !o.assessed ? 'no cards yet' : n && n.meets ? 'meets NQAS today' : (n && n.aocFails && n.aocFails.length ? 'Area ' + n.aocFails.slice(0, 2).join(', ') + ' below' : n && n.stdFails && n.stdFails.length ? n.stdFails.length + ' Standards below' : 'overall below 70%'); }
   var ov = o.overdue || 0, open = 0; try { open = scRvList((_scRvAll || {})[code] || {}).filter(function (x) { return x.status !== 'draft' && x.status !== 'closed'; }).length; } catch (e) {}
   _fp.nAct = open;
   return [{ l: 'Day', v: o.phase === 'notstarted' ? '—' : (o.phase === 'catchup' ? o.days : o.day) + ' / ' + o.days, s: HS_PHASE[o.phase] || '' },
-    { l: 'Readiness', v: o.pct == null ? '—' : o.pct + '%', s: o.base != null ? 'baseline ' + o.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') : '', c: fpPctCls(o.pct) },
+    { l: 'Readiness', v: o.pct == null ? '—' : o.pct + '%', s: (o.base != null ? 'baseline ' + o.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') + ' · ' : '') + (o.cov != null ? o.cov + '% checked' : ''), c: fpPctCls(o.pct) },
     { l: o.grad ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: o.grad ? (o.grad.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === 'Almost' ? 'a' : '' },
     { l: 'On time', v: o.onTime == null ? '—' : o.onTime + '%', s: o.behind ? 'behind schedule' : o.comp && o.inProg ? 'on track' : '', c: o.behind ? 'r' : '' },
     { l: 'Open actions', v: String(open), s: ov ? ov + ' overdue' : 'none overdue', c: ov ? 'r' : '' },
@@ -72,12 +75,13 @@ function fpScTiles(code) {
 }
 function fpScMount(code) {
   var p = fpEnsure(), f = (scMasterFacilities || {})[code]; if (!p || !f) return;
-  _fp.code = code; _fp.type = 'sc'; _fp.D = null;
+  if (_fp.code !== code) { _fp.scAct = 'open'; _fp.work = false; }
+  _fp.code = code; _fp.type = 'sc'; _fp.D = null; _fp.M = null;
   var links = document.querySelector('#sc-drill-info .nfl-drill'), extra = links ? '<div class="fp-line">' + links.innerHTML + '</div>' : '';
   document.getElementById('fp-top').innerHTML = fpTopHTML(code, f, fpScTiles(code), extra);
   document.getElementById('fp-dept').innerHTML = '';
-  if (_fp.tab === 'prog') fpScProg(); else { var st = _scIns['sc-drill-insights']; if (st) { var want = _fp.tab === 'ready' ? 'readiness' : _fp.tab === 'act' ? 'gaps' : 'staff'; if (st.tab !== want) { st.tab = want; scInsRender('sc-drill-insights'); } } }
-  fpApplyTab();
+  if (_fp.tab === 'prog') fpScProg(); else fpScRender();
+  fpApplyTab(); fpScLoadExtras(code);
 }
 function fpPeopleHTML(code) {
   var out = [];
@@ -126,8 +130,9 @@ function fpDeptCompute(D) {
   // weekly readiness
   var rows = _nd.cl.items, deps = ndDeptDefs().map(function (d) { return d.id; }), pts = [];
   if (cur >= 1) { var marks = [Math.min(S.bN, cur)]; for (var w = S.bN + 7; w < cur; w += 7) marks.push(w); if (marks[marks.length - 1] !== cur) marks.push(cur);
-    marks.forEach(function (m) { var R = nfDeptReadiness(rows, ndLatest(m), { pass: crit.overall, depts: deps }); if (R.overall != null) pts.push({ d: m, v: R.overall }); }); }
+    marks.forEach(function (m) { var Lm = ndLatest(m), R = nfDeptReadiness(rows, Lm, { pass: crit.overall, depts: deps }); if (R.overall != null) pts.push(Object.assign({ d: m, v: R.overall, n: R.n, of: R.of, cov: R.of ? Math.round(100 * R.n / R.of) : 0 }, fprSpoAt(rows, Lm, deps))); }); }
   D.trend = pts;
+  var Rn = nfDeptReadiness(rows, ndLatest(), { pass: crit.overall, depts: deps }); D.n = Rn.n; D.of = Rn.of; D.cov = Rn.of ? Math.round(100 * Rn.n / Rn.of) : 0;
   // actions
   var A = _nd.actions || {}, staff = ndStaff();
   D.acts = Object.keys(A).map(function (id) { var a = A[id] || {}, od = a.status === 'open' && a.due && a.due < today;
@@ -159,12 +164,13 @@ function fpDeptTiles(D) {
   var sc = D.sc, ch = sc.overall != null && sc.base != null ? sc.overall - sc.base : null, R = D.rule, res, rs;
   if (g) { res = (ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete).t; rs = 'graduated ' + fpShortDate(String(g.at || '').slice(0, 10)); }
   else if (sc.overall == null) { res = '—'; rs = 'no cards yet'; }
+  else if (D.cov < 50) { res = 'Too early'; rs = D.cov + '% of the checklist checked'; }
   else { res = R.result === 'ready' ? 'Ready' : R.result === 'almost' ? 'Almost' : 'Not yet'; rs = R.deptFails.length ? ndDeptDefName(D, R.deptFails[0]) + ' ' + sc.byDept[R.deptFails[0]] + '%' : R.aocFails.length ? 'Area ' + R.aocFails.join(', ') + ' below' : R.stdFails.length ? R.stdFails.length + ' Standards below' : R.result === 'ready' ? 'meets NQAS today' : 'overall below ' + D.crit.overall + '%'; }
   var open = D.acts.filter(function (a) { return a.st !== 'closed'; }).length, od = D.acts.filter(function (a) { return a.st === 'od'; }).length; _fp.nAct = open;
   var on = D.depts.length;
   return [{ l: 'Day', v: !d || d < 1 ? '—' : Math.min(d, S.days) + ' / ' + S.days, s: phase },
-    { l: 'Readiness', v: sc.overall == null ? '—' : sc.overall + '%', s: sc.base != null ? 'baseline ' + sc.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') : '', c: fpPctCls(sc.overall) },
-    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === '—' ? '' : 'a' },
+    { l: 'Readiness', v: sc.overall == null ? '—' : sc.overall + '%', s: (sc.base != null ? 'baseline ' + sc.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') + ' · ' : '') + D.cov + '% checked', c: fpPctCls(sc.overall) },
+    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === '—' || res === 'Too early' ? '' : 'a' },
     { l: 'On time', v: D.onTime == null ? '—' : D.onTime + '%', s: D.onState === 'r' ? 'behind schedule' : D.onState === 'a' ? 'slipping' : D.onState ? 'on track' : '', c: D.onState === 'r' ? 'r' : '' },
     { l: 'Open actions', v: String(open), s: od ? od + ' overdue' : 'none overdue', c: od ? 'r' : '' },
     { l: 'Staff', v: String(D.staff.length), s: on + ' department' + (on === 1 ? '' : 's') + ' on' }];
@@ -262,7 +268,7 @@ function fpDeptRender() {
   if (!D) { host.innerHTML = '<div class="fp-card"><p class="fp-dim">Loading…</p></div>'; return; }
   var keep = typeof _nd !== 'undefined' ? _nd : null;
   try { _nd = D.ctx;
-    host.innerHTML = _fp.tab === 'act' ? fpDeptActHTML(D) : _fp.tab === 'staff' ? fpDeptStaffHTML(D) : _fp.tab === 'prog' ? fpDeptProgHTML(D) : fpDeptReadyHTML(D);
+    host.innerHTML = _fp.tab === 'act' ? fpDeptActHTML(D) : _fp.tab === 'staff' ? fpDeptStaffHTML(D) : _fp.tab === 'prog' ? fpDeptProgHTML(D) : fpDeptReadyWrap(D);
   } catch (e) { console.warn('[FP] render', e); host.innerHTML = '<div class="fp-card"><p class="fp-dim">Could not show this tab.</p></div>'; }
   finally { _nd = keep; }
 }

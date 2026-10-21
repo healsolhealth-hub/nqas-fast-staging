@@ -15301,7 +15301,7 @@ function nfFacPhases(o){
     if(NF_WEEK_START[w]>todayDi&&!nfHasDone(pr,NF_WEEK_START[w],NF_WEEK_END[w])) break;
     if(!nfTouched(pid,pr,NF_WEEK_START[w],NF_WEEK_END[w]).n) continue;   // nothing scored that week → no point (no copied value)
     var s=scFacilityReadiness(pid,nfFilterProg(pr,NF_WEEK_END[w]),st);
-    var cv=function(k){ var b=s.byCat[k]; return b&&b.assessed?b.pct:null; }; weeks.push({w:w+1,pct:s.coverage.assessed?s.pct:null,S:cv('Structure'),P:cv('Process'),O:cv('Outcome')});
+    var cv=function(k){ var b=s.byCat[k]; return b&&b.assessed?b.pct:null; }; weeks.push({w:w+1,pct:s.coverage.assessed?s.pct:null,cov:s.coverage.pct,n:s.coverage.assessed,of:s.coverage.total,S:cv('Structure'),P:cv('Process'),O:cv('Outcome')});
   }
   var blDone=0; try{ blDone=scBaselineStatus(pid,pr,st).filter(function(x){ return x.complete; }).length; }catch(e){}
   o._ph={key:key,A:A,B:B,I:I,E:E,weeks:weeks,day:day,todayDi:todayDi,blDone:blDone}; return o._ph;
@@ -21844,8 +21844,11 @@ function nfDeptReadiness(items, latest, opts) {
     var s = latest[r[0]]; if (s === undefined || s === null || s === '') return;
     [all, d, a, da].forEach(function (x) { x.n++; x.got += +s; x.max += 2; });
   });
-  var pct = function (x) { return x.max ? Math.round(100 * x.got / x.max) : null; }, out = function (x) { return { pct: pct(x), n: x.n, of: x.of }; };
-  var res = { overall: pct(all), n: all.n, of: all.of, byDept: {}, byAoc: {}, fails: [] };
+  // readiness = points ÷ maximum for EVERY checkpoint of the departments switched on (not yet checked = 0), the Sub-Centre rule
+  // (HealSol 21 Oct); comp = the score of what has been checked so far ("88% of those Met / Partial"); null until something is checked
+  var pct = function (x) { return x.n ? Math.round(100 * x.got / (2 * x.of)) : null; }, comp = function (x) { return x.max ? Math.round(100 * x.got / x.max) : null; };
+  var out = function (x) { return { pct: pct(x), comp: comp(x), n: x.n, of: x.of }; };
+  var res = { overall: pct(all), comp: comp(all), n: all.n, of: all.of, byDept: {}, byAoc: {}, fails: [] };
   Object.keys(byDept).forEach(function (k) { var d = byDept[k]; res.byDept[k] = Object.assign(out(d), { byAoc: {} }); Object.keys(d.byAoc).forEach(function (a) { res.byDept[k].byAoc[a] = out(d.byAoc[a]); }); });
   Object.keys(byAoc).forEach(function (a) { res.byAoc[a] = out(byAoc[a]); });
   if (res.overall === null || res.overall < mark) res.fails.push('overall');
@@ -24747,8 +24750,8 @@ function nfDeptSumFacility(st) {   // synchronous; st = {code, fac, cl (checklis
     st.cl.items.forEach(function (r) { _nd.base0[r[0]] = r; });
     var deps = ndDeptDefs().map(function (d) { return d.id; }), pass = (cfg.passMark || {}).overall || 70, today = st.today || ndToday();
     var L = ndLatest(), R = nfDeptReadiness(lay.rows, L, { pass: pass, depts: deps }), B = nfDeptReadiness(lay.rows, ndLatest(S.bN), { pass: pass, depts: deps });
-    var std = {}; lay.rows.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]]; if (v === undefined || v === null || v === '') return; var x = std[r[3]] = std[r[3]] || { g: 0, m: 0 }; x.g += +v; x.m += 2; });
-    var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k)) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
+    var std = {}; lay.rows.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]], x = std[r[3]] = std[r[3]] || { g: 0, m: 0, n: 0 }; x.m += 2; if (v === undefined || v === null || v === '') return; x.g += +v; x.n++; });   // whole Standard, not-yet-checked = 0
+    var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k) && std[k].n) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
     var byAoc = {}; Object.keys(R.byAoc || {}).forEach(function (a) { if (R.byAoc[a].pct !== null) byAoc[a] = R.byAoc[a].pct; });
     var byDept = {}; Object.keys(R.byDept || {}).forEach(function (d) { if (R.byDept[d].pct !== null) byDept[d] = R.byDept[d].pct; });
     var A = _nd.actions || {}, acts = { open: 0, od: 0, fixed: 0, sup: 0, closed: 0 };
@@ -25135,8 +25138,8 @@ function ndEndStat(cuOnly) {
 function ndGradScores() {
   var S = ndShape(), deps = ndDeptDefs().map(function (d) { return d.id; }), pass = ndCrit().overall, L = ndLatest();
   var R = nfDeptReadiness(_nd.cl.items, L, { pass: pass, depts: deps }), B = nfDeptReadiness(_nd.cl.items, ndLatest(S.bN), { pass: pass, depts: deps });
-  var std = {}; _nd.cl.items.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]]; if (v === undefined || v === null || v === '') return; var x = std[r[3]] = std[r[3]] || { g: 0, m: 0 }; x.g += +v; x.m += 2; });
-  var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k)) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
+  var std = {}; _nd.cl.items.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]], x = std[r[3]] = std[r[3]] || { g: 0, m: 0, n: 0 }; x.m += 2; if (v === undefined || v === null || v === '') return; x.g += +v; x.n++; });   // whole Standard, not-yet-checked = 0
+  var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k) && std[k].n) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
   var byAoc = {}; Object.keys(R.byAoc || {}).forEach(function (a) { if (/^[A-H]$/.test(a) && R.byAoc[a].pct !== null) byAoc[a] = R.byAoc[a].pct; });
   var byDept = {}; Object.keys(R.byDept || {}).forEach(function (d) { if (R.byDept[d].pct !== null) byDept[d] = R.byDept[d].pct; });
   var bDept = {}; Object.keys(B.byDept || {}).forEach(function (d) { if (B.byDept[d].pct !== null) bDept[d] = B.byDept[d].pct; });
@@ -25578,7 +25581,7 @@ function hsInfo(code) {
   if (dept) {
     var S = nfDeptShape(LV), s = (typeof _nfDs !== 'undefined' && _nfDs.map) ? _nfDs.map[code] : null;
     o.s = s; o.days = S.days; o.S = S; o.rawDay = f.startDate ? nfDeptDayNo(f.startDate, today) : null;
-    o.pct = s && s.assessed ? s.pct : null; o.base = s && s.base != null ? s.base : null; o.assessed = s ? s.assessed : 0;
+    o.pct = s && s.assessed ? s.pct : null; o.base = s && s.base != null ? s.base : null; o.assessed = s ? s.assessed : 0; o.cov = s && s.total ? Math.round(100 * (s.assessed || 0) / s.total) : null;
     o.overdue = s ? s.acts.od : 0; o.toCheck = s ? s.checksDue : 0; o.loading = !s && !!f.startDate;
     o.byStd = s ? s.byStd || {} : {}; o.byDept = s ? s.byDept || {} : {}; o.byAoc = s ? s.byAoc || {} : {};
     // on track / slipping / behind with this type's timeline settings (Settings → Programme rules → Timeline)
@@ -25588,7 +25591,7 @@ function hsInfo(code) {
     var p = getProg(f.progId || 'nqas_12A') || {}, a = scFacAggFor(code), b = a.baseline || {};
     o.days = p.days || 60; o.S = { bN: 7, iN: 49, e1: 50, eN: 56, r1: 57, rN: 60, days: o.days };
     o.rawDay = f.startDate ? Math.floor((Date.parse(today) - Date.parse(f.startDate)) / 86400000) + 1 : null;
-    o.agg = a; o.pct = a.coverage && a.coverage.assessed ? a.pct : null; o.base = b.assessed ? b.pct : null; o.assessed = a.coverage ? a.coverage.assessed : 0;
+    o.agg = a; o.pct = a.coverage && a.coverage.assessed ? a.pct : null; o.base = b.assessed ? b.pct : null; o.assessed = a.coverage ? a.coverage.assessed : 0; o.cov = a.coverage ? a.coverage.pct : null;
     o.byStd = {}; Object.keys(a.byStd || {}).forEach(function (k) { var x = a.byStd[k]; if (x && x.assessed) o.byStd[k] = x.pct; });
     var acts = scRvList((_scRvAll || {})[code] || {}); o.overdue = acts.filter(function (x) { return x.status !== 'draft' && x.status !== 'closed' && x.dueDate && x.dueDate < today; }).length;
     try { var c = nfgCompFor(code, f, (scMasterProgress || {})[code] || {}, (_scRvAll || {})[code] || null); o.comp = c; } catch (e) {}
@@ -25610,6 +25613,7 @@ function hsResult(o) {   // the result column: graduation result, else the NQAS 
   if (o.grad) { var r = HS_RES[o.grad.result] || HS_RES.incomplete; return '<span class="nfo-chip ' + r[1] + '">' + r[0] + '</span>'; }
   if (o.loading) return '<span class="nfo-chip grey">Loading…</span>';
   if (!o.assessed) return '<span class="hs-dim">—</span>';
+  if (o.cov != null && o.cov < 50) return '<span class="nfo-chip grey" title="Less than half of the checklist has a score — the result would not mean much yet">Too early · ' + o.cov + '% checked</span>';
   if (o.dept) { var s = o.s || {}, low = Object.keys(o.byDept).filter(function (k) { return o.byDept[k] < 70; }).length, aoc = Object.keys(o.byAoc).filter(function (k) { return o.byAoc[k] < 70; }).length;
     if (o.pct < 70) return '<span class="nfo-chip amber">Overall below 70%</span>';
     if (low) return '<span class="nfo-chip amber">' + low + ' department' + (low > 1 ? 's' : '') + ' below</span>';
@@ -25758,7 +25762,7 @@ function hsRenderFac() {
     + (sorted.length ? sorted.map(function (o) { var ch = o.pct != null && o.base != null ? o.pct - o.base : null;
       return '<tr class="nfo-row' + (o.behind || o.payDue ? ' hs-warn' : '') + '" onclick="scDrillIn(\'' + hsJ(o.code) + '\')"><td><b>' + hsE(o.name) + '</b> ' + hsTypeChip(o.type) + (o.f.suspended ? ' <span class="nfo-chip grey">Paused</span>' : '') + '<small>' + hsE([o.district || o.code, o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : 'No ' + o.inChargeLabel + ' yet'].join(' · ')) + '</small></td>'
         + '<td>' + (o.phase === 'notstarted' ? 'Not started<small>' + (o.f.startDate ? 'starts ' + hsE(hsShortDate(o.f.startDate)) : 'start date not set') + '</small>' : 'Day ' + (o.phase === 'catchup' ? o.days : o.day) + '<small>' + hsE(HS_PHASE[o.phase]) + (o.phase === 'graduated' && o.grad ? ' ' + hsE(hsShortDate(String(o.grad.at || '').slice(0, 10))) : '') + '</small>') + '</td>'
-        + '<td>' + (o.pct == null ? '<span class="hs-dim">' + (o.loading ? 'Loading…' : o.phase === 'notstarted' ? '—' : 'No cards yet') + '</span>' : (o.base != null ? o.base + '% → ' : '') + '<b>' + o.pct + '%</b>' + (ch != null ? ' <b class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch + '</b>' : '')) + '</td>'
+        + '<td>' + (o.pct == null ? '<span class="hs-dim">' + (o.loading ? 'Loading…' : o.phase === 'notstarted' ? '—' : 'No cards yet') + '</span>' : (o.base != null ? o.base + '% → ' : '') + '<b>' + o.pct + '%</b>' + (ch != null ? ' <b class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch + '</b>' : '') + (o.cov != null ? '<small>' + o.cov + '% checked</small>' : '')) + '</td>'
         + '<td>' + hsResult(o) + '</td><td class="c' + (o.behind ? ' red' : '') + '">' + (o.onTime == null ? '—' : o.onTime + '%') + '</td><td class="c' + (o.overdue ? ' red' : '') + '">' + (o.overdue || 0) + '</td>'
         + '<td class="' + (o.payDue ? 'red' : '') + '">' + hsE(o.access) + '</td><td><button type="button" class="hs-dots" aria-label="Manage ' + hsE(o.name) + '" onclick="event.stopPropagation();nfFacMenu(this,\'' + hsJ(o.code) + '\')">⋯</button></td></tr>'; }).join('')
       : '<tr><td colspan="8" class="nfo-empty">No facility matches these filters.</td></tr>') + '</tbody></table></div>';
@@ -26044,10 +26048,8 @@ function hsxDistItems(state, district) {
 #sc-drill-panel.fp{font-family:'Poppins',sans-serif;}
 #sc-drill-panel.fp > *{display:none!important;}
 #sc-drill-panel.fp > #fp-top{display:block!important;}
-#sc-drill-panel.fp.fp-sc[data-fptab="ready"] > #sc-drill-insights,
-#sc-drill-panel.fp.fp-sc[data-fptab="act"] > #sc-drill-insights,
-#sc-drill-panel.fp.fp-sc[data-fptab="staff"] > #sc-drill-staff,
-#sc-drill-panel.fp.fp-sc[data-fptab="staff"] > #sc-drill-insights,
+#sc-drill-panel.fp.fp-sc:not([data-fptab="prog"]) > #fp-dept,
+#sc-drill-panel.fp.fp-sc.fp-work[data-fptab="act"] > #sc-drill-insights,
 #sc-drill-panel.fp.fp-sc[data-fptab="prog"] > #fp-prog,
 #sc-drill-panel.fp.fp-dp > #fp-dept{display:block!important;}
 #sc-drill-panel.fp #sc-drill-insights > .scx-tabs{display:none;}
@@ -26128,6 +26130,92 @@ b.g,td.g{color:#1F5A33;} b.a,td.a{color:#7A4B0B;} b.r,td.r{color:#8A2A1B;}
 body.hs-admin #nf-dm .nm-types{display:none;}
 body.hs-admin #admin-editor-section button[onclick="toggleAdminEditor()"]{display:none!important;}
 body.hs-admin #admin-editor-section[data-scdtab="master"] button[onclick="aeSaveDay()"],body.hs-admin #admin-editor-section[data-scdtab="master"] button[onclick="aeResetDay()"]{display:none!important;}
+/* Today's score on staff cards (day-score.js) */
+.nf-dscore{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin:10px 0 0;padding:8px 12px;border-radius:12px;background:#F0F7F5;color:#134A41;font-size:12.5px;}
+.nf-dscore b{font-size:13.5px;} .nf-dscore span{color:#4A5A55;}
+.nf-hero .nf-dscore,.nx-hero .nf-dscore{background:rgba(255,255,255,.14);color:#fff;} .nf-hero .nf-dscore span,.nx-hero .nf-dscore span{color:rgba(255,255,255,.85);}
+.cbody > .nf-dscore{margin:0 0 10px;}
+/* "See it as the CHO sees it" (fac-sc.js) */
+#fp-va-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:76px;z-index:10050;display:flex;align-items:center;gap:10px;background:#134A41;color:#fff;border-radius:999px;padding:8px 8px 8px 16px;font:500 12.5px 'Poppins',sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:calc(100vw - 32px);}
+#fp-va-bar button{border:0;border-radius:999px;background:#fff;color:#134A41;font:700 12px 'Poppins',sans-serif;padding:7px 14px;cursor:pointer;}
+body.nf-viewas #sc-cho-app .sc-cho-nav,body.nf-viewas #sc-cho-app .fa-mc,body.nf-viewas #sc-cho-app .fa-btn:not(.ghost),body.nf-viewas #sc-cho-app [onclick*="ogout"],body.nf-viewas #sc-cho-app [onclick*="Pwd"],body.nf-viewas #sc-cho-app [onclick*="AddStaff"],body.nf-viewas #sc-cho-app [onclick*="RemoveStaff"],body.nf-viewas #sc-cho-app [onclick*="StartDate"],body.nf-viewas #sc-cho-app [onclick*="ChangePwd"],body.nf-viewas #sc-cho-app [onclick*="faMyCards"]{display:none!important;}
+body.nf-viewas #sc-cho-app input,body.nf-viewas #sc-cho-app select,body.nf-viewas #sc-cho-app textarea{pointer-events:none;opacity:.7;}
+
+/* Readiness tab — one design for every type (fac-ready.js) */
+.fpr-ph{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.fpr-ph > div{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:10px;background:#F3F6F5;border:1px solid #E1E8E5;color:#5C6B66;}
+.fpr-ph i{font-style:normal;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#DCE4E1;color:#3E4E49;font-size:11px;font-weight:700;}
+.fpr-ph b{font-size:13px;color:#1F2D29;}
+.fpr-ph small{font-size:11px;}
+.fpr-ph .done{background:#EAF5EF;border-color:#CBE6D6;} .fpr-ph .done i{background:#2E8B57;color:#fff;}
+.fpr-ph .cur{background:#134A41;border-color:#134A41;color:#D6ECE6;} .fpr-ph .cur b{color:#fff;} .fpr-ph .cur i{background:#fff;color:#134A41;}
+.fpr-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0;}
+@media (max-width:1100px){.fpr-kpis{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:560px){.fpr-kpis{grid-template-columns:repeat(2,1fr);}}
+.fpr-kpis > div{background:#fff;border:1px solid #E1E8E5;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;}
+.fpr-kpis b{font-size:22px;font-weight:700;color:#1F2D29;font-variant-numeric:tabular-nums;line-height:1.15;}
+.fpr-kpis b.g{color:#1F7A4A;} .fpr-kpis b.a{color:#9A5B12;} .fpr-kpis b.r{color:#B3402A;}
+.fpr-kpis small{font-size:12px;color:#3E4E49;font-weight:600;}
+.fpr-kpis em{font-style:normal;font-size:11px;color:#6B7A75;}
+.fpr-verdict{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;border-radius:12px;padding:12px 16px;margin-bottom:14px;border:1px solid;}
+.fpr-verdict b{font-size:14px;} .fpr-verdict span{font-size:12.5px;}
+.fpr-verdict.g{background:#EAF5EF;border-color:#CBE6D6;color:#1F5F3E;}
+.fpr-verdict.r{background:#FCEFEC;border-color:#F2D2CA;color:#8A2F1F;}
+.fpr-verdict.n{background:#F3F6F5;border-color:#E1E8E5;color:#3E4E49;}
+.fpr-trend{width:100%;height:auto;display:block;font-family:'Poppins',sans-serif;}
+.fpr-sw{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#3E4E49;cursor:pointer;}
+.fpr-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:#5C6B66;margin-top:8px;}
+.fpr-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px;background:#ccc;}
+.fpr-legend i.ln{height:3px;border-radius:2px;background:#134A41;vertical-align:3px;width:16px;}
+.fpr-legend i.col{background:#CBD5E1;} .fpr-legend i.mk{height:0;border-top:2px dashed #D4912A;border-radius:0;vertical-align:3px;width:16px;background:none;}
+.fpr-legend i.b{border-radius:50%;background:#fff;border:2px solid #8A9A95;} .fpr-legend i.g{border-radius:50%;background:#2E8B57;}
+.fpr-legend i.r{background:#E8A598;} .fpr-legend i.a{background:#F2CF8E;} .fpr-legend i.n{background:#EEF2F1;border:1px solid #DCE4E1;}
+.fpr-rows{display:flex;flex-direction:column;}
+.fpr-row{display:grid;grid-template-columns:minmax(120px,1.3fr) 2fr 74px 18px;align-items:center;gap:12px;padding:9px 4px;border:0;border-bottom:1px solid #EEF2F1;background:none;width:100%;text-align:left;font:inherit;color:inherit;}
+.fp-card > .fpr-row{grid-template-columns:minmax(110px,1fr) 2fr 74px;}
+.fpr-row.click{cursor:pointer;} .fpr-row.click:hover{background:#F6F9F8;}
+.fpr-l{display:flex;flex-direction:column;min-width:0;} .fpr-l b{font-size:13px;color:#1F2D29;font-weight:600;} .fpr-l small{font-size:11px;color:#6B7A75;}
+.fpr-tr{position:relative;height:22px;}
+.fpr-tr::before{content:'';position:absolute;left:0;right:0;top:10px;height:2px;background:#E6ECEA;border-radius:2px;}
+.fpr-mk{position:absolute;top:3px;height:16px;border-left:2px dashed #D4912A;}
+.fpr-ln{position:absolute;top:9px;height:4px;border-radius:2px;background:#9FC9B3;} .fpr-ln.dn{background:#E8A598;}
+.fpr-dot{position:absolute;top:4px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#2E8B57;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08);}
+.fpr-dot.b{background:#fff;border:2px solid #8A9A95;box-shadow:none;}
+.fpr-dot.a{background:#D4912A;} .fpr-dot.r{background:#C8553D;}
+.fpr-v{display:flex;flex-direction:column;align-items:flex-end;} .fpr-v b{font-size:14px;font-variant-numeric:tabular-nums;}
+.fpr-v b.g{color:#1F7A4A;} .fpr-v b.a{color:#9A5B12;} .fpr-v b.r{color:#B3402A;} .fpr-v small{font-size:10.5px;color:#6B7A75;}
+.fpr-chev{color:#6B7A75;font-size:16px;}
+.fpr-drill{background:#F6F9F8;border-radius:10px;padding:12px 14px;margin:6px 0 10px;}
+.fpr-bars{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;align-items:end;}
+.fpr-bar{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;min-width:0;}
+.fpr-bar b{font-size:13px;color:#1F2D29;} .fpr-bar small{font-size:10px;color:#6B7A75;line-height:1.2;}
+.fpr-bv{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;} .fpr-bv.g{color:#1F7A4A;} .fpr-bv.a{color:#9A5B12;} .fpr-bv.r{color:#B3402A;} .fpr-bv.n{color:#8A9A95;}
+.fpr-col{position:relative;width:100%;max-width:44px;height:130px;background:#fff;border-radius:6px 6px 0 0;border-bottom:2px solid #C9D4D0;}
+.fpr-ghost{position:absolute;left:0;right:0;bottom:0;background:#E3E9E7;border-radius:5px 5px 0 0;}
+.fpr-fill{position:absolute;left:22%;right:22%;bottom:0;border-radius:4px 4px 0 0;background:#2E8B57;}
+.fpr-fill.a{background:#D4912A;} .fpr-fill.r{background:#C8553D;} .fpr-fill.n{background:transparent;}
+.fpr-mark{position:absolute;left:-3px;right:-3px;border-top:2px dashed #D4912A;z-index:2;}
+.fpr-heat{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.fpr-hr{display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;}
+.fpr-hl{font-size:12px;color:#3E4E49;} .fpr-hl b{display:inline-block;width:20px;color:#1F2D29;}
+.fpr-hc{display:flex;flex-wrap:wrap;gap:4px;}
+.fpr-cell{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:46px;height:40px;border-radius:7px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:#1F2D29;}
+.fpr-cell b{font-size:10px;font-weight:600;opacity:.75;}
+.fpr-cell.g{background:#CFE8DA;} .fpr-cell.a{background:#F6E2B8;} .fpr-cell.r{background:#F2C6BC;} .fpr-cell.n{background:#F1F4F3;color:#8A9A95;}
+.fpr-cell.low{outline:2px solid #1F2D29;outline-offset:-2px;}
+#fp-ready .fp-tabs{margin-bottom:12px;}
+@media (max-width:720px){
+  .fpr-ph{grid-template-columns:repeat(2,1fr);}
+  .fpr-row{grid-template-columns:1fr 64px 18px;} .fpr-row .fpr-tr{grid-column:1 / -1;grid-row:2;}
+  .fp-card > .fpr-row{grid-template-columns:1fr 64px;}
+  .fpr-hr{grid-template-columns:1fr;}
+  .fpr-bars{grid-template-columns:repeat(4,1fr);row-gap:14px;}
+  .fpr-col{height:96px;}
+}
+body.nf-viewas{overflow:hidden;}
+body.nf-viewas #sc-cho-app.vis{position:fixed;inset:0;z-index:10000;overflow-y:auto;}
+.fpr-chev.up{transform:rotate(180deg);}
+.fpr-legend i.hg{background:#CFE8DA;} .fpr-legend i.r{background:#F2C6BC;} .fpr-legend i.a{background:#F6E2B8;}
 </style>
 <script id="nf-fac-page">// ══════════════════════════════════════════════════════════════
 // STEP 4 — ONE FACILITY PAGE for SC · UPHC · PHC · CHC (HealSol, Supervisor, District Admin; canvas
@@ -26166,6 +26254,7 @@ function fpTopHTML(code, f, tiles, extra) {
   var role = fpRole(), ic = fpInCharge(f), dept = nfTypeOf(f) !== 'sc', nAct = _fp.nAct;
   var line = [code, [f.district, f.state].filter(Boolean).join(', '), fpPkg(f), fpAccess(f), f.startDate ? 'started ' + fpShortDate(f.startDate) : 'start date not set', ic.name ? ic.label + ' ' + ic.name : 'no ' + ic.label].filter(Boolean).join(' · ');
   var btns = (dept ? '<button type="button" class="fp-btn" onclick="fpOpenApp(\'' + fpJ(code) + '\')"><i class="ti ti-device-mobile"></i> ' + (role === 'supervisor' ? 'Open the facility app' : 'See it as the ' + fpE(ic.label) + ' sees it') + '</button>' : '')
+    + (!dept ? '<button type="button" class="fp-btn" onclick="fpScViewAs(\'' + fpJ(code) + '\')"><i class="ti ti-eye"></i> See it as the ' + fpE(ic.label) + ' sees it</button>' : '')
     + (!dept ? '<button type="button" class="fp-btn" onclick="scGenerateReport(\'facility\',\'' + fpJ(code) + '\')"><i class="ti ti-file-text"></i> PDF report</button>' : '')
     + (role === 'admin' && typeof nfFacMenu === 'function' ? '<button type="button" class="fp-btn" aria-label="Manage facility" onclick="nfFacMenu(this,\'' + fpJ(code) + '\')">Manage ⋯</button>' : '');
   var tab = function (k, l) { return '<button type="button" role="tab" aria-selected="' + (_fp.tab === k) + '" class="' + (_fp.tab === k ? 'on' : '') + '" onclick="fpTab(\'' + k + '\')">' + l + '</button>'; };
@@ -26174,12 +26263,13 @@ function fpTopHTML(code, f, tiles, extra) {
     + '<div class="fp-tabs" role="tablist" aria-label="Facility">' + tab('ready', 'Readiness') + tab('act', 'Actions' + (nAct != null ? ' · ' + nAct : '')) + tab('staff', 'Staff &amp; cards') + tab('prog', 'Programme') + '</div>';
 }
 function fpApplyTab() {
-  var p = fpPanel(); if (!p) return; p.setAttribute('data-fptab', _fp.tab); p.classList.toggle('fp-sc', _fp.type === 'sc'); p.classList.toggle('fp-dp', _fp.type !== 'sc');
+  var p = fpPanel(); if (!p) return; p.setAttribute('data-fptab', _fp.tab); p.classList.toggle('fp-sc', _fp.type === 'sc'); p.classList.toggle('fp-dp', _fp.type !== 'sc'); p.classList.toggle('fp-work', !!_fp.work && _fp.type === 'sc' && _fp.tab === 'act');
   document.querySelectorAll('#fp-top .fp-tabs button').forEach(function (b) { var on = (b.getAttribute('onclick') || '').indexOf("'" + _fp.tab + "'") > 0; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
 }
 function fpTab(t) {
   _fp.tab = t; fpApplyTab();
-  if (_fp.type === 'sc') { var st = _scIns['sc-drill-insights']; if (t === 'prog') fpScProg(); else if (st) { st.tab = t === 'ready' ? 'readiness' : t === 'act' ? 'gaps' : 'staff'; scInsRender('sc-drill-insights'); } }
+  if (t !== 'act' && _fp.work) { _fp.work = false; fpApplyTab(); }
+  if (_fp.type === 'sc') { if (t === 'prog') fpScProg(); else fpScRender(); }
   else fpDeptRender();
   try { window.scrollTo(0, 0); } catch (e) {}
 }
@@ -26191,11 +26281,12 @@ function fpScTiles(code) {
   if (!o) return [];
   var ch = o.pct != null && o.base != null ? o.pct - o.base : null, res, rs = '';
   if (o.grad) { var R = HS_RES[o.grad.result] || HS_RES.incomplete; res = R[0]; rs = 'graduated ' + fpShortDate(String(o.grad.at || '').slice(0, 10)); }
+  else if (o.assessed && o.cov != null && o.cov < 50) { res = 'Too early'; rs = o.cov + '% of the checklist checked'; }
   else { var n = o.agg && o.agg.nqas; res = !o.assessed ? '—' : n && n.meets ? 'Ready' : 'Almost'; rs = !o.assessed ? 'no cards yet' : n && n.meets ? 'meets NQAS today' : (n && n.aocFails && n.aocFails.length ? 'Area ' + n.aocFails.slice(0, 2).join(', ') + ' below' : n && n.stdFails && n.stdFails.length ? n.stdFails.length + ' Standards below' : 'overall below 70%'); }
   var ov = o.overdue || 0, open = 0; try { open = scRvList((_scRvAll || {})[code] || {}).filter(function (x) { return x.status !== 'draft' && x.status !== 'closed'; }).length; } catch (e) {}
   _fp.nAct = open;
   return [{ l: 'Day', v: o.phase === 'notstarted' ? '—' : (o.phase === 'catchup' ? o.days : o.day) + ' / ' + o.days, s: HS_PHASE[o.phase] || '' },
-    { l: 'Readiness', v: o.pct == null ? '—' : o.pct + '%', s: o.base != null ? 'baseline ' + o.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') : '', c: fpPctCls(o.pct) },
+    { l: 'Readiness', v: o.pct == null ? '—' : o.pct + '%', s: (o.base != null ? 'baseline ' + o.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') + ' · ' : '') + (o.cov != null ? o.cov + '% checked' : ''), c: fpPctCls(o.pct) },
     { l: o.grad ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: o.grad ? (o.grad.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === 'Almost' ? 'a' : '' },
     { l: 'On time', v: o.onTime == null ? '—' : o.onTime + '%', s: o.behind ? 'behind schedule' : o.comp && o.inProg ? 'on track' : '', c: o.behind ? 'r' : '' },
     { l: 'Open actions', v: String(open), s: ov ? ov + ' overdue' : 'none overdue', c: ov ? 'r' : '' },
@@ -26203,12 +26294,13 @@ function fpScTiles(code) {
 }
 function fpScMount(code) {
   var p = fpEnsure(), f = (scMasterFacilities || {})[code]; if (!p || !f) return;
-  _fp.code = code; _fp.type = 'sc'; _fp.D = null;
+  if (_fp.code !== code) { _fp.scAct = 'open'; _fp.work = false; }
+  _fp.code = code; _fp.type = 'sc'; _fp.D = null; _fp.M = null;
   var links = document.querySelector('#sc-drill-info .nfl-drill'), extra = links ? '<div class="fp-line">' + links.innerHTML + '</div>' : '';
   document.getElementById('fp-top').innerHTML = fpTopHTML(code, f, fpScTiles(code), extra);
   document.getElementById('fp-dept').innerHTML = '';
-  if (_fp.tab === 'prog') fpScProg(); else { var st = _scIns['sc-drill-insights']; if (st) { var want = _fp.tab === 'ready' ? 'readiness' : _fp.tab === 'act' ? 'gaps' : 'staff'; if (st.tab !== want) { st.tab = want; scInsRender('sc-drill-insights'); } } }
-  fpApplyTab();
+  if (_fp.tab === 'prog') fpScProg(); else fpScRender();
+  fpApplyTab(); fpScLoadExtras(code);
 }
 function fpPeopleHTML(code) {
   var out = [];
@@ -26257,8 +26349,9 @@ function fpDeptCompute(D) {
   // weekly readiness
   var rows = _nd.cl.items, deps = ndDeptDefs().map(function (d) { return d.id; }), pts = [];
   if (cur >= 1) { var marks = [Math.min(S.bN, cur)]; for (var w = S.bN + 7; w < cur; w += 7) marks.push(w); if (marks[marks.length - 1] !== cur) marks.push(cur);
-    marks.forEach(function (m) { var R = nfDeptReadiness(rows, ndLatest(m), { pass: crit.overall, depts: deps }); if (R.overall != null) pts.push({ d: m, v: R.overall }); }); }
+    marks.forEach(function (m) { var Lm = ndLatest(m), R = nfDeptReadiness(rows, Lm, { pass: crit.overall, depts: deps }); if (R.overall != null) pts.push(Object.assign({ d: m, v: R.overall, n: R.n, of: R.of, cov: R.of ? Math.round(100 * R.n / R.of) : 0 }, fprSpoAt(rows, Lm, deps))); }); }
   D.trend = pts;
+  var Rn = nfDeptReadiness(rows, ndLatest(), { pass: crit.overall, depts: deps }); D.n = Rn.n; D.of = Rn.of; D.cov = Rn.of ? Math.round(100 * Rn.n / Rn.of) : 0;
   // actions
   var A = _nd.actions || {}, staff = ndStaff();
   D.acts = Object.keys(A).map(function (id) { var a = A[id] || {}, od = a.status === 'open' && a.due && a.due < today;
@@ -26290,12 +26383,13 @@ function fpDeptTiles(D) {
   var sc = D.sc, ch = sc.overall != null && sc.base != null ? sc.overall - sc.base : null, R = D.rule, res, rs;
   if (g) { res = (ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete).t; rs = 'graduated ' + fpShortDate(String(g.at || '').slice(0, 10)); }
   else if (sc.overall == null) { res = '—'; rs = 'no cards yet'; }
+  else if (D.cov < 50) { res = 'Too early'; rs = D.cov + '% of the checklist checked'; }
   else { res = R.result === 'ready' ? 'Ready' : R.result === 'almost' ? 'Almost' : 'Not yet'; rs = R.deptFails.length ? ndDeptDefName(D, R.deptFails[0]) + ' ' + sc.byDept[R.deptFails[0]] + '%' : R.aocFails.length ? 'Area ' + R.aocFails.join(', ') + ' below' : R.stdFails.length ? R.stdFails.length + ' Standards below' : R.result === 'ready' ? 'meets NQAS today' : 'overall below ' + D.crit.overall + '%'; }
   var open = D.acts.filter(function (a) { return a.st !== 'closed'; }).length, od = D.acts.filter(function (a) { return a.st === 'od'; }).length; _fp.nAct = open;
   var on = D.depts.length;
   return [{ l: 'Day', v: !d || d < 1 ? '—' : Math.min(d, S.days) + ' / ' + S.days, s: phase },
-    { l: 'Readiness', v: sc.overall == null ? '—' : sc.overall + '%', s: sc.base != null ? 'baseline ' + sc.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') : '', c: fpPctCls(sc.overall) },
-    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === '—' ? '' : 'a' },
+    { l: 'Readiness', v: sc.overall == null ? '—' : sc.overall + '%', s: (sc.base != null ? 'baseline ' + sc.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') + ' · ' : '') + D.cov + '% checked', c: fpPctCls(sc.overall) },
+    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === '—' || res === 'Too early' ? '' : 'a' },
     { l: 'On time', v: D.onTime == null ? '—' : D.onTime + '%', s: D.onState === 'r' ? 'behind schedule' : D.onState === 'a' ? 'slipping' : D.onState ? 'on track' : '', c: D.onState === 'r' ? 'r' : '' },
     { l: 'Open actions', v: String(open), s: od ? od + ' overdue' : 'none overdue', c: od ? 'r' : '' },
     { l: 'Staff', v: String(D.staff.length), s: on + ' department' + (on === 1 ? '' : 's') + ' on' }];
@@ -26393,7 +26487,7 @@ function fpDeptRender() {
   if (!D) { host.innerHTML = '<div class="fp-card"><p class="fp-dim">Loading…</p></div>'; return; }
   var keep = typeof _nd !== 'undefined' ? _nd : null;
   try { _nd = D.ctx;
-    host.innerHTML = _fp.tab === 'act' ? fpDeptActHTML(D) : _fp.tab === 'staff' ? fpDeptStaffHTML(D) : _fp.tab === 'prog' ? fpDeptProgHTML(D) : fpDeptReadyHTML(D);
+    host.innerHTML = _fp.tab === 'act' ? fpDeptActHTML(D) : _fp.tab === 'staff' ? fpDeptStaffHTML(D) : _fp.tab === 'prog' ? fpDeptProgHTML(D) : fpDeptReadyWrap(D);
   } catch (e) { console.warn('[FP] render', e); host.innerHTML = '<div class="fp-card"><p class="fp-dim">Could not show this tab.</p></div>'; }
   finally { _nd = keep; }
 }
@@ -26437,6 +26531,297 @@ async function fpDeptOpen(code) {
   scInsRender = function (hostId) { var r = oR.apply(this, arguments);
     try { if (hostId === 'sc-drill-insights' && _fp.type === 'sc' && fpPanel() && fpPanel().classList.contains('fp')) { var h = document.getElementById(hostId); if (h) h.querySelectorAll('.nfg-prog,.nfg-comp').forEach(function (x) { x.remove(); }); } } catch (e) {}
     return r; };
+})();
+</script>
+<script id="nf-fac-ready">// ══════════════════════════════════════════════════════════════
+// FACILITY PAGE — READINESS TAB, one design for SC · UPHC · PHC · CHC (HealSol 21 Oct 2026)
+//   phase strip · key numbers · NQAS criteria line · readiness over time (one line + "checked" columns, phases as bands,
+//   Structure / Process / Outcome on a switch) · Structure / Process / Outcome baseline → now ·
+//   tabs: Standards heat-map (Baseline / Now) · Areas of Concern · Service packages (SC) or Departments (tap → its 8 AoC bars)
+// Readiness everywhere = points ÷ maximum for every checkpoint (not yet checked = 0); "checked" = how many have a score.
+// Model M: {type, phases:[{k,a,b}], day, days, pct, base, comp, n, of, crit:{overall,aoc,std(fn)}, verdict:{meets,why},
+//   aoc:{A:{now,base}}, cat:{Structure:{now,base}}, std:{A1:{now,base,min}}, groups:[{id,name,now,base,aoc?:{A:{now,base}},tag}],
+//   groups2 (SC cross-cutting areas), trend:[{x (day),label,pct,cov,S,P,O}], tiles:[{l,v,s,c}], groupLabel}
+// ══════════════════════════════════════════════════════════════
+var FP_AOC = { A: 'Service Provision', B: 'Patient Rights', C: 'Inputs', D: 'Support Services', E: 'Clinical Services', F: 'Infection Control', G: 'Quality Management', H: 'Outcome' };
+var _fpr = { tab: 'std', dept: null, spo: false, stdPh: 'now' };
+function fprCls(v, min) { return v == null ? 'n' : v >= (min == null ? 70 : min) ? 'g' : v >= 50 ? 'a' : 'r'; }
+function fprCat(a) { try { return scAocCat(a); } catch (e) { return ({ A: 'Outcome', B: 'Process', C: 'Structure', D: 'Process', E: 'Process', F: 'Process', G: 'Process', H: 'Outcome' })[a] || ''; } }
+
+// ── Sub-Centre model ──
+function fpScModel(code) {
+  var f = (scMasterFacilities || {})[code] || {}, pid = f.progId || 'nqas_12A', pr = (scMasterProgress || {})[code] || {};
+  var P = nfFacPhases({ progId: pid, progress: pr, staff: f.staff || {}, fac: f, agg: scFacAggFor(code) }), A = P.A, B = P.B || {}, has = !!(A.coverage && A.coverage.assessed), hasB = !!B.assessed;
+  var v = function (b) { return b && b.assessed ? b.pct : null; }, pair = function (a, b) { return { now: v(a), base: hasB ? v(b) : null }; };
+  var M = { type: 'sc', day: P.day, days: 60, pct: has ? A.pct : null, base: hasB ? B.pct : null, comp: has ? A.compliance : null, n: (A.coverage || {}).assessed || 0, of: (A.coverage || {}).total || 0, groupLabel: 'Service packages' };
+  M.phases = [{ k: 'Baseline', a: 1, b: 7 }, { k: 'Implementation', a: 8, b: 49 }, { k: 'End-line', a: 50, b: 56 }, { k: 'Readiness week', a: 57, b: 60 }];
+  M.crit = { overall: _scCrit.overall, aoc: _scCrit.aoc != null ? +_scCrit.aoc : 70, std: function (s) { return scNqasStdMin(s); } };
+  var nq = A.nqas || {}; M.verdict = { has: !!nq.hasData, meets: !!nq.meets, overall: A.pct, aocFails: nq.aocFails || [], stdFails: nq.stdFails || [] };
+  M.aoc = {}; Object.keys(FP_AOC).forEach(function (k) { if (A.byAoc[k] && A.byAoc[k].max) M.aoc[k] = pair(A.byAoc[k], (B.byAoc || {})[k]); });
+  M.cat = {}; ['Structure', 'Process', 'Outcome'].forEach(function (k) { if (A.byCat[k]) M.cat[k] = pair(A.byCat[k], (B.byCat || {})[k]); });
+  M.std = {}; Object.keys(A.byStd || {}).filter(function (s) { return /^[A-H]\d+$/.test(s); }).forEach(function (s) { M.std[s] = Object.assign(pair(A.byStd[s], (B.byStd || {})[s]), { min: scNqasStdMin(s) }); });
+  var sv = Object.keys(A.byService || {}), order = SC_SVC_GROUPS.service.concat(SC_SVC_GROUPS.support);
+  sv.sort(function (x, y) { return (order.indexOf(x) < 0 ? 99 : order.indexOf(x)) - (order.indexOf(y) < 0 ? 99 : order.indexOf(y)); });
+  M.groups = sv.filter(function (k) { return scSvcGroup(k) === 'service'; }).map(function (k) { return Object.assign({ id: k, name: k }, pair(A.byService[k], (B.byService || {})[k])); });
+  M.groups2 = sv.filter(function (k) { return scSvcGroup(k) === 'support'; }).map(function (k) { return Object.assign({ id: k, name: k }, pair(A.byService[k], (B.byService || {})[k])); });
+  M.trend = (P.weeks || []).map(function (w) { return { x: Math.min(60, w.w * 7), label: 'W' + w.w, pct: w.pct, cov: w.cov, n: w.n, of: w.of, S: w.S, P: w.P, O: w.O }; });
+  var gaps = Object.keys(A.cps || {}).filter(function (id) { var c = A.cps[id]; return c && c.score !== null && c.score < 2; }).length, o = null; try { o = hsInfo(code); } catch (e) {}
+  M.tiles = fprTiles(M, [{ l: 'Open gaps', v: String(gaps), c: gaps ? 'a' : '' }, { l: 'Overdue actions', v: String((o && o.overdue) || 0), c: o && o.overdue ? 'r' : '' }, { l: 'Cards verified', v: A.daysVerified + ' / ' + A.daysDone, s: 'by the Supervisor or CHO' }]);
+  M.blIncomplete = P.day && P.day > 7 && P.blDone != null && P.blDone < 7 ? P.blDone : null;
+  return M;
+}
+// ── UPHC · PHC · CHC model (from fpDeptLoad's D, computed with _nd = D.ctx) ──
+function fpDeptModel(D) {
+  var keep = typeof _nd !== 'undefined' ? _nd : null, M;
+  try { _nd = D.ctx;
+    var S = D.S, rows = _nd.cl.items, deps = ndDeptDefs().map(function (d) { return d.id; }), crit = D.crit, L = ndLatest(), Lb = ndLatest(S.bN);
+    var R = nfDeptReadiness(rows, L, { pass: crit.overall, depts: deps }), B = nfDeptReadiness(rows, Lb, { pass: crit.overall, depts: deps }), hasB = B.n > 0;
+    var acc = {}, add = function (k, s) { var x = acc[k] = acc[k] || { g: 0, gb: 0, m: 0, n: 0, nb: 0 }; return x; };
+    rows.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var a = r[2], cat = fprCat(a), std = r[3], s = L[r[0]], sb = Lb[r[0]];
+      [cat, 's:' + std].forEach(function (k) { var x = add(k); x.m += 2; if (s !== undefined && s !== null && s !== '') { x.g += +s; x.n++; } if (sb !== undefined && sb !== null && sb !== '') { x.gb += +sb; x.nb++; } }); });
+    var pc = function (x, b) { return !x ? null : b ? (x.nb ? Math.round(100 * x.gb / x.m) : null) : (x.n ? Math.round(100 * x.g / x.m) : null); };
+    M = { type: D.type, day: D.day, days: S.days, pct: R.overall, base: hasB ? B.overall : null, comp: R.comp, n: R.n, of: R.of, groupLabel: 'Departments' };
+    M.phases = [{ k: 'Baseline', a: 1, b: S.bN }, { k: 'Implementation', a: S.bN + 1, b: S.iN }, { k: 'End-line', a: S.iN + 1, b: S.eN }, { k: 'Readiness week', a: S.eN + 1, b: S.days }];
+    M.crit = { overall: crit.overall, aoc: crit.aoc, dept: crit.dept, std: function () { return crit.std; } };
+    var rule = D.rule; M.verdict = { has: R.n > 0, meets: rule.result === 'ready', overall: R.overall, aocFails: rule.aocFails, stdFails: rule.stdFails, deptFails: rule.deptFails };
+    M.aoc = {}; Object.keys(FP_AOC).forEach(function (k) { if (R.byAoc[k]) M.aoc[k] = { now: R.byAoc[k].pct, base: hasB && B.byAoc[k] ? B.byAoc[k].pct : null }; });
+    M.cat = {}; ['Structure', 'Process', 'Outcome'].forEach(function (k) { if (acc[k]) M.cat[k] = { now: pc(acc[k]), base: hasB ? pc(acc[k], true) : null }; });
+    M.std = {}; Object.keys(acc).filter(function (k) { return /^s:[A-H]\d+$/.test(k); }).forEach(function (k) { M.std[k.slice(2)] = { now: pc(acc[k]), base: hasB ? pc(acc[k], true) : null, min: crit.std }; });
+    M.groups = ndDeptDefs().map(function (d) { var def = ndDeptDef(d.id), r = R.byDept[d.id] || {}, b = B.byDept[d.id] || {}, dd = (D.depts || []).find(function (x) { return x.id === d.id; }) || {}, aoc = {};
+      Object.keys(FP_AOC).forEach(function (a) { var x = (r.byAoc || {})[a], y = (b.byAoc || {})[a]; if (x && x.of) aoc[a] = { now: x.pct, base: hasB && y ? y.pct : null, n: x.n, of: x.of }; });
+      return { id: d.id, name: def.name, tag: def.prog || '', now: r.pct, base: hasB ? b.pct : null, n: r.n || 0, of: r.of || 0, aoc: aoc, lead: dd.lead || '', due: dd.due || 0 }; });
+    M.groups2 = [];
+    M.trend = (D.trend || []).map(function (p, i) { return { x: p.d, label: 'D' + p.d, pct: p.v, cov: p.cov, n: p.n, of: p.of, S: p.S, P: p.P, O: p.O }; });
+    var od = D.acts.filter(function (a) { return a.st === 'od'; }).length;
+    M.tiles = fprTiles(M, [{ l: 'Open gaps', v: String(D.noAct + D.acts.filter(function (a) { return a.st !== 'closed'; }).length), s: D.noAct ? D.noAct + ' without an action' : '', c: D.noAct ? 'a' : '' }, { l: 'Overdue actions', v: String(od), c: od ? 'r' : '' }, { l: 'Days to check', v: String(D.checksDue || 0), s: 'by department leads', c: D.checksDue ? 'a' : '' }]);
+  } finally { _nd = keep; }
+  return M;
+}
+function fprTiles(M, extra) {
+  var g = M.pct != null && M.base != null ? M.pct - M.base : null, cov = M.of ? Math.round(100 * M.n / M.of) : 0;
+  return [{ l: 'Readiness', v: M.pct == null ? '—' : M.pct + '%', s: 'whole checklist · not yet checked = 0', c: fprCls(M.pct, M.crit.overall) },
+    { l: 'Growth since baseline', v: g == null ? '—' : (g >= 0 ? '+' : '') + g, s: M.base == null ? 'no baseline yet' : 'baseline ' + M.base + '%', c: g == null ? '' : g >= 0 ? 'g' : 'r' },
+    { l: 'Checked', v: M.n + ' / ' + M.of, s: cov + '% of the checklist' + (M.comp != null ? ' · ' + M.comp + '% score of those' : ''), c: cov < 50 ? 'a' : '' }].concat(extra || []);
+}
+// ── pieces ──
+function fprPhaseHTML(M) {
+  var d = M.day || 0, idx = d < 1 ? -1 : M.phases.findIndex(function (p) { return d >= p.a && d <= p.b; }); if (d > M.days) idx = 99;
+  return '<div class="fpr-ph">' + M.phases.map(function (p, i) { var c = i < idx ? 'done' : i === idx ? 'cur' : ''; return '<div class="' + c + '"><i>' + (i < idx ? '✓' : i + 1) + '</i><b>' + p.k + '</b><small>Days ' + p.a + '–' + p.b + '</small></div>'; }).join('') + '</div>'
+    + (M.blIncomplete != null ? '<div class="fp-note a" style="margin-top:8px"><b>Baseline incomplete:</b> ' + M.blIncomplete + ' of 7 days done.</div>' : '');
+}
+function fprVerdictHTML(M) {
+  var V = M.verdict; if (!V.has) return '<div class="fpr-verdict n">No scores yet — readiness appears once staff finish cards.</div>';
+  var cov = M.of ? Math.round(100 * M.n / M.of) : 0;
+  if (V.meets) return '<div class="fpr-verdict g"><b>✓ Meets the NQAS criteria today</b><span>Overall ' + V.overall + '% (needs ' + M.crit.overall + '%), every ' + (M.type === 'sc' ? '' : 'department, ') + 'Area of Concern and Standard at its minimum.</span></div>';
+  var why = []; if (V.overall < M.crit.overall) why.push('Overall ' + V.overall + '% (needs ' + M.crit.overall + '%)');
+  if (V.deptFails && V.deptFails.length) why.push(V.deptFails.length + ' department' + (V.deptFails.length === 1 ? '' : 's') + ' below ' + M.crit.dept + '%');
+  if (V.aocFails.length) why.push('Area' + (V.aocFails.length === 1 ? '' : 's') + ' ' + V.aocFails.join(', ') + ' below ' + M.crit.aoc + '%');
+  if (V.stdFails.length) why.push(V.stdFails.length + ' Standard' + (V.stdFails.length === 1 ? '' : 's') + ' below minimum');
+  return '<div class="fpr-verdict ' + (cov < 50 ? 'n' : 'r') + '"><b>' + (cov < 50 ? 'Too early to judge — ' + cov + '% of the checklist checked' : '✗ Not yet at the NQAS criteria') + '</b><span>' + scEsc(why.join(' · ')) + '</span></div>';
+}
+function fprTrendSVG(M) {
+  var T = M.trend.filter(function (p) { return p.pct != null || p.cov != null; }); if (!T.length) return '<p class="fp-dim">The chart starts once cards are in.</p>';
+  var W = 760, H = 280, L = 34, R = 10, Tp = 22, Bt = 26, iw = W - L - R, ih = H - Tp - Bt, days = M.days;
+  var x = function (d) { return L + iw * Math.max(0, Math.min(days, d)) / days; }, y = function (v) { return Tp + ih - ih * v / 100; };
+  var bandCol = ['#EEF2F6', '#E9F3F0', '#ECEBF8', '#FBF1E4'], h = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="fpr-trend" role="img" aria-label="Readiness over time">';
+  M.phases.forEach(function (p, i) { h += '<rect x="' + x(p.a - 1) + '" y="' + Tp + '" width="' + (x(p.b) - x(p.a - 1)) + '" height="' + ih + '" fill="' + bandCol[i] + '"></rect><text x="' + (x(p.a - 1) + 4) + '" y="' + (Tp - 6) + '" font-size="10.5" fill="#5C6B66">' + p.k + '</text>'; });
+  [0, 25, 50, 75, 100].forEach(function (v) { h += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#DCE4E1" stroke-width="0.6"></line><text x="' + (L - 6) + '" y="' + (y(v) + 3) + '" font-size="10" text-anchor="end" fill="#5C6B66">' + v + '%</text>'; });
+  var bw = Math.max(6, Math.min(26, iw / Math.max(T.length, 8) * 0.5));
+  T.forEach(function (p) { if (p.cov == null) return; h += '<rect x="' + (x(p.x) - bw / 2) + '" y="' + y(p.cov) + '" width="' + bw + '" height="' + (y(0) - y(p.cov)) + '" fill="#CBD5E1" opacity=".7"><title>' + p.label + ': ' + p.cov + '% of the checklist checked</title></rect>'; });
+  h += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(M.crit.overall) + '" y2="' + y(M.crit.overall) + '" stroke="#D4912A" stroke-dasharray="5 4" stroke-width="1.4"></line><text x="' + (W - R - 2) + '" y="' + (y(M.crit.overall) - 4) + '" font-size="10" text-anchor="end" fill="#9A5B12">NQAS ' + M.crit.overall + '%</text>';
+  var line = function (k, col, w) { var P = T.filter(function (p) { return p[k] != null; }); if (!P.length) return ''; return '<polyline points="' + P.map(function (p) { return x(p.x) + ',' + y(p[k]); }).join(' ') + '" fill="none" stroke="' + col + '" stroke-width="' + w + '" stroke-linejoin="round"></polyline>'; };
+  if (_fpr.spo) h += line('S', '#2E8B57', 2) + line('P', '#D4912A', 2) + line('O', '#3B6FD4', 2);
+  h += line('pct', '#134A41', 3.2);
+  T.forEach(function (p) { if (p.pct == null) return; h += '<circle cx="' + x(p.x) + '" cy="' + y(p.pct) + '" r="4.5" fill="#134A41"><title>' + p.label + ' · ' + p.pct + '% readiness · ' + (p.n != null ? p.n + ' of ' + p.of + ' checked' : p.cov + '% checked') + '</title></circle>'; });
+  if (M.day && M.day >= 1 && M.day <= days) h += '<line x1="' + x(M.day) + '" x2="' + x(M.day) + '" y1="' + Tp + '" y2="' + (Tp + ih) + '" stroke="#134A41" stroke-dasharray="3 3"></line><text x="' + (x(M.day) + 3) + '" y="' + (Tp + ih - 4) + '" font-size="10" fill="#134A41">today</text>';
+  return h + '</svg>';
+}
+function fprDumb(now, base, min, label, sub, extra, js) {
+  var c = fprCls(now, min), w = function (v) { return Math.max(0, Math.min(100, v)); };
+  var track = '<span class="fpr-tr"><span class="fpr-mk" style="left:' + w(min) + '%"></span>'
+    + (base != null && now != null ? '<span class="fpr-ln ' + (now >= base ? 'up' : 'dn') + '" style="left:' + w(Math.min(base, now)) + '%;width:' + Math.abs(now - base) + '%"></span>' : '')
+    + (base != null ? '<span class="fpr-dot b" style="left:' + w(base) + '%" title="Baseline ' + base + '%"></span>' : '') + (now != null ? '<span class="fpr-dot ' + c + '" style="left:' + w(now) + '%" title="Now ' + now + '%"></span>' : '') + '</span>';
+  var tag = js ? 'button type="button" onclick="' + js + '"' : 'div';
+  return '<' + tag + ' class="fpr-row' + (js ? ' click' : '') + '"><span class="fpr-l"><b>' + scEsc(label) + '</b>' + (sub ? '<small>' + scEsc(sub) + '</small>' : '') + '</span>' + track
+    + '<span class="fpr-v"><b class="' + c + '">' + (now == null ? '—' : now + '%') + '</b><small>' + (base != null ? 'from ' + base + '%' : '') + '</small></span>' + (extra || '') + '</' + (js ? 'button' : 'div') + '>';
+}
+function fprSpoHTML(M) {
+  return '<div class="fp-card"><div class="fp-ch"><b>Structure · Process · Outcome</b><small>baseline ● → now ●</small></div>' + ['Structure', 'Process', 'Outcome'].map(function (k) { var x = M.cat[k] || {};
+    var aocs = Object.keys(FP_AOC).filter(function (a) { return fprCat(a) === k; }).join(', '); return fprDumb(x.now, x.base, M.crit.aoc, k, 'AoC ' + aocs); }).join('')
+    + '<div class="fpr-legend"><span><i class="b"></i> baseline</span><span><i class="g"></i> now (green = at or above the mark)</span><span><i class="mk"></i> ' + M.crit.aoc + '% mark</span></div></div>';
+}
+function fprStdHTML(M) {
+  var keys = Object.keys(M.std).sort(function (a, b) { return a[0] === b[0] ? (+a.slice(1)) - (+b.slice(1)) : a < b ? -1 : 1; }), ph = _fpr.stdPh;
+  if (!keys.length) return '<p class="fp-dim">No Standards scored yet.</p>';
+  var low = keys.filter(function (k) { return M.std[k].now != null; }).sort(function (a, b) { return M.std[a].now - M.std[b].now; }).slice(0, 5);
+  var h = '<div class="fp-chiprow"><button type="button" class="fp-chip' + (ph === 'base' ? ' on' : '') + '" onclick="fprStdPh(\'base\')">Baseline</button><button type="button" class="fp-chip' + (ph === 'now' ? ' on' : '') + '" onclick="fprStdPh(\'now\')">Now</button><span class="fp-dim" style="margin:0">Outlined: the 5 lowest now · each Standard against its minimum</span></div><div class="fpr-heat">';
+  Object.keys(FP_AOC).forEach(function (a) { var ks = keys.filter(function (k) { return k[0] === a; }); if (!ks.length) return;
+    h += '<div class="fpr-hr"><span class="fpr-hl"><b>' + a + '</b> ' + FP_AOC[a] + '</span><span class="fpr-hc">' + ks.map(function (k) { var s = M.std[k], v = ph === 'base' ? s.base : s.now;
+      return '<span class="fpr-cell ' + (v == null ? 'n' : v < s.min ? 'r' : v < 70 ? 'a' : 'g') + (low.indexOf(k) >= 0 && ph === 'now' ? ' low' : '') + '" title="' + k + (v == null ? ' — not checked' : ': ' + v + '% (minimum ' + s.min + '%)') + '"><b>' + k + '</b>' + (v == null ? '—' : v) + '</span>'; }).join('') + '</span></div>'; });
+  return h + '</div><div class="fpr-legend"><span><i class="r"></i> below minimum</span><span><i class="a"></i> at minimum, under 70%</span><span><i class="hg"></i> 70% or more</span><span><i class="n"></i> not checked</span></div>';
+}
+function fprAocHTML(M) {
+  return '<div class="fpr-rows">' + Object.keys(FP_AOC).filter(function (a) { return M.aoc[a]; }).map(function (a) { var x = M.aoc[a]; return fprDumb(x.now, x.base, M.crit.aoc, a + ' · ' + FP_AOC[a], fprCat(a)); }).join('') + '</div>'
+    + '<div class="fpr-legend"><span><i class="b"></i> baseline</span><span><i class="g"></i> now</span><span><i class="mk"></i> ' + M.crit.aoc + '% mark</span></div>';
+}
+function fprGroupsHTML(M) {
+  if (M.type === 'sc') return '<div class="fpr-rows">' + M.groups.map(function (g) { return fprDumb(g.now, g.base, 70, g.name, ''); }).join('') + '</div>'
+    + (M.groups2.length ? '<div class="fp-ch" style="margin-top:14px"><b>Cross-cutting areas</b></div><div class="fpr-rows">' + M.groups2.map(function (g) { return fprDumb(g.now, g.base, 70, g.name, ''); }).join('') + '</div>' : '');
+  return '<div class="fpr-rows">' + M.groups.map(function (g) { var open = _fpr.dept === g.id;
+    var row = fprDumb(g.now, g.base, M.crit.dept, g.name + (g.tag ? ' · ' + g.tag : ''), g.n + ' of ' + g.of + ' checked' + (g.lead ? ' · lead ' + g.lead : '') + (g.due ? ' · ' + g.due + ' day' + (g.due === 1 ? '' : 's') + ' to check' : ''), '<i class="ti ti-chevron-down fpr-chev' + (open ? ' up' : '') + '"></i>', "fprDept('" + scJs(g.id) + "')");
+    if (!open) return row;
+    return row + '<div class="fpr-drill"><div class="fp-ch"><b>' + scEsc(g.name) + ' — Areas of Concern</b><small>bar = now · faint bar = baseline · line = ' + M.crit.aoc + '%</small></div>' + fprBarsHTML(g.aoc, M.crit.aoc) + '</div>'; }).join('') + '</div>'
+    + '<p class="fp-dim">Tap a department to see its 8 Areas of Concern.</p>';
+}
+function fprBarsHTML(aoc, mark) {
+  var ks = Object.keys(FP_AOC).filter(function (a) { return aoc[a]; }); if (!ks.length) return '<p class="fp-dim">No checkpoints in this department yet.</p>';
+  return '<div class="fpr-bars">' + ks.map(function (a) { var x = aoc[a], v = x.now == null ? 0 : x.now, b = x.base == null ? 0 : x.base;
+    return '<div class="fpr-bar" title="' + a + ' · ' + FP_AOC[a] + ': ' + (x.now == null ? 'not checked' : x.now + '%') + (x.base != null ? ' (baseline ' + x.base + '%)' : '') + ' · ' + x.n + ' of ' + x.of + ' checked">'
+      + '<span class="fpr-bv ' + fprCls(x.now, mark) + '">' + (x.now == null ? '—' : x.now) + '</span><span class="fpr-col"><span class="fpr-mark" style="bottom:' + mark + '%"></span><span class="fpr-ghost" style="height:' + b + '%"></span><span class="fpr-fill ' + fprCls(x.now, mark) + '" style="height:' + v + '%"></span></span><b>' + a + '</b><small>' + scEsc(FP_AOC[a]) + '</small></div>'; }).join('') + '</div>';
+}
+function fprStdPh(p) { _fpr.stdPh = p; fprRerender(); }
+function fprTab(t) { _fpr.tab = t; fprRerender(); }
+function fprDept(id) { _fpr.dept = _fpr.dept === id ? null : id; fprRerender(); }
+function fprSpo() { _fpr.spo = !_fpr.spo; fprRerender(); }
+function fprRerender() { if (_fp.M) { var el = document.getElementById('fp-ready'); if (el) el.innerHTML = fpReadyHTML(_fp.M); } }
+function fpReadyHTML(M) {
+  var tab = function (k, l) { return '<button type="button" role="tab" aria-selected="' + (_fpr.tab === k) + '" class="' + (_fpr.tab === k ? 'on' : '') + '" onclick="fprTab(\'' + k + '\')">' + l + '</button>'; };
+  return '<div class="fp-card">' + fprPhaseHTML(M) + '</div>'
+    + '<div class="fpr-kpis">' + M.tiles.map(function (k) { return '<div><b class="' + (k.c || '') + '">' + k.v + '</b><small>' + k.l + '</small>' + (k.s ? '<em>' + k.s + '</em>' : '') + '</div>'; }).join('') + '</div>'
+    + fprVerdictHTML(M)
+    + '<div class="fp-grid"><div class="fp-col"><div class="fp-card"><div class="fp-ch"><b>Readiness over time</b><label class="fpr-sw"><input type="checkbox"' + (_fpr.spo ? ' checked' : '') + ' onchange="fprSpo()"> Structure · Process · Outcome</label></div>'
+    + fprTrendSVG(M) + '<div class="fpr-legend"><span><i class="ln"></i> readiness (whole checklist)</span><span><i class="col"></i> % of the checklist checked</span>' + (_fpr.spo ? '<span><i style="background:#2E8B57"></i> Structure</span><span><i style="background:#D4912A"></i> Process</span><span><i style="background:#3B6FD4"></i> Outcome</span>' : '') + '<span><i class="mk"></i> NQAS ' + M.crit.overall + '%</span></div></div></div>'
+    + '<div class="fp-col">' + fprSpoHTML(M) + '</div></div>'
+    + fprAttnHTML(M)
+    + '<div class="fp-card"><div class="fp-tabs" role="tablist" aria-label="Readiness detail">' + tab('std', 'Standards heat-map') + tab('aoc', 'Areas of Concern') + tab('grp', M.groupLabel) + '</div>'
+    + (_fpr.tab === 'aoc' ? fprAocHTML(M) : _fpr.tab === 'grp' ? fprGroupsHTML(M) : fprStdHTML(M)) + '</div>';
+}
+// Structure / Process / Outcome readiness on one set of scores (department types; whole checklist, not yet checked = 0)
+function fprSpoAt(rows, L, deps) {
+  var a = { Structure: [0, 0, 0], Process: [0, 0, 0], Outcome: [0, 0, 0] };
+  rows.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var x = a[fprCat(r[2])]; if (!x) return; x[1] += 2; var s = L[r[0]]; if (s !== undefined && s !== null && s !== '') { x[0] += +s; x[2]++; } });
+  var p = function (x) { return x[2] ? Math.round(100 * x[0] / x[1]) : null; };
+  return { S: p(a.Structure), P: p(a.Process), O: p(a.Outcome) };
+}
+function fprAttnHTML(M) { return M.attn && M.attn.length ? '<div class="fp-card"><b>Needs attention here</b><ul class="fp-ul">' + M.attn.slice(0, 6).map(function (x) { return '<li>' + scEsc(x) + '</li>'; }).join('') + '</ul></div>' : ''; }
+function fpDeptReadyWrap(D) {
+  var M = fpDeptModel(D), att = [];
+  D.depts.forEach(function (d) { if (d.due) att.push(d.name + ': ' + d.due + ' day' + (d.due === 1 ? '' : 's') + ' to check' + (d.lead ? ' (' + d.lead + ', lead)' : '')); });
+  var od = D.acts.filter(function (a) { return a.st === 'od'; }); if (od.length) att.push(od.length + ' action' + (od.length === 1 ? '' : 's') + ' overdue — ' + od.slice(0, 2).map(function (a) { return a.cp; }).join('; '));
+  if (D.noAct) att.push(D.noAct + ' gap' + (D.noAct === 1 ? '' : 's') + ' checked as unmet with no action yet');
+  M.attn = att; _fp.M = M;
+  return '<div id="fp-ready">' + fpReadyHTML(M) + '</div>';
+}
+</script>
+<script id="nf-fac-sc">// ══════════════════════════════════════════════════════════════
+// FACILITY PAGE — Sub-Centre tabs in the same layout as UPHC · PHC · CHC (HealSol 21 Oct 2026)
+//   Readiness: the shared Readiness design (fac-ready.js) · Actions: the shared table, grouped by service package;
+//   "Work on actions" (Supervisor) / "Open the Review & Action Plan" shows the existing Review & Action Plan underneath ·
+//   Staff & cards: the shared table (card strip of the last 30 days, done %, verified %, certificate) ·
+//   "See it as the CHO sees it": the Facility Admin dashboard, view only (every write is blocked while it is open).
+// ══════════════════════════════════════════════════════════════
+_fp.certs = {}; _fp.scAct = 'open'; _fp.work = false;
+function fpScRender() {
+  var host = document.getElementById('fp-dept'), code = _fp.code; if (!host || !code || _fp.type !== 'sc') return;
+  try {
+    if (_fp.tab === 'act') host.innerHTML = fpScActHTML(code);
+    else if (_fp.tab === 'staff') host.innerHTML = fpScStaffHTML(code);
+    else { _fp.M = fpScModel(code); host.innerHTML = '<div id="fp-ready">' + fpReadyHTML(_fp.M) + '</div>'; }
+  } catch (e) { console.warn('[FP] sc render', e); host.innerHTML = '<div class="fp-card"><p class="fp-dim">Could not show this tab.</p></div>'; }
+}
+async function fpScLoadExtras(code) {
+  var need = !(_scRvAll || {})[code];
+  try { if (need) { var a = await fbGet('sc_corrective/' + code); _scRvAll[code] = a || {}; } } catch (e) {}
+  try { if (!_fp.certs[code]) _fp.certs[code] = (await fbGet('sc_certs/' + code)) || {}; } catch (e) { _fp.certs[code] = _fp.certs[code] || {}; }
+  if (_fp.code !== code || _fp.type !== 'sc') return;
+  try { var f = (scMasterFacilities || {})[code]; if (f) { var links = document.querySelector('#sc-drill-info .nfl-drill'); document.getElementById('fp-top').innerHTML = fpTopHTML(code, f, fpScTiles(code), links ? '<div class="fp-line">' + links.innerHTML + '</div>' : ''); fpApplyTab(); } } catch (e) {}
+  if (_fp.tab !== 'prog') fpScRender();
+}
+// ── Actions ──
+var FP_SC_ST = { draft: ['Draft', 'n'], open: ['Open', 'b'], overdue: ['Overdue', 'r'], done: ['Done · re-check', 'g'], awaiting: ['Waiting for Supervisor', 'a'], closed: ['Closed', 'n'] };
+function fpScActs(code) {
+  var f = (scMasterFacilities || {})[code] || {}, pid = f.progId || 'nqas_12A', pr = (scMasterProgress || {})[code] || {}, sup = fpRole() === 'supervisor';
+  return scRvList((_scRvAll || {})[code] || {}).filter(function (a) { return a.status !== 'draft' || sup; }).map(function (a) { return Object.assign({}, a, { st: scRvStatus(a, pid, pr) }); });
+}
+function fpScAct(k) { _fp.scAct = k; fpScRender(); }
+function fpScWork(on) { _fp.work = !!on; fpApplyTab(); var st = _scIns['sc-drill-insights']; if (on && st) { st.tab = 'gaps'; scInsRender('sc-drill-insights'); } fpScRender(); try { window.scrollTo(0, 0); } catch (e) {} }
+function fpScActHTML(code) {
+  var sup = fpRole() === 'supervisor', canAssign = false; try { canAssign = scRvCanAssign(code); } catch (e) {}
+  if (_fp.work) return '<div class="fp-chiprow"><button type="button" class="fp-btn" onclick="fpScWork(false)"><i class="ti ti-arrow-left"></i> Back to the actions list</button><span class="fp-dim" style="margin:0">' + (canAssign ? 'Review & Action Plan — assign, publish and confirm actions here.' : 'Review & Action Plan — view only.') + '</span></div>';
+  var L = fpScActs(code), A = scFacAggFor(code), isOpen = function (a) { return a.st !== 'closed'; };
+  var match = function (a, k) { return k === 'open' ? isOpen(a) && a.st !== 'draft' : k === 'chk' ? a.st === 'done' || a.st === 'awaiting' : a.st === k; };
+  var cnt = function (k) { return L.filter(function (a) { return match(a, k); }).length; };
+  var chip = function (k, l) { return '<button type="button" class="fp-chip' + (_fp.scAct === k ? ' on' : '') + '" onclick="fpScAct(\'' + k + '\')">' + l + ' · ' + cnt(k) + '</button>'; };
+  var has = {}; L.forEach(function (a) { if (isOpen(a)) has[a.cpId] = 1; });
+  var noAct = Object.keys(A.cps || {}).filter(function (id) { var c = A.cps[id]; return c && c.score !== null && c.score < 2 && !has[id]; }).length;
+  var h = '<div class="fp-chiprow">' + chip('open', 'All open') + chip('overdue', 'Overdue') + chip('chk', 'Done, waiting re-check') + chip('closed', 'Closed') + (sup ? chip('draft', 'Draft') : '')
+    + '<span style="flex:1"></span><button type="button" class="fp-btn" onclick="fpScWork(true)"><i class="ti ti-' + (canAssign ? 'pencil' : 'list-check') + '"></i> ' + (canAssign ? 'Work on actions' : 'Open the Review &amp; Action Plan') + '</button></div>';
+  if (noAct) h += '<div class="fp-note a"><b>' + noAct + ' gap' + (noAct === 1 ? '' : 's') + ' have no action yet</b> — checked as Partial or Not met and nobody owns them. ' + (canAssign ? 'Use Work on actions to assign them.' : 'The Supervisor assigns them.') + '</div>';
+  var S = L.filter(function (a) { return match(a, _fp.scAct); });
+  if (!S.length) return h + '<div class="fp-card"><p class="fp-dim">No actions here.</p></div>';
+  var by = {}; S.forEach(function (a) { var k = a.service || 'Other'; (by[k] = by[k] || []).push(a); });
+  var order = SC_SVC_GROUPS.service.concat(SC_SVC_GROUPS.support), ix = function (k) { var i = order.indexOf(k); return i < 0 ? 99 : i; };
+  h += '<div class="fp-card p0 fp-tw"><table class="fp-t"><thead><tr><th>Checkpoint</th><th>What to fix</th><th>Owner</th><th>Re-check by</th><th>Status</th></tr></thead><tbody>';
+  Object.keys(by).sort(function (x, y) { return ix(x) - ix(y); }).forEach(function (g) { h += '<tr class="grp"><td colspan="5">' + fpE(g) + ' · ' + by[g].length + '</td></tr>';
+    by[g].sort(function (a, b) { return String(a.dueDate || '').localeCompare(String(b.dueDate || '')); }).forEach(function (a) { var s = FP_SC_ST[a.st] || FP_SC_ST.open;
+      h += '<tr><td><b>' + fpE(a.cpId || '') + '</b><small>' + fpE(a.cpText || '') + (a.itemText ? ' — ' + fpE(a.itemText) : '') + '</small></td><td>' + fpE(a.action || '—') + '</td><td>' + fpE(a.assignedToName || a.ownerName || '—') + '</td><td class="' + (a.st === 'overdue' ? 'r' : '') + '">' + fpE(a.dueDate ? fpShortDate(a.dueDate) : '—') + '</td><td><span class="fp-st ' + s[1] + '">' + s[0] + '</span></td></tr>'; }); });
+  return h + '</tbody></table></div><p class="fp-dim">' + (canAssign ? 'You assign, publish and close actions in Work on actions.' : 'View only — the Supervisor assigns and closes actions; staff mark them done in their app.') + '</p>';
+}
+// ── Staff & cards ──
+function fpScStaffHTML(code) {
+  var f = (scMasterFacilities || {})[code] || {}, pid = f.progId || 'nqas_12A', pr = (scMasterProgress || {})[code] || {}, staff = f.staff || {}, present = scRolesFromRoster(staff);
+  var day = nfDayOf(f), todayDi = day == null || day < 1 ? -1 : day - 1, total = getDaysArr(pid).length, hi = Math.min(todayDi, total - 1), lo = Math.max(0, hi - 29), certs = _fp.certs[code] || {}, admin = fpRole() === 'admin';
+  var C = { v: '#2E8B57', d: '#8BC4A0', m: '#C8553D', n: '#E2E8E6' };
+  var h = '<div class="fp-chiprow"><span class="fp-legend"><i style="background:#2E8B57"></i> done &amp; verified <i style="background:#8BC4A0"></i> done <i style="background:#C8553D"></i> missed <i style="background:#E2E8E6"></i> no card</span></div>';
+  var mobs = Object.keys(staff).filter(function (m) { return staff[m] && !staff[m].disabled; });
+  if (!mobs.length) return h + '<div class="fp-card"><p class="fp-dim">No staff yet — the CHO adds them in the Facility dashboard.</p></div>';
+  var rows = mobs.map(function (m) { var s = staff[m], role = s.role || 'CHO', cards = scCardsFromRemote(pr[m] || {}, pid), exp = 0, done = 0, ver = 0, strip = [];
+    for (var di = 0; di <= hi; di++) { var d = scDayDef(pid, di), mine = !!(d && (d.cps || []).some(function (cp) { return scCpForRoleIn(cp, role, present); })), c = cards[di], dn = !!(c && c.taskDone);
+      var counts = mine && (di < todayDi || dn); if (counts) { exp++; if (dn) { done++; if (c.verified) ver++; } }
+      if (di >= lo) strip.push(!mine ? 'n' : dn ? (c.verified ? 'v' : 'd') : di < todayDi ? 'm' : 'n'); }
+    return { mob: m, name: s.name || m, role: role, label: (getScRole(role) || {}).label || role, exp: exp, done: done, pct: exp ? Math.round(100 * done / exp) : null, ver: done ? Math.round(100 * ver / done) : null, strip: strip, cert: certs[m] }; })
+    .sort(function (a, b) { return (a.role === 'CHO' ? 0 : 1) - (b.role === 'CHO' ? 0 : 1) || String(a.name).localeCompare(String(b.name)); });
+  h += '<div class="fp-card p0 fp-tw"><table class="fp-t"><thead><tr><th>Name</th><th>Card days (last 30)</th><th>Done</th><th>Verified</th><th>Certificate</th>' + (admin ? '<th></th>' : '') + '</tr></thead><tbody>';
+  rows.forEach(function (s) {
+    h += '<tr><td><b>' + fpE(s.name) + '</b><small>' + fpE(s.label) + ' · ' + fpE(s.mob) + '</small></td>'
+      + '<td><span class="fp-strip">' + s.strip.map(function (x) { return '<i style="background:' + C[x] + '"></i>'; }).join('') + '</span></td>'
+      + (s.exp ? '<td class="' + (s.pct < 80 ? 'r' : 'g') + '"><b>' + s.pct + '%</b><small>' + s.done + ' of ' + s.exp + ' card days</small></td>' : '<td><small>no card days yet</small></td>')
+      + '<td>' + (s.ver == null ? '—' : s.ver + '% of done cards') + '</td>'
+      + '<td>' + (s.cert ? '🎓 issued' + (s.cert.grade ? ' (' + fpE(s.cert.grade) + ')' : '') : day && day >= total ? (s.pct != null && s.pct >= 80 ? 'can claim' : 'needs 80% done') : 'Day ' + total) + '</td>'
+      + (admin ? '<td><button type="button" class="fp-btn sm" title="Reset password" onclick="scAdminResetPwd(\'' + fpJ(code) + '\',\'' + fpJ(s.mob) + '\')"><i class="ti ti-key"></i> Reset password</button></td>' : '') + '</tr>';
+  });
+  return h + '</tbody></table></div><p class="fp-dim">Verified = the Supervisor or CHO has checked the card. Staff are added and removed by the CHO in the Facility dashboard.</p>';
+}
+// ── "See it as the CHO sees it" — the Facility Admin dashboard, view only ──
+var _fpVA = null;
+async function fpScViewAs(code) {
+  var f = (scMasterFacilities || {})[code]; if (!f || _fpVA) return;
+  _fpVA = { code: code, mode: appMode, sub: typeof scSubAdminCode !== 'undefined' ? scSubAdminCode : null, subD: typeof scSubAdminData !== 'undefined' ? scSubAdminData : null, y: window.scrollY || 0 };
+  document.body.classList.add('nf-viewas');
+  var b = document.getElementById('fp-va-bar'); if (!b) { b = document.createElement('div'); b.id = 'fp-va-bar'; document.body.appendChild(b); }
+  b.innerHTML = '<i class="ti ti-eye"></i><span><b>Viewing as the CHO</b> · ' + fpE(f.name || code) + ' · view only — nothing can be changed here</span><button type="button" onclick="fpScViewAsClose()">Close</button>';
+  try { scSubAdminCode = code; scSubAdminData = Object.assign({}, f); await scStartChoPanel(code, Object.assign({}, f)); }
+  catch (e) { console.warn('[FP] view as', e); showToast('Could not open the Facility dashboard.', 'err'); fpScViewAsClose(); }
+}
+function fpScViewAsClose() {
+  var v = _fpVA; if (!v) return; _fpVA = null;
+  var a = document.getElementById('sc-cho-app'); if (a) a.classList.remove('vis');
+  document.body.classList.remove('nf-viewas', 'nf-fadm'); var b = document.getElementById('fp-va-bar'); if (b) b.remove();
+  try { appMode = v.mode; scSubAdminCode = v.sub; scSubAdminData = v.subD; } catch (e) {}
+  try { window.scrollTo(0, v.y); } catch (e) {}
+}
+function fpVaBlocked() { try { showToast('View only — open the CHO\'s own login to make changes.', 'err'); } catch (e) {} return Promise.reject(new Error('View only')); }
+(function () {   // while viewing as the CHO nothing is written: fbSet / fbUpdate / database writes / server calls all refuse
+  ['fbSet', 'fbUpdate', 'fbRemove', 'fbPush', 'nfCall'].forEach(function (n) { if (typeof window[n] !== 'function') return; var o = window[n];
+    window[n] = function () { if (_fpVA) return fpVaBlocked(); return o.apply(this, arguments); }; });
+  try { var RP = firebase.database.Reference.prototype;   // every database write, whatever the path or the db object
+    ['set', 'update', 'remove', 'push', 'transaction', 'setWithPriority'].forEach(function (m) { var o = RP[m]; if (typeof o !== 'function') return;
+      RP[m] = function () { if (_fpVA) return fpVaBlocked(); return o.apply(this, arguments); }; }); } catch (e) {}
+})();
+(function () {   // the dashboard's own exits and staff tools do nothing harmful while viewing as the CHO
+  [['scChoLogout', true], ['faMyCards'], ['scb1OpenCards'], ['faAddStaff'], ['scOpenAddStaff'], ['scResetStaffPwd'], ['scRemoveStaff'], ['scChoSetStartDate']].forEach(function (x) {
+    var n = x[0]; if (typeof window[n] !== 'function') return; var o = window[n];
+    window[n] = function () { if (_fpVA) { if (x[1]) { fpScViewAsClose(); return; } fpVaBlocked().catch(function () {}); return; } return o.apply(this, arguments); }; });
 })();
 </script>
 <script id="nf-sc-draft">// ══════════════════════════════════════════════════════════════
@@ -26709,6 +27094,63 @@ function scdTabsPaint() {
   var t = document.getElementById('scm-tabs'); if (t && !t.dataset.scd) { t.dataset.scd = '1'; var a = t.querySelector('[data-t="days"]'), m = t.querySelector('[data-t="master"]');
     if (a && m) { m.innerHTML = '<i class="ti ti-list-details"></i> Checkpoints'; a.innerHTML = '<i class="ti ti-cards"></i> Day cards (titles &amp; tasks)'; t.insertBefore(m, a); } }
 }
+</script>
+<script id="nf-day-score">// ══════════════════════════════════════════════════════════════
+// Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".
+// The score of what has been answered on that card — Met 2, Partial 1, Not met 0 — not the facility's readiness.
+// ══════════════════════════════════════════════════════════════
+function nfScoreLine(sum, n, of, label) {
+  if (!of) return '';
+  var pct = n ? Math.round(100 * sum / (2 * n)) : null;
+  return '<div class="nf-dscore"><b>' + scEsc(label) + (pct == null ? '' : ' ' + pct + '%') + '</b><span>' + n + ' of ' + of + ' checked' + (pct == null ? ' — answer a checkpoint to see the score' : '') + '</span></div>';
+}
+// ── Sub-Centre staff app ──
+function nfScDayScore(di) {
+  var own = []; try { own = scMyCpIdx(di); } catch (e) { return null; }
+  var c = getCHOCard(di) || {}, sum = 0, n = 0;
+  own.forEach(function (ci) { var s = scNormScore((c.cpScores || [])[ci]); if (s !== null) { n++; sum += s; } });
+  return { sum: sum, n: n, of: own.length };
+}
+(function () {
+  if (typeof nfRenderToday === 'function') {
+    var oT = nfRenderToday;
+    nfRenderToday = function () { var r = oT.apply(this, arguments);
+      try { var host = document.getElementById('nf-today'), cta = host && host.querySelector('.nf-cta'); if (cta && !host.querySelector('.nf-dscore')) {
+        var x = nfScDayScore(scb1TodayIdx()); if (x && x.of) cta.insertAdjacentHTML('afterend', nfScoreLine(x.sum, x.n, x.of, _appLang === 'hi' ? 'आज का स्कोर' : 'Today\'s score')); } } catch (e) {}
+      return r; };
+  }
+  if (typeof renderCard === 'function') {
+    var oC = renderCard;
+    renderCard = function (di) { var r = oC.apply(this, arguments);
+      try { if (typeof nfIsStaff === 'function' && nfIsStaff()) { var cont = document.getElementById('card-container'), body = cont && cont.querySelector('.cbody');
+        if (body && !body.querySelector('.nf-dscore')) { var x = nfScDayScore(di); if (x && x.of) body.insertAdjacentHTML('afterbegin', nfScoreLine(x.sum, x.n, x.of, (_appLang === 'hi' ? 'दिन ' : 'Day ') + (di + 1) + (_appLang === 'hi' ? ' स्कोर' : ' score'))); } } } catch (e) {}
+      return r; };
+  }
+})();
+// ── UPHC · PHC · CHC staff app ──
+function nfDeptCardScore(dept, day, mob) {
+  var ids = ndMyIds(dept, day, mob); if (!ids.length) return null;
+  var s = (ndPc(dept, day)[mob] || {}).s || {}, sum = 0, n = 0;
+  ids.forEach(function (i) { if (s[i] !== undefined && s[i] !== null) { n++; sum += +s[i]; } });
+  return { sum: sum, n: n, of: ids.length };
+}
+(function () {
+  if (typeof ndRender === 'function') {
+    var oR = ndRender;
+    ndRender = function () { var r = oR.apply(this, arguments);
+      try { if (_nd && !_nd.view && (_nd.tab === 'today' || !_nd.tab) && !_nd.card && !_nd.screen) { var app = document.getElementById('nf-dept-app'), cta = app && app.querySelector('.nx-hero .nx-cta');
+        if (cta && !app.querySelector('.nf-dscore')) { var me = ndMob(), day = ndDay(), sum = 0, n = 0, of = 0;
+          ndCardDepts(day > 100 ? day : Math.min(day, _nd.cfg.days)).forEach(function (d) { if (!ndFills(d.id, me)) return; var x = nfDeptCardScore(d.id, day, me); if (x) { sum += x.sum; n += x.n; of += x.of; } });
+          if (of) cta.insertAdjacentHTML('afterend', nfScoreLine(sum, n, of, 'Today\'s score')); } } } catch (e) {}
+      return r; };
+  }
+  if (typeof ndDayCardHTML === 'function') {
+    var oD = ndDayCardHTML;
+    ndDayCardHTML = function (dept, day) { var h = oD.apply(this, arguments);
+      try { var me = ndMob(); if (!_nd.view && ndFills(dept, me)) { var x = nfDeptCardScore(dept, day, me); if (x) h = h.replace('<div class="nx-aoc">', nfScoreLine(x.sum, x.n, x.of, 'Day ' + day + ' score') + '<div class="nx-aoc">'); } } catch (e) {}
+      return h; };
+  }
+})();
 </script>
 <script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no
 // serviceWorker there), not on a page without the manifest. ?nosw skips it once; ?nosw=reset removes it and its caches.

@@ -89,8 +89,8 @@ function ndEndStat(cuOnly) {
 function ndGradScores() {
   var S = ndShape(), deps = ndDeptDefs().map(function (d) { return d.id; }), pass = ndCrit().overall, L = ndLatest();
   var R = nfDeptReadiness(_nd.cl.items, L, { pass: pass, depts: deps }), B = nfDeptReadiness(_nd.cl.items, ndLatest(S.bN), { pass: pass, depts: deps });
-  var std = {}; _nd.cl.items.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]]; if (v === undefined || v === null || v === '') return; var x = std[r[3]] = std[r[3]] || { g: 0, m: 0 }; x.g += +v; x.m += 2; });
-  var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k)) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
+  var std = {}; _nd.cl.items.forEach(function (r) { if (deps.indexOf(r[1]) < 0) return; var v = L[r[0]], x = std[r[3]] = std[r[3]] || { g: 0, m: 0, n: 0 }; x.m += 2; if (v === undefined || v === null || v === '') return; x.g += +v; x.n++; });   // whole Standard, not-yet-checked = 0
+  var byStd = {}; Object.keys(std).forEach(function (k) { if (/^[A-H]\d{1,2}$/.test(k) && std[k].n) byStd[k] = Math.round(100 * std[k].g / std[k].m); });
   var byAoc = {}; Object.keys(R.byAoc || {}).forEach(function (a) { if (/^[A-H]$/.test(a) && R.byAoc[a].pct !== null) byAoc[a] = R.byAoc[a].pct; });
   var byDept = {}; Object.keys(R.byDept || {}).forEach(function (d) { if (R.byDept[d].pct !== null) byDept[d] = R.byDept[d].pct; });
   var bDept = {}; Object.keys(B.byDept || {}).forEach(function (d) { if (B.byDept[d].pct !== null) bDept[d] = B.byDept[d].pct; });

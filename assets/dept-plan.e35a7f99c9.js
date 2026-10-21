@@ -95,8 +95,11 @@ function nfDeptReadiness(items, latest, opts) {
     var s = latest[r[0]]; if (s === undefined || s === null || s === '') return;
     [all, d, a, da].forEach(function (x) { x.n++; x.got += +s; x.max += 2; });
   });
-  var pct = function (x) { return x.max ? Math.round(100 * x.got / x.max) : null; }, out = function (x) { return { pct: pct(x), n: x.n, of: x.of }; };
-  var res = { overall: pct(all), n: all.n, of: all.of, byDept: {}, byAoc: {}, fails: [] };
+  // readiness = points ÷ maximum for EVERY checkpoint of the departments switched on (not yet checked = 0), the Sub-Centre rule
+  // (HealSol 21 Oct); comp = the score of what has been checked so far ("88% of those Met / Partial"); null until something is checked
+  var pct = function (x) { return x.n ? Math.round(100 * x.got / (2 * x.of)) : null; }, comp = function (x) { return x.max ? Math.round(100 * x.got / x.max) : null; };
+  var out = function (x) { return { pct: pct(x), comp: comp(x), n: x.n, of: x.of }; };
+  var res = { overall: pct(all), comp: comp(all), n: all.n, of: all.of, byDept: {}, byAoc: {}, fails: [] };
   Object.keys(byDept).forEach(function (k) { var d = byDept[k]; res.byDept[k] = Object.assign(out(d), { byAoc: {} }); Object.keys(d.byAoc).forEach(function (a) { res.byDept[k].byAoc[a] = out(d.byAoc[a]); }); });
   Object.keys(byAoc).forEach(function (a) { res.byAoc[a] = out(byAoc[a]); });
   if (res.overall === null || res.overall < mark) res.fails.push('overall');

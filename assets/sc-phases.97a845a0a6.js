@@ -45,7 +45,7 @@ function nfFacPhases(o){
     if(NF_WEEK_START[w]>todayDi&&!nfHasDone(pr,NF_WEEK_START[w],NF_WEEK_END[w])) break;
     if(!nfTouched(pid,pr,NF_WEEK_START[w],NF_WEEK_END[w]).n) continue;   // nothing scored that week → no point (no copied value)
     var s=scFacilityReadiness(pid,nfFilterProg(pr,NF_WEEK_END[w]),st);
-    var cv=function(k){ var b=s.byCat[k]; return b&&b.assessed?b.pct:null; }; weeks.push({w:w+1,pct:s.coverage.assessed?s.pct:null,S:cv('Structure'),P:cv('Process'),O:cv('Outcome')});
+    var cv=function(k){ var b=s.byCat[k]; return b&&b.assessed?b.pct:null; }; weeks.push({w:w+1,pct:s.coverage.assessed?s.pct:null,cov:s.coverage.pct,n:s.coverage.assessed,of:s.coverage.total,S:cv('Structure'),P:cv('Process'),O:cv('Outcome')});
   }
   var blDone=0; try{ blDone=scBaselineStatus(pid,pr,st).filter(function(x){ return x.complete; }).length; }catch(e){}
   o._ph={key:key,A:A,B:B,I:I,E:E,weeks:weeks,day:day,todayDi:todayDi,blDone:blDone}; return o._ph;

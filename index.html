@@ -1391,7 +1391,7 @@ function scMdNext(di){
 
 <!-- ══ Phases: Baseline · Implementation · Endline ══ -->
 <link rel="stylesheet" href="assets/sc-phases.07a2a34a96.css" onerror="nfAssetFail(this)">
-<script src="assets/sc-phases.e63ef7115d.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-phases.97a845a0a6.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Heat-map tabs, By Standard toggle, baseline incomplete ══ -->
 <style>
@@ -1920,7 +1920,7 @@ function nfCoverDone(){
 <script id="nf-dash" src="assets/shared-dashboards.524d7561de.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-css" rel="stylesheet" href="assets/dept-core.05bad2d39a.css" onerror="nfAssetFail(this)">
 <link id="nf-dept-screens-css" rel="stylesheet" href="assets/dept-screens.f786feb4e5.css" onerror="nfAssetFail(this)">
-<script id="nf-dept-plan" src="assets/dept-plan.acac4d3d1c.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-plan" src="assets/dept-plan.e35a7f99c9.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept" src="assets/dept-core.a901507589.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-review" src="assets/dept-review.7e29837ee2.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-content" src="assets/dept-content.9efe67bbd1.js" onerror="nfAssetFail(this)"></script>
@@ -1928,12 +1928,12 @@ function nfCoverDone(){
 <link id="nf-dept-master-css" rel="stylesheet" href="assets/dept-master.d737b49cc8.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-master" src="assets/dept-master.0c48018e85.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-master-ui" src="assets/dept-master-ui.61064e6f9f.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-summary" src="assets/dept-summary.db187a1a31.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-summary" src="assets/dept-summary.12c5f15f53.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-admin" src="assets/dept-admin.e83e9004db.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-grad-css" rel="stylesheet" href="assets/dept-grad.c07401b26c.css" onerror="nfAssetFail(this)">
-<script id="nf-dept-grad" src="assets/dept-grad.46c58fe5a2.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-grad" src="assets/dept-grad.cb9a8cd134.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-hs-home-css" rel="stylesheet" href="assets/shared-hs-home.f2fa190596.css" onerror="nfAssetFail(this)">
-<script id="nf-hs-home" src="assets/shared-hs-home.9e3821b582.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hs-home" src="assets/shared-hs-home.58962e11de.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-hs-settings-css">/* HealSol Settings refinements (21 Oct 2026) */
 .hsx-pick{display:block!important;max-height:280px;overflow-y:auto;border:1px solid var(--br);border-radius:10px;padding:6px 8px;}
 .hsx-grp+.hsx-grp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--br);}
@@ -1946,9 +1946,68 @@ function nfCoverDone(){
 .nfg-ttabs{margin:0 0 10px;gap:16px;}
 </style>
 <script id="nf-hs-settings" src="assets/shared-hs-settings.f1365f98fb.js" onerror="nfAssetFail(this)"></script>
-<link id="nf-fac-page-css" rel="stylesheet" href="assets/shared-fac-page.e95742d126.css" onerror="nfAssetFail(this)">
-<script id="nf-fac-page" src="assets/shared-fac-page.fe657c16ed.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-fac-page-css" rel="stylesheet" href="assets/shared-fac-page.2fe7bc4c95.css" onerror="nfAssetFail(this)">
+<script id="nf-fac-page" src="assets/shared-fac-page.9a90acc35f.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-fac-ready" src="assets/shared-fac-ready.99d756861a.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-fac-sc" src="assets/shared-fac-sc.32cd70585b.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-sc-draft" src="assets/shared-sc-draft.672ef4231a.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-day-score">// ══════════════════════════════════════════════════════════════
+// Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".
+// The score of what has been answered on that card — Met 2, Partial 1, Not met 0 — not the facility's readiness.
+// ══════════════════════════════════════════════════════════════
+function nfScoreLine(sum, n, of, label) {
+  if (!of) return '';
+  var pct = n ? Math.round(100 * sum / (2 * n)) : null;
+  return '<div class="nf-dscore"><b>' + scEsc(label) + (pct == null ? '' : ' ' + pct + '%') + '</b><span>' + n + ' of ' + of + ' checked' + (pct == null ? ' — answer a checkpoint to see the score' : '') + '</span></div>';
+}
+// ── Sub-Centre staff app ──
+function nfScDayScore(di) {
+  var own = []; try { own = scMyCpIdx(di); } catch (e) { return null; }
+  var c = getCHOCard(di) || {}, sum = 0, n = 0;
+  own.forEach(function (ci) { var s = scNormScore((c.cpScores || [])[ci]); if (s !== null) { n++; sum += s; } });
+  return { sum: sum, n: n, of: own.length };
+}
+(function () {
+  if (typeof nfRenderToday === 'function') {
+    var oT = nfRenderToday;
+    nfRenderToday = function () { var r = oT.apply(this, arguments);
+      try { var host = document.getElementById('nf-today'), cta = host && host.querySelector('.nf-cta'); if (cta && !host.querySelector('.nf-dscore')) {
+        var x = nfScDayScore(scb1TodayIdx()); if (x && x.of) cta.insertAdjacentHTML('afterend', nfScoreLine(x.sum, x.n, x.of, _appLang === 'hi' ? 'आज का स्कोर' : 'Today\'s score')); } } catch (e) {}
+      return r; };
+  }
+  if (typeof renderCard === 'function') {
+    var oC = renderCard;
+    renderCard = function (di) { var r = oC.apply(this, arguments);
+      try { if (typeof nfIsStaff === 'function' && nfIsStaff()) { var cont = document.getElementById('card-container'), body = cont && cont.querySelector('.cbody');
+        if (body && !body.querySelector('.nf-dscore')) { var x = nfScDayScore(di); if (x && x.of) body.insertAdjacentHTML('afterbegin', nfScoreLine(x.sum, x.n, x.of, (_appLang === 'hi' ? 'दिन ' : 'Day ') + (di + 1) + (_appLang === 'hi' ? ' स्कोर' : ' score'))); } } } catch (e) {}
+      return r; };
+  }
+})();
+// ── UPHC · PHC · CHC staff app ──
+function nfDeptCardScore(dept, day, mob) {
+  var ids = ndMyIds(dept, day, mob); if (!ids.length) return null;
+  var s = (ndPc(dept, day)[mob] || {}).s || {}, sum = 0, n = 0;
+  ids.forEach(function (i) { if (s[i] !== undefined && s[i] !== null) { n++; sum += +s[i]; } });
+  return { sum: sum, n: n, of: ids.length };
+}
+(function () {
+  if (typeof ndRender === 'function') {
+    var oR = ndRender;
+    ndRender = function () { var r = oR.apply(this, arguments);
+      try { if (_nd && !_nd.view && (_nd.tab === 'today' || !_nd.tab) && !_nd.card && !_nd.screen) { var app = document.getElementById('nf-dept-app'), cta = app && app.querySelector('.nx-hero .nx-cta');
+        if (cta && !app.querySelector('.nf-dscore')) { var me = ndMob(), day = ndDay(), sum = 0, n = 0, of = 0;
+          ndCardDepts(day > 100 ? day : Math.min(day, _nd.cfg.days)).forEach(function (d) { if (!ndFills(d.id, me)) return; var x = nfDeptCardScore(d.id, day, me); if (x) { sum += x.sum; n += x.n; of += x.of; } });
+          if (of) cta.insertAdjacentHTML('afterend', nfScoreLine(sum, n, of, 'Today\'s score')); } } } catch (e) {}
+      return r; };
+  }
+  if (typeof ndDayCardHTML === 'function') {
+    var oD = ndDayCardHTML;
+    ndDayCardHTML = function (dept, day) { var h = oD.apply(this, arguments);
+      try { var me = ndMob(); if (!_nd.view && ndFills(dept, me)) { var x = nfDeptCardScore(dept, day, me); if (x) h = h.replace('<div class="nx-aoc">', nfScoreLine(x.sum, x.n, x.of, 'Day ' + day + ' score') + '<div class="nx-aoc">'); } } catch (e) {}
+      return h; };
+  }
+})();
+</script>
 <script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no
 // serviceWorker there), not on a page without the manifest. ?nosw skips it once; ?nosw=reset removes it and its caches.
 (function(){

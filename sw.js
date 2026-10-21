@@ -6,7 +6,7 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "3e5e8c70d855";
+const BUILD = "72ebd2101595";
 const ASSETS = [
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.7879def481.js",
@@ -15,16 +15,16 @@ const ASSETS = [
  "assets/dept-content.9efe67bbd1.js",
  "assets/dept-core.05bad2d39a.css",
  "assets/dept-core.a901507589.js",
- "assets/dept-grad.46c58fe5a2.js",
  "assets/dept-grad.c07401b26c.css",
+ "assets/dept-grad.cb9a8cd134.js",
  "assets/dept-master-ui.61064e6f9f.js",
  "assets/dept-master.0c48018e85.js",
  "assets/dept-master.d737b49cc8.css",
- "assets/dept-plan.acac4d3d1c.js",
+ "assets/dept-plan.e35a7f99c9.js",
  "assets/dept-review.7e29837ee2.js",
  "assets/dept-screens.acc4b50f26.js",
  "assets/dept-screens.f786feb4e5.css",
- "assets/dept-summary.db187a1a31.js",
+ "assets/dept-summary.12c5f15f53.js",
  "assets/sc-baseline-review.9bd6ffb924.js",
  "assets/sc-baseline-review.cba584c030.css",
  "assets/sc-baseline7.d38d5e0f28.js",
@@ -56,7 +56,7 @@ const ASSETS = [
  "assets/sc-login-3tier.27abd84fee.js",
  "assets/sc-looks-met.c2aaaff056.js",
  "assets/sc-phases.07a2a34a96.css",
- "assets/sc-phases.e63ef7115d.js",
+ "assets/sc-phases.97a845a0a6.js",
  "assets/sc-plan-wa.4a4291bea8.js",
  "assets/sc-prep-lists.f656ff32b2.js",
  "assets/sc-readiness.6cf4731cfe.js",
@@ -79,9 +79,11 @@ const ASSETS = [
  "assets/shared-cert.50af794399.css",
  "assets/shared-dashboards.524d7561de.js",
  "assets/shared-dashboards.c05c6b7e04.css",
- "assets/shared-fac-page.e95742d126.css",
- "assets/shared-fac-page.fe657c16ed.js",
- "assets/shared-hs-home.9e3821b582.js",
+ "assets/shared-fac-page.2fe7bc4c95.css",
+ "assets/shared-fac-page.9a90acc35f.js",
+ "assets/shared-fac-ready.99d756861a.js",
+ "assets/shared-fac-sc.32cd70585b.js",
+ "assets/shared-hs-home.58962e11de.js",
  "assets/shared-hs-home.f2fa190596.css",
  "assets/shared-hs-settings.f1365f98fb.js",
  "assets/shared-impact.2d70258cc2.js",

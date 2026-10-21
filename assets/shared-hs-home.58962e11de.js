@@ -32,7 +32,7 @@ function hsInfo(code) {
   if (dept) {
     var S = nfDeptShape(LV), s = (typeof _nfDs !== 'undefined' && _nfDs.map) ? _nfDs.map[code] : null;
     o.s = s; o.days = S.days; o.S = S; o.rawDay = f.startDate ? nfDeptDayNo(f.startDate, today) : null;
-    o.pct = s && s.assessed ? s.pct : null; o.base = s && s.base != null ? s.base : null; o.assessed = s ? s.assessed : 0;
+    o.pct = s && s.assessed ? s.pct : null; o.base = s && s.base != null ? s.base : null; o.assessed = s ? s.assessed : 0; o.cov = s && s.total ? Math.round(100 * (s.assessed || 0) / s.total) : null;
     o.overdue = s ? s.acts.od : 0; o.toCheck = s ? s.checksDue : 0; o.loading = !s && !!f.startDate;
     o.byStd = s ? s.byStd || {} : {}; o.byDept = s ? s.byDept || {} : {}; o.byAoc = s ? s.byAoc || {} : {};
     // on track / slipping / behind with this type's timeline settings (Settings → Programme rules → Timeline)
@@ -42,7 +42,7 @@ function hsInfo(code) {
     var p = getProg(f.progId || 'nqas_12A') || {}, a = scFacAggFor(code), b = a.baseline || {};
     o.days = p.days || 60; o.S = { bN: 7, iN: 49, e1: 50, eN: 56, r1: 57, rN: 60, days: o.days };
     o.rawDay = f.startDate ? Math.floor((Date.parse(today) - Date.parse(f.startDate)) / 86400000) + 1 : null;
-    o.agg = a; o.pct = a.coverage && a.coverage.assessed ? a.pct : null; o.base = b.assessed ? b.pct : null; o.assessed = a.coverage ? a.coverage.assessed : 0;
+    o.agg = a; o.pct = a.coverage && a.coverage.assessed ? a.pct : null; o.base = b.assessed ? b.pct : null; o.assessed = a.coverage ? a.coverage.assessed : 0; o.cov = a.coverage ? a.coverage.pct : null;
     o.byStd = {}; Object.keys(a.byStd || {}).forEach(function (k) { var x = a.byStd[k]; if (x && x.assessed) o.byStd[k] = x.pct; });
     var acts = scRvList((_scRvAll || {})[code] || {}); o.overdue = acts.filter(function (x) { return x.status !== 'draft' && x.status !== 'closed' && x.dueDate && x.dueDate < today; }).length;
     try { var c = nfgCompFor(code, f, (scMasterProgress || {})[code] || {}, (_scRvAll || {})[code] || null); o.comp = c; } catch (e) {}
@@ -64,6 +64,7 @@ function hsResult(o) {   // the result column: graduation result, else the NQAS 
   if (o.grad) { var r = HS_RES[o.grad.result] || HS_RES.incomplete; return '<span class="nfo-chip ' + r[1] + '">' + r[0] + '</span>'; }
   if (o.loading) return '<span class="nfo-chip grey">Loading…</span>';
   if (!o.assessed) return '<span class="hs-dim">—</span>';
+  if (o.cov != null && o.cov < 50) return '<span class="nfo-chip grey" title="Less than half of the checklist has a score — the result would not mean much yet">Too early · ' + o.cov + '% checked</span>';
   if (o.dept) { var s = o.s || {}, low = Object.keys(o.byDept).filter(function (k) { return o.byDept[k] < 70; }).length, aoc = Object.keys(o.byAoc).filter(function (k) { return o.byAoc[k] < 70; }).length;
     if (o.pct < 70) return '<span class="nfo-chip amber">Overall below 70%</span>';
     if (low) return '<span class="nfo-chip amber">' + low + ' department' + (low > 1 ? 's' : '') + ' below</span>';
@@ -212,7 +213,7 @@ function hsRenderFac() {
     + (sorted.length ? sorted.map(function (o) { var ch = o.pct != null && o.base != null ? o.pct - o.base : null;
       return '<tr class="nfo-row' + (o.behind || o.payDue ? ' hs-warn' : '') + '" onclick="scDrillIn(\'' + hsJ(o.code) + '\')"><td><b>' + hsE(o.name) + '</b> ' + hsTypeChip(o.type) + (o.f.suspended ? ' <span class="nfo-chip grey">Paused</span>' : '') + '<small>' + hsE([o.district || o.code, o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : 'No ' + o.inChargeLabel + ' yet'].join(' · ')) + '</small></td>'
         + '<td>' + (o.phase === 'notstarted' ? 'Not started<small>' + (o.f.startDate ? 'starts ' + hsE(hsShortDate(o.f.startDate)) : 'start date not set') + '</small>' : 'Day ' + (o.phase === 'catchup' ? o.days : o.day) + '<small>' + hsE(HS_PHASE[o.phase]) + (o.phase === 'graduated' && o.grad ? ' ' + hsE(hsShortDate(String(o.grad.at || '').slice(0, 10))) : '') + '</small>') + '</td>'
-        + '<td>' + (o.pct == null ? '<span class="hs-dim">' + (o.loading ? 'Loading…' : o.phase === 'notstarted' ? '—' : 'No cards yet') + '</span>' : (o.base != null ? o.base + '% → ' : '') + '<b>' + o.pct + '%</b>' + (ch != null ? ' <b class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch + '</b>' : '')) + '</td>'
+        + '<td>' + (o.pct == null ? '<span class="hs-dim">' + (o.loading ? 'Loading…' : o.phase === 'notstarted' ? '—' : 'No cards yet') + '</span>' : (o.base != null ? o.base + '% → ' : '') + '<b>' + o.pct + '%</b>' + (ch != null ? ' <b class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch + '</b>' : '') + (o.cov != null ? '<small>' + o.cov + '% checked</small>' : '')) + '</td>'
         + '<td>' + hsResult(o) + '</td><td class="c' + (o.behind ? ' red' : '') + '">' + (o.onTime == null ? '—' : o.onTime + '%') + '</td><td class="c' + (o.overdue ? ' red' : '') + '">' + (o.overdue || 0) + '</td>'
         + '<td class="' + (o.payDue ? 'red' : '') + '">' + hsE(o.access) + '</td><td><button type="button" class="hs-dots" aria-label="Manage ' + hsE(o.name) + '" onclick="event.stopPropagation();nfFacMenu(this,\'' + hsJ(o.code) + '\')">⋯</button></td></tr>'; }).join('')
       : '<tr><td colspan="8" class="nfo-empty">No facility matches these filters.</td></tr>') + '</tbody></table></div>';
