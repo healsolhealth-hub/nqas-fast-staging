@@ -14,9 +14,10 @@ function fprCls(v, min) { return v == null ? 'n' : v >= (min == null ? 70 : min)
 function fprCat(a) { try { return scAocCat(a); } catch (e) { return ({ A: 'Outcome', B: 'Process', C: 'Structure', D: 'Process', E: 'Process', F: 'Process', G: 'Process', H: 'Outcome' })[a] || ''; } }
 
 // ── Sub-Centre model ──
-function fpScModel(code) {
-  var f = (scMasterFacilities || {})[code] || {}, pid = f.progId || 'nqas_12A', pr = (scMasterProgress || {})[code] || {};
-  var P = nfFacPhases({ progId: pid, progress: pr, staff: f.staff || {}, fac: f, agg: scFacAggFor(code) }), A = P.A, B = P.B || {}, has = !!(A.coverage && A.coverage.assessed), hasB = !!B.assessed;
+function fpScModel(code, src) {   // src (Facility dashboard): {fac, progress, acts}; otherwise the HealSol / Supervisor lists
+  src = src || {};
+  var f = src.fac || (scMasterFacilities || {})[code] || {}, pid = f.progId || 'nqas_12A', pr = src.progress || (scMasterProgress || {})[code] || {};
+  var P = nfFacPhases({ progId: pid, progress: pr, staff: f.staff || {}, fac: f, agg: src.fac ? null : scFacAggFor(code) }), A = P.A, B = P.B || {}, has = !!(A.coverage && A.coverage.assessed), hasB = !!B.assessed;
   var v = function (b) { return b && b.assessed ? b.pct : null; }, pair = function (a, b) { return { now: v(a), base: hasB ? v(b) : null }; };
   var M = { type: 'sc', day: P.day, days: 60, pct: has ? A.pct : null, base: hasB ? B.pct : null, comp: has ? A.compliance : null, n: (A.coverage || {}).assessed || 0, of: (A.coverage || {}).total || 0, groupLabel: 'Service packages' };
   M.phases = [{ k: 'Baseline', a: 1, b: 7 }, { k: 'Implementation', a: 8, b: 49 }, { k: 'End-line', a: 50, b: 56 }, { k: 'Readiness week', a: 57, b: 60 }];
@@ -27,11 +28,16 @@ function fpScModel(code) {
   M.std = {}; Object.keys(A.byStd || {}).filter(function (s) { return /^[A-H]\d+$/.test(s); }).forEach(function (s) { M.std[s] = Object.assign(pair(A.byStd[s], (B.byStd || {})[s]), { min: scNqasStdMin(s) }); });
   var sv = Object.keys(A.byService || {}), order = SC_SVC_GROUPS.service.concat(SC_SVC_GROUPS.support);
   sv.sort(function (x, y) { return (order.indexOf(x) < 0 ? 99 : order.indexOf(x)) - (order.indexOf(y) < 0 ? 99 : order.indexOf(y)); });
-  M.groups = sv.filter(function (k) { return scSvcGroup(k) === 'service'; }).map(function (k) { return Object.assign({ id: k, name: k }, pair(A.byService[k], (B.byService || {})[k])); });
-  M.groups2 = sv.filter(function (k) { return scSvcGroup(k) === 'support'; }).map(function (k) { return Object.assign({ id: k, name: k }, pair(A.byService[k], (B.byService || {})[k])); });
+  // each service package / cross-cutting area by Area of Concern (whole checklist; not yet checked = 0)
+  var ga = {}; scPkgNqas(pid).forEach(function (cp) { var c = (A.cps || {})[cp.id] || {}, keys = [cp.svc || 'Other'].concat((Array.isArray(cp.cc) ? cp.cc : []).filter(function (x) { return x && x !== (cp.svc || 'Other'); }));
+    keys.forEach(function (k) { var x = (ga[k] = ga[k] || {})[cp.aoc] = ga[k][cp.aoc] || { g: 0, gb: 0, n: 0, nb: 0, of: 0 }; x.of++; if (c.score != null) { x.g += c.score; x.n++; } if (c.base != null) { x.gb += c.base; x.nb++; } }); });
+  var gAoc = function (k) { var o = {}; Object.keys(ga[k] || {}).forEach(function (a) { var x = ga[k][a]; o[a] = { now: x.n ? Math.round(100 * x.g / (2 * x.of)) : null, base: hasB && x.nb ? Math.round(100 * x.gb / (2 * x.of)) : null, n: x.n, of: x.of }; }); return o; };
+  var grp = function (k) { var b = A.byService[k] || {}; return Object.assign({ id: k, name: k, n: b.assessed || 0, of: b.n || 0, aoc: gAoc(k) }, pair(b, (B.byService || {})[k])); };
+  M.groups = sv.filter(function (k) { return scSvcGroup(k) === 'service'; }).map(grp);
+  M.groups2 = sv.filter(function (k) { return scSvcGroup(k) === 'support'; }).map(grp);
   M.trend = (P.weeks || []).map(function (w) { return { x: Math.min(60, w.w * 7), label: 'W' + w.w, pct: w.pct, cov: w.cov, n: w.n, of: w.of, S: w.S, P: w.P, O: w.O }; });
-  var gaps = Object.keys(A.cps || {}).filter(function (id) { var c = A.cps[id]; return c && c.score !== null && c.score < 2; }).length, o = null; try { o = hsInfo(code); } catch (e) {}
-  M.tiles = fprTiles(M, [{ l: 'Open gaps', v: String(gaps), c: gaps ? 'a' : '' }, { l: 'Overdue actions', v: String((o && o.overdue) || 0), c: o && o.overdue ? 'r' : '' }, { l: 'Cards verified', v: A.daysVerified + ' / ' + A.daysDone, s: 'by the Supervisor or CHO' }]);
+  var gaps = Object.keys(A.cps || {}).filter(function (id) { var c = A.cps[id]; return c && c.score !== null && c.score < 2; }).length, today = scTodayStr(), od = scRvList(src.acts || (_scRvAll || {})[code] || (typeof _scRvActs !== 'undefined' && _scRvActs[code]) || {}).filter(function (x) { return x.status !== 'draft' && x.status !== 'closed' && x.dueDate && x.dueDate < today; }).length;
+  M.tiles = fprTiles(M, [{ l: 'Open gaps', v: String(gaps), c: gaps ? 'a' : '' }, { l: 'Overdue actions', v: String(od), c: od ? 'r' : '' }, { l: 'Cards verified', v: A.daysVerified + ' / ' + A.daysDone, s: 'by the Supervisor or CHO' }]);
   M.blIncomplete = P.day && P.day > 7 && P.blDone != null && P.blDone < 7 ? P.blDone : null;
   return M;
 }
@@ -129,14 +135,17 @@ function fprAocHTML(M) {
   return '<div class="fpr-rows">' + Object.keys(FP_AOC).filter(function (a) { return M.aoc[a]; }).map(function (a) { var x = M.aoc[a]; return fprDumb(x.now, x.base, M.crit.aoc, a + ' · ' + FP_AOC[a], fprCat(a)); }).join('') + '</div>'
     + '<div class="fpr-legend"><span><i class="b"></i> baseline</span><span><i class="g"></i> now</span><span><i class="mk"></i> ' + M.crit.aoc + '% mark</span></div>';
 }
-function fprGroupsHTML(M) {
-  if (M.type === 'sc') return '<div class="fpr-rows">' + M.groups.map(function (g) { return fprDumb(g.now, g.base, 70, g.name, ''); }).join('') + '</div>'
-    + (M.groups2.length ? '<div class="fp-ch" style="margin-top:14px"><b>Cross-cutting areas</b></div><div class="fpr-rows">' + M.groups2.map(function (g) { return fprDumb(g.now, g.base, 70, g.name, ''); }).join('') + '</div>' : '');
-  return '<div class="fpr-rows">' + M.groups.map(function (g) { var open = _fpr.dept === g.id;
-    var row = fprDumb(g.now, g.base, M.crit.dept, g.name + (g.tag ? ' · ' + g.tag : ''), g.n + ' of ' + g.of + ' checked' + (g.lead ? ' · lead ' + g.lead : '') + (g.due ? ' · ' + g.due + ' day' + (g.due === 1 ? '' : 's') + ' to check' : ''), '<i class="ti ti-chevron-down fpr-chev' + (open ? ' up' : '') + '"></i>', "fprDept('" + scJs(g.id) + "')");
+function fprDrillList(L, mark, aocMark, unit, subFn) {
+  return '<div class="fpr-rows">' + L.map(function (g) { var open = _fpr.dept === g.id;
+    var row = fprDumb(g.now, g.base, mark, g.name + (g.tag ? ' · ' + g.tag : ''), subFn(g), '<i class="ti ti-chevron-down fpr-chev' + (open ? ' up' : '') + '"></i>', "fprDept('" + scJs(g.id) + "')");
     if (!open) return row;
-    return row + '<div class="fpr-drill"><div class="fp-ch"><b>' + scEsc(g.name) + ' — Areas of Concern</b><small>bar = now · faint bar = baseline · line = ' + M.crit.aoc + '%</small></div>' + fprBarsHTML(g.aoc, M.crit.aoc) + '</div>'; }).join('') + '</div>'
-    + '<p class="fp-dim">Tap a department to see its 8 Areas of Concern.</p>';
+    return row + '<div class="fpr-drill"><div class="fp-ch"><b>' + scEsc(g.name) + ' — Areas of Concern</b><small>bar = now · faint bar = baseline · line = ' + aocMark + '%</small></div>' + fprBarsHTML(g.aoc || {}, aocMark) + '</div>'; }).join('') + '</div>'
+    + '<p class="fp-dim">Tap ' + unit + ' to see its Areas of Concern.</p>';
+}
+function fprGroupsHTML(M, cc) {
+  var chk = function (g) { return g.of ? g.n + ' of ' + g.of + ' checked' : ''; };
+  if (M.type === 'sc') return fprDrillList(cc ? M.groups2 : M.groups, 70, M.crit.aoc, cc ? 'an area' : 'a service package', chk);
+  return fprDrillList(M.groups, M.crit.dept, M.crit.aoc, 'a department', function (g) { return chk(g) + (g.lead ? ' · lead ' + g.lead : '') + (g.due ? ' · ' + g.due + ' day' + (g.due === 1 ? '' : 's') + ' to check' : ''); });
 }
 function fprBarsHTML(aoc, mark) {
   var ks = Object.keys(FP_AOC).filter(function (a) { return aoc[a]; }); if (!ks.length) return '<p class="fp-dim">No checkpoints in this department yet.</p>';
@@ -145,10 +154,10 @@ function fprBarsHTML(aoc, mark) {
       + '<span class="fpr-bv ' + fprCls(x.now, mark) + '">' + (x.now == null ? '—' : x.now) + '</span><span class="fpr-col"><span class="fpr-mark" style="bottom:' + mark + '%"></span><span class="fpr-ghost" style="height:' + b + '%"></span><span class="fpr-fill ' + fprCls(x.now, mark) + '" style="height:' + v + '%"></span></span><b>' + a + '</b><small>' + scEsc(FP_AOC[a]) + '</small></div>'; }).join('') + '</div>';
 }
 function fprStdPh(p) { _fpr.stdPh = p; fprRerender(); }
-function fprTab(t) { _fpr.tab = t; fprRerender(); }
+function fprTab(t) { _fpr.tab = t; _fpr.dept = null; fprRerender(); }
 function fprDept(id) { _fpr.dept = _fpr.dept === id ? null : id; fprRerender(); }
 function fprSpo() { _fpr.spo = !_fpr.spo; fprRerender(); }
-function fprRerender() { if (_fp.M) { var el = document.getElementById('fp-ready'); if (el) el.innerHTML = fpReadyHTML(_fp.M); } }
+function fprRerender() { if (_fp.M) { var el = document.getElementById(_fpr.host || 'fp-ready'); if (el) el.innerHTML = fpReadyHTML(_fp.M); } }
 function fpReadyHTML(M) {
   var tab = function (k, l) { return '<button type="button" role="tab" aria-selected="' + (_fpr.tab === k) + '" class="' + (_fpr.tab === k ? 'on' : '') + '" onclick="fprTab(\'' + k + '\')">' + l + '</button>'; };
   return '<div class="fp-card">' + fprPhaseHTML(M) + '</div>'
@@ -158,8 +167,8 @@ function fpReadyHTML(M) {
     + fprTrendSVG(M) + '<div class="fpr-legend"><span><i class="ln"></i> readiness (whole checklist)</span><span><i class="col"></i> % of the checklist checked</span>' + (_fpr.spo ? '<span><i style="background:#2E8B57"></i> Structure</span><span><i style="background:#D4912A"></i> Process</span><span><i style="background:#3B6FD4"></i> Outcome</span>' : '') + '<span><i class="mk"></i> NQAS ' + M.crit.overall + '%</span></div></div></div>'
     + '<div class="fp-col">' + fprSpoHTML(M) + '</div></div>'
     + fprAttnHTML(M)
-    + '<div class="fp-card"><div class="fp-tabs" role="tablist" aria-label="Readiness detail">' + tab('std', 'Standards heat-map') + tab('aoc', 'Areas of Concern') + tab('grp', M.groupLabel) + '</div>'
-    + (_fpr.tab === 'aoc' ? fprAocHTML(M) : _fpr.tab === 'grp' ? fprGroupsHTML(M) : fprStdHTML(M)) + '</div>';
+    + '<div class="fp-card"><div class="fp-tabs" role="tablist" aria-label="Readiness detail">' + tab('std', 'Standards heat-map') + tab('aoc', 'Areas of Concern') + tab('grp', M.groupLabel) + (M.groups2 && M.groups2.length ? tab('cc', 'Cross-cutting areas') : '') + '</div>'
+    + (_fpr.tab === 'aoc' ? fprAocHTML(M) : _fpr.tab === 'grp' ? fprGroupsHTML(M) : _fpr.tab === 'cc' ? fprGroupsHTML(M, true) : fprStdHTML(M)) + '</div>';
 }
 // Structure / Process / Outcome readiness on one set of scores (department types; whole checklist, not yet checked = 0)
 function fprSpoAt(rows, L, deps) {
@@ -169,11 +178,32 @@ function fprSpoAt(rows, L, deps) {
   return { S: p(a.Structure), P: p(a.Process), O: p(a.Outcome) };
 }
 function fprAttnHTML(M) { return M.attn && M.attn.length ? '<div class="fp-card"><b>Needs attention here</b><ul class="fp-ul">' + M.attn.slice(0, 6).map(function (x) { return '<li>' + scEsc(x) + '</li>'; }).join('') + '</ul></div>' : ''; }
-function fpDeptReadyWrap(D) {
+function fpDeptReadyWrap(D, host) {
   var M = fpDeptModel(D), att = [];
   D.depts.forEach(function (d) { if (d.due) att.push(d.name + ': ' + d.due + ' day' + (d.due === 1 ? '' : 's') + ' to check' + (d.lead ? ' (' + d.lead + ', lead)' : '')); });
   var od = D.acts.filter(function (a) { return a.st === 'od'; }); if (od.length) att.push(od.length + ' action' + (od.length === 1 ? '' : 's') + ' overdue — ' + od.slice(0, 2).map(function (a) { return a.cp; }).join('; '));
   if (D.noAct) att.push(D.noAct + ' gap' + (D.noAct === 1 ? '' : 's') + ' checked as unmet with no action yet');
-  M.attn = att; _fp.M = M;
-  return '<div id="fp-ready">' + fpReadyHTML(M) + '</div>';
+  M.attn = att; _fp.M = M; _fpr.host = host || 'fp-ready';
+  return '<div id="' + _fpr.host + '"' + (host ? ' class="fpr-phone"' : '') + '>' + fpReadyHTML(M) + '</div>';
 }
+
+// ── the same Readiness design in the Facility dashboard (Sub-Centre CHO · UPHC / PHC / CHC in-charge) — HealSol 21 Oct ──
+(function () {
+  if (typeof scInsRender === 'function') {
+    var oR = scInsRender;
+    scInsRender = function (hostId) { var r = oR.apply(this, arguments);
+      try { var st = _scIns[hostId]; if (hostId === 'sc-cho-progress' && st && st.tab === 'readiness' && typeof faOn === 'function' && faOn()) {
+        var host = document.getElementById(hostId), tabs = host && host.querySelector('.scx-tabs');
+        if (host) { if (tabs) { while (tabs.nextSibling) host.removeChild(tabs.nextSibling); } else host.innerHTML = '';
+          _fp.M = fpScModel(st.code, { fac: Object.assign({}, st.fac || {}, { staff: st.staff || (st.fac || {}).staff || {} }), progress: st.progress || {}, acts: (typeof _scRvActs !== 'undefined' && _scRvActs[st.code]) || null });
+          _fpr.host = 'fa-fpr'; var d = document.createElement('div'); d.id = 'fa-fpr'; d.className = 'fpr-phone'; d.innerHTML = fpReadyHTML(_fp.M); host.appendChild(d); } } } catch (e) { console.warn('[FPR] dashboard', e); }
+      return r; };
+  }
+  if (typeof nxFaReadyHTML === 'function') {
+    var oD = nxFaReadyHTML;
+    nxFaReadyHTML = function () {
+      try { var D = { code: _nd.code, fac: _nd.fac, cfg: _nd.cfg, type: nfTypeOf(_nd.fac), certs: {}, ctx: _nd }; fpDeptCompute(D);
+        return fpDeptReadyWrap(D, 'fa-fpr'); }
+      catch (e) { console.warn('[FPR] dept dashboard', e); return oD.apply(this, arguments); } };
+  }
+})();

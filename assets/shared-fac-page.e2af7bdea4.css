@@ -170,3 +170,19 @@ body.nf-viewas{overflow:hidden;}
 body.nf-viewas #sc-cho-app.vis{position:fixed;inset:0;z-index:10000;overflow-y:auto;}
 .fpr-chev.up{transform:rotate(180deg);}
 .fpr-legend i.hg{background:#CFE8DA;} .fpr-legend i.r{background:#F2C6BC;} .fpr-legend i.a{background:#F6E2B8;}
+/* the Readiness design inside a narrow box (Facility dashboard on a phone / in the app frame) */
+#fp-ready,.fpr-phone{container-type:inline-size;}
+.fpr-phone{font-family:'Poppins',sans-serif;display:flex;flex-direction:column;gap:12px;padding-bottom:8px;}
+.fpr-phone .fpr-kpis,.fpr-phone .fpr-verdict{margin:0;}
+@container (max-width:720px){
+  .fpr-ph{grid-template-columns:repeat(2,1fr);}
+  .fpr-kpis{grid-template-columns:repeat(2,1fr);}
+  .fpr-row{grid-template-columns:1fr 64px 18px;} .fpr-row .fpr-tr{grid-column:1 / -1;grid-row:2;}
+  .fp-card > .fpr-row{grid-template-columns:1fr 64px;}
+  .fpr-hr{grid-template-columns:1fr;}
+  .fpr-bars{grid-template-columns:repeat(4,1fr);row-gap:14px;}
+  .fpr-col{height:96px;}
+  .fp-col{flex-basis:100%;}
+  .fp-tabs{gap:14px;}
+}
+@container (max-width:720px){ .fp-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;} .fp-tabs button{white-space:nowrap;flex:0 0 auto;} }

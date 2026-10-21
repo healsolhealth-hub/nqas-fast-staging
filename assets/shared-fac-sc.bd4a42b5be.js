@@ -11,7 +11,7 @@ function fpScRender() {
   try {
     if (_fp.tab === 'act') host.innerHTML = fpScActHTML(code);
     else if (_fp.tab === 'staff') host.innerHTML = fpScStaffHTML(code);
-    else { _fp.M = fpScModel(code); host.innerHTML = '<div id="fp-ready">' + fpReadyHTML(_fp.M) + '</div>'; }
+    else { _fp.M = fpScModel(code); _fpr.host = 'fp-ready'; host.innerHTML = '<div id="fp-ready">' + fpReadyHTML(_fp.M) + '</div>'; }
   } catch (e) { console.warn('[FP] sc render', e); host.innerHTML = '<div class="fp-card"><p class="fp-dim">Could not show this tab.</p></div>'; }
 }
 async function fpScLoadExtras(code) {
