@@ -239,19 +239,22 @@ function nfShowTempPassword(name,identifier,pw,title){
     var name=g('sc-enroll-name'), state=g('sc-enroll-state'), district=g('sc-enroll-district'), choName=g('sc-enroll-choname'), choMob=g('sc-enroll-chomob').replace(/\D/g,''), progId=(document.getElementById('sc-enroll-prog')||{}).value||'';
     if(!name){ showToast('Enter the facility name.','err'); return; }
     if(!state||!district){ showToast('Choose the state and district — the Facility ID is made from them.','err'); return; }
-    if(!/^\d{10}$/.test(choMob)){ showToast('Enter the CHO\'s 10-digit mobile number.','err'); return; }
+    var ftype0=(document.getElementById('sc-enroll-type')||{}).value||'sc', inLab=(NF_LEVELS[ftype0]||NF_LEVELS.sc).inChargeLabel;
+    if(!/^\d{10}$/.test(choMob)){ showToast('Enter the '+inLab+'\'s 10-digit mobile number.','err'); return; }
     var access=(document.querySelector('input[name="enroll-access"]:checked')||{}).value||'contract';
     var btn=document.querySelector('[onclick="scEnrollFacility()"]'), old=btn?btn.innerHTML:'';
     if(btn){ btn.disabled=true; btn.innerHTML='Enrolling…'; }
     try{
       var ftype=(document.getElementById('sc-enroll-type')||{}).value||'sc';
       var off=typeof nfEnrollDeptsOff==='function'?nfEnrollDeptsOff():[];
-      var r=await nfCall('enrollFacility',{type:ftype,name:name,state:state,district:district,progId:progId,choName:choName||'CHO',choMobile:choMob,access:access,nin:g('sc-enroll-nin')});
+      var kind=ftype==='chc'?((document.querySelector('input[name="nf-chc-kind"]:checked')||{}).value||'fru'):'';
+      var r=await nfCall('enrollFacility',{type:ftype,name:name,state:state,district:district,progId:progId,choName:choName||inLab,choMobile:choMob,access:access,nin:g('sc-enroll-nin'),chcKind:kind||undefined});
       if(off.length){ var up={}; off.forEach(function(d){ up[d]={off:true}; }); try{ await db.ref(scFacilityPath(r.code)+'/depts').update(up); }catch(e){ showToast('Enrolled — switch off '+off.join(', ')+' in its Set-up.','err'); } }
       ['sc-enroll-name','sc-enroll-district','sc-enroll-choname','sc-enroll-chomob','sc-enroll-nin'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
       var full=document.getElementById('enroll-access-full'); if(full){ full.checked=true; try{ enrollAccessToggle(); }catch(e){} }
-      if(r.tempPassword) nfShowTempPassword(choName||'CHO',r.identifier,r.tempPassword,name+' enrolled as '+r.code+' — CHO login');
-      else await scAlert(name+' is enrolled as '+r.code+'. The CHO ('+r.identifier+') already has a login — they use their existing password.','Facility enrolled','✅');
+      try{ var dsel=document.getElementById('sc-enroll-district'); if(dsel) dsel.value=''; nfEnrollTypeChanged(document.getElementById('sc-enroll-type')); }catch(e){}
+      if(r.tempPassword) nfShowTempPassword(choName||inLab,r.identifier,r.tempPassword,name+' enrolled as '+r.code+' — '+inLab+' login');
+      else await scAlert(name+' is enrolled as '+r.code+'. The '+inLab+' ('+r.identifier+') already has a login — they use their existing password.','Facility enrolled','✅');
       showToast('Enrolled: '+r.code,'ok');
     }catch(e){ showToast(nfErrText(e),'err'); }
     finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } }
@@ -260,10 +263,11 @@ function nfShowTempPassword(name,identifier,pw,title){
   // State list and district suggestions on the enrol form (same list as self-registration)
   window.nfEnrollPrepare=function(){
     var st=document.getElementById('sc-enroll-state'); if(!st||typeof NF_STATE_LIST==='undefined') return;
-    var dl=document.getElementById('nf-enroll-districts'); if(!dl){ dl=document.createElement('datalist'); dl.id='nf-enroll-districts'; document.body.appendChild(dl); }
-    var fill=function(){ var c=(NF_STATE_LIST.find(function(x){ return x[0]===st.value; })||[])[1]; dl.innerHTML=(NF_DISTRICTS[c]||[]).map(function(n){ return '<option value="'+n+'">'; }).join(''); };
+    var fill=function(){ var d=document.getElementById('sc-enroll-district'); if(!d) return; var c=(NF_STATE_LIST.find(function(x){ return x[0]===st.value; })||[])[1];
+      if(d.tagName==='SELECT') d.innerHTML='<option value="">Choose a district…</option>'+(NF_DISTRICTS[c]||[]).map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join(''); };
     if(!st.options.length){ st.innerHTML=NF_STATE_LIST.map(function(x){ return '<option value="'+x[0]+'"'+(x[1]==='UP'?' selected':'')+'>'+x[0]+'</option>'; }).join(''); fill();
-      st.onchange=function(){ fill(); var d=document.getElementById('sc-enroll-district'); if(d) d.value=''; }; }
+      st.onchange=fill; }
+    var ty=document.getElementById('sc-enroll-type'); if(ty&&!ty.__nfInit){ ty.__nfInit=true; try{ nfEnrollTypeChanged(ty); }catch(e){} }
   };
   (function(){ var oA=nfAdminApply; nfAdminApply=function(){ try{ nfEnrollPrepare(); }catch(e){} return oA.apply(this,arguments); }; })();
   scAdminSetAccessKey=async function(){

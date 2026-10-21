@@ -17,7 +17,9 @@ var ND_GRAD_RES = { ready: { t: 'NQAS Ready', c: 'g', ic: 'ti-award' }, almost: 
 var ND_CERT_ST = [['ready', 'Ready (not applied yet)'], ['applied', 'Applied'], ['state', 'State assessment done'], ['national', 'National assessment done'], ['certified', 'Certified'], ['notcertified', 'Not certified']];
 var _ndCrit = null;
 async function ndGradLoad() {
-  try { var c = await fbGet('shared/sc_grad_config'); if (c && c.grace != null && !isNaN(+c.grace)) ND_GRAD.grace = +c.grace; } catch (e) {}
+  // timeline settings of this facility type (shared/sc_grad_config/byType/{type}, falling back to the Sub-Centre values)
+  try { var c = await fbGet('shared/sc_grad_config'); if (c) { var t = (c.byType || {})[_nd.cfg.id] || {}, pick = function (k, d) { return t[k] != null && !isNaN(+t[k]) ? +t[k] : c[k] != null && !isNaN(+c[k]) ? +c[k] : d; };
+    ND_GRAD.grace = pick('grace', 7); } } catch (e) {}
   try { _ndCrit = await fbGet('shared/dept_criteria'); } catch (e) { _ndCrit = null; }
 }
 function ndCrit() {

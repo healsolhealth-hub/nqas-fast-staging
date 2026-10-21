@@ -475,6 +475,7 @@ function ndMeHTML() {
     + (nxMyDeptIds().length ? mi('ti-layout-grid', 'Department dashboard', "ndTab('dept')") : '')
     + (!ndFaCan(me) && nxIsChecker(me) ? mi('ti-list-check', 'Cards to compare', 'nxOpenFirstCheck()', nCheck || '') : '')
     + (!ndFaCan(me) && nxLeads(me).length ? mi('ti-checklist', 'Decide &amp; assign', 'ndLeadOpen()', nLead || '') : '')
+    + (typeof scOpenLiveSessions === 'function' ? mi('ti-broadcast', 'Live sessions', 'scOpenLiveSessions()') : '')
     + mi('ti-refresh', 'Refresh data', 'ndReload()') + mi('ti-help-circle', 'How to use the app', 'nxHelp()')
     + mi('ti-key', 'Change password', 'nfChangeMyPassword()') + mi('ti-logout', 'Log out', 'ndLogout()', '', 'red') + '</div>';
   return h + '</div>';

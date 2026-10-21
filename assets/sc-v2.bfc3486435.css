@@ -197,3 +197,4 @@ textarea.scx-in{resize:vertical;min-height:70px;}
 .scx-vfac-hd{font-weight:800;font-size:13px;color:var(--t1);padding:4px 2px;}
 .scx-vfac-hd span{font-weight:700;font-size:10.5px;color:var(--t3);margin-left:4px;}
 #scx-adm-vq-badge{top:-7px;right:-7px;}
+.scx-chk.scx-off{display:none!important;}

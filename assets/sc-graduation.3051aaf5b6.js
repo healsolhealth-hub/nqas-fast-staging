@@ -15,7 +15,7 @@ var NF_GRAD_RES={ready:{en:'NQAS Ready',hi:'NQAS तैयार',ic:'🎓',c:'g
 var NF_NHSRC_ST=[['ready','NQAS Ready (not applied yet)'],['applied','Applied'],['state','State assessment done'],['national','National assessment done'],['certified','Certified'],['notcertified','Not certified']];
 Object.assign(HINDI_UI,{'Readiness week':'तैयारी सप्ताह','Programme complete':'कार्यक्रम पूरा','On track':'समय पर','Slipping':'पिछड़ रहे','Behind':'बहुत पीछे',
   'on time':'समय पर','late':'देर से','missing':'बाकी','Population served':'सेवित जनसंख्या','Catch-up':'कैच-अप'});
-async function nfgCfgLoad(){ try{ var c=await fbGet('shared/sc_grad_config'); if(c) Object.keys(NF_GRAD).forEach(function(k){ if(c[k]!=null&&!isNaN(+c[k])) NF_GRAD[k]=+c[k]; }); }catch(e){}
+async function nfgCfgLoad(){ try{ var c=await fbGet('shared/sc_grad_config'); _nfgRaw=c||{}; if(c) Object.keys(NF_GRAD).forEach(function(k){ if(c[k]!=null&&!isNaN(+c[k])) NF_GRAD[k]=+c[k]; }); }catch(e){}
   if(typeof NF_BL!=='undefined') NF_BL.autoEnd=NF_GRAD.days+NF_GRAD.grace; return NF_GRAD; }
 (function(){ var oL=scCpmLoad, at=0; scCpmLoad=async function(){ var r=await oL.apply(this,arguments); if(Date.now()-at>300000){ at=Date.now(); await nfgCfgLoad(); } return r; }; })();
 // ── dates ──
@@ -262,15 +262,45 @@ async function nfgRerun(code){
     nfgPutFac(code,{graduation:r.graduation,phase:'complete'}); showToast('Graduation saved: '+NF_GRAD_RES[r.graduation.result].en+'.','ok'); nfgRefresh(code); }
   catch(e){ showToast(e.message||'Could not run graduation.','err'); }
 }
+// Timeline settings per facility type (HealSol 21 Oct): Sub-Centre at the top level of shared/sc_grad_config (as before, so the
+// live SC app reads the same keys); UPHC / PHC / CHC under shared/sc_grad_config/byType/{type}, each key falling back to the SC value.
+var NFG_KEYS=['grace','catchDays','maxCatch','green','amber','missDays','blLate','certYears'];
+var _nfgRaw=null;
+function nfgCfgFor(t,raw){ raw=raw||_nfgRaw||{}; var o={}; NFG_KEYS.forEach(function(k){ o[k]=raw[k]!=null&&!isNaN(+raw[k])?+raw[k]:NF_GRAD[k]; });
+  var b=(raw.byType||{})[t]; if(t&&t!=='sc'&&b) NFG_KEYS.forEach(function(k){ if(b[k]!=null&&!isNaN(+b[k])) o[k]=+b[k]; });
+  if(t&&t!=='sc'){ o.catchDays=28; o.maxCatch=1; }   // department core: one catch-up of 3 weeks on the gaps + 1 week end-line again (fixed)
+  return o; }
 async function nfgSettings(){
   if(appMode!=='sc-admin') return;
-  var F=[['grace','Grace days after Day 60 (close date)'],['catchDays','Catch-up length (days)'],['maxCatch','Catch-ups allowed per facility'],['green','On track: cards on time at least (%)'],
-    ['amber','Slipping from (%) — below this is Behind'],['missDays','On track only if no card is missing for more than (days)'],['blLate','Behind if baseline not finished by Day'],['certYears','NHSRC certificate valid (years)']];
-  var v=await scDialog({title:'Programme timeline settings',icon:'⏱',wide:true,okLabel:'Save settings',message:'Used for the close date, catch-up and the Timeline compliance card on every dashboard.',
-    fields:F.map(function(x){ return {key:x[0],label:x[1],type:'number',required:true,value:NF_GRAD[x[0]]}; }),
-    validate:function(v){ return F.some(function(x){ return !(+v[x[0]]>=0&&+v[x[0]]<=1000); })?'Use numbers between 0 and 1000.':(+v.amber>+v.green?'Slipping must start below On track.':null); }});
-  if(!v) return; var rec={}; F.forEach(function(x){ rec[x[0]]=+v[x[0]]; }); rec.updatedAt=scNowIso();
-  var ok=await fbSet('shared/sc_grad_config',rec); if(ok){ Object.assign(NF_GRAD,rec); NF_BL.autoEnd=NF_GRAD.days+NF_GRAD.grace; } showToast(ok?'Settings saved.':'Could not save.',ok?'ok':'err');
+  try{ _nfgRaw=await fbGet('shared/sc_grad_config')||{}; }catch(e){ _nfgRaw=_nfgRaw||{}; }
+  var types=Object.keys(NF_LEVELS), cur=(typeof _hs!=='undefined'&&_hs&&_hs.type&&NF_LEVELS[_hs.type])?_hs.type:'sc', buf={};
+  types.forEach(function(t){ buf[t]=nfgCfgFor(t); });
+  var lab=function(t){ var d=t==='sc'?60:(NF_LEVELS[t].days||60); return [['grace','Grace days after Day '+d+' (close date)'],['catchDays','Catch-up length (days)'],['maxCatch','Catch-ups allowed per facility'],['green','On track: cards on time at least (%)'],
+    ['amber','Slipping from (%) — below this is Behind'],['missDays','On track only if no card is missing for more than (days)'],['blLate','Behind if baseline not finished by Day'],['certYears','NHSRC certificate valid (years)']]; };
+  var F=lab('sc');
+  var v=await scDialog({title:'Programme timeline settings',icon:'⏱',wide:true,okLabel:'Save settings',message:'Each facility type has its own timeline. Used for the close date, catch-up and the Timeline compliance card on every dashboard.',
+    fields:F.map(function(x){ return {key:x[0],label:x[1],type:'number',required:true,value:buf[cur][x[0]]}; }),
+    onRender:function(I){
+      var first=I.grace.el.closest('.scx-field'), bar=document.createElement('div'); bar.className='hs-tabs nfg-ttabs'; bar.setAttribute('role','tablist');
+      var read=function(){ NFG_KEYS.forEach(function(k){ buf[cur][k]=+I[k].el.value; }); };
+      var show=function(){ var L=lab(cur); NFG_KEYS.forEach(function(k,i){ I[k].el.value=buf[cur][k]; var l=I[k].el.parentNode.querySelector('.scx-lbl'); if(l) l.textContent=L[i][1]+' *'; });
+        I.catchDays.el.disabled=I.maxCatch.el.disabled=cur!=='sc'; var h=I.catchDays.el.parentNode.querySelector('.nfg-h'); if(!h){ h=document.createElement('div'); h.className='scx-hint nfg-h'; I.catchDays.el.parentNode.appendChild(h); }
+        h.textContent=cur==='sc'?'':'Fixed for '+NF_LEVELS[cur].plural+': one catch-up — 3 weeks on the weakest departments, then 1 week of end-line again.';
+        bar.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.getAttribute('data-t')===cur); }); };
+      types.forEach(function(t){ var b=document.createElement('button'); b.type='button'; b.className='hs-tab'; b.setAttribute('data-t',t); b.textContent=NF_LEVELS[t].plural; b.onclick=function(){ read(); cur=t; show(); }; bar.appendChild(b); });
+      first.parentNode.insertBefore(bar,first); show();
+      // keep the visible tab's numbers in the buffer for validate / save
+      NFG_KEYS.forEach(function(k){ I[k].el.addEventListener('input',function(){ buf[cur][k]=+I[k].el.value; }); });
+    },
+    validate:function(){ for(var i=0;i<types.length;i++){ var t=types[i], x=buf[t];
+      if(NFG_KEYS.some(function(k){ return !(x[k]>=0&&x[k]<=1000); })) return NF_LEVELS[t].plural+': use numbers between 0 and 1000.';
+      if(x.amber>x.green) return NF_LEVELS[t].plural+': Slipping must start below On track.'; } return null; }});
+  if(!v) return;
+  var up={updatedAt:scNowIso()}; NFG_KEYS.forEach(function(k){ up[k]=buf.sc[k]; });
+  types.forEach(function(t){ if(t==='sc') return; var o={}; NFG_KEYS.forEach(function(k){ if(k!=='catchDays'&&k!=='maxCatch') o[k]=buf[t][k]; }); up['byType/'+t]=o; });
+  var ok=false; try{ await db.ref('shared/sc_grad_config').update(up); ok=true; }catch(e){}
+  if(ok){ NFG_KEYS.forEach(function(k){ NF_GRAD[k]=buf.sc[k]; }); _nfgRaw=Object.assign({},_nfgRaw,{byType:Object.assign({},(_nfgRaw||{}).byType)}); types.forEach(function(t){ if(t!=='sc') _nfgRaw.byType[t]=up['byType/'+t]; }); NF_BL.autoEnd=NF_GRAD.days+NF_GRAD.grace; }
+  showToast(ok?'Timeline settings saved for every facility type.':'Could not save.',ok?'ok':'err');
 }
 // ── the Programme block (facility views: Supervisor / HealSol / District / MOIC drill-in, CHO facility dashboard, Champion facility view) ──
 function nfgStOf(code){ var L=Object.keys(_scIns||{}).map(function(h){ return _scIns[h]; }).filter(function(s){ return s&&s.code===code; }); return L[0]||null; }

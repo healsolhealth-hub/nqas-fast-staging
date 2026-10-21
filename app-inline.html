@@ -279,27 +279,45 @@ function nfLvlApply(root){
 // HealSol enrolment: one option per facility type (types not ready yet are marked "testing")
 function nfFillTypeSelect(sel){
   if(!sel||sel.options.length) return;
-  Object.keys(NF_LEVELS).forEach(function(k){ var L=NF_LEVELS[k], o=document.createElement('option'); o.value=k; o.textContent=L.name+(L.ready?'':' (testing — app not ready yet)'); sel.appendChild(o); });
+  Object.keys(NF_LEVELS).forEach(function(k){ var L=NF_LEVELS[k], o=document.createElement('option'); o.value=k; o.textContent=L.name; sel.appendChild(o); });
 }
+// CHC (FRU) / CHC (Non-FRU) — HealSol 21 Oct. A Non-FRU CHC usually has no Maternity OT, Operation Theatre or Blood
+// Storage Unit; picking the kind pre-ticks the departments (they can still be changed). Saved as sc_facilities/{code}/chcKind.
+var NF_CHC_KINDS={fru:{label:'CHC (FRU)',off:[]},nonfru:{label:'CHC (Non-FRU)',off:['MOT','OT','BSU']}};
+function nfChcKindLabel(fac){ var k=fac&&fac.chcKind; return (NF_CHC_KINDS[k]||{}).label||''; }
+// example facility names and ID codes on the enrolment form
+var NF_ENROLL_EG={sc:['e.g. Rampur Sub-Centre','UP-JHS-SC-0001'],uphc:['e.g. Aliganj UPHC','UP-LKO-UPHC-0001'],phc:['e.g. Bakshi Ka Talab PHC','UP-LKO-PHC-0001'],chc:['e.g. Malihabad CHC','UP-LKO-CHC-0001']};
 // the Programme list follows the facility type: SC keeps its own options (12A / 12B), other types list NF_LEVELS[type].programmes
 function nfEnrollTypeChanged(sel){
   var p=document.getElementById('sc-enroll-prog'); if(!p||!sel) return;
   if(p.__nfSc==null) p.__nfSc=p.innerHTML;
-  var L=NF_LEVELS[sel.value]||NF_LEVELS.sc;
+  var L=NF_LEVELS[sel.value]||NF_LEVELS.sc, t=L.id;
   if(sel.value==='sc'||!L.programmes){ p.innerHTML=p.__nfSc; }
   else p.innerHTML=L.programmes.map(function(x){ return '<option value="'+x.id+'">'+x.label+'</option>'; }).join('');
-  p.parentNode.style.display='';
+  p.parentNode.style.display=''; p.onchange=function(){ try{ nfEnrollPriceLine(); }catch(e){} };
+  // wording: the in-charge of this type, example name and Facility ID
+  var set=function(id,prop,v){ var el=document.getElementById(id); if(el) el[prop]=v; };
+  var lab=L.inChargeLabel, eg=NF_ENROLL_EG[t]||NF_ENROLL_EG.sc;
+  set('sc-enroll-choname-lbl','textContent',lab+' name'); set('sc-enroll-choname','placeholder',lab+' name');
+  set('sc-enroll-chomob-lbl','textContent',lab+' mobile *'); set('sc-enroll-chomob','placeholder','10-digit mobile ('+lab+' login)');
+  set('sc-enroll-name','placeholder',eg[0]); set('sc-enroll-idex','textContent',eg[1]); set('sc-enroll-incharge','textContent',lab);
   // department-core types: tick the departments this facility has (the optional ones; the others are always there)
   var box=document.getElementById('sc-enroll-depts');
   if(!box){ var grid=p.closest('.sc-enroll-grid'); if(grid){ box=document.createElement('div'); box.id='sc-enroll-depts'; box.style.cssText='margin:-2px 0 12px;'; grid.parentNode.insertBefore(box,grid.nextSibling); } }
   if(!box) return;
   var ds=(L.core==='dept'&&L.departments)||[];
-  if(!ds.some(function(d){ return d.optional; })){ box.innerHTML=''; box.style.display='none'; return; }
+  if(!ds.some(function(d){ return d.optional; })){ box.innerHTML=''; box.style.display='none'; try{ nfEnrollPriceLine(); }catch(e){} return; }
   box.style.display='';
-  box.innerHTML='<div class="lc-label" style="margin-bottom:6px;">Departments at this '+L.name+' <span style="font-weight:600;color:var(--t3);">— untick the ones it does not have (can be switched on later)</span></div>'
+  var kind=t==='chc'?((document.querySelector('input[name="nf-chc-kind"]:checked')||{}).value||'fru'):'', off=kind?NF_CHC_KINDS[kind].off:[];
+  var kindRow=t==='chc'?'<div class="lc-label" style="margin-bottom:6px;">CHC kind</div><div style="display:flex;gap:8px;margin-bottom:10px;">'+Object.keys(NF_CHC_KINDS).map(function(k){
+      return '<label style="flex:1;display:flex;align-items:center;gap:7px;padding:9px 12px;border:1.5px solid '+(k===kind?'var(--teal);background:var(--teal-lt)':'var(--br)')+';border-radius:10px;cursor:pointer;font-size:12px;font-weight:700;"><input type="radio" name="nf-chc-kind" value="'+k+'"'+(k===kind?' checked':'')+' onchange="nfEnrollTypeChanged(document.getElementById(\'sc-enroll-type\'))"> '+NF_CHC_KINDS[k].label
+        +' <span style="color:var(--t3);font-weight:600;">'+(k==='fru'?'(First Referral Unit — C-section, blood storage)':'(no Maternity OT, OT or Blood Storage)')+'</span></label>'; }).join('')+'</div>':'';
+  box.innerHTML=kindRow+'<div class="lc-label" style="margin-bottom:6px;">Departments at this '+L.name+' <span style="font-weight:600;color:var(--t3);">— untick the ones it does not have (can be switched on later)</span></div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:6px;">'+ds.map(function(d){ return d.optional
-      ?'<label style="display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--br);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" data-nf-dept="'+d.id+'" checked> '+d.name+'</label>'
-      :'<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bgs);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--t2);" title="Every '+L.name+' has this department">✓ '+d.name+'</span>'; }).join('')+'</div>';
+      ?'<label style="display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--br);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" data-nf-dept="'+d.id+'"'+(off.indexOf(d.id)<0?' checked':'')+' onchange="try{nfEnrollPriceLine()}catch(e){}"> '+d.name+'</label>'
+      :'<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bgs);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--t2);" title="Every '+L.name+' has this department">✓ '+d.name+'</span>'; }).join('')+'</div>'
+    +'<div id="nf-enroll-price" style="margin-top:8px;font-size:12px;font-weight:700;color:var(--teal-dk);"></div>';
+  try{ nfEnrollPriceLine(); }catch(e){}
 }
 // the departments unticked on the enrolment form (saved as switched off once the facility is created)
 function nfEnrollDeptsOff(){ return [].map.call(document.querySelectorAll('#sc-enroll-depts input[data-nf-dept]'),function(c){ return c.checked?null:c.getAttribute('data-nf-dept'); }).filter(Boolean); }
@@ -1480,6 +1498,7 @@ textarea.scx-in{resize:vertical;min-height:70px;}
 .scx-vfac-hd{font-weight:800;font-size:13px;color:var(--t1);padding:4px 2px;}
 .scx-vfac-hd span{font-weight:700;font-size:10.5px;color:var(--t3);margin-left:4px;}
 #scx-adm-vq-badge{top:-7px;right:-7px;}
+.scx-chk.scx-off{display:none!important;}
 </style>
 
 <style id="nf-boot-css">
@@ -1918,20 +1937,20 @@ textarea.scx-in{resize:vertical;min-height:70px;}
       <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-building-plus" style="color:var(--teal);font-size:15px;"></i> Enroll New Facility</div>
       <div class="sc-enroll-grid">
         <div><label class="lc-label">Facility type</label><select class="fc-add-input" id="sc-enroll-type" style="width:100%;" onchange="nfEnrollTypeChanged(this)"></select></div>
-        <div><label class="lc-label">Facility Name *</label><input class="fc-add-input" id="sc-enroll-name" data-nf-lvl-ph placeholder="Rampur Sub-Centre" style="width:100%;"/></div>
+        <div><label class="lc-label">Facility Name *</label><input class="fc-add-input" id="sc-enroll-name" placeholder="e.g. Rampur Sub-Centre" style="width:100%;"/></div>
         <div><label class="lc-label">State *</label><select class="fc-add-input" id="sc-enroll-state" style="width:100%;"></select></div>
-        <div><label class="lc-label">District *</label><input class="fc-add-input" id="sc-enroll-district" list="nf-enroll-districts" placeholder="Start typing…" autocomplete="off" style="width:100%;"/></div>
+        <div><label class="lc-label">District *</label><select class="fc-add-input" id="sc-enroll-district" style="width:100%;"><option value="">Choose a district…</option></select></div>
         <div><label class="lc-label">Programme</label>
           <select class="fc-add-input" id="sc-enroll-prog" style="width:100%;">
             <option value="nqas_12A">12A — 12 Services (60 days)</option>
             <option value="nqas_12B">12B — 12 Services + Delivery (60 days)</option>
           </select>
         </div>
-        <div><label class="lc-label">CHO Name</label><input class="fc-add-input" id="sc-enroll-choname" placeholder="CHO Name" style="width:100%;"/></div>
-        <div><label class="lc-label">CHO Mobile *</label><input class="fc-add-input" id="sc-enroll-chomob" type="tel" maxlength="10" inputmode="numeric" placeholder="10-digit mobile (CHO login)" style="width:100%;"/></div>
+        <div><label class="lc-label" id="sc-enroll-choname-lbl">CHO Name</label><input class="fc-add-input" id="sc-enroll-choname" placeholder="CHO name" style="width:100%;"/></div>
+        <div><label class="lc-label" id="sc-enroll-chomob-lbl">CHO Mobile *</label><input class="fc-add-input" id="sc-enroll-chomob" type="tel" maxlength="10" inputmode="numeric" placeholder="10-digit mobile (CHO login)" style="width:100%;"/></div>
         <div><label class="lc-label">Govt. facility ID (NIN / HFR)</label><input class="fc-add-input" id="sc-enroll-nin" placeholder="Optional" maxlength="40" style="width:100%;"/></div>
       </div>
-      <div id="sc-enroll-idnote" style="font-size:11.5px;color:var(--t3);background:var(--bgs);border:1px dashed var(--br);border-radius:10px;padding:8px 11px;margin:-2px 0 12px;"><i class="ti ti-id" style="color:var(--teal);"></i> The Facility ID is created on save from the state and district — for example <b>UP-JHS-SC-0001</b> (running number per district, shared with self-registration). The CHO's login and a temporary password are shown once after enrolling.</div>
+      <div id="sc-enroll-idnote" style="font-size:11.5px;color:var(--t3);background:var(--bgs);border:1px dashed var(--br);border-radius:10px;padding:8px 11px;margin:-2px 0 12px;"><i class="ti ti-id" style="color:var(--teal);"></i> The Facility ID is created on save from the state and district — for example <b id="sc-enroll-idex">UP-JHS-SC-0001</b> (running number per district, shared with self-registration). The <span id="sc-enroll-incharge">CHO</span>'s login and a temporary password are shown once after enrolling.</div>
       <div style="margin-bottom:14px;">
         <label style="font-size:10px;font-weight:800;color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase;">Access Level</label>
         <div style="display:flex;gap:8px;">
@@ -5153,10 +5172,15 @@ async function phcCloseLead(id){
 // ── Pricing config (4 packages, not departments) ────────────────
 var _phcPricingCache=null;
 function _phcAllPriceableItems(){
-  var L=Object.keys(_SC_PKG_LABELS).map(function(id){return {id:id,label:'Sub-Centre · '+_SC_PKG_LABELS[id]};});
-  // 21 Oct: UPHC / PHC / CHC packages and a catch-up price per package (prices decided later; blank = not sold yet)
-  try{ ['uphc','phc','chc'].forEach(function(t){ var LV=NF_LEVELS[t]||{}; (LV.programmes||[]).forEach(function(p){ L.push({id:p.id,label:(LV.short||t.toUpperCase())+' · '+String(p.label).replace(/^[^—]*—\s*/,'')}); }); }); }catch(e){}
-  return L.concat(L.map(function(it){ return {id:'catchup_'+it.id,label:'Catch-up · '+it.label}; }));
+  // each item: {id, label, type (sc|uphc|phc|chc), grp (package | base | addon | catchup)}
+  var L=Object.keys(_SC_PKG_LABELS).map(function(id){return {id:id,label:'Sub-Centre · '+_SC_PKG_LABELS[id],type:'sc',grp:'package'};});
+  // 21 Oct: UPHC / PHC packages; CHC priced as a base (FRU / Non-FRU) plus an add-on per optional department (prices decided later; blank = not sold yet)
+  try{ ['uphc','phc'].forEach(function(t){ var LV=NF_LEVELS[t]||{}; (LV.programmes||[]).forEach(function(p){ L.push({id:p.id,label:(LV.short||t.toUpperCase())+' · '+String(p.label).replace(/^[^—]*—\s*/,''),type:t,grp:'package'}); }); });
+    var C=NF_LEVELS.chc||{}, core=(C.departments||[]).filter(function(d){ return !d.optional; }).map(function(d){ return d.name; }).join(', ');
+    L.push({id:'nqas_chc_fru',label:'CHC (FRU) · base price',hint:'Covers '+core,type:'chc',grp:'base'});
+    L.push({id:'nqas_chc_nonfru',label:'CHC (Non-FRU) · base price',hint:'Covers '+core,type:'chc',grp:'base'});
+    (C.departments||[]).filter(function(d){ return d.optional; }).forEach(function(d){ L.push({id:'chc_dept_'+d.id,label:'CHC add-on · '+d.name,type:'chc',grp:'addon'}); }); }catch(e){}
+  return L.concat(L.filter(function(it){ return it.grp!=='addon'; }).map(function(it){ return {id:'catchup_'+it.id,label:'Catch-up · '+it.label.replace(/ · base price$/,''),type:it.type,grp:'catchup'}; }));
 }
 function _phcPriceLabel(id){ var it=_phcAllPriceableItems().find(function(x){ return x.id===id; }); return it?it.label:(_SC_PKG_LABELS[id]||''); }
 async function phcLoadPricing(force){
@@ -5170,18 +5194,44 @@ async function phcLoadPricing(force){
   _phcPricingCache={items:base};
   return _phcPricingCache;
 }
+var _phcPriceTab='sc';
 async function adminRenderPricingPanel(){
   var cont=document.getElementById('pricing-list');if(!cont)return;
   var cfg=await phcLoadPricing(true);
   while(cont.firstChild)cont.removeChild(cont.firstChild);
+  // one tab per facility type (HealSol 21 Oct); every input stays in the page so Save keeps all prices
+  var tabs=document.createElement('div');tabs.className='hs-tabs pr-tabs';tabs.setAttribute('role','tablist');
+  ['sc','uphc','phc','chc'].forEach(function(t){ var b=document.createElement('button');b.type='button';b.className='hs-tab'+(t===_phcPriceTab?' on':'');b.textContent=(NF_LEVELS[t]||{}).plural||t;b.setAttribute('data-t',t);
+    b.onclick=function(){ _phcPriceTab=t; tabs.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on',x.getAttribute('data-t')===t); }); cont.querySelectorAll('[data-pt]').forEach(function(r){ r.style.display=r.getAttribute('data-pt')===t?'':'none'; }); };
+    tabs.appendChild(b); });
+  cont.appendChild(tabs);
+  var GRP={package:'Packages',base:'Base price (core departments)',addon:'Add-on price per optional department — added for each department the CHC has',catchup:'Catch-up'}, last='';
   cfg.items.forEach(function(it){
-    var row=document.createElement('div');row.className='pricing-row';
+    var t=it.type||'sc', key=t+'|'+it.grp;
+    if(key!==last){ last=key; var h=document.createElement('div');h.className='pr-grp';h.setAttribute('data-pt',t);h.textContent=GRP[it.grp]||'';cont.appendChild(h); }
+    var row=document.createElement('div');row.className='pricing-row';row.setAttribute('data-pt',t);
     var lbl=document.createElement('div');lbl.style.cssText='flex:1;font-size:12px;font-weight:700;color:var(--t1);';lbl.textContent=it.label;
+    if(it.hint){ var sm=document.createElement('small');sm.style.cssText='display:block;font-weight:600;color:var(--t3);font-size:10.5px;';sm.textContent=it.hint;lbl.appendChild(sm); }
     var rupee=document.createElement('span');rupee.style.cssText='font-size:12px;color:var(--t3);';rupee.textContent='₹';
     var inp=document.createElement('input');inp.type='number';inp.min='0';inp.placeholder='Not set';
     inp.value=(it.price!==null&&it.price!==undefined)?it.price:'';inp.dataset.itemId=it.id;
     row.appendChild(lbl);row.appendChild(rupee);row.appendChild(inp);cont.appendChild(row);
   });
+  var note=document.createElement('div');note.className='pr-grp';note.setAttribute('data-pt','chc');note.style.cssText='font-weight:600;text-transform:none;letter-spacing:0;';
+  note.textContent='A CHC pays its base price (FRU or Non-FRU, chosen at enrolment) plus the add-on of each optional department it has. The enrolment form shows the total.';
+  cont.appendChild(note);
+  cont.querySelectorAll('[data-pt]').forEach(function(r){ r.style.display=r.getAttribute('data-pt')===_phcPriceTab?'':'none'; });
+}
+// price of a facility being enrolled: package price, or for a CHC its base (FRU / Non-FRU) + the ticked optional departments
+async function nfEnrollPriceLine(){
+  var el=document.getElementById('nf-enroll-price'), ty=(document.getElementById('sc-enroll-type')||{}).value||'sc'; if(!el) return;
+  if(ty!=='chc'){ el.textContent=''; return; }
+  var cfg=await phcLoadPricing(), P={}; cfg.items.forEach(function(it){ P[it.id]=it.price; });
+  var kind=(document.querySelector('input[name="nf-chc-kind"]:checked')||{}).value||'fru', base=P['nqas_chc_'+kind], on=[].filter.call(document.querySelectorAll('#sc-enroll-depts input[data-nf-dept]'),function(c){ return c.checked; }).map(function(c){ return c.getAttribute('data-nf-dept'); });
+  var add=0, unset=[]; on.forEach(function(d){ var v=P['chc_dept_'+d]; if(v==null) unset.push(d); else add+=+v; });
+  var fmt=function(n){ return '₹'+Number(n).toLocaleString('en-IN'); };
+  if(base==null){ el.textContent='Price: not set yet (Settings → Pricing → CHCs).'; return; }
+  el.textContent='Price: '+fmt(base)+' base + '+fmt(add)+' for '+on.length+' department'+(on.length===1?'':'s')+' = '+fmt(+base+add)+(unset.length?' · no price yet for '+unset.join(', '):'');
 }
 async function adminSavePricing(){
   var cont=document.getElementById('pricing-list');if(!cont)return;
@@ -5559,7 +5609,7 @@ function scFmtDateTime(iso){
   try{ return new Date(iso).toLocaleString('en-IN',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}); }
   catch(e){ return iso||'—'; }
 }
-function scPkgShort(id){ return ({nqas_12A:'12A',nqas_12B:'12B'})[id]||id||'—'; }
+function scPkgShort(id){ return ({nqas_12A:'12A',nqas_12B:'12B',nqas_uphcA:'UPHC-A',nqas_uphcB:'UPHC-B',nqas_phc:'PHC',nqas_chc:'CHC'})[id]||id||'—'; }
 function scPkgLabel(id){ return (typeof _SC_PKG_LABELS!=='undefined'&&_SC_PKG_LABELS[id])||id||'—'; }
 function scPctColor(p){ return p>=80?'var(--green)':p>=70?'var(--teal)':p>=50?'var(--amber)':'var(--red)'; }
 function scPctText(p){ return p>=70?'var(--green-dk)':p>=50?'var(--amber-dk)':'var(--red-dk)'; }
@@ -6181,6 +6231,9 @@ function scAsList(v){
   return [String(v)];
 }
 function scLiveAudience(){
+  // department staff (UPHC / PHC / CHC app)
+  if(typeof _nd!=='undefined'&&_nd&&!_nd.view&&typeof ndMob==='function'){ var nst=((_nd.fac||{}).staff||{})[ndMob()]||{};
+    return {pkgs:[_nd.fac.progId||''],role:nst.role||'',codes:[_nd.code],types:[_nd.cfg.id]}; }
   if(appMode==='cho') return {pkgs:[choState.progId],role:choState.roleId,codes:[choState.facilityCode]};
   if(appMode==='sc-cho') return {pkgs:[(scSubAdminData||{}).progId||'nqas_12A'],codes:[scSubAdminCode]};
   if(appMode==='sc-supervisor'){
@@ -6203,6 +6256,9 @@ function scLiveFacilityOptions(){
 function scLiveVisible(s,aud){
   if(!s) return false;
   if(!aud) return true;
+  var ty=scAsList(s.types);
+  if(ty.length){ var at=aud.types||(aud.codes||[]).map(function(c){ return nfTypeOf((scMasterFacilities||{})[c]||((typeof scSubAdminCode!=='undefined'&&c===scSubAdminCode)?scSubAdminData:null)); });
+    if(!at.length) at=['sc']; if(!at.some(function(t){ return ty.indexOf(t)>=0; })) return false; }
   var pk=scAsList(s.packages);
   if(pk.length&&!aud.pkgs.some(function(p){return pk.indexOf(p)>=0;})) return false;
   if(aud.role){ var rl=scAsList(s.roles); if(rl.length&&rl.indexOf(aud.role)<0) return false; }
@@ -6232,8 +6288,9 @@ function scLiveCardHTML(s,canManage){
   var now=Date.now(), st=scLiveStatus(s,now), t=scLiveTimes(s), pf=scLivePlatform(s.link);
   var pk=scAsList(s.packages), rl=scAsList(s.roles);
   var chips='<span class="scx-chip '+pf.key+'">'+scEsc(pf.label)+'</span>';
+  var tys=scAsList(s.types); if(canManage) chips+='<span class="scx-chip pkg">'+scEsc(tys.length?tys.map(function(t){ return (NF_LEVELS[t]||{}).plural||t; }).join(', '):'All types')+'</span>';
   chips+=pk.length?pk.map(function(p){return '<span class="scx-chip pkg">'+scEsc(scPkgShort(p))+'</span>';}).join(''):'<span class="scx-chip pkg">All packages</span>';
-  if(rl.length) chips+=rl.map(function(r){return '<span class="scx-chip role">'+scEsc(r)+'</span>';}).join('');
+  if(rl.length){ var rlab=function(r){ var t=tys[0]||'sc', x=(((NF_LEVELS[t]||{}).roles)||[]).find(function(y){ return y.id===r; }); return x?x.label:r; }; chips+=rl.map(function(r){return '<span class="scx-chip role">'+scEsc(rlab(r))+'</span>';}).join(''); }
   var fcs=scAsList(s.facilities), fnm=function(c){ return ((scMasterFacilities||{})[c]||((_scq&&_scq.facs)||{})[c]||{}).name||c; };
   chips+=fcs.length?'<span class="scx-chip fac" title="'+scEsc(fcs.map(fnm).join(', '))+'"><i class="ti ti-building-hospital"></i> '+(fcs.length<=3?scEsc(fcs.map(fnm).join(', ')):fcs.length+' facilities')+'</span>':(canManage?'<span class="scx-chip fac">All facilities</span>':'');
   var stChip=st==='live'?'<span class="scx-chip livenow">● LIVE</span>':st==='upcoming'?'<span class="scx-chip up">Starts in '+scCountdown(t.start-now)+'</span>':'<span class="scx-chip end">Ended</span>';
@@ -6299,10 +6356,43 @@ function _scLocalDateTime(iso){
   return {date:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),
           time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
 }
+// Live session targets (HealSol 21 Oct): facility type first, then that type's packages, its facilities and its staff roles.
+// Saved as types:[type] (empty = every type); packages / facilities / roles empty = everyone of that type.
+function scLiveTypePkgs(t){
+  if(!t) return [];
+  if(t==='sc') return PROGRAMS.map(function(p){ return {value:p.id,label:scPkgShort(p.id)+' · '+p.name}; });
+  return ((NF_LEVELS[t]||{}).programmes||[]).map(function(p){ return {value:p.id,label:p.label}; });
+}
+function scLiveTypeRoles(t){
+  if(!t) return [];
+  return ((NF_LEVELS[t]||{}).roles||[]).filter(function(r){ return r.id!=='General'; }).map(function(r){ return {value:r.id,label:r.label}; });
+}
+function scLiveTypeOf(s){
+  var ty=scAsList(s&&s.types); if(ty.length) return ty[0];
+  var pk=scAsList(s&&s.packages); if(!pk.length) return '';
+  var hit=''; Object.keys(NF_LEVELS).forEach(function(t){ if(!hit&&scLiveTypePkgs(t).some(function(o){ return pk.indexOf(o.value)>=0; })) hit=t; });
+  return hit;
+}
+// refill a scDialog checklist in place, keeping the ticks that are still offered
+function scChkFill(el,options,selected,emptyText){
+  if(!el) return;
+  var sel=(selected||[]).map(String);
+  el.innerHTML=''; el.style.cssText='';
+  options.forEach(function(o){
+    var lb=document.createElement('label'); lb.className='scx-chk'+(sel.indexOf(String(o.value))>=0?' on':''); if(o.search) lb.setAttribute('data-q',o.search);
+    var cb=document.createElement('input'); cb.type='checkbox'; cb.value=o.value; cb.checked=sel.indexOf(String(o.value))>=0;
+    cb.addEventListener('change',function(){ lb.classList.toggle('on',cb.checked); });
+    lb.appendChild(cb); lb.appendChild(document.createTextNode(o.label)); el.appendChild(lb);
+  });
+  if(!options.length){ el.textContent=emptyText||'Nothing to choose from.'; el.style.cssText='font-size:11px;color:var(--t3);'; }
+}
+function scChkVals(el){ return el?Array.prototype.slice.call(el.querySelectorAll('input:checked')).map(function(c){ return c.value; }):[]; }
 async function scEditLive(id){
   var s=id?_scLive[id]:null;
   var dt=_scLocalDateTime(s?s.startAt:null);
   if(!s) dt.time='16:00';
+  var ty0=scLiveTypeOf(s);
+  var F=scMasterFacilities||{};
   var v=await scDialog({
     title:s?'Edit live session':'Schedule live session', icon:'📡', wide:true, okLabel:s?'Save changes':'Schedule',
     fields:[
@@ -6312,20 +6402,46 @@ async function scEditLive(id){
       {key:'date',label:'Date',type:'date',required:true,value:dt.date},
       {key:'time',label:'Start time',type:'time',required:true,value:dt.time},
       {key:'durationMin',label:'Duration (minutes)',type:'number',required:true,value:s?s.durationMin:60,min:5},
-      {key:'packages',label:'Target packages',type:'checklist',value:s?scAsList(s.packages):[],
-        options:PROGRAMS.map(function(p){return {value:p.id,label:scPkgShort(p.id)+' · '+p.name};}),hint:'Leave all unticked to show to every package.'},
-      {key:'facilities',label:'Target facilities',type:'checklist',value:s?scAsList(s.facilities):[],options:scLiveFacilityOptions(),emptyText:'No facilities enrolled yet.',hint:'Leave all unticked to show to every facility.'},
-      {key:'roles',label:'Target staff roles',type:'checklist',value:s?scAsList(s.roles):[],
-        options:SC_ROLES.filter(function(r){return r.id!=='General';}).map(function(r){return {value:r.id,label:r.label};}),hint:'Leave all unticked to show to every role.'},
+      {key:'type',label:'1 · Facility type',type:'select',value:ty0,
+        options:[{value:'',label:'All facility types (everyone)'}].concat(Object.keys(NF_LEVELS).map(function(k){ return {value:k,label:NF_LEVELS[k].plural}; })),
+        hint:'Choose a type to target its packages, facilities and staff roles.'},
+      {key:'packages',label:'2 · Target packages',type:'checklist',value:[],options:[],hint:'Leave all unticked to show to every package of this type.'},
+      {key:'facilities',label:'3 · Target facilities',type:'checklist',value:[],options:[],hint:'Leave all unticked to show to every facility of this type.'},
+      {key:'roles',label:'4 · Target staff roles',type:'checklist',value:[],options:[],hint:'Leave all unticked to show to every role.'},
       {key:'recordingUrl',label:'Recording URL (optional)',type:'url',value:s?s.recordingUrl:'',placeholder:'YouTube, Wix video, or .mp4 link'}
     ],
+    onRender:function(I){
+      var tySel=I.type.el, pk=I.packages.el, fc=I.facilities.el, rl=I.roles.el;
+      // search box over the facility list
+      var q=document.createElement('input'); q.className='scx-in'; q.placeholder='Search facility or district…'; q.style.marginBottom='6px'; q.autocomplete='off';
+      fc.parentNode.insertBefore(q,fc);
+      var filt=function(){ var t=q.value.trim().toLowerCase(); fc.querySelectorAll('label.scx-chk').forEach(function(lb){ lb.style.display=!t||String(lb.getAttribute('data-q')||'').indexOf(t)>=0?'':'none'; }); };
+      q.addEventListener('input',filt);
+      var first=true;
+      var fill=function(){
+        var t=tySel.value, keepPk=first?scAsList(s&&s.packages):scChkVals(pk), keepFc=first?scAsList(s&&s.facilities):scChkVals(fc), keepRl=first?scAsList(s&&s.roles):scChkVals(rl);
+        first=false;
+        var none='Choose a facility type first.';
+        scChkFill(pk,scLiveTypePkgs(t),keepPk,none);
+        var opts=!t?[]:Object.keys(F).filter(function(c){ return F[c]&&!F[c].migratedTo&&nfTypeOf(F[c])===t; })
+          .sort(function(a,b){ return String(F[a].district||'~').localeCompare(String(F[b].district||'~'))||String(F[a].name||a).localeCompare(String(F[b].name||b)); })
+          .map(function(c){ var f=F[c]; return {value:c,label:(f.district||'No district')+' — '+(f.name||c)+' · '+scPkgShort(f.progId||'nqas_12A'),search:((f.district||'')+' '+(f.name||'')+' '+c).toLowerCase()}; });
+        scChkFill(fc,opts,keepFc,t?'No '+NF_LEVELS[t].plural+' enrolled yet.':none);
+        scChkFill(rl,scLiveTypeRoles(t),keepRl,none);
+        q.style.display=t&&opts.length>6?'':'none'; q.value=''; filt();
+        // ticking a package narrows the facility list to that package
+        pk.querySelectorAll('input').forEach(function(cb){ cb.addEventListener('change',narrow); }); narrow();
+      };
+      var narrow=function(){ var p=scChkVals(pk); fc.querySelectorAll('label.scx-chk').forEach(function(lb){ var c=lb.querySelector('input').value, f=F[c]||{}; var off=p.length&&p.indexOf(f.progId||'nqas_12A')<0; lb.classList.toggle('scx-off',!!off); if(off){ lb.querySelector('input').checked=false; lb.classList.remove('on'); } }); };
+      tySel.addEventListener('change',fill); fill();
+    },
     validate:function(v){
       if(!scIsHttpUrl(v.link)) return 'Enter a valid meeting link starting with https://';
       if(v.recordingUrl&&!scIsHttpUrl(v.recordingUrl)) return 'Recording URL must start with https://';
       if(!(parseInt(v.durationMin,10)>=5)) return 'Duration must be at least 5 minutes.';
       if(v.facilities&&v.facilities.length&&v.packages&&v.packages.length){
-        var miss=v.facilities.filter(function(c){ var f=(scMasterFacilities||{})[c]; return f&&v.packages.indexOf(f.progId||'nqas_12A')<0; });
-        if(miss.length) return 'These facilities are not in the ticked packages, so they would not see the session: '+miss.map(function(c){ return ((scMasterFacilities||{})[c]||{}).name||c; }).join(', ')+'. Tick their package too, or untick the packages.'; }
+        var miss=v.facilities.filter(function(c){ var f=F[c]; return f&&v.packages.indexOf(f.progId||'nqas_12A')<0; });
+        if(miss.length) return 'These facilities are not in the ticked packages, so they would not see the session: '+miss.map(function(c){ return (F[c]||{}).name||c; }).join(', ')+'. Tick their package too, or untick the packages.'; }
       var p=v.date.split('-'), tm=v.time.split(':');
       var d=new Date(+p[0],+p[1]-1,+p[2],+tm[0],+tm[1]); if(isNaN(d.getTime())) return 'Enter a valid date and time.';
       return null;
@@ -6336,7 +6452,7 @@ async function scEditLive(id){
   var start=new Date(+p[0],+p[1]-1,+p[2],+tm[0],+tm[1]);
   var rec=Object.assign({},s||{},{
     title:v.title, description:v.description, link:v.link, startAt:start.toISOString(),
-    durationMin:parseInt(v.durationMin,10)||60, packages:v.packages, roles:v.roles, facilities:v.facilities||[], recordingUrl:v.recordingUrl||'',
+    durationMin:parseInt(v.durationMin,10)||60, types:v.type?[v.type]:[], packages:v.packages||[], roles:v.roles||[], facilities:v.facilities||[], recordingUrl:v.recordingUrl||'',
     updatedAt:scNowIso(), updatedBy:scActor().name
   });
   if(!s){ rec.createdAt=scNowIso(); rec.createdBy=scActor().name; }
@@ -6345,6 +6461,7 @@ async function scEditLive(id){
   var ok=await fbSet('sc_live_sessions/'+newId,scClean(rec));
   if(!ok){ showToast('Could not save session — check connection.','err'); return; }
   _scLive[newId]=rec; scRenderLiveList();
+  try{ if(typeof hsOn==='function'&&hsOn()&&typeof nfRenderOverview==='function') nfRenderOverview(); }catch(e){}
   showToast(s?'Session updated.':'Session scheduled.','ok');
 }
 async function scSetRecording(id){
@@ -9188,7 +9305,7 @@ function scqEnsureAdminPanel(){
     el.style.cssText='background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;';
     el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
       +'<div style="font-size:13px;font-weight:800;color:var(--t1);font-family:\'Poppins\',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-award" style="color:var(--teal);font-size:15px;"></i> Quality Champions</div>'
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="scx-btn sm ghost" onclick="scqOpenRecords()"><i class="ti ti-certificate"></i> Records &amp; hours</button>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
       +'<button class="scx-btn sm" onclick="scqEditChampion(null)"><i class="ti ti-user-plus"></i> Add Champion</button></div></div>'
       +'<div style="font-size:11px;color:var(--t3);margin-bottom:10px;">CHOs from NQAS-accredited Sub-Centres who run video peer reviews for up to '+SCQ_SUGGESTED_MAX+' facilities each, under a Supervisor. They log in with their mobile number from the award button on the login screen.</div>'
       +'<div id="scq-champ-list"></div>';
@@ -9229,10 +9346,35 @@ async function scqEditChampion(id){
       {key:'homeCode',label:'Own facility (if enrolled here)',type:'select',value:c?c.homeCode||'':'',options:homeOpts},
       {key:'homeName',label:'Own facility name',value:c?c.homeName||'':'',placeholder:'e.g. AAM-SC Bharatpur (NQAS accredited)'},
       {key:'accreditationYear',label:'NQAS accreditation year',type:'number',value:c?c.accreditationYear||'':'',placeholder:'e.g. 2025'},
-      {key:'district',label:'District',value:c?c.district||'':'',placeholder:'District'},
+      {key:'state',label:'State',type:'select',value:(c&&c.state)||'Uttar Pradesh',options:[]},
+      {key:'district',label:'District',type:'select',value:c?c.district||'':'',options:[]},
       {key:'supervisorId',label:'Supervisor',type:'select',value:c?c.supervisorId||'':'',options:supOpts},
-      {key:'facilities',label:'Allotted facilities (suggested 3–'+SCQ_SUGGESTED_MAX+')',type:'checklist',value:c?scqFacList(c):[],options:_scFacilityOptions(),emptyText:'No facilities enrolled yet.'}
+      {key:'facilities',label:'Allotted facilities (suggested 3–'+SCQ_SUGGESTED_MAX+')',type:'checklist',value:[],options:[],emptyText:'No facilities enrolled yet.'}
     ],
+    onRender:function(I){
+      // HealSol 21 Oct: state / district dropdowns; the facility list shows the chosen Supervisor's facilities, filtered by type and district, with search
+      var stS=I.state.el, diS=I.district.el, spS=I.supervisorId.el, fc=I.facilities.el, first=true;
+      hsxFillSelect(stS,hsxStates(),(c&&c.state)||'Uttar Pradesh');
+      var fillD=function(keep){ var ds=hsxDistricts(stS.value); if(keep&&ds.indexOf(keep)<0) ds=[keep].concat(ds); hsxFillSelect(diS,ds,keep,'Choose a district…'); };
+      fillD(c?c.district||'':'');
+      var fb=hsxFilterBar(fc,['type','fdist','search']), hint=document.createElement('div'); hint.className='scx-hint'; fc.parentNode.insertBefore(hint,fc.nextSibling);
+      var draw=function(){
+        var keep=first?(c?scqFacList(c):[]):hsxVals(fc); first=false;
+        var sf=spS.value?scSupFacilityList(_scSupervisors[spS.value]||{}):null, all=hsxFacItems().filter(function(it){ return !sf||sf.indexOf(it.value)>=0||keep.indexOf(it.value)>=0; });
+        var tv=fb.type.value, dv=fb.fdist.value, types={}, dists={};
+        all.forEach(function(it){ types[it.type]=1; if(it.district) dists[it.district]=1; });
+        hsxFillSelect(fb.type,Object.keys(types).map(function(t){ return {value:t,label:hsxTypeName(t)}; }),tv,'All facility types');
+        hsxFillSelect(fb.fdist,Object.keys(dists).sort(),dv,'All districts');
+        var items=all.filter(function(it){ return (!fb.type.value||it.type===fb.type.value)&&(!fb.fdist.value||it.district===fb.fdist.value)||keep.indexOf(it.value)>=0; });
+        hsxPicker(fc,items,keep,'district',spS.value?'This Supervisor has no facility of this kind yet.':'No facilities enrolled yet.');
+        hsxPickerSearch(fc,fb.search.value);
+        hint.textContent=spS.value?'Showing the '+all.length+' facilit'+(all.length===1?'y':'ies')+' this Supervisor looks after.':'Choose the Supervisor first — only their facilities can be allotted.';
+      };
+      stS.addEventListener('change',function(){ fillD(''); });
+      [spS,fb.type,fb.fdist].forEach(function(x){ x.addEventListener('change',draw); });
+      fb.search.addEventListener('input',function(){ hsxPickerSearch(fc,fb.search.value); });
+      draw();
+    },
     validate:function(v){
       if(!c){ var k=scqKey(v.mobile); if(!/^\d{10}$/.test(k)) return 'Enter a valid 10-digit mobile number.'; if(_scq.champions[k]) return 'A Champion with this mobile already exists.'; }
       if(v.password&&v.password.length<4) return 'Password must be at least 4 characters.';
@@ -9253,7 +9395,7 @@ async function scqEditChampion(id){
   var fmap={}; v.facilities.forEach(function(f){ fmap[f]=true; });
   var rec=Object.assign({},c||{createdAt:scNowIso(),createdBy:'HealSol Admin',disabled:false,mobile:key},{
     name:v.name.trim(),homeCode:v.homeCode||'',homeName:(v.homeName||'').trim()||(v.homeCode?scqFacName(v.homeCode):''),
-    accreditationYear:v.accreditationYear?parseInt(v.accreditationYear,10):null,district:(v.district||'').trim(),
+    accreditationYear:v.accreditationYear?parseInt(v.accreditationYear,10):null,state:v.state||'',district:(v.district||'').trim(),
     supervisorId:v.supervisorId,facilities:fmap,updatedAt:scNowIso()});
   if(v.password) rec.password=v.password;
   if(!await fbSet('sc_champions/'+key,scClean(rec))){ showToast('Could not save — check connection.','err'); return; }
@@ -9444,14 +9586,14 @@ async function scqEditSession(id,code){
     {key:'note',label:'Note for the facility (optional)',type:'textarea',value:s?s.note||'':'',placeholder:'e.g. Please keep the ANC register and MCP cards ready'});
   var v=await scDialog({title:s?'Edit peer review session':(k==='champion'?'Propose a peer review session':'Schedule a peer review session'),icon:'📅',wide:true,
     okLabel:s?'Save changes':(k==='champion'?'Send for approval':'Schedule'),
-    message:k==='champion'&&!s?'Your Supervisor approves the session before it appears in the facility\'s app.':null,
+    message:k==='champion'&&!s?'Your Supervisor approves the session before it appears in the facility\'s app.':k==='healsol'&&!s?'The facility\'s Supervisor approves the session before it appears in the facility\'s app.':null,
     fields:fields,
     validate:function(v){
       var st=new Date(v.date+'T'+v.time); if(isNaN(st.getTime())) return 'Enter a valid date and time.';
       if(!s&&st.getTime()<Date.now()) return 'Choose a time in the future.';
       var dur=parseInt(v.durationMin,10); if(!(dur>=15&&dur<=240)) return 'Duration must be between 15 and 240 minutes.';
       if(!scIsHttpUrl(v.link)) return 'Enter the full meeting link (starting with https://).';
-      var f=_scq.facs[v.pair.split('|')[0]]||(scMasterFacilities||{})[v.pair.split('|')[0]]||{}, days=getProg(f.progId||'nqas_12A').days;
+      var f=_scq.facs[v.pair.split('|')[0]]||(scMasterFacilities||{})[v.pair.split('|')[0]]||{}, days=nfTypeOf(f)!=='sc'?(NF_LEVELS[nfTypeOf(f)].days||60):(getProg(f.progId||'nqas_12A')||{days:60}).days;
       var a=parseInt(v.dayFrom,10), b=parseInt(v.dayTo,10);
       if(!(a>=1&&b>=a&&b<=days)) return 'Day range must be within Days 1–'+days+' (from ≤ to).';
       return null;
@@ -9467,13 +9609,13 @@ async function scqEditSession(id,code){
   delete rec.id;
   if(!s){
     Object.assign(rec,{createdAt:now,createdBy:a.name,createdByRole:k==='champion'?'Quality Champion':(k==='healsol'?'HealSol Admin':'Supervisor')});
-    if(k==='champion') rec.status='proposed';
-    else Object.assign(rec,{status:'scheduled',scheduleApprovedBy:k==='healsol'?'HealSol Admin':a.name,scheduleApprovedAt:now});
+    if(k==='champion'||k==='healsol') rec.status='proposed';   // HealSol's sessions also go to the Supervisor to approve (21 Oct)
+    else Object.assign(rec,{status:'scheduled',scheduleApprovedBy:a.name,scheduleApprovedAt:now});
   }
   var sid=s?s.id:scUid('rs');
   if(!await fbSet('sc_review_sessions/'+sid,scClean(rec))){ showToast('Could not save — check connection.','err'); return; }
   _scq.sessions[sid]=rec;
-  showToast(s?'Session updated.':(k==='champion'?'Sent to your Supervisor for approval.':'Session scheduled.'),'ok');
+  showToast(s?'Session updated.':(k==='champion'?'Sent to your Supervisor for approval.':k==='healsol'?'Scheduled — sent to the facility\'s Supervisor to approve.':'Session scheduled.'),'ok');
   scqAfterChange();
 }
 async function scqApproveSchedule(id){
@@ -12161,7 +12303,7 @@ function scDistEnsurePanel(){
     el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
       +'<div style="font-size:13px;font-weight:800;color:var(--t1);font-family:\'Poppins\',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-map-2" style="color:var(--teal);font-size:15px;"></i> District Admins</div>'
       +'<button class="scx-btn sm" style="flex:0 0 auto;" onclick="scEditDistrict(null)"><i class="ti ti-user-plus"></i> Add District Admin</button></div>'
-      +'<div style="font-size:11px;color:var(--t3);margin-bottom:10px;">View-only access to readiness dashboards and reports for the facilities you allot (from one or several districts). They log in from the map button on the login screen.</div>'
+      +'<div style="font-size:11px;color:var(--t3);margin-bottom:10px;">View-only access to readiness dashboards and reports for the facilities of one district — ticked one by one, or all of them including ones enrolled later. They log in from the map button on the login screen.</div>'
       +'<div id="scd-dist-list"></div>';
     var host=sup.parentNode; host.parentNode.insertBefore(el,host.nextSibling);
   }
@@ -12176,7 +12318,7 @@ function scRenderDistrictAdmin(){
     var d=_scDistricts[id]||{}, facs=scDistFacilities(d), I=scJs(id), dn=scDistNames(facs);
     return '<div class="scx-sup-row"'+(d.disabled?' style="opacity:0.6;"':'')+'><div class="scx-av">'+scEsc(String(d.name||id).charAt(0).toUpperCase())+'</div>'
       +'<div style="flex:1;min-width:180px;"><div style="font-size:12px;font-weight:800;color:var(--t1);">'+scEsc(d.name||id)+(d.disabled?' <span class="scx-chip end">Disabled</span>':'')+'</div>'
-      +'<div style="font-size:10px;color:var(--t3);font-weight:700;">ID: '+scEsc(id)+' · '+facs.length+' facilit'+(facs.length===1?'y':'ies')+(dn.length?' · '+scEsc(dn.join(', ')):'')+'</div></div>'
+      +'<div style="font-size:10px;color:var(--t3);font-weight:700;">ID: '+scEsc(id)+' · '+facs.length+' facilit'+(facs.length===1?'y':'ies')+(dn.length?' · '+scEsc(dn.join(', ')):(d.district?' · '+scEsc(d.district):''))+(d.auto?' · <span class="scx-chip pkg">All of '+scEsc(d.district||'the district')+', incl. new</span>':'')+'</div></div>'
       +'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="scEditDistrict(\''+I+'\')"><i class="ti ti-pencil"></i> Edit</button>'
       +'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="scToggleDistrict(\''+I+'\')">'+(d.disabled?'Enable':'Disable')+'</button>'
       +'<button class="scx-btn sm danger" style="flex:0 0 auto;" onclick="scRemoveDistrict(\''+I+'\')"><i class="ti ti-trash"></i></button></div>';
@@ -12190,25 +12332,58 @@ function scDistFacilityOptions(){
 async function scEditDistrict(id){
   if(appMode!=='sc-admin'){ showToast('Only HealSol Admin can manage District Admins.','err'); return; }
   var d=id?(_scDistricts[id]||{}):null;
+  // a District Admin is made for one state and district (HealSol 21 Oct); facilities of that district are listed by type.
+  // "Including ones enrolled later": the server adds every new facility of the district (enrollFacility / self-registration).
+  var st0=(d&&d.state)||'', di0=(d&&d.district)||'';
+  if(d&&!st0){ var fs=scDistFacilities(d).map(function(c){ return (scMasterFacilities||{})[c]; }).filter(Boolean); if(fs.length){ st0=fs[0].state||''; di0=fs[0].district||''; } }
+  if(!st0) st0='Uttar Pradesh';
   var v=await scDialog({title:d?'Edit District Admin':'Add District Admin',icon:'🗺️',wide:true,okLabel:d?'Save':'Create District Admin',
     message:d?null:'District Admins can only view readiness and download reports for the facilities you tick. They cannot verify, assign actions or change anything.',
     fields:[
       d?{key:'_id',label:'District Admin ID',type:'info',value:id}:{key:'id',label:'District Admin ID (used to log in)',required:true,placeholder:'e.g. dpm-jaipur'},
       {key:'name',label:'Full name and designation',required:true,value:d?d.name:'',placeholder:'e.g. Dr. R. Meena, DPM Jaipur'},
       {key:'password',label:d?'New password (leave blank to keep)':'Password',type:'text',required:!d,minLength:d?0:4,placeholder:d?'••••':'min 4 characters'},
-      {key:'facilities',label:'Facilities (grouped by district)',type:'checklist',value:d?scDistFacilities(d):[],options:scDistFacilityOptions(),emptyText:'No facilities enrolled yet.'}
+      {key:'state',label:'State',type:'select',required:true,value:st0,options:[]},
+      {key:'district',label:'District',type:'select',required:true,value:di0,options:[]},
+      {key:'auto',label:'',type:'checklist',value:d&&d.auto?['auto']:[],options:[{value:'auto',label:'All facilities in this district, including ones enrolled later'}]},
+      {key:'facilities',label:'Facilities in this district (grouped by type)',type:'checklist',value:[],options:[]}
     ],
+    onRender:function(I){
+      var stS=I.state.el, diS=I.district.el, au=I.auto.el, fc=I.facilities.el, first=true;
+      hsxFillSelect(stS,hsxStates(),st0);
+      var fillD=function(keep){ hsxFillSelect(diS,hsxDistricts(stS.value),keep,'Choose a district…'); };
+      fillD(di0);
+      var autoOn=function(){ return !!au.querySelector('input:checked'); };
+      var draw=function(){
+        var keep=first?(d?scDistFacilities(d):[]):hsxVals(fc); first=false;
+        var items=diS.value?hsxDistItems(stS.value,diS.value):[];
+        // facilities already allotted elsewhere stay visible so they are not dropped by mistake
+        var have={}; items.forEach(function(it){ have[it.value]=1; });
+        hsxFacItems().forEach(function(it){ if(!have[it.value]&&keep.indexOf(it.value)>=0){ it.label+=' · '+(it.district||'no district'); it.type=it.type; items.push(it); } });
+        if(autoOn()) keep=items.filter(function(it){ return hsxDistItems(stS.value,diS.value).some(function(x){ return x.value===it.value; }); }).map(function(it){ return it.value; }).concat(keep);
+        hsxPicker(fc,items,keep,'type',diS.value?'No facility of '+diS.value+' is enrolled yet.'+(autoOn()?' New ones will be added automatically.':''):'Choose the state and district first.');
+        if(autoOn()) fc.querySelectorAll('input').forEach(function(c){ var it=items.find(function(x){ return x.value===c.value; }); if(it&&String(it.district).toLowerCase()===String(diS.value).toLowerCase()){ c.checked=true; c.disabled=true; c.parentNode.classList.add('on'); } });
+      };
+      stS.addEventListener('change',function(){ fillD(''); draw(); });
+      diS.addEventListener('change',draw);
+      au.querySelectorAll('input').forEach(function(c){ c.addEventListener('change',draw); });
+      draw();
+    },
     validate:function(v){
       if(!d){ var k=scSupKey(v.id); if(!k) return 'Enter a valid ID (letters, numbers, - and _).'; if(_scDistricts[k]) return 'That District Admin ID already exists.'; }
       if(v.password&&v.password.length<4) return 'Password must be at least 4 characters.';
-      if(!v.facilities.length) return 'Allot at least one facility.';
+      if(!v.state||!v.district) return 'Choose the state and district.';
+      if(!v.facilities.length&&!(v.auto||[]).length) return 'Tick at least one facility, or choose "All facilities in this district".';
       return null;
     }});
   if(!v) return;
   var key=d?id:scSupKey(v.id), fmap={}; v.facilities.forEach(function(c){ fmap[c]=true; });
-  var rec=Object.assign({},d||{createdAt:scNowIso(),createdBy:'HealSol Admin',disabled:false},{name:v.name.trim(),facilities:fmap,updatedAt:scNowIso()});
+  var auto=(v.auto||[]).length>0;
+  if(auto) hsxDistItems(v.state,v.district).forEach(function(it){ fmap[it.value]=true; });
+  var rec=Object.assign({},d||{createdAt:scNowIso(),createdBy:'HealSol Admin',disabled:false},{name:v.name.trim(),state:v.state,district:v.district,auto:auto||null,facilities:fmap,updatedAt:scNowIso()});
   if(v.password) rec.password=v.password;
   if(!await fbSet('sc_district_admins/'+key,scClean(rec))){ showToast('Could not save — check connection.','err'); return; }
+  if(!auto) delete rec.auto;
   _scDistricts[key]=rec; scRenderDistrictAdmin();
   showToast(d?'District Admin updated.':'District Admin "'+key+'" created.','ok');
 }
@@ -15941,19 +16116,22 @@ function nfShowTempPassword(name,identifier,pw,title){
     var name=g('sc-enroll-name'), state=g('sc-enroll-state'), district=g('sc-enroll-district'), choName=g('sc-enroll-choname'), choMob=g('sc-enroll-chomob').replace(/\D/g,''), progId=(document.getElementById('sc-enroll-prog')||{}).value||'';
     if(!name){ showToast('Enter the facility name.','err'); return; }
     if(!state||!district){ showToast('Choose the state and district — the Facility ID is made from them.','err'); return; }
-    if(!/^\d{10}$/.test(choMob)){ showToast('Enter the CHO\'s 10-digit mobile number.','err'); return; }
+    var ftype0=(document.getElementById('sc-enroll-type')||{}).value||'sc', inLab=(NF_LEVELS[ftype0]||NF_LEVELS.sc).inChargeLabel;
+    if(!/^\d{10}$/.test(choMob)){ showToast('Enter the '+inLab+'\'s 10-digit mobile number.','err'); return; }
     var access=(document.querySelector('input[name="enroll-access"]:checked')||{}).value||'contract';
     var btn=document.querySelector('[onclick="scEnrollFacility()"]'), old=btn?btn.innerHTML:'';
     if(btn){ btn.disabled=true; btn.innerHTML='Enrolling…'; }
     try{
       var ftype=(document.getElementById('sc-enroll-type')||{}).value||'sc';
       var off=typeof nfEnrollDeptsOff==='function'?nfEnrollDeptsOff():[];
-      var r=await nfCall('enrollFacility',{type:ftype,name:name,state:state,district:district,progId:progId,choName:choName||'CHO',choMobile:choMob,access:access,nin:g('sc-enroll-nin')});
+      var kind=ftype==='chc'?((document.querySelector('input[name="nf-chc-kind"]:checked')||{}).value||'fru'):'';
+      var r=await nfCall('enrollFacility',{type:ftype,name:name,state:state,district:district,progId:progId,choName:choName||inLab,choMobile:choMob,access:access,nin:g('sc-enroll-nin'),chcKind:kind||undefined});
       if(off.length){ var up={}; off.forEach(function(d){ up[d]={off:true}; }); try{ await db.ref(scFacilityPath(r.code)+'/depts').update(up); }catch(e){ showToast('Enrolled — switch off '+off.join(', ')+' in its Set-up.','err'); } }
       ['sc-enroll-name','sc-enroll-district','sc-enroll-choname','sc-enroll-chomob','sc-enroll-nin'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
       var full=document.getElementById('enroll-access-full'); if(full){ full.checked=true; try{ enrollAccessToggle(); }catch(e){} }
-      if(r.tempPassword) nfShowTempPassword(choName||'CHO',r.identifier,r.tempPassword,name+' enrolled as '+r.code+' — CHO login');
-      else await scAlert(name+' is enrolled as '+r.code+'. The CHO ('+r.identifier+') already has a login — they use their existing password.','Facility enrolled','✅');
+      try{ var dsel=document.getElementById('sc-enroll-district'); if(dsel) dsel.value=''; nfEnrollTypeChanged(document.getElementById('sc-enroll-type')); }catch(e){}
+      if(r.tempPassword) nfShowTempPassword(choName||inLab,r.identifier,r.tempPassword,name+' enrolled as '+r.code+' — '+inLab+' login');
+      else await scAlert(name+' is enrolled as '+r.code+'. The '+inLab+' ('+r.identifier+') already has a login — they use their existing password.','Facility enrolled','✅');
       showToast('Enrolled: '+r.code,'ok');
     }catch(e){ showToast(nfErrText(e),'err'); }
     finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } }
@@ -15962,10 +16140,11 @@ function nfShowTempPassword(name,identifier,pw,title){
   // State list and district suggestions on the enrol form (same list as self-registration)
   window.nfEnrollPrepare=function(){
     var st=document.getElementById('sc-enroll-state'); if(!st||typeof NF_STATE_LIST==='undefined') return;
-    var dl=document.getElementById('nf-enroll-districts'); if(!dl){ dl=document.createElement('datalist'); dl.id='nf-enroll-districts'; document.body.appendChild(dl); }
-    var fill=function(){ var c=(NF_STATE_LIST.find(function(x){ return x[0]===st.value; })||[])[1]; dl.innerHTML=(NF_DISTRICTS[c]||[]).map(function(n){ return '<option value="'+n+'">'; }).join(''); };
+    var fill=function(){ var d=document.getElementById('sc-enroll-district'); if(!d) return; var c=(NF_STATE_LIST.find(function(x){ return x[0]===st.value; })||[])[1];
+      if(d.tagName==='SELECT') d.innerHTML='<option value="">Choose a district…</option>'+(NF_DISTRICTS[c]||[]).map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join(''); };
     if(!st.options.length){ st.innerHTML=NF_STATE_LIST.map(function(x){ return '<option value="'+x[0]+'"'+(x[1]==='UP'?' selected':'')+'>'+x[0]+'</option>'; }).join(''); fill();
-      st.onchange=function(){ fill(); var d=document.getElementById('sc-enroll-district'); if(d) d.value=''; }; }
+      st.onchange=fill; }
+    var ty=document.getElementById('sc-enroll-type'); if(ty&&!ty.__nfInit){ ty.__nfInit=true; try{ nfEnrollTypeChanged(ty); }catch(e){} }
   };
   (function(){ var oA=nfAdminApply; nfAdminApply=function(){ try{ nfEnrollPrepare(); }catch(e){} return oA.apply(this,arguments); }; })();
   scAdminSetAccessKey=async function(){
@@ -16480,6 +16659,11 @@ var NF_PDF_FONT_SIGN='AAEAAAARAQAABAAQR0RFRgabB6EAAMXIAAAAmkdQT1OG1G63AADGZAAADO
 .nf-certset input{border:1.5px solid var(--br,#E2E8F0);border-radius:10px;padding:9px 10px;font:inherit;font-size:13px;}
 .nf-certset button{border:0;border-radius:10px;background:var(--teal,#0F5C52);color:#fff;font:inherit;font-size:13px;font-weight:700;padding:10px 16px;cursor:pointer;}
 .nfc-chip{display:inline-block;margin-left:5px;font-size:8px;font-weight:800;border-radius:8px;padding:1px 6px;background:#FEF3C7;color:#92400E;vertical-align:middle;}
+.nf-cs-grid{display:grid;grid-template-columns:110px 1fr 1fr 1.1fr;gap:8px 10px;align-items:center;margin-bottom:10px;}
+.nf-cs-grid>b{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--t3,#64748B);}
+.nf-cs-grid .nf-cs-t{font-size:13px;font-weight:700;} .nf-cs-grid small{font-size:11px;color:var(--t3,#64748B);}
+.nf-cs-how{margin-top:10px;font-size:12px;} .nf-cs-how summary{cursor:pointer;font-weight:700;color:var(--teal,#0F5C52);} .nf-cs-how p{margin:6px 0 0;}
+@media(max-width:720px){.nf-cs-grid{grid-template-columns:1fr 1fr;}.nf-cs-grid>b{display:none;}.nf-cs-grid .nf-cs-t{grid-column:1/-1;margin-top:6px;}.nf-cs-grid small{grid-column:1/-1;}}
 </style>
 <script id="nf-cert">
 // ══════════════════════════════════════════════════════════════
@@ -16680,19 +16864,30 @@ async function nfVerifyBoot(){
   return true;
 }
 // ── HealSol Setup: who signs for HealSol Academy ──
+// one HealSol signatory per facility type (HealSol 21 Oct): Sub-Centre = coordName / coordTitle (as before), others under byType/{type};
+// a type left blank uses the Sub-Centre name. The other signatories are taken from the records when the certificate is issued.
 async function nfEnsureCertSetup(){
   if(appMode!=='sc-admin') return; var main=document.querySelector('#admin-app .admin-main'); if(!main||document.getElementById('nf-certset')) return;
   var c=document.createElement('div'); c.id='nf-certset'; c.className='nf-certset'; c.dataset.nfv='setup';
-  c.innerHTML='<h3><i class="ti ti-certificate"></i> Certificate signatory</h3><p>Signs every new certificate for HealSol Academy. Sub-Centres: next to the facility\'s Mentor (Supervisor) and Quality Champion. UPHC · PHC · CHC: next to the facility in-charge (MO In-charge / UPHC Coordinator) and the Quality Mentor. Until a name is saved, certificates show “Programme Coordinator”. Certificates already issued keep the names they were signed with.</p>'
-    +'<div class="row"><label>Name<input id="nf-cs-name" placeholder="e.g. Meera Kapoor" maxlength="60"></label><label>Title<input id="nf-cs-title" placeholder="Programme Coordinator" maxlength="60"></label><button type="button" onclick="nfSaveCertSetup(this)">Save</button></div>';
+  var T=Object.keys(NF_LEVELS);
+  c.innerHTML='<h3><i class="ti ti-certificate"></i> Certificate signatory</h3><p>HealSol Academy signs every new certificate. Set one name for each facility type (left blank: the Sub-Centre name is used). Certificates already issued keep the names they were signed with.</p>'
+    +'<div class="nf-cs-grid"><b>Facility type</b><b>Name</b><b>Title</b><b>Signs next to (taken automatically)</b>'
+    +T.map(function(t){ var L=NF_LEVELS[t]; return '<span class="nf-cs-t">'+scEsc(L.plural)+'</span><input id="nf-cs-name-'+t+'" placeholder="'+(t==='sc'?'e.g. Meera Kapoor':'Same as Sub-Centres')+'" maxlength="60"><input id="nf-cs-title-'+t+'" placeholder="Programme Coordinator" maxlength="60">'
+      +'<small>'+(t==='sc'?'Mentor (Supervisor) · Quality Champion':scEsc(L.inChargeLabel)+' · Quality Mentor')+'</small>'; }).join('')+'</div>'
+    +'<div class="row" style="justify-content:flex-end"><button type="button" onclick="nfSaveCertSetup(this)">Save</button></div>'
+    +'<details class="nf-cs-how"><summary>How the other signatures come on the certificate</summary><p>They are automatic. When a certificate is issued the app takes each name from the records: the Mentor / Quality Mentor from the Supervisor who looks after the facility, the Quality Champion from the Champion allotted to it, and for UPHC · PHC · CHC the in-charge from the facility\'s staff list (never the person receiving the certificate). Each name is printed in a signature-style font with “Digitally signed · date”, and the QR code on the certificate proves it is genuine. Nobody uploads a signature image; if a person is missing (for example no Supervisor yet), that box is left out.</p></details>';
   main.appendChild(c);
-  var cfg=await fbGet('shared/sc_cert_config')||{}; var n=document.getElementById('nf-cs-name'), t=document.getElementById('nf-cs-title'); if(n) n.value=cfg.coordName||''; if(t) t.value=cfg.coordTitle||'';
+  var cfg=await fbGet('shared/sc_cert_config')||{}, set=function(id,v){ var el=document.getElementById(id); if(el) el.value=v||''; };
+  set('nf-cs-name-sc',cfg.coordName); set('nf-cs-title-sc',cfg.coordTitle);
+  T.forEach(function(t){ if(t==='sc') return; var b=(cfg.byType||{})[t]||{}; set('nf-cs-name-'+t,b.name); set('nf-cs-title-'+t,b.title); });
 }
 async function nfSaveCertSetup(btn){
-  var n=(document.getElementById('nf-cs-name').value||'').trim(), t=(document.getElementById('nf-cs-title').value||'').trim();
-  if(!n){ showToast('Enter the name that signs the certificates.','err'); return; }
-  btn.disabled=true; var ok=await fbSet('shared/sc_cert_config',{coordName:n,coordTitle:t||'Programme Coordinator',updatedAt:scNowIso()}); btn.disabled=false;
-  showToast(ok?'Saved — new certificates will be signed by '+n+'.':'Could not save — check the connection.',ok?'ok':'err');
+  var g=function(id){ return ((document.getElementById(id)||{}).value||'').trim(); }, n=g('nf-cs-name-sc');
+  if(!n){ showToast('Enter the name that signs Sub-Centre certificates (used for any type left blank).','err'); return; }
+  var up={coordName:n,coordTitle:g('nf-cs-title-sc')||'Programme Coordinator',updatedAt:scNowIso()};
+  Object.keys(NF_LEVELS).forEach(function(t){ if(t==='sc') return; var nm=g('nf-cs-name-'+t); up['byType/'+t]=nm?{name:nm,title:g('nf-cs-title-'+t)||'Programme Coordinator'}:null; });
+  btn.disabled=true; var ok=false; try{ await db.ref('shared/sc_cert_config').update(up); ok=true; }catch(e){} btn.disabled=false;
+  showToast(ok?'Saved — new certificates will be signed by these names.':'Could not save — check the connection.',ok?'ok':'err');
 }
 // ── Mentor / HealSol: certificate chip on the facility's staff list ──
 async function nfDrillCertChips(code){
@@ -18364,9 +18559,13 @@ Object.assign(HINDI_UI,{'Changed to Met':'Met किया गया','Changed t
   if(typeof scVGuard==='function'){ var oG=scVGuard; scVGuard=function(code){ if(appMode==='sc-admin'){ showToast('View only — Supervisors (and the CHO / MO for ANM, ASHA, MPW cards) verify cards.','err'); return null; } return oG.apply(this,arguments); }; }
   if(typeof scVStaffHTML==='function'){ var oS=scVStaffHTML; scVStaffHTML=function(){ var h=oS.apply(this,arguments);
     if(appMode==='sc-admin'&&h) h=h.replace(/View only — this facility's cards are verified by its Qu[^<]*/,'View only — cards are verified by the Supervisor, the Quality Champion or the CHO / MO, not by HealSol.'); return h; }; }
-  // Peer Review sessions: HealSol cannot schedule, approve, return, cancel or finalise
-  ['scqEditSession','scqApproveSchedule','scqCancelSession','scqApproveSummary','scqReturnSummary','scqFinalize'].forEach(function(fn){ var o=window[fn]; if(typeof o!=='function') return;
-    window[fn]=function(){ if(appMode==='sc-admin'){ showToast('View only — Supervisors schedule and approve Peer Review sessions.','err'); return; } return o.apply(this,arguments); }; });
+  // Peer Review sessions (HealSol 21 Oct): HealSol may schedule a session; it goes to the facility's Supervisor to approve, like a
+  // Champion's proposal. HealSol can change or cancel a session only while it waits for that approval; approving, returning and
+  // finalising stay with the Supervisor.
+  ['scqApproveSchedule','scqApproveSummary','scqReturnSummary','scqFinalize'].forEach(function(fn){ var o=window[fn]; if(typeof o!=='function') return;
+    window[fn]=function(){ if(appMode==='sc-admin'){ showToast('View only — the facility\'s Supervisor approves Peer Review sessions and summaries.','err'); return; } return o.apply(this,arguments); }; });
+  ['scqEditSession','scqCancelSession'].forEach(function(fn){ var o=window[fn]; if(typeof o!=='function') return;
+    window[fn]=function(id){ if(appMode==='sc-admin'&&id){ var s=((typeof _scq!=='undefined'&&_scq.sessions)||{})[id]; if(s&&s.status!=='proposed'){ showToast('Only the facility\'s Supervisor can change a session after it is approved.','err'); return; } } return o.apply(this,arguments); }; });
 })();
 // ── Hand over a facility (HealSol Setup) ──────────────────────
 var _nfHo={sups:{},champs:{},facs:{}};
@@ -19533,7 +19732,7 @@ var NF_GRAD_RES={ready:{en:'NQAS Ready',hi:'NQAS तैयार',ic:'🎓',c:'g
 var NF_NHSRC_ST=[['ready','NQAS Ready (not applied yet)'],['applied','Applied'],['state','State assessment done'],['national','National assessment done'],['certified','Certified'],['notcertified','Not certified']];
 Object.assign(HINDI_UI,{'Readiness week':'तैयारी सप्ताह','Programme complete':'कार्यक्रम पूरा','On track':'समय पर','Slipping':'पिछड़ रहे','Behind':'बहुत पीछे',
   'on time':'समय पर','late':'देर से','missing':'बाकी','Population served':'सेवित जनसंख्या','Catch-up':'कैच-अप'});
-async function nfgCfgLoad(){ try{ var c=await fbGet('shared/sc_grad_config'); if(c) Object.keys(NF_GRAD).forEach(function(k){ if(c[k]!=null&&!isNaN(+c[k])) NF_GRAD[k]=+c[k]; }); }catch(e){}
+async function nfgCfgLoad(){ try{ var c=await fbGet('shared/sc_grad_config'); _nfgRaw=c||{}; if(c) Object.keys(NF_GRAD).forEach(function(k){ if(c[k]!=null&&!isNaN(+c[k])) NF_GRAD[k]=+c[k]; }); }catch(e){}
   if(typeof NF_BL!=='undefined') NF_BL.autoEnd=NF_GRAD.days+NF_GRAD.grace; return NF_GRAD; }
 (function(){ var oL=scCpmLoad, at=0; scCpmLoad=async function(){ var r=await oL.apply(this,arguments); if(Date.now()-at>300000){ at=Date.now(); await nfgCfgLoad(); } return r; }; })();
 // ── dates ──
@@ -19780,15 +19979,45 @@ async function nfgRerun(code){
     nfgPutFac(code,{graduation:r.graduation,phase:'complete'}); showToast('Graduation saved: '+NF_GRAD_RES[r.graduation.result].en+'.','ok'); nfgRefresh(code); }
   catch(e){ showToast(e.message||'Could not run graduation.','err'); }
 }
+// Timeline settings per facility type (HealSol 21 Oct): Sub-Centre at the top level of shared/sc_grad_config (as before, so the
+// live SC app reads the same keys); UPHC / PHC / CHC under shared/sc_grad_config/byType/{type}, each key falling back to the SC value.
+var NFG_KEYS=['grace','catchDays','maxCatch','green','amber','missDays','blLate','certYears'];
+var _nfgRaw=null;
+function nfgCfgFor(t,raw){ raw=raw||_nfgRaw||{}; var o={}; NFG_KEYS.forEach(function(k){ o[k]=raw[k]!=null&&!isNaN(+raw[k])?+raw[k]:NF_GRAD[k]; });
+  var b=(raw.byType||{})[t]; if(t&&t!=='sc'&&b) NFG_KEYS.forEach(function(k){ if(b[k]!=null&&!isNaN(+b[k])) o[k]=+b[k]; });
+  if(t&&t!=='sc'){ o.catchDays=28; o.maxCatch=1; }   // department core: one catch-up of 3 weeks on the gaps + 1 week end-line again (fixed)
+  return o; }
 async function nfgSettings(){
   if(appMode!=='sc-admin') return;
-  var F=[['grace','Grace days after Day 60 (close date)'],['catchDays','Catch-up length (days)'],['maxCatch','Catch-ups allowed per facility'],['green','On track: cards on time at least (%)'],
-    ['amber','Slipping from (%) — below this is Behind'],['missDays','On track only if no card is missing for more than (days)'],['blLate','Behind if baseline not finished by Day'],['certYears','NHSRC certificate valid (years)']];
-  var v=await scDialog({title:'Programme timeline settings',icon:'⏱',wide:true,okLabel:'Save settings',message:'Used for the close date, catch-up and the Timeline compliance card on every dashboard.',
-    fields:F.map(function(x){ return {key:x[0],label:x[1],type:'number',required:true,value:NF_GRAD[x[0]]}; }),
-    validate:function(v){ return F.some(function(x){ return !(+v[x[0]]>=0&&+v[x[0]]<=1000); })?'Use numbers between 0 and 1000.':(+v.amber>+v.green?'Slipping must start below On track.':null); }});
-  if(!v) return; var rec={}; F.forEach(function(x){ rec[x[0]]=+v[x[0]]; }); rec.updatedAt=scNowIso();
-  var ok=await fbSet('shared/sc_grad_config',rec); if(ok){ Object.assign(NF_GRAD,rec); NF_BL.autoEnd=NF_GRAD.days+NF_GRAD.grace; } showToast(ok?'Settings saved.':'Could not save.',ok?'ok':'err');
+  try{ _nfgRaw=await fbGet('shared/sc_grad_config')||{}; }catch(e){ _nfgRaw=_nfgRaw||{}; }
+  var types=Object.keys(NF_LEVELS), cur=(typeof _hs!=='undefined'&&_hs&&_hs.type&&NF_LEVELS[_hs.type])?_hs.type:'sc', buf={};
+  types.forEach(function(t){ buf[t]=nfgCfgFor(t); });
+  var lab=function(t){ var d=t==='sc'?60:(NF_LEVELS[t].days||60); return [['grace','Grace days after Day '+d+' (close date)'],['catchDays','Catch-up length (days)'],['maxCatch','Catch-ups allowed per facility'],['green','On track: cards on time at least (%)'],
+    ['amber','Slipping from (%) — below this is Behind'],['missDays','On track only if no card is missing for more than (days)'],['blLate','Behind if baseline not finished by Day'],['certYears','NHSRC certificate valid (years)']]; };
+  var F=lab('sc');
+  var v=await scDialog({title:'Programme timeline settings',icon:'⏱',wide:true,okLabel:'Save settings',message:'Each facility type has its own timeline. Used for the close date, catch-up and the Timeline compliance card on every dashboard.',
+    fields:F.map(function(x){ return {key:x[0],label:x[1],type:'number',required:true,value:buf[cur][x[0]]}; }),
+    onRender:function(I){
+      var first=I.grace.el.closest('.scx-field'), bar=document.createElement('div'); bar.className='hs-tabs nfg-ttabs'; bar.setAttribute('role','tablist');
+      var read=function(){ NFG_KEYS.forEach(function(k){ buf[cur][k]=+I[k].el.value; }); };
+      var show=function(){ var L=lab(cur); NFG_KEYS.forEach(function(k,i){ I[k].el.value=buf[cur][k]; var l=I[k].el.parentNode.querySelector('.scx-lbl'); if(l) l.textContent=L[i][1]+' *'; });
+        I.catchDays.el.disabled=I.maxCatch.el.disabled=cur!=='sc'; var h=I.catchDays.el.parentNode.querySelector('.nfg-h'); if(!h){ h=document.createElement('div'); h.className='scx-hint nfg-h'; I.catchDays.el.parentNode.appendChild(h); }
+        h.textContent=cur==='sc'?'':'Fixed for '+NF_LEVELS[cur].plural+': one catch-up — 3 weeks on the weakest departments, then 1 week of end-line again.';
+        bar.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.getAttribute('data-t')===cur); }); };
+      types.forEach(function(t){ var b=document.createElement('button'); b.type='button'; b.className='hs-tab'; b.setAttribute('data-t',t); b.textContent=NF_LEVELS[t].plural; b.onclick=function(){ read(); cur=t; show(); }; bar.appendChild(b); });
+      first.parentNode.insertBefore(bar,first); show();
+      // keep the visible tab's numbers in the buffer for validate / save
+      NFG_KEYS.forEach(function(k){ I[k].el.addEventListener('input',function(){ buf[cur][k]=+I[k].el.value; }); });
+    },
+    validate:function(){ for(var i=0;i<types.length;i++){ var t=types[i], x=buf[t];
+      if(NFG_KEYS.some(function(k){ return !(x[k]>=0&&x[k]<=1000); })) return NF_LEVELS[t].plural+': use numbers between 0 and 1000.';
+      if(x.amber>x.green) return NF_LEVELS[t].plural+': Slipping must start below On track.'; } return null; }});
+  if(!v) return;
+  var up={updatedAt:scNowIso()}; NFG_KEYS.forEach(function(k){ up[k]=buf.sc[k]; });
+  types.forEach(function(t){ if(t==='sc') return; var o={}; NFG_KEYS.forEach(function(k){ if(k!=='catchDays'&&k!=='maxCatch') o[k]=buf[t][k]; }); up['byType/'+t]=o; });
+  var ok=false; try{ await db.ref('shared/sc_grad_config').update(up); ok=true; }catch(e){}
+  if(ok){ NFG_KEYS.forEach(function(k){ NF_GRAD[k]=buf.sc[k]; }); _nfgRaw=Object.assign({},_nfgRaw,{byType:Object.assign({},(_nfgRaw||{}).byType)}); types.forEach(function(t){ if(t!=='sc') _nfgRaw.byType[t]=up['byType/'+t]; }); NF_BL.autoEnd=NF_GRAD.days+NF_GRAD.grace; }
+  showToast(ok?'Timeline settings saved for every facility type.':'Could not save.',ok?'ok':'err');
 }
 // ── the Programme block (facility views: Supervisor / HealSol / District / MOIC drill-in, CHO facility dashboard, Champion facility view) ──
 function nfgStOf(code){ var L=Object.keys(_scIns||{}).map(function(h){ return _scIns[h]; }).filter(function(s){ return s&&s.code===code; }); return L[0]||null; }
@@ -20103,6 +20332,9 @@ body.nf-admin:not(.nfv-recog) .admin-main > [data-nfv="recog"]{display:none!impo
 #nf-verify.nfi-vp .nfv-foot{margin:8px 0 14px;}
 @media (max-width:520px){ #nf-verify .nfi-v{margin:10px 10px;} }
 #nf-verify .nfi-v h2{margin:4px 0;font-size:20px;} #nf-verify .nfi-v .nfi-st{font-size:24px;} #nf-verify .nfi-v .nfi-st i{color:#E5E7EB;}
+.nfr-afil{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 1.4fr;gap:8px;margin:4px 0 8px;}
+.nfr-afil select,.nfr-afil input{border:1.5px solid var(--br,#E2E8F0);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;min-width:0;}
+@media(max-width:820px){.nfr-afil{grid-template-columns:1fr 1fr;}.nfr-afil input{grid-column:1/-1;}}
 </style>
 <script id="nf-imp">
 // ══════════════════════════════════════════════════════════════
@@ -20366,7 +20598,7 @@ function nfImpShrink(file){ return new Promise(function(res){ var fr=new FileRea
 //  shared/sc_impact_config.hideFacility: {slug of state name: true, state code lower-case: true}
 //  sc_supervisors/{id}/pioneer: {year, citation, show (citation on Verify page), by, at}; .../pioneerLog/{key}: {act, year, citation, reason, by, at}
 var NF_PARTNER_TYPES={govt:'Government (NHM / Health Dept)',donor:'Donor / CSR',ngo:'NGO / Technical partner',other:'Other'};
-var _nfR={tab:'logos',img:'',filter:'',by:''};
+var _nfR={tab:'all',img:'',filter:'',by:'',af:{lv:'',st:'',dist:'',ty:'',q:''}};
 function nfrToday(){ return new Date(Date.now()+5.5*3600e3).toISOString().slice(0,10); }
 function nfrStateCode(s){ s=String(s||'').trim().toLowerCase(); if(!s) return ''; var L=typeof NF_STATE_LIST!=='undefined'?NF_STATE_LIST:[];
   for(var i=0;i<L.length;i++) if(L[i][0].toLowerCase()===s||L[i][1].toLowerCase()===s) return L[i][1]; return ''; }
@@ -20389,19 +20621,53 @@ async function nfrRender(load){
   if(appMode!=='sc-admin') return; var main=document.querySelector('#admin-app .admin-main'); if(!main) return;
   var box=document.getElementById('nf-recog'); if(!box){ box=document.createElement('div'); box.id='nf-recog'; box.dataset.nfv='recog'; main.insertBefore(box,main.firstChild); }
   if(load||!_nfImp.logos||!_nfImp.cfg||!_nfR.hon){ if(!box.innerHTML) box.innerHTML='<div class="nfr-empty">Loading…</div>';
-    try{ _nfImp.cfg=await fbGet('shared/sc_impact_config')||{}; _nfImp.logos=await fbGet('shared/sc_impact_logos')||{}; if(load==='force') _scSupervisors=await fbGet('sc_supervisors')||{}; _nfR.hon=await fbGet('sc_pioneers')||{}; _nfR.crit={leader:await fbGet('shared/sc_leader_criteria'),pioneer:await fbGet('shared/sc_pioneer_criteria')}; }catch(e){ _nfImp.cfg=_nfImp.cfg||{}; _nfImp.logos=_nfImp.logos||{}; } }
+    try{ _nfImp.cfg=await fbGet('shared/sc_impact_config')||{}; _nfImp.logos=await fbGet('shared/sc_impact_logos')||{}; if(load==='force') _scSupervisors=await fbGet('sc_supervisors')||{}; _nfR.hon=await fbGet('sc_pioneers')||{}; _nfR.imp=await fbGet('sc_impact')||{}; _nfR.crit={leader:await fbGet('shared/sc_leader_criteria'),pioneer:await fbGet('shared/sc_pioneer_criteria')}; }catch(e){ _nfImp.cfg=_nfImp.cfg||{}; _nfImp.logos=_nfImp.logos||{}; } }
   nfrBy();
   var L=_nfImp.logos||{}, nLive=Object.keys(L).filter(function(k){ return nfrLive(L[k]); }).length, P=nfrPioneers(), LD=nfrTitleList('leader');
   box.innerHTML='<div class="nfo-top"><div><h1>Impact &amp; Recognition</h1><small>HealSol only · partner logos on staff impact cards, Quality Leader and Quality Pioneer titles</small></div>'
     +'<button type="button" class="nfo-ic" title="Refresh" onclick="nfrRender(\'force\')"><i class="ti ti-refresh"></i></button></div>'
-    +'<div class="nfr-tabs" role="tablist"><button type="button" role="tab" class="'+(_nfR.tab==='logos'?'on':'')+'" onclick="nfrTab(\'logos\')">🤝 Partner logos <em>'+nLive+'</em></button>'
+    +'<div class="nfr-tabs" role="tablist"><button type="button" role="tab" class="'+(_nfR.tab==='all'?'on':'')+'" onclick="nfrTab(\'all\')">🏅 Everyone <em>'+nfrAllList().length+'</em></button>'
+    +'<button type="button" role="tab" class="'+(_nfR.tab==='logos'?'on':'')+'" onclick="nfrTab(\'logos\')">🤝 Partner logos <em>'+nLive+'</em></button>'
     +'<button type="button" role="tab" class="'+(_nfR.tab==='leader'?'on':'')+'" onclick="nfrTab(\'leader\')">🧭 Quality Leader <em>'+LD.length+'</em></button>'
     +'<button type="button" role="tab" class="'+(_nfR.tab==='pioneer'?'on':'')+'" onclick="nfrTab(\'pioneer\')">🌟 Quality Pioneer <em>'+P.length+'</em></button></div>'
-    +nfrLadderHTML()+(_nfR.tab==='pioneer'?nfrTitleHTML('pioneer'):_nfR.tab==='leader'?nfrTitleHTML('leader'):nfrLogosHTML());
+    +nfrLadderHTML()+(_nfR.tab==='all'?nfrAllHTML():_nfR.tab==='pioneer'?nfrTitleHTML('pioneer'):_nfR.tab==='leader'?nfrTitleHTML('leader'):nfrLogosHTML());
 }
 function nfrTab(t){ _nfR.tab=t; nfrRender(); }
 function nfrLadderHTML(){ var R=[['starter','Baseline done'],['practitioner','Facility NQAS Ready'],['achiever','Facility NHSRC certified'],['champion','Achiever helping other facilities'],['leader','Mentor · title by HealSol'],['pioneer','Highest award by HealSol']];
-  return '<div class="nfr-ladder" aria-label="Levels">'+R.map(function(x){ var l=NF_LEVEL[x[0]]; return '<div class="'+(x[0]===_nfR.tab?'on':'')+'"><span>'+l.ic+'</span><b>'+scEsc(l.en)+'</b><small>'+scEsc(x[1])+'</small></div>'; }).join('<i>›</i>')+'</div>'; }
+  var all=_nfR.tab==='all', cnt={}; if(all) nfrAllList().forEach(function(r){ cnt[r.level]=(cnt[r.level]||0)+1; });
+  return '<div class="nfr-ladder" aria-label="Levels">'+R.map(function(x){ var l=NF_LEVEL[x[0]], on=all?_nfR.af.lv===x[0]:x[0]===_nfR.tab;
+    return '<div class="'+(on?'on':'')+'"'+(all?' role="button" tabindex="0" style="cursor:pointer" onclick="nfrAllSet(\'lv\',\''+(on?'':x[0])+'\')"':'')+'><span>'+l.ic+'</span><b>'+scEsc(l.en)+(all?' · '+(cnt[x[0]]||0):'')+'</b><small>'+scEsc(x[1])+'</small></div>'; }).join('<i>›</i>')+'</div>'; }
+// ── Everyone tab (HealSol 21 Oct): every person with a level — Starter to Pioneer — from the nightly impact records ──
+function nfrAllList(){ var I=_nfR.imp||{}; return Object.keys(I).map(function(k){ var r=I[k]; return r&&r.level&&NF_LEVEL[r.level]?Object.assign({key:k},r):null; }).filter(Boolean); }
+function nfrAllType(r){ var f=(r.facilities||[])[0], F=(scMasterFacilities||{})[f&&f.code]; return F?nfTypeOf(F):''; }
+function nfrAllKind(r){ return {staff:'Staff',champion:'Quality Champion',mentor:'Quality Mentor',honorary:'No login'}[r.kind]||r.kind||''; }
+function nfrAllRows(){ var A=_nfR.af, q=A.q.trim().toLowerCase(), ord=['pioneer','leader','champion','achiever','practitioner','starter'];
+  return nfrAllList().filter(function(r){ var f=(r.facilities||[])[0]||{};
+    return (!A.lv||r.level===A.lv)&&(!A.st||(r.state||f.state)===A.st)&&(!A.dist||f.district===A.dist)&&(!A.ty||nfrAllType(r)===A.ty)
+      &&(!q||(String(r.name||'')+' '+(r.role||'')+' '+(r.facilities||[]).map(function(x){ return x.name+' '+x.district; }).join(' ')).toLowerCase().indexOf(q)>=0); })
+    .sort(function(a,b){ return ord.indexOf(a.level)-ord.indexOf(b.level)||(b.stars||0)-(a.stars||0)||String(a.name||'').localeCompare(String(b.name||'')); }); }
+function nfrAllSet(k,v){ _nfR.af[k]=v; if(k==='st') _nfR.af.dist=''; if(k==='q'){ var b=document.getElementById('nfr-all-body'); if(b){ b.innerHTML=nfrAllBody(); return; } } nfrRender(); }
+function nfrAllHTML(){
+  var L=nfrAllList(), A=_nfR.af, st={}, ds={}, ty={};
+  L.forEach(function(r){ var f=(r.facilities||[])[0]||{}; if(r.state||f.state) st[r.state||f.state]=1; if(f.district&&(!A.st||(r.state||f.state)===A.st)) ds[f.district]=1; var t=nfrAllType(r); if(t) ty[t]=1; });
+  var sel=function(k,first,opts){ return '<select onchange="nfrAllSet(\''+k+'\',this.value)"><option value="">'+first+'</option>'+opts.map(function(o){ return '<option value="'+scEsc(o[0])+'"'+(A[k]===o[0]?' selected':'')+'>'+scEsc(o[1])+'</option>'; }).join('')+'</select>'; };
+  return '<div class="nfr-card"><div class="nfr-head"><div><h3>🏅 Everyone with a level</h3><p>Staff (Quality Starter, Practitioner, Achiever), Quality Champions, Quality Leaders and Quality Pioneers. Levels are worked out every night at 2 AM; tap a level above to see only that level.</p></div>'
+    +'<button type="button" class="nfr-btn ghost" onclick="nfrAllExcel()"><i class="ti ti-download"></i> Excel</button></div>'
+    +'<div class="nfr-afil">'+sel('lv','All levels',Object.keys(NF_LEVEL).map(function(l){ return [l,NF_LEVEL[l].en]; }))+sel('st','All states',Object.keys(st).sort().map(function(x){ return [x,x]; }))
+    +sel('dist','All districts',Object.keys(ds).sort().map(function(x){ return [x,x]; }))+sel('ty','All facility types',Object.keys(ty).map(function(t){ return [t,NF_LEVELS[t].plural]; }))
+    +'<input placeholder="Search name, role or facility" value="'+scEsc(A.q)+'" oninput="nfrAllSet(\'q\',this.value)"></div>'
+    +'<div id="nfr-all-body">'+nfrAllBody()+'</div></div>'; }
+function nfrAllBody(){ var R=nfrAllRows();
+  if(!nfrAllList().length) return '<div class="nfr-empty">No levels yet — they are worked out tonight at 2 AM, or tap “Update cards now” on the Quality Leader tab.</div>';
+  if(!R.length) return '<div class="nfr-empty">Nobody matches these filters.</div>';
+  return '<div class="nfr-muted" style="margin:4px 0 8px">'+R.length+' '+(R.length===1?'person':'people')+'</div><div class="nfr-tw"><table class="nfr-t"><thead><tr><th>Name</th><th>Level</th><th>Who</th><th>Facility</th><th>District · State</th><th>Since</th></tr></thead><tbody>'
+    +R.slice(0,500).map(function(r){ var l=NF_LEVEL[r.level], fs=r.facilities||[], f=fs[0]||{}, t=nfrAllType(r);
+      return '<tr><td><b>'+scEsc(r.name||'')+'</b><small>'+scEsc(r.role||'')+'</small></td><td>'+l.ic+' '+scEsc(l.en)+(r.stars?' <small>'+nfImpStars(r.stars,true)+'</small>':'')+'</td><td>'+scEsc(nfrAllKind(r))+'</td>'
+        +'<td>'+(fs.length?scEsc(f.name||f.code||'')+(fs.length>1?' <small>+'+(fs.length-1)+' more</small>':'')+(t?'<small>'+scEsc(NF_LEVELS[t].name)+'</small>':''):'—')+'</td><td>'+scEsc([f.district,r.state||f.state].filter(Boolean).join(' · ')||'—')+'</td>'
+        +'<td>'+scEsc(r.levelSince?scFmtDate(String(r.levelSince).slice(0,10)):'')+'</td></tr>'; }).join('')+'</tbody></table></div>'+(R.length>500?'<div class="nfr-muted">Showing the first 500 — use the filters or Excel.</div>':''); }
+async function nfrAllExcel(){ try{ var X=await nfLoadXlsx(), rows=[['Name','Role','Level','Stars','Who','Facility type','Facilities','District','State','Level since']];
+  nfrAllRows().forEach(function(r){ var fs=r.facilities||[], f=fs[0]||{}, t=nfrAllType(r); rows.push([r.name||'',r.role||'',NF_LEVEL[r.level].en,r.stars||'',nfrAllKind(r),t?NF_LEVELS[t].name:'',fs.map(function(x){ return x.name||x.code; }).join(', '),f.district||'',r.state||f.state||'',String(r.levelSince||'').slice(0,10)]); });
+  var wb=X.utils.book_new(); X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(rows),'Recognition'); X.writeFile(wb,'NQAS-FAST-recognition-'+nfrToday()+'.xlsx'); }catch(e){ showToast('Could not make the Excel file.','err'); } }
 
 // ── Partner logos tab ──
 function nfrStatusChip(s){ var m={active:['Active','g'],soon:['Expiring soon','a'],expired:['Expired','r'],off:['Turned off','n']}[s]; return '<span class="nfr-chip '+m[1]+'">'+m[0]+'</span>'; }
@@ -20504,8 +20770,8 @@ async function nfrLogoSave(){
 //  Criteria: shared/sc_leader_criteria, shared/sc_pioneer_criteria = {text (one per line), by, at}; until HealSol edits them the
 //  defaults below apply. Giving a title needs the "meets the criteria" tick.
 var NF_TITLE={
-  leader:{field:'leader',log:'leaderLog',crit:'sc_leader_criteria',en:'Quality Leader',ic:'🧭',hon:false,cit:false,
-    intro:'Given by HealSol to a Quality Mentor (Supervisor) after looking at their active contribution, against the Leader criteria below. A Supervisor without this title has no level.',
+  leader:{field:'leader',log:'leaderLog',crit:'sc_leader_criteria',en:'Quality Leader',ic:'🧭',hon:true,cit:false,
+    intro:'Given by HealSol after looking at someone\'s active contribution, against the Leader criteria below: a Quality Mentor (Supervisor) with a login, or someone without a login whose details HealSol types in. A Supervisor without this title has no level.',
     def:['At least 5 years of work in public-health quality improvement (NQAS, LaQshya, Kayakalp, MusQan or similar)',
       'Certified NQAS assessor (national or state), or has mentored at least 10 facilities to NQAS Ready or NHSRC certification',
       'Measurable improvement shown in facilities they supported: higher readiness scores, closed gaps, or certifications',
@@ -20612,7 +20878,8 @@ function nfrTitleForm(T,ref){
     +'<div class="nfr-err" id="nfr-err"></div><div class="nfr-fb"><button type="button" class="nfr-btn ghost" onclick="nfrClose()">Cancel</button><button type="submit" class="nfr-btn">'+(ref?'Save changes':'Give title')+'</button></div></form>';
   ov.addEventListener('click',function(e){ if(e.target===ov) nfrClose(); });
   document.body.appendChild(ov); _nfR.cand=cand;
-  if(!ref){ var k0=cand.length||!D.hon?'sup':'hon'; var rb=ov.querySelector('input[name=nfr-pk][value='+k0+']'); if(rb) rb.checked=true; nfrPioKind(k0); if(cand.length) nfrPioList(); }
+  // a new title starts with nobody chosen: HealSol picks "A Quality Mentor" or "Someone without a login" (HealSol 21 Oct)
+  if(!ref){ if(D.hon){ var k0=cand.length?'':'hon'; var rb=k0&&ov.querySelector('input[name=nfr-pk][value='+k0+']'); if(rb) rb.checked=true; _nfR.pk=k0; nfrPioKind(k0); } else nfrPioKind('sup'); if(cand.length) nfrPioList(); }
   else _nfR.pk=kind;
   nfrHonFacs();
 }
@@ -20620,10 +20887,11 @@ function nfrPioForm(ref){ return nfrTitleForm('pioneer',ref); }
 function nfrPioList(){ var S=_scSupervisors||{}, sel=document.getElementById('nfr-sup'); if(!sel||sel.tagName!=='SELECT') return; var st=document.getElementById('nfr-pst').value, q=document.getElementById('nfr-pq').value.trim().toLowerCase(), cur=sel.value;
   var L=(_nfR.cand||[]).filter(function(k){ var u=S[k]; return (!st||nfrSupStates(u).indexOf(st)>=0)&&(!q||String(u.name||k).toLowerCase().indexOf(q)>=0); });
   sel.innerHTML=L.map(function(k){ var u=S[k], lv=u.impact&&u.impact.level; return '<option value="'+scEsc(k)+'"'+(k===cur?' selected':'')+'>'+scEsc(u.name||k)+' · '+nfrFacN(u)+(nfrSupStates(u).length?' · '+scEsc(nfrSupStates(u).join(', ')):'')+(lv&&NF_LEVEL[lv]?' · '+scEsc(NF_LEVEL[lv].en):'')+'</option>'; }).join('')||'<option value="" disabled>No Quality Mentor matches</option>';
-  if(!sel.value&&L.length) sel.value=L[0]; }   // a name is always chosen (the first one) so the form never says "Choose the Quality Mentor" by surprise
+  }   // nobody is chosen for HealSol (21 Oct): tap a name
 async function nfrTitleSave(T,editRef){
   var D=NF_TITLE[T], err=document.getElementById('nfr-err'), g=function(i){ var e=document.getElementById(i); return e?String(e.value||'').trim():''; };
-  var kind=editRef?editRef.slice(0,3):(D.hon?(_nfR.pk||'sup'):'sup'), ref=editRef, hon=null, p={};
+  var kind=editRef?editRef.slice(0,3):(D.hon?_nfR.pk:'sup'), ref=editRef, hon=null, p={};
+  if(!kind){ err.textContent='Choose who gets the title: a Quality Mentor, or someone without a login.'; return; }
   if(kind==='sup'&&!ref){ var sid=g('nfr-sup'); if(!sid||!(_scSupervisors||{})[sid]){ err.textContent='Tap a name in the Quality Mentor list.'; return; } ref='sup:'+sid; }
   if(kind==='hon'){ hon={name:g('nfr-hn'),designation:g('nfr-hd'),org:g('nfr-ho'),st:g('nfr-hst')}; var fs={}; document.querySelectorAll('#nfr-hfac input:checked').forEach(function(i){ fs[i.value]=true; }); hon.facilities=Object.keys(fs).length?fs:null;
     if(hon.name.length<3){ err.textContent='Enter the person\'s full name.'; return; } if(!hon.designation){ err.textContent='Enter the designation.'; return; } if(!hon.st){ err.textContent='Choose the state.'; return; }
@@ -20650,14 +20918,15 @@ async function nfrCardNums(ref,on){ var u=nfrPioRec(ref); var ok=await fbSet(nfr
   showToast(ok?(on?'Numbers will show on the card from the next update.':'Numbers hidden on the card from the next update.'):'Could not save.',ok?'ok':'err'); nfrRender(); }
 function nfrPioShow(r,on){ return nfrTitleShow('pioneer',r,on); }
 async function nfrTitleRemove(T,ref){ var D=NF_TITLE[T], u=nfrPioRec(ref); if(!u) return; var hon=ref.slice(0,3)==='hon';
-  var after=hon?'Their impact card and Verify link stop working from the next update.'
+  var other=T==='leader'?u.pioneer:u.leader, lastOne=hon&&!other;
+  var after=hon?(other?'They keep their other title.':'Their impact card and Verify link stop working from the next update.')
     :T==='leader'?(u.pioneer?'They stay a Quality Pioneer.':'They will have no level from the next update; their Verify link stops working.')
     :(u.leader?'They return to Quality Leader from the next update.':'They will have no level from the next update; their Verify link stops working.');
   var v=await scDialog({title:'Remove '+D.en+' title?',icon:'⚠️',okLabel:'Remove title',message:after+' The record stays in History.',fields:[{key:'reason',label:'Reason (kept in history)',required:true,type:'textarea',placeholder:'e.g. Left the programme'}]}); if(!v) return;
   var by=nfrBy(), now=scNowIso(), p=nfrTObj(T,u)||{}, base=nfrPioBase(ref), ok=await fbSet(base+'/'+D.field,null); if(!ok){ showToast('Could not save.','err'); return; }
-  if(hon) await fbSet(base+'/removed',true);
+  if(lastOne) await fbSet(base+'/removed',true);
   var lk='P'+Date.now().toString(36), le={act:'removed',year:p.year||'',reason:String(v.reason||'').trim(),by:by,at:now}; await fbSet(base+'/'+D.log+'/'+lk,le);
-  delete u[D.field]; if(hon) u.removed=true; u[D.log]=u[D.log]||{}; u[D.log][lk]=le; showToast('Title removed. '+after,'ok'); nfrRender(); }
+  delete u[D.field]; if(lastOne) u.removed=true; u[D.log]=u[D.log]||{}; u[D.log][lk]=le; showToast('Title removed. '+after,'ok'); nfrRender(); }
 function nfrPioRemove(r){ return nfrTitleRemove('pioneer',r); }
 async function nfrPioImpact(ref){ var r=null; try{ r=await fbGet('sc_impact/'+nfrPioKey(ref)); }catch(e){} if(!r||!r.level||!r.publicId){ showToast('The card is made at the next update. Tap "Update cards now" first.','err'); return null; } await nfImpCfg(); return r; }
 async function nfrPioCard(ref){ var r=await nfrPioImpact(ref); if(!r) return; showToast('Making the card…','ok');
@@ -22937,6 +23206,7 @@ function ndMeHTML() {
     + (nxMyDeptIds().length ? mi('ti-layout-grid', 'Department dashboard', "ndTab('dept')") : '')
     + (!ndFaCan(me) && nxIsChecker(me) ? mi('ti-list-check', 'Cards to compare', 'nxOpenFirstCheck()', nCheck || '') : '')
     + (!ndFaCan(me) && nxLeads(me).length ? mi('ti-checklist', 'Decide &amp; assign', 'ndLeadOpen()', nLead || '') : '')
+    + (typeof scOpenLiveSessions === 'function' ? mi('ti-broadcast', 'Live sessions', 'scOpenLiveSessions()') : '')
     + mi('ti-refresh', 'Refresh data', 'ndReload()') + mi('ti-help-circle', 'How to use the app', 'nxHelp()')
     + mi('ti-key', 'Change password', 'nfChangeMyPassword()') + mi('ti-logout', 'Log out', 'ndLogout()', '', 'red') + '</div>';
   return h + '</div>';
@@ -24486,11 +24756,16 @@ function nfDeptSumFacility(st) {   // synchronous; st = {code, fac, cl (checklis
     var F = ndLatestFinal(), noAct = Object.keys(F).filter(function (id) { var a = A[id]; return F[id].s < 2 && (!a || a.status === 'closed'); }).length;
     var day = f.startDate ? nfDeptDayNo(f.startDate, today) : null, checksDue = 0;
     if (day) ndDeptDefs().forEach(function (d) { for (var n = 1; n <= Math.min(day, S.days); n++) { if (ndRes(d.id, n).chk) continue; var c = ndPc(d.id, n); if (Object.keys(c).some(function (m) { return c[m] && c[m].done; }) && !ndSoloDone(d.id, n)) checksDue++; } });
+    // timeline (HealSol 21 Oct, for "behind schedule" with the type's timeline settings): department-days up to yesterday with a card in,
+    // the oldest day still without a card, and whether every baseline day has its cards
+    var due = 0, cin = 0, oldMiss = 0, blOpen = 0;
+    if (day && day > 1) ndDeptDefs().forEach(function (d) { for (var n = 1; n <= Math.min(day - 1, S.days); n++) { due++; var c = ndPc(d.id, n), any = Object.keys(c).some(function (m) { return c[m] && c[m].done; });
+      if (any) cin++; else { oldMiss = Math.max(oldMiss, day - n); if (n <= S.bN) blOpen++; } } });
     var staff = Object.keys(f.staff || {}).filter(function (m) { return f.staff[m] && !f.staff[m].disabled; }).length;
     return JSON.parse(JSON.stringify({ v: ND_SUM_VER, type: T, code: st.code, name: f.name || st.code, state: f.state || '', district: f.district || '', block: f.block || '',
       staff: staff, startDate: f.startDate || null, day: day, days: S.days, phase: !day || day < 1 ? 'notstarted' : f.catchup && f.catchup.on && !f.catchup.done ? 'catchup' : f.graduation || day > S.days ? 'complete' : 'running',
       pct: R.overall, base: B.n ? B.overall : null, assessed: R.n || 0, total: R.of || 0, meets: !!R.meets, byAoc: byAoc, byStd: byStd, byDept: byDept,
-      noAct: noAct, acts: acts, checksDue: checksDue, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
+      noAct: noAct, acts: acts, checksDue: checksDue, tl: due ? { due: due, cin: cin, pct: Math.round(100 * cin / due), oldMiss: oldMiss, blDone: day > S.bN && !blOpen } : null, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
       // Step 3: graduation, catch-up, certification records (roll-ups count graduated / ready / almost / notyet / catch-up / certified)
       grad: f.graduation ? { result: f.graduation.result, overall: f.graduation.overall, base: f.graduation.base, round: f.graduation.round || 0, at: f.graduation.at || null, deptFails: f.graduation.deptFails || [] } : null,
       catchup: f.catchup && f.catchup.on ? { round: f.catchup.round || 1, start: f.catchup.start || null, end: f.catchup.end || null, done: !!f.catchup.done, depts: f.catchup.depts || [] } : null,
@@ -24788,7 +25063,9 @@ var ND_GRAD_RES = { ready: { t: 'NQAS Ready', c: 'g', ic: 'ti-award' }, almost: 
 var ND_CERT_ST = [['ready', 'Ready (not applied yet)'], ['applied', 'Applied'], ['state', 'State assessment done'], ['national', 'National assessment done'], ['certified', 'Certified'], ['notcertified', 'Not certified']];
 var _ndCrit = null;
 async function ndGradLoad() {
-  try { var c = await fbGet('shared/sc_grad_config'); if (c && c.grace != null && !isNaN(+c.grace)) ND_GRAD.grace = +c.grace; } catch (e) {}
+  // timeline settings of this facility type (shared/sc_grad_config/byType/{type}, falling back to the Sub-Centre values)
+  try { var c = await fbGet('shared/sc_grad_config'); if (c) { var t = (c.byType || {})[_nd.cfg.id] || {}, pick = function (k, d) { return t[k] != null && !isNaN(+t[k]) ? +t[k] : c[k] != null && !isNaN(+c[k]) ? +c[k] : d; };
+    ND_GRAD.grace = pick('grace', 7); } } catch (e) {}
   try { _ndCrit = await fbGet('shared/dept_criteria'); } catch (e) { _ndCrit = null; }
 }
 function ndCrit() {
@@ -25304,6 +25581,9 @@ function hsInfo(code) {
     o.pct = s && s.assessed ? s.pct : null; o.base = s && s.base != null ? s.base : null; o.assessed = s ? s.assessed : 0;
     o.overdue = s ? s.acts.od : 0; o.toCheck = s ? s.checksDue : 0; o.loading = !s && !!f.startDate;
     o.byStd = s ? s.byStd || {} : {}; o.byDept = s ? s.byDept || {} : {}; o.byAoc = s ? s.byAoc || {} : {};
+    // on track / slipping / behind with this type's timeline settings (Settings → Programme rules → Timeline)
+    if (s && s.tl) { var G = typeof nfgCfgFor === 'function' ? nfgCfgFor(t) : { green: 80, amber: 60, missDays: 3, blLate: 10 }, tl = s.tl;
+      o.comp = { pct: tl.pct, oldMiss: tl.oldMiss, state: tl.pct < G.amber || (s.day || 0) > G.blLate && !tl.blDone ? 'r' : tl.pct < G.green || tl.oldMiss > G.missDays ? 'a' : 'g' }; }
   } else {
     var p = getProg(f.progId || 'nqas_12A') || {}, a = scFacAggFor(code), b = a.baseline || {};
     o.days = p.days || 60; o.S = { bN: 7, iN: 49, e1: 50, eN: 56, r1: 57, rN: 60, days: o.days };
@@ -25370,7 +25650,7 @@ function hsTodo(list) {
   att.forEach(function (x) { if (/without an action/.test(x.txt)) return; var o = byCode[x.code]; if (!o) return;
     if (o.payDue && /trial ended|payment due/i.test(x.txt)) return; if (seen[x.code + '|endchk'] && /waiting for the check/.test(x.txt)) return; add({ code: x.code, key: x.txt, lvl: x.lvl === 'red' ? 'red' : 'amber', t: x.txt.charAt(0).toLowerCase() + x.txt.slice(1), sub: (o.day ? 'Day ' + o.day + ' · ' : '') + HS_PHASE[o.phase], btn: open(x.code) }); });
   var behind = list.filter(function (o) { return o.behind; });
-  if (behind.length) add({ key: 'behind', lvl: 'amber', t: '<b>' + behind.length + ' ' + (behind.length === 1 ? 'facility' : 'facilities') + ' behind schedule</b> — ' + hsE(behind.map(function (o) { return o.name; }).slice(0, 5).join(', ')), raw: 1, sub: 'Under ' + (typeof NF_GRAD !== 'undefined' ? NF_GRAD.amber : 60) + '% of cards on time', btn: { l: 'See list', js: "_hs.status='behind';nfAdminView('hsfac')" } });
+  if (behind.length) add({ key: 'behind', lvl: 'amber', t: '<b>' + behind.length + ' ' + (behind.length === 1 ? 'facility' : 'facilities') + ' behind schedule</b> — ' + hsE(behind.map(function (o) { return o.name; }).slice(0, 5).join(', ')), raw: 1, sub: 'Cards on time under the Slipping mark, or baseline late (Timeline settings of each type)', btn: { l: 'See list', js: "_hs.status='behind';nfAdminView('hsfac')" } });
   var rank = { red: 0, amber: 1 }; out.sort(function (a, b) { return rank[a.lvl] - rank[b.lvl]; });
   return out;
 }
@@ -25596,7 +25876,7 @@ function hsEnsureTabs() {
   ct.innerHTML = '<h1 class="hs-h1">Content</h1><button type="button" role="tab" aria-selected="' + (_nfOv.view === 'editor') + '" class="' + (_nfOv.view === 'editor' ? 'on' : '') + '" onclick="nfAdminView(\'editor\')">Sub-Centre (Card editor)</button>'
     + '<button type="button" role="tab" aria-selected="' + (_nfOv.view === 'dm') + '" class="' + (_nfOv.view === 'dm' ? 'on' : '') + '" onclick="nfAdminView(\'dm\')">UPHC · PHC · CHC (Checkpoints)</button>';
   if (!document.getElementById('hs-rules')) { var r = document.createElement('div'); r.id = 'hs-rules'; r.dataset.nfv = 'setup'; r.className = 'nfo-card hs-rules';
-    r.innerHTML = '<b><i class="ti ti-adjustments"></i> Programme rules</b><p>NQAS criteria (overall, Area of Concern, Standard minimums) are set in Content → Card editor → NQAS criteria; UPHC / PHC / CHC use 70% overall, per department and per Area of Concern, 50% per Standard. Grace days after the last day, catch-up length and on-time thresholds:</p>'
+    r.innerHTML = '<b><i class="ti ti-adjustments"></i> Programme rules</b><p>NQAS criteria (overall, Area of Concern, Standard minimums) are set in Content → Card editor → NQAS criteria; UPHC / PHC / CHC use 70% overall, per department and per Area of Concern, 50% per Standard. Timeline — grace days after the last day, catch-up, on-time thresholds — is set separately for Sub-Centres, UPHCs, PHCs and CHCs:</p>'
       + '<button type="button" class="hs-btn p" onclick="nfgSettings()">Timeline settings</button>';
     main.appendChild(r); }
   if (main.firstChild !== ct) main.insertBefore(ct, main.firstChild); if (main.firstChild !== st) main.insertBefore(st, main.firstChild);
@@ -25673,6 +25953,93 @@ function hsFacStripHTML(code) {
   };
   if (typeof logoutAdmin === 'function') { var oLo = logoutAdmin; logoutAdmin = async function () { _hs.seen = false; _hs.sessAt = 0; _hs.liveAt = 0; _hs.certs = null; return oLo.apply(this, arguments); }; }
 })();
+</script>
+<style id="nf-hs-settings-css">/* HealSol Settings refinements (21 Oct 2026) */
+.hsx-pick{display:block!important;max-height:280px;overflow-y:auto;border:1px solid var(--br);border-radius:10px;padding:6px 8px;}
+.hsx-grp+.hsx-grp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--br);}
+.hsx-grp-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:11px;color:var(--t2);}
+.hsx-mini{border:1px solid var(--br);background:#fff;border-radius:7px;padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--teal-dk);cursor:pointer;font-family:inherit;}
+.hsx-fbar{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:6px;margin-bottom:6px;}
+@media(max-width:560px){.hsx-fbar{grid-template-columns:1fr 1fr;}.hsx-fbar [data-hsx="search"]{grid-column:1/-1;}}
+.pr-grp{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);margin:12px 0 2px;}
+.pr-tabs{margin-bottom:4px;}
+.nfg-ttabs{margin:0 0 10px;gap:16px;}
+</style>
+<script id="nf-hs-settings">// ══════════════════════════════════════════════════════════════
+// HealSol Settings refinements (21 Oct 2026)
+//   • facility picker for pop-ups: state / district / type filters, search, "Tick all" per group
+//   • District Admin: state + district, "all facilities in this district, including ones enrolled later"
+//   • Quality Champion: state + district, type filter and search over the Supervisor's facilities
+//   (certificate signatory, timeline and pricing per facility type, Recognition list: below)
+// ══════════════════════════════════════════════════════════════
+function hsxE(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function hsxTypeName(t) { return (NF_LEVELS[t] || NF_LEVELS.sc).plural; }
+// every enrolled facility as a picker item
+function hsxFacItems() {
+  var F = scMasterFacilities || {};
+  return Object.keys(F).filter(function (c) { return F[c] && !F[c].migratedTo; }).map(function (c) {
+    var f = F[c], t = nfTypeOf(f);
+    return { value: c, name: f.name || c, district: f.district || '', state: f.state || '', type: t, prog: f.progId || '',
+      label: (f.name || c) + ' · ' + c + ' · ' + scPkgShort(f.progId || 'nqas_12A') };
+  }).sort(function (a, b) { return a.district.localeCompare(b.district) || a.name.localeCompare(b.name); });
+}
+function hsxStates() { return (typeof NF_STATE_LIST !== 'undefined' ? NF_STATE_LIST : []).map(function (x) { return x[0]; }); }
+function hsxDistricts(state) { var c = ((typeof NF_STATE_LIST !== 'undefined' ? NF_STATE_LIST : []).find(function (x) { return x[0] === state; }) || [])[1]; return (typeof NF_DISTRICTS !== 'undefined' && NF_DISTRICTS[c]) || []; }
+function hsxFillSelect(sel, opts, value, first) {
+  if (!sel) return;
+  sel.innerHTML = (first ? '<option value="">' + hsxE(first) + '</option>' : '') + opts.map(function (o) { var v = typeof o === 'string' ? o : o.value, l = typeof o === 'string' ? o : o.label; return '<option value="' + hsxE(v) + '"' + (String(v) === String(value || '') ? ' selected' : '') + '>' + hsxE(l) + '</option>'; }).join('');
+}
+// Render a grouped facility checklist into a scDialog checklist element (values() still reads input:checked).
+// items: hsxFacItems(); groupBy: 'type' | 'district'; keeps ticks across re-renders.
+function hsxPicker(el, items, selected, groupBy, emptyText) {
+  var sel = (selected || []).map(String);
+  el.innerHTML = ''; el.style.cssText = ''; el.classList.add('hsx-pick');
+  if (!items.length) { el.textContent = emptyText || 'No facilities match.'; el.style.cssText = 'font-size:11px;color:var(--t3);'; return; }
+  var groups = {}, order = [];
+  items.forEach(function (it) { var g = groupBy === 'district' ? (it.district || 'No district') : hsxTypeName(it.type); if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(it); });
+  order.forEach(function (g) {
+    var box = document.createElement('div'); box.className = 'hsx-grp';
+    var hd = document.createElement('div'); hd.className = 'hsx-grp-hd';
+    var b = document.createElement('b'); b.textContent = g + ' · ' + groups[g].length; hd.appendChild(b);
+    var all = document.createElement('button'); all.type = 'button'; all.className = 'hsx-mini'; all.textContent = 'Tick all';
+    all.onclick = function () { var cbs = [].filter.call(box.querySelectorAll('label.scx-chk'), function (lb) { return lb.style.display !== 'none'; }).map(function (lb) { return lb.querySelector('input'); }).filter(function (c) { return !c.disabled; });
+      var on = cbs.some(function (c) { return !c.checked; }); cbs.forEach(function (c) { c.checked = on; c.parentNode.classList.toggle('on', on); c.dispatchEvent(new Event('change')); }); all.textContent = on ? 'Untick all' : 'Tick all'; };
+    hd.appendChild(all); box.appendChild(hd);
+    var row = document.createElement('div'); row.className = 'scx-chk-list'; row.style.maxHeight = 'none';
+    groups[g].forEach(function (it) {
+      var lb = document.createElement('label'); lb.className = 'scx-chk' + (sel.indexOf(it.value) >= 0 ? ' on' : '');
+      lb.setAttribute('data-q', (it.name + ' ' + it.value + ' ' + it.district).toLowerCase());
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = it.value; cb.checked = sel.indexOf(it.value) >= 0;
+      cb.addEventListener('change', function () { lb.classList.toggle('on', cb.checked); });
+      lb.appendChild(cb); lb.appendChild(document.createTextNode(it.label)); row.appendChild(lb);
+    });
+    box.appendChild(row); el.appendChild(box);
+  });
+}
+function hsxPickerSearch(el, q) {
+  var t = String(q || '').trim().toLowerCase();
+  el.querySelectorAll('.hsx-grp').forEach(function (g) { var n = 0; g.querySelectorAll('label.scx-chk').forEach(function (lb) { var on = !t || String(lb.getAttribute('data-q')).indexOf(t) >= 0; lb.style.display = on ? '' : 'none'; if (on) n++; }); g.style.display = n ? '' : 'none'; });
+}
+function hsxVals(el) { return el ? [].map.call(el.querySelectorAll('input:checked'), function (c) { return c.value; }) : []; }
+// a filter row (type / district / search) placed above a checklist
+function hsxFilterBar(el, parts) {
+  var bar = document.createElement('div'); bar.className = 'hsx-fbar';
+  var out = {};
+  parts.forEach(function (p) {
+    var x;
+    if (p === 'search') { x = document.createElement('input'); x.className = 'scx-in'; x.placeholder = 'Search facility, ID or district…'; x.autocomplete = 'off'; }
+    else { x = document.createElement('select'); x.className = 'scx-in'; }
+    x.setAttribute('data-hsx', p); bar.appendChild(x); out[p] = x;
+  });
+  el.parentNode.insertBefore(bar, el);
+  return out;
+}
+
+// ── District Admin ────────────────────────────────────────────
+function hsxDistItems(state, district) {
+  var low = function (x) { return String(x || '').trim().toLowerCase(); };
+  return hsxFacItems().filter(function (it) { return (!state || low(it.state) === low(state)) && (!district || low(it.district) === low(district)); });
+}
 </script>
 <script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no
 // serviceWorker there), not on a page without the manifest. ?nosw skips it once; ?nosw=reset removes it and its caches.

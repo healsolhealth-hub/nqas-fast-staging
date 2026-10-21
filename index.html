@@ -16,7 +16,7 @@ function nfAssetFail(el){ try{ console.warn('[NQAS] asset missing:',el&&(el.src|
 </script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <title>NQAS | FAST · HealSol Academy</title>
-<script id="nf-level" src="assets/types-settings.7cc8b5ed4b.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-level" src="assets/types-settings.c9093f9dc9.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-assets">var NF_ASSETS={"uphc-checklist":"assets/data-uphc-checklist.09cb37887b.json","phc-checklist":"assets/data-phc-checklist.0f179b7980.json","chc-checklist":"assets/data-chc-checklist.1d22f2ed41.json"};</script>
 <script id="nf-data-loader">// Data files loaded on demand (phase 3): a facility type's checklist is fetched only when a facility of that type opens.
 // NF_ASSETS (written by app/build.js): name → 'assets/data-<name>.<hash>.json' (published page) or '#nf-data-<name>'
@@ -38,7 +38,7 @@ function nfLoadData(name){
 
 
 <link rel="stylesheet" href="assets/shared-base.296e41553e.css" onerror="nfAssetFail(this)">
-<link rel="stylesheet" href="assets/sc-v2.6b52c20961.css" onerror="nfAssetFail(this)">
+<link rel="stylesheet" href="assets/sc-v2.bfc3486435.css" onerror="nfAssetFail(this)">
 
 <style id="nf-boot-css">
 /* Hide the old staff-login panel from the very first paint; the new NQAS | FAST login replaces it (nf-on). Safety net: show it after 6 s if the new login never mounts. */
@@ -476,20 +476,20 @@ function nfLoadData(name){
       <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:12px;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-building-plus" style="color:var(--teal);font-size:15px;"></i> Enroll New Facility</div>
       <div class="sc-enroll-grid">
         <div><label class="lc-label">Facility type</label><select class="fc-add-input" id="sc-enroll-type" style="width:100%;" onchange="nfEnrollTypeChanged(this)"></select></div>
-        <div><label class="lc-label">Facility Name *</label><input class="fc-add-input" id="sc-enroll-name" data-nf-lvl-ph placeholder="Rampur Sub-Centre" style="width:100%;"/></div>
+        <div><label class="lc-label">Facility Name *</label><input class="fc-add-input" id="sc-enroll-name" placeholder="e.g. Rampur Sub-Centre" style="width:100%;"/></div>
         <div><label class="lc-label">State *</label><select class="fc-add-input" id="sc-enroll-state" style="width:100%;"></select></div>
-        <div><label class="lc-label">District *</label><input class="fc-add-input" id="sc-enroll-district" list="nf-enroll-districts" placeholder="Start typing…" autocomplete="off" style="width:100%;"/></div>
+        <div><label class="lc-label">District *</label><select class="fc-add-input" id="sc-enroll-district" style="width:100%;"><option value="">Choose a district…</option></select></div>
         <div><label class="lc-label">Programme</label>
           <select class="fc-add-input" id="sc-enroll-prog" style="width:100%;">
             <option value="nqas_12A">12A — 12 Services (60 days)</option>
             <option value="nqas_12B">12B — 12 Services + Delivery (60 days)</option>
           </select>
         </div>
-        <div><label class="lc-label">CHO Name</label><input class="fc-add-input" id="sc-enroll-choname" placeholder="CHO Name" style="width:100%;"/></div>
-        <div><label class="lc-label">CHO Mobile *</label><input class="fc-add-input" id="sc-enroll-chomob" type="tel" maxlength="10" inputmode="numeric" placeholder="10-digit mobile (CHO login)" style="width:100%;"/></div>
+        <div><label class="lc-label" id="sc-enroll-choname-lbl">CHO Name</label><input class="fc-add-input" id="sc-enroll-choname" placeholder="CHO name" style="width:100%;"/></div>
+        <div><label class="lc-label" id="sc-enroll-chomob-lbl">CHO Mobile *</label><input class="fc-add-input" id="sc-enroll-chomob" type="tel" maxlength="10" inputmode="numeric" placeholder="10-digit mobile (CHO login)" style="width:100%;"/></div>
         <div><label class="lc-label">Govt. facility ID (NIN / HFR)</label><input class="fc-add-input" id="sc-enroll-nin" placeholder="Optional" maxlength="40" style="width:100%;"/></div>
       </div>
-      <div id="sc-enroll-idnote" style="font-size:11.5px;color:var(--t3);background:var(--bgs);border:1px dashed var(--br);border-radius:10px;padding:8px 11px;margin:-2px 0 12px;"><i class="ti ti-id" style="color:var(--teal);"></i> The Facility ID is created on save from the state and district — for example <b>UP-JHS-SC-0001</b> (running number per district, shared with self-registration). The CHO's login and a temporary password are shown once after enrolling.</div>
+      <div id="sc-enroll-idnote" style="font-size:11.5px;color:var(--t3);background:var(--bgs);border:1px dashed var(--br);border-radius:10px;padding:8px 11px;margin:-2px 0 12px;"><i class="ti ti-id" style="color:var(--teal);"></i> The Facility ID is created on save from the state and district — for example <b id="sc-enroll-idex">UP-JHS-SC-0001</b> (running number per district, shared with self-registration). The <span id="sc-enroll-incharge">CHO</span>'s login and a temporary password are shown once after enrolling.</div>
       <div style="margin-bottom:14px;">
         <label style="font-size:10px;font-weight:800;color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase;">Access Level</label>
         <div style="display:flex;gap:8px;">
@@ -780,7 +780,7 @@ function nfLoadData(name){
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
 <script src="assets/sc-login-3tier.27abd84fee.js" onerror="nfAssetFail(this)"></script>
-<script src="assets/data-sc-days.1113326e55.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/data-sc-days.7879def481.js" onerror="nfAssetFail(this)"></script>
 
 <div class="report-modal-overlay" id="rpt-filter-modal">
   <div class="report-modal" style="max-width:560px;padding:0;overflow:hidden;">
@@ -929,7 +929,7 @@ function nfLoadData(name){
     <div style="padding:20px;overflow-y:auto;" id="demo-convert-body"></div>
   </div>
 </div>
-<script src="assets/sc-v2-core.29121b0507.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-v2-core.60647aca2b.js" onerror="nfAssetFail(this)"></script>
 <!-- ══════════════════════════════════════════════════════════════
      BUILD 1 — SC simplification
      · Single CHO login: My Cards + Facility Dashboard tabs
@@ -977,7 +977,7 @@ body.scb1-light #ws-guide-toggle-btn{display:none !important;}
 
 <!-- ══ BUILD 3 — Quality Champions & peer review sessions ══ -->
 <link rel="stylesheet" href="assets/sc-champions.e1ab6daa4b.css" onerror="nfAssetFail(this)">
-<script src="assets/sc-champions.bf53faa566.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-champions.caf844a402.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ STEP A — Checkpoint Master ══ -->
 <style>
@@ -1177,7 +1177,7 @@ body.scb1-light #ws-guide-toggle-btn{display:none !important;}
 <style>
 .scx-dist #scx-adm-vq-btn,.scx-dist #scq-nav-btn,.scx-dist #scb-reset-panel{display:none !important;}
 </style>
-<script src="assets/sc-district.7979842a5a.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-district.d83509bdc1.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Review & Action Plan — MoV-level actions, Supervisor-only assignment ══ -->
 <style>
@@ -1522,7 +1522,7 @@ function nfReleaseLayers(){
 .nfs-card .scx-btn{align-self:flex-start;} td.pw{font-family:monospace;font-weight:700;color:var(--teal-dk);}
 html.nf-secure #sc-add-pwd{display:none!important;}
 .ti-database-export{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M4 6c0 1.657 3.582 3 8 3s8 -1.343 8 -3s-3.582 -3 -8 -3s-8 1.343 -8 3%22 /%3E%3Cpath d=%22M4 6v6c0 1.657 3.582 3 8 3c1.118 0 2.183 -.086 3.15 -.241%22 /%3E%3Cpath d=%22M20 12v-6%22 /%3E%3Cpath d=%22M4 12v6c0 1.657 3.582 3 8 3c.157 0 .312 -.002 .466 -.005%22 /%3E%3Cpath d=%22M16 19h6%22 /%3E%3Cpath d=%22M19 16l3 3l-3 3%22 /%3E%3C/svg%3E")}.ti-id{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z%22 /%3E%3Cpath d=%22M9 10m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0%22 /%3E%3Cpath d=%22M15 8l2 0%22 /%3E%3Cpath d=%22M15 12l2 0%22 /%3E%3Cpath d=%22M7 16l10 0%22 /%3E%3C/svg%3E")}</style>
-<script src="assets/shared-secure.f4e24cc420.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-secure.7c38c8228c.js" onerror="nfAssetFail(this)"></script>
 
 <script id="nf-registration" src="assets/shared-registration.6833f0a40c.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-payments" src="assets/shared-payments.2b35528884.js" onerror="nfAssetFail(this)"></script>
@@ -1547,8 +1547,8 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 <script id="nf-biz-report" src="assets/shared-biz-report.7d0c383ae8.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-qr" src="assets/vendor-qrcode.fabb956c75.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-sign-font-data" src="assets/vendor-sign-font.245deebf21.js" onerror="nfAssetFail(this)"></script>
-<link id="nf-cert-css" rel="stylesheet" href="assets/shared-cert.bd7de7b6f9.css" onerror="nfAssetFail(this)">
-<script id="nf-cert" src="assets/shared-cert.fc601f3244.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-cert-css" rel="stylesheet" href="assets/shared-cert.50af794399.css" onerror="nfAssetFail(this)">
+<script id="nf-cert" src="assets/shared-cert.2164ff1b2b.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-wa-css">
 /* WhatsApp: help card, help links, one-tap message buttons */
 .nf-help{display:flex;gap:12px;align-items:center;margin-top:12px;border-radius:20px;padding:14px 16px;background:#fff;border:1px solid var(--br,#E2E8F0);}
@@ -1771,7 +1771,7 @@ function nfCoverDone(){
 .nf-ho .box b{font-size:13px;} .nf-ho .scx-btn{margin-top:10px;width:100%;}
 .nf-ho .hist{font-size:11.5px;color:var(--t3);margin-top:10px;line-height:1.6;}
 </style>
-<script id="nf-ho" src="assets/sc-healsol-view.3fbb05a162.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-ho" src="assets/sc-healsol-view.fdd1503355.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 2a: "My gaps" for staff; actions and WhatsApp in Hindi ══ -->
 <style id="nf-gaps-css">
@@ -1907,14 +1907,14 @@ function nfCoverDone(){
 .nfg-banner button{margin-top:6px;}
 .master-fac-card .nfg-row{margin:6px 0 0;}
 </style>
-<script id="nf-grad" src="assets/sc-graduation.b5a74f4e64.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-grad" src="assets/sc-graduation.3051aaf5b6.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 2 of CQI: nightly facility summaries (server runs this app's own scoring) · light dashboards at scale · block · refresh ══ -->
 <script id="nf-sum" src="assets/sc-summary.0ba9eaf152.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 3 of CQI: Social impact — levels, stars, shareable card with QR, Verify page, partner strip ══ -->
-<link id="nf-imp-css" rel="stylesheet" href="assets/shared-impact.109d76a0dd.css" onerror="nfAssetFail(this)">
-<script id="nf-imp" src="assets/shared-impact.9f12aaeff6.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-imp-css" rel="stylesheet" href="assets/shared-impact.b1cba457b4.css" onerror="nfAssetFail(this)">
+<script id="nf-imp" src="assets/shared-impact.2d70258cc2.js" onerror="nfAssetFail(this)"></script>
 
 <link id="nf-dash-css" rel="stylesheet" href="assets/shared-dashboards.c05c6b7e04.css" onerror="nfAssetFail(this)">
 <script id="nf-dash" src="assets/shared-dashboards.524d7561de.js" onerror="nfAssetFail(this)"></script>
@@ -1924,16 +1924,28 @@ function nfCoverDone(){
 <script id="nf-dept" src="assets/dept-core.bb810ecee9.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-review" src="assets/dept-review.7e29837ee2.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-content" src="assets/dept-content.9efe67bbd1.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-screens" src="assets/dept-screens.a344820ff2.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-screens" src="assets/dept-screens.acc4b50f26.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-master-css" rel="stylesheet" href="assets/dept-master.d737b49cc8.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-master" src="assets/dept-master.0c48018e85.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-master-ui" src="assets/dept-master-ui.61064e6f9f.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-summary" src="assets/dept-summary.1cd0c774da.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-summary" src="assets/dept-summary.db187a1a31.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-admin" src="assets/dept-admin.e83e9004db.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-grad-css" rel="stylesheet" href="assets/dept-grad.c07401b26c.css" onerror="nfAssetFail(this)">
-<script id="nf-dept-grad" src="assets/dept-grad.981f76aec8.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-grad" src="assets/dept-grad.46c58fe5a2.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-hs-home-css" rel="stylesheet" href="assets/shared-hs-home.f2fa190596.css" onerror="nfAssetFail(this)">
-<script id="nf-hs-home" src="assets/shared-hs-home.1600cef6cc.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hs-home" src="assets/shared-hs-home.e8a17cf382.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-hs-settings-css">/* HealSol Settings refinements (21 Oct 2026) */
+.hsx-pick{display:block!important;max-height:280px;overflow-y:auto;border:1px solid var(--br);border-radius:10px;padding:6px 8px;}
+.hsx-grp+.hsx-grp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--br);}
+.hsx-grp-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:11px;color:var(--t2);}
+.hsx-mini{border:1px solid var(--br);background:#fff;border-radius:7px;padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--teal-dk);cursor:pointer;font-family:inherit;}
+.hsx-fbar{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:6px;margin-bottom:6px;}
+@media(max-width:560px){.hsx-fbar{grid-template-columns:1fr 1fr;}.hsx-fbar [data-hsx="search"]{grid-column:1/-1;}}
+.pr-grp{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);margin:12px 0 2px;}
+.pr-tabs{margin-bottom:4px;}
+.nfg-ttabs{margin:0 0 10px;gap:16px;}
+</style>
+<script id="nf-hs-settings" src="assets/shared-hs-settings.f1365f98fb.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no
 // serviceWorker there), not on a page without the manifest. ?nosw skips it once; ?nosw=reset removes it and its caches.
 (function(){

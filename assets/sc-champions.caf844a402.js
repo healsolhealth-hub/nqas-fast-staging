@@ -245,7 +245,7 @@ function scqEnsureAdminPanel(){
     el.style.cssText='background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;';
     el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
       +'<div style="font-size:13px;font-weight:800;color:var(--t1);font-family:\'Poppins\',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-award" style="color:var(--teal);font-size:15px;"></i> Quality Champions</div>'
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="scx-btn sm ghost" onclick="scqOpenRecords()"><i class="ti ti-certificate"></i> Records &amp; hours</button>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
       +'<button class="scx-btn sm" onclick="scqEditChampion(null)"><i class="ti ti-user-plus"></i> Add Champion</button></div></div>'
       +'<div style="font-size:11px;color:var(--t3);margin-bottom:10px;">CHOs from NQAS-accredited Sub-Centres who run video peer reviews for up to '+SCQ_SUGGESTED_MAX+' facilities each, under a Supervisor. They log in with their mobile number from the award button on the login screen.</div>'
       +'<div id="scq-champ-list"></div>';
@@ -286,10 +286,35 @@ async function scqEditChampion(id){
       {key:'homeCode',label:'Own facility (if enrolled here)',type:'select',value:c?c.homeCode||'':'',options:homeOpts},
       {key:'homeName',label:'Own facility name',value:c?c.homeName||'':'',placeholder:'e.g. AAM-SC Bharatpur (NQAS accredited)'},
       {key:'accreditationYear',label:'NQAS accreditation year',type:'number',value:c?c.accreditationYear||'':'',placeholder:'e.g. 2025'},
-      {key:'district',label:'District',value:c?c.district||'':'',placeholder:'District'},
+      {key:'state',label:'State',type:'select',value:(c&&c.state)||'Uttar Pradesh',options:[]},
+      {key:'district',label:'District',type:'select',value:c?c.district||'':'',options:[]},
       {key:'supervisorId',label:'Supervisor',type:'select',value:c?c.supervisorId||'':'',options:supOpts},
-      {key:'facilities',label:'Allotted facilities (suggested 3–'+SCQ_SUGGESTED_MAX+')',type:'checklist',value:c?scqFacList(c):[],options:_scFacilityOptions(),emptyText:'No facilities enrolled yet.'}
+      {key:'facilities',label:'Allotted facilities (suggested 3–'+SCQ_SUGGESTED_MAX+')',type:'checklist',value:[],options:[],emptyText:'No facilities enrolled yet.'}
     ],
+    onRender:function(I){
+      // HealSol 21 Oct: state / district dropdowns; the facility list shows the chosen Supervisor's facilities, filtered by type and district, with search
+      var stS=I.state.el, diS=I.district.el, spS=I.supervisorId.el, fc=I.facilities.el, first=true;
+      hsxFillSelect(stS,hsxStates(),(c&&c.state)||'Uttar Pradesh');
+      var fillD=function(keep){ var ds=hsxDistricts(stS.value); if(keep&&ds.indexOf(keep)<0) ds=[keep].concat(ds); hsxFillSelect(diS,ds,keep,'Choose a district…'); };
+      fillD(c?c.district||'':'');
+      var fb=hsxFilterBar(fc,['type','fdist','search']), hint=document.createElement('div'); hint.className='scx-hint'; fc.parentNode.insertBefore(hint,fc.nextSibling);
+      var draw=function(){
+        var keep=first?(c?scqFacList(c):[]):hsxVals(fc); first=false;
+        var sf=spS.value?scSupFacilityList(_scSupervisors[spS.value]||{}):null, all=hsxFacItems().filter(function(it){ return !sf||sf.indexOf(it.value)>=0||keep.indexOf(it.value)>=0; });
+        var tv=fb.type.value, dv=fb.fdist.value, types={}, dists={};
+        all.forEach(function(it){ types[it.type]=1; if(it.district) dists[it.district]=1; });
+        hsxFillSelect(fb.type,Object.keys(types).map(function(t){ return {value:t,label:hsxTypeName(t)}; }),tv,'All facility types');
+        hsxFillSelect(fb.fdist,Object.keys(dists).sort(),dv,'All districts');
+        var items=all.filter(function(it){ return (!fb.type.value||it.type===fb.type.value)&&(!fb.fdist.value||it.district===fb.fdist.value)||keep.indexOf(it.value)>=0; });
+        hsxPicker(fc,items,keep,'district',spS.value?'This Supervisor has no facility of this kind yet.':'No facilities enrolled yet.');
+        hsxPickerSearch(fc,fb.search.value);
+        hint.textContent=spS.value?'Showing the '+all.length+' facilit'+(all.length===1?'y':'ies')+' this Supervisor looks after.':'Choose the Supervisor first — only their facilities can be allotted.';
+      };
+      stS.addEventListener('change',function(){ fillD(''); });
+      [spS,fb.type,fb.fdist].forEach(function(x){ x.addEventListener('change',draw); });
+      fb.search.addEventListener('input',function(){ hsxPickerSearch(fc,fb.search.value); });
+      draw();
+    },
     validate:function(v){
       if(!c){ var k=scqKey(v.mobile); if(!/^\d{10}$/.test(k)) return 'Enter a valid 10-digit mobile number.'; if(_scq.champions[k]) return 'A Champion with this mobile already exists.'; }
       if(v.password&&v.password.length<4) return 'Password must be at least 4 characters.';
@@ -310,7 +335,7 @@ async function scqEditChampion(id){
   var fmap={}; v.facilities.forEach(function(f){ fmap[f]=true; });
   var rec=Object.assign({},c||{createdAt:scNowIso(),createdBy:'HealSol Admin',disabled:false,mobile:key},{
     name:v.name.trim(),homeCode:v.homeCode||'',homeName:(v.homeName||'').trim()||(v.homeCode?scqFacName(v.homeCode):''),
-    accreditationYear:v.accreditationYear?parseInt(v.accreditationYear,10):null,district:(v.district||'').trim(),
+    accreditationYear:v.accreditationYear?parseInt(v.accreditationYear,10):null,state:v.state||'',district:(v.district||'').trim(),
     supervisorId:v.supervisorId,facilities:fmap,updatedAt:scNowIso()});
   if(v.password) rec.password=v.password;
   if(!await fbSet('sc_champions/'+key,scClean(rec))){ showToast('Could not save — check connection.','err'); return; }
@@ -501,14 +526,14 @@ async function scqEditSession(id,code){
     {key:'note',label:'Note for the facility (optional)',type:'textarea',value:s?s.note||'':'',placeholder:'e.g. Please keep the ANC register and MCP cards ready'});
   var v=await scDialog({title:s?'Edit peer review session':(k==='champion'?'Propose a peer review session':'Schedule a peer review session'),icon:'📅',wide:true,
     okLabel:s?'Save changes':(k==='champion'?'Send for approval':'Schedule'),
-    message:k==='champion'&&!s?'Your Supervisor approves the session before it appears in the facility\'s app.':null,
+    message:k==='champion'&&!s?'Your Supervisor approves the session before it appears in the facility\'s app.':k==='healsol'&&!s?'The facility\'s Supervisor approves the session before it appears in the facility\'s app.':null,
     fields:fields,
     validate:function(v){
       var st=new Date(v.date+'T'+v.time); if(isNaN(st.getTime())) return 'Enter a valid date and time.';
       if(!s&&st.getTime()<Date.now()) return 'Choose a time in the future.';
       var dur=parseInt(v.durationMin,10); if(!(dur>=15&&dur<=240)) return 'Duration must be between 15 and 240 minutes.';
       if(!scIsHttpUrl(v.link)) return 'Enter the full meeting link (starting with https://).';
-      var f=_scq.facs[v.pair.split('|')[0]]||(scMasterFacilities||{})[v.pair.split('|')[0]]||{}, days=getProg(f.progId||'nqas_12A').days;
+      var f=_scq.facs[v.pair.split('|')[0]]||(scMasterFacilities||{})[v.pair.split('|')[0]]||{}, days=nfTypeOf(f)!=='sc'?(NF_LEVELS[nfTypeOf(f)].days||60):(getProg(f.progId||'nqas_12A')||{days:60}).days;
       var a=parseInt(v.dayFrom,10), b=parseInt(v.dayTo,10);
       if(!(a>=1&&b>=a&&b<=days)) return 'Day range must be within Days 1–'+days+' (from ≤ to).';
       return null;
@@ -524,13 +549,13 @@ async function scqEditSession(id,code){
   delete rec.id;
   if(!s){
     Object.assign(rec,{createdAt:now,createdBy:a.name,createdByRole:k==='champion'?'Quality Champion':(k==='healsol'?'HealSol Admin':'Supervisor')});
-    if(k==='champion') rec.status='proposed';
-    else Object.assign(rec,{status:'scheduled',scheduleApprovedBy:k==='healsol'?'HealSol Admin':a.name,scheduleApprovedAt:now});
+    if(k==='champion'||k==='healsol') rec.status='proposed';   // HealSol's sessions also go to the Supervisor to approve (21 Oct)
+    else Object.assign(rec,{status:'scheduled',scheduleApprovedBy:a.name,scheduleApprovedAt:now});
   }
   var sid=s?s.id:scUid('rs');
   if(!await fbSet('sc_review_sessions/'+sid,scClean(rec))){ showToast('Could not save — check connection.','err'); return; }
   _scq.sessions[sid]=rec;
-  showToast(s?'Session updated.':(k==='champion'?'Sent to your Supervisor for approval.':'Session scheduled.'),'ok');
+  showToast(s?'Session updated.':(k==='champion'?'Sent to your Supervisor for approval.':k==='healsol'?'Scheduled — sent to the facility\'s Supervisor to approve.':'Session scheduled.'),'ok');
   scqAfterChange();
 }
 async function scqApproveSchedule(id){

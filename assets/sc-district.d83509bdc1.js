@@ -20,7 +20,7 @@ function scDistEnsurePanel(){
     el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
       +'<div style="font-size:13px;font-weight:800;color:var(--t1);font-family:\'Poppins\',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-map-2" style="color:var(--teal);font-size:15px;"></i> District Admins</div>'
       +'<button class="scx-btn sm" style="flex:0 0 auto;" onclick="scEditDistrict(null)"><i class="ti ti-user-plus"></i> Add District Admin</button></div>'
-      +'<div style="font-size:11px;color:var(--t3);margin-bottom:10px;">View-only access to readiness dashboards and reports for the facilities you allot (from one or several districts). They log in from the map button on the login screen.</div>'
+      +'<div style="font-size:11px;color:var(--t3);margin-bottom:10px;">View-only access to readiness dashboards and reports for the facilities of one district — ticked one by one, or all of them including ones enrolled later. They log in from the map button on the login screen.</div>'
       +'<div id="scd-dist-list"></div>';
     var host=sup.parentNode; host.parentNode.insertBefore(el,host.nextSibling);
   }
@@ -35,7 +35,7 @@ function scRenderDistrictAdmin(){
     var d=_scDistricts[id]||{}, facs=scDistFacilities(d), I=scJs(id), dn=scDistNames(facs);
     return '<div class="scx-sup-row"'+(d.disabled?' style="opacity:0.6;"':'')+'><div class="scx-av">'+scEsc(String(d.name||id).charAt(0).toUpperCase())+'</div>'
       +'<div style="flex:1;min-width:180px;"><div style="font-size:12px;font-weight:800;color:var(--t1);">'+scEsc(d.name||id)+(d.disabled?' <span class="scx-chip end">Disabled</span>':'')+'</div>'
-      +'<div style="font-size:10px;color:var(--t3);font-weight:700;">ID: '+scEsc(id)+' · '+facs.length+' facilit'+(facs.length===1?'y':'ies')+(dn.length?' · '+scEsc(dn.join(', ')):'')+'</div></div>'
+      +'<div style="font-size:10px;color:var(--t3);font-weight:700;">ID: '+scEsc(id)+' · '+facs.length+' facilit'+(facs.length===1?'y':'ies')+(dn.length?' · '+scEsc(dn.join(', ')):(d.district?' · '+scEsc(d.district):''))+(d.auto?' · <span class="scx-chip pkg">All of '+scEsc(d.district||'the district')+', incl. new</span>':'')+'</div></div>'
       +'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="scEditDistrict(\''+I+'\')"><i class="ti ti-pencil"></i> Edit</button>'
       +'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="scToggleDistrict(\''+I+'\')">'+(d.disabled?'Enable':'Disable')+'</button>'
       +'<button class="scx-btn sm danger" style="flex:0 0 auto;" onclick="scRemoveDistrict(\''+I+'\')"><i class="ti ti-trash"></i></button></div>';
@@ -49,25 +49,58 @@ function scDistFacilityOptions(){
 async function scEditDistrict(id){
   if(appMode!=='sc-admin'){ showToast('Only HealSol Admin can manage District Admins.','err'); return; }
   var d=id?(_scDistricts[id]||{}):null;
+  // a District Admin is made for one state and district (HealSol 21 Oct); facilities of that district are listed by type.
+  // "Including ones enrolled later": the server adds every new facility of the district (enrollFacility / self-registration).
+  var st0=(d&&d.state)||'', di0=(d&&d.district)||'';
+  if(d&&!st0){ var fs=scDistFacilities(d).map(function(c){ return (scMasterFacilities||{})[c]; }).filter(Boolean); if(fs.length){ st0=fs[0].state||''; di0=fs[0].district||''; } }
+  if(!st0) st0='Uttar Pradesh';
   var v=await scDialog({title:d?'Edit District Admin':'Add District Admin',icon:'🗺️',wide:true,okLabel:d?'Save':'Create District Admin',
     message:d?null:'District Admins can only view readiness and download reports for the facilities you tick. They cannot verify, assign actions or change anything.',
     fields:[
       d?{key:'_id',label:'District Admin ID',type:'info',value:id}:{key:'id',label:'District Admin ID (used to log in)',required:true,placeholder:'e.g. dpm-jaipur'},
       {key:'name',label:'Full name and designation',required:true,value:d?d.name:'',placeholder:'e.g. Dr. R. Meena, DPM Jaipur'},
       {key:'password',label:d?'New password (leave blank to keep)':'Password',type:'text',required:!d,minLength:d?0:4,placeholder:d?'••••':'min 4 characters'},
-      {key:'facilities',label:'Facilities (grouped by district)',type:'checklist',value:d?scDistFacilities(d):[],options:scDistFacilityOptions(),emptyText:'No facilities enrolled yet.'}
+      {key:'state',label:'State',type:'select',required:true,value:st0,options:[]},
+      {key:'district',label:'District',type:'select',required:true,value:di0,options:[]},
+      {key:'auto',label:'',type:'checklist',value:d&&d.auto?['auto']:[],options:[{value:'auto',label:'All facilities in this district, including ones enrolled later'}]},
+      {key:'facilities',label:'Facilities in this district (grouped by type)',type:'checklist',value:[],options:[]}
     ],
+    onRender:function(I){
+      var stS=I.state.el, diS=I.district.el, au=I.auto.el, fc=I.facilities.el, first=true;
+      hsxFillSelect(stS,hsxStates(),st0);
+      var fillD=function(keep){ hsxFillSelect(diS,hsxDistricts(stS.value),keep,'Choose a district…'); };
+      fillD(di0);
+      var autoOn=function(){ return !!au.querySelector('input:checked'); };
+      var draw=function(){
+        var keep=first?(d?scDistFacilities(d):[]):hsxVals(fc); first=false;
+        var items=diS.value?hsxDistItems(stS.value,diS.value):[];
+        // facilities already allotted elsewhere stay visible so they are not dropped by mistake
+        var have={}; items.forEach(function(it){ have[it.value]=1; });
+        hsxFacItems().forEach(function(it){ if(!have[it.value]&&keep.indexOf(it.value)>=0){ it.label+=' · '+(it.district||'no district'); it.type=it.type; items.push(it); } });
+        if(autoOn()) keep=items.filter(function(it){ return hsxDistItems(stS.value,diS.value).some(function(x){ return x.value===it.value; }); }).map(function(it){ return it.value; }).concat(keep);
+        hsxPicker(fc,items,keep,'type',diS.value?'No facility of '+diS.value+' is enrolled yet.'+(autoOn()?' New ones will be added automatically.':''):'Choose the state and district first.');
+        if(autoOn()) fc.querySelectorAll('input').forEach(function(c){ var it=items.find(function(x){ return x.value===c.value; }); if(it&&String(it.district).toLowerCase()===String(diS.value).toLowerCase()){ c.checked=true; c.disabled=true; c.parentNode.classList.add('on'); } });
+      };
+      stS.addEventListener('change',function(){ fillD(''); draw(); });
+      diS.addEventListener('change',draw);
+      au.querySelectorAll('input').forEach(function(c){ c.addEventListener('change',draw); });
+      draw();
+    },
     validate:function(v){
       if(!d){ var k=scSupKey(v.id); if(!k) return 'Enter a valid ID (letters, numbers, - and _).'; if(_scDistricts[k]) return 'That District Admin ID already exists.'; }
       if(v.password&&v.password.length<4) return 'Password must be at least 4 characters.';
-      if(!v.facilities.length) return 'Allot at least one facility.';
+      if(!v.state||!v.district) return 'Choose the state and district.';
+      if(!v.facilities.length&&!(v.auto||[]).length) return 'Tick at least one facility, or choose "All facilities in this district".';
       return null;
     }});
   if(!v) return;
   var key=d?id:scSupKey(v.id), fmap={}; v.facilities.forEach(function(c){ fmap[c]=true; });
-  var rec=Object.assign({},d||{createdAt:scNowIso(),createdBy:'HealSol Admin',disabled:false},{name:v.name.trim(),facilities:fmap,updatedAt:scNowIso()});
+  var auto=(v.auto||[]).length>0;
+  if(auto) hsxDistItems(v.state,v.district).forEach(function(it){ fmap[it.value]=true; });
+  var rec=Object.assign({},d||{createdAt:scNowIso(),createdBy:'HealSol Admin',disabled:false},{name:v.name.trim(),state:v.state,district:v.district,auto:auto||null,facilities:fmap,updatedAt:scNowIso()});
   if(v.password) rec.password=v.password;
   if(!await fbSet('sc_district_admins/'+key,scClean(rec))){ showToast('Could not save — check connection.','err'); return; }
+  if(!auto) delete rec.auto;
   _scDistricts[key]=rec; scRenderDistrictAdmin();
   showToast(d?'District Admin updated.':'District Admin "'+key+'" created.','ok');
 }

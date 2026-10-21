@@ -2096,10 +2096,15 @@ async function phcCloseLead(id){
 // ── Pricing config (4 packages, not departments) ────────────────
 var _phcPricingCache=null;
 function _phcAllPriceableItems(){
-  var L=Object.keys(_SC_PKG_LABELS).map(function(id){return {id:id,label:'Sub-Centre · '+_SC_PKG_LABELS[id]};});
-  // 21 Oct: UPHC / PHC / CHC packages and a catch-up price per package (prices decided later; blank = not sold yet)
-  try{ ['uphc','phc','chc'].forEach(function(t){ var LV=NF_LEVELS[t]||{}; (LV.programmes||[]).forEach(function(p){ L.push({id:p.id,label:(LV.short||t.toUpperCase())+' · '+String(p.label).replace(/^[^—]*—\s*/,'')}); }); }); }catch(e){}
-  return L.concat(L.map(function(it){ return {id:'catchup_'+it.id,label:'Catch-up · '+it.label}; }));
+  // each item: {id, label, type (sc|uphc|phc|chc), grp (package | base | addon | catchup)}
+  var L=Object.keys(_SC_PKG_LABELS).map(function(id){return {id:id,label:'Sub-Centre · '+_SC_PKG_LABELS[id],type:'sc',grp:'package'};});
+  // 21 Oct: UPHC / PHC packages; CHC priced as a base (FRU / Non-FRU) plus an add-on per optional department (prices decided later; blank = not sold yet)
+  try{ ['uphc','phc'].forEach(function(t){ var LV=NF_LEVELS[t]||{}; (LV.programmes||[]).forEach(function(p){ L.push({id:p.id,label:(LV.short||t.toUpperCase())+' · '+String(p.label).replace(/^[^—]*—\s*/,''),type:t,grp:'package'}); }); });
+    var C=NF_LEVELS.chc||{}, core=(C.departments||[]).filter(function(d){ return !d.optional; }).map(function(d){ return d.name; }).join(', ');
+    L.push({id:'nqas_chc_fru',label:'CHC (FRU) · base price',hint:'Covers '+core,type:'chc',grp:'base'});
+    L.push({id:'nqas_chc_nonfru',label:'CHC (Non-FRU) · base price',hint:'Covers '+core,type:'chc',grp:'base'});
+    (C.departments||[]).filter(function(d){ return d.optional; }).forEach(function(d){ L.push({id:'chc_dept_'+d.id,label:'CHC add-on · '+d.name,type:'chc',grp:'addon'}); }); }catch(e){}
+  return L.concat(L.filter(function(it){ return it.grp!=='addon'; }).map(function(it){ return {id:'catchup_'+it.id,label:'Catch-up · '+it.label.replace(/ · base price$/,''),type:it.type,grp:'catchup'}; }));
 }
 function _phcPriceLabel(id){ var it=_phcAllPriceableItems().find(function(x){ return x.id===id; }); return it?it.label:(_SC_PKG_LABELS[id]||''); }
 async function phcLoadPricing(force){
@@ -2113,18 +2118,44 @@ async function phcLoadPricing(force){
   _phcPricingCache={items:base};
   return _phcPricingCache;
 }
+var _phcPriceTab='sc';
 async function adminRenderPricingPanel(){
   var cont=document.getElementById('pricing-list');if(!cont)return;
   var cfg=await phcLoadPricing(true);
   while(cont.firstChild)cont.removeChild(cont.firstChild);
+  // one tab per facility type (HealSol 21 Oct); every input stays in the page so Save keeps all prices
+  var tabs=document.createElement('div');tabs.className='hs-tabs pr-tabs';tabs.setAttribute('role','tablist');
+  ['sc','uphc','phc','chc'].forEach(function(t){ var b=document.createElement('button');b.type='button';b.className='hs-tab'+(t===_phcPriceTab?' on':'');b.textContent=(NF_LEVELS[t]||{}).plural||t;b.setAttribute('data-t',t);
+    b.onclick=function(){ _phcPriceTab=t; tabs.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on',x.getAttribute('data-t')===t); }); cont.querySelectorAll('[data-pt]').forEach(function(r){ r.style.display=r.getAttribute('data-pt')===t?'':'none'; }); };
+    tabs.appendChild(b); });
+  cont.appendChild(tabs);
+  var GRP={package:'Packages',base:'Base price (core departments)',addon:'Add-on price per optional department — added for each department the CHC has',catchup:'Catch-up'}, last='';
   cfg.items.forEach(function(it){
-    var row=document.createElement('div');row.className='pricing-row';
+    var t=it.type||'sc', key=t+'|'+it.grp;
+    if(key!==last){ last=key; var h=document.createElement('div');h.className='pr-grp';h.setAttribute('data-pt',t);h.textContent=GRP[it.grp]||'';cont.appendChild(h); }
+    var row=document.createElement('div');row.className='pricing-row';row.setAttribute('data-pt',t);
     var lbl=document.createElement('div');lbl.style.cssText='flex:1;font-size:12px;font-weight:700;color:var(--t1);';lbl.textContent=it.label;
+    if(it.hint){ var sm=document.createElement('small');sm.style.cssText='display:block;font-weight:600;color:var(--t3);font-size:10.5px;';sm.textContent=it.hint;lbl.appendChild(sm); }
     var rupee=document.createElement('span');rupee.style.cssText='font-size:12px;color:var(--t3);';rupee.textContent='₹';
     var inp=document.createElement('input');inp.type='number';inp.min='0';inp.placeholder='Not set';
     inp.value=(it.price!==null&&it.price!==undefined)?it.price:'';inp.dataset.itemId=it.id;
     row.appendChild(lbl);row.appendChild(rupee);row.appendChild(inp);cont.appendChild(row);
   });
+  var note=document.createElement('div');note.className='pr-grp';note.setAttribute('data-pt','chc');note.style.cssText='font-weight:600;text-transform:none;letter-spacing:0;';
+  note.textContent='A CHC pays its base price (FRU or Non-FRU, chosen at enrolment) plus the add-on of each optional department it has. The enrolment form shows the total.';
+  cont.appendChild(note);
+  cont.querySelectorAll('[data-pt]').forEach(function(r){ r.style.display=r.getAttribute('data-pt')===_phcPriceTab?'':'none'; });
+}
+// price of a facility being enrolled: package price, or for a CHC its base (FRU / Non-FRU) + the ticked optional departments
+async function nfEnrollPriceLine(){
+  var el=document.getElementById('nf-enroll-price'), ty=(document.getElementById('sc-enroll-type')||{}).value||'sc'; if(!el) return;
+  if(ty!=='chc'){ el.textContent=''; return; }
+  var cfg=await phcLoadPricing(), P={}; cfg.items.forEach(function(it){ P[it.id]=it.price; });
+  var kind=(document.querySelector('input[name="nf-chc-kind"]:checked')||{}).value||'fru', base=P['nqas_chc_'+kind], on=[].filter.call(document.querySelectorAll('#sc-enroll-depts input[data-nf-dept]'),function(c){ return c.checked; }).map(function(c){ return c.getAttribute('data-nf-dept'); });
+  var add=0, unset=[]; on.forEach(function(d){ var v=P['chc_dept_'+d]; if(v==null) unset.push(d); else add+=+v; });
+  var fmt=function(n){ return '₹'+Number(n).toLocaleString('en-IN'); };
+  if(base==null){ el.textContent='Price: not set yet (Settings → Pricing → CHCs).'; return; }
+  el.textContent='Price: '+fmt(base)+' base + '+fmt(add)+' for '+on.length+' department'+(on.length===1?'':'s')+' = '+fmt(+base+add)+(unset.length?' · no price yet for '+unset.join(', '):'');
 }
 async function adminSavePricing(){
   var cont=document.getElementById('pricing-list');if(!cont)return;

@@ -7,9 +7,13 @@
   if(typeof scVGuard==='function'){ var oG=scVGuard; scVGuard=function(code){ if(appMode==='sc-admin'){ showToast('View only — Supervisors (and the CHO / MO for ANM, ASHA, MPW cards) verify cards.','err'); return null; } return oG.apply(this,arguments); }; }
   if(typeof scVStaffHTML==='function'){ var oS=scVStaffHTML; scVStaffHTML=function(){ var h=oS.apply(this,arguments);
     if(appMode==='sc-admin'&&h) h=h.replace(/View only — this facility's cards are verified by its Qu[^<]*/,'View only — cards are verified by the Supervisor, the Quality Champion or the CHO / MO, not by HealSol.'); return h; }; }
-  // Peer Review sessions: HealSol cannot schedule, approve, return, cancel or finalise
-  ['scqEditSession','scqApproveSchedule','scqCancelSession','scqApproveSummary','scqReturnSummary','scqFinalize'].forEach(function(fn){ var o=window[fn]; if(typeof o!=='function') return;
-    window[fn]=function(){ if(appMode==='sc-admin'){ showToast('View only — Supervisors schedule and approve Peer Review sessions.','err'); return; } return o.apply(this,arguments); }; });
+  // Peer Review sessions (HealSol 21 Oct): HealSol may schedule a session; it goes to the facility's Supervisor to approve, like a
+  // Champion's proposal. HealSol can change or cancel a session only while it waits for that approval; approving, returning and
+  // finalising stay with the Supervisor.
+  ['scqApproveSchedule','scqApproveSummary','scqReturnSummary','scqFinalize'].forEach(function(fn){ var o=window[fn]; if(typeof o!=='function') return;
+    window[fn]=function(){ if(appMode==='sc-admin'){ showToast('View only — the facility\'s Supervisor approves Peer Review sessions and summaries.','err'); return; } return o.apply(this,arguments); }; });
+  ['scqEditSession','scqCancelSession'].forEach(function(fn){ var o=window[fn]; if(typeof o!=='function') return;
+    window[fn]=function(id){ if(appMode==='sc-admin'&&id){ var s=((typeof _scq!=='undefined'&&_scq.sessions)||{})[id]; if(s&&s.status!=='proposed'){ showToast('Only the facility\'s Supervisor can change a session after it is approved.','err'); return; } } return o.apply(this,arguments); }; });
 })();
 // ── Hand over a facility (HealSol Setup) ──────────────────────
 var _nfHo={sups:{},champs:{},facs:{}};

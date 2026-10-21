@@ -37,7 +37,7 @@ function scFmtDateTime(iso){
   try{ return new Date(iso).toLocaleString('en-IN',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}); }
   catch(e){ return iso||'—'; }
 }
-function scPkgShort(id){ return ({nqas_12A:'12A',nqas_12B:'12B'})[id]||id||'—'; }
+function scPkgShort(id){ return ({nqas_12A:'12A',nqas_12B:'12B',nqas_uphcA:'UPHC-A',nqas_uphcB:'UPHC-B',nqas_phc:'PHC',nqas_chc:'CHC'})[id]||id||'—'; }
 function scPkgLabel(id){ return (typeof _SC_PKG_LABELS!=='undefined'&&_SC_PKG_LABELS[id])||id||'—'; }
 function scPctColor(p){ return p>=80?'var(--green)':p>=70?'var(--teal)':p>=50?'var(--amber)':'var(--red)'; }
 function scPctText(p){ return p>=70?'var(--green-dk)':p>=50?'var(--amber-dk)':'var(--red-dk)'; }
@@ -659,6 +659,9 @@ function scAsList(v){
   return [String(v)];
 }
 function scLiveAudience(){
+  // department staff (UPHC / PHC / CHC app)
+  if(typeof _nd!=='undefined'&&_nd&&!_nd.view&&typeof ndMob==='function'){ var nst=((_nd.fac||{}).staff||{})[ndMob()]||{};
+    return {pkgs:[_nd.fac.progId||''],role:nst.role||'',codes:[_nd.code],types:[_nd.cfg.id]}; }
   if(appMode==='cho') return {pkgs:[choState.progId],role:choState.roleId,codes:[choState.facilityCode]};
   if(appMode==='sc-cho') return {pkgs:[(scSubAdminData||{}).progId||'nqas_12A'],codes:[scSubAdminCode]};
   if(appMode==='sc-supervisor'){
@@ -681,6 +684,9 @@ function scLiveFacilityOptions(){
 function scLiveVisible(s,aud){
   if(!s) return false;
   if(!aud) return true;
+  var ty=scAsList(s.types);
+  if(ty.length){ var at=aud.types||(aud.codes||[]).map(function(c){ return nfTypeOf((scMasterFacilities||{})[c]||((typeof scSubAdminCode!=='undefined'&&c===scSubAdminCode)?scSubAdminData:null)); });
+    if(!at.length) at=['sc']; if(!at.some(function(t){ return ty.indexOf(t)>=0; })) return false; }
   var pk=scAsList(s.packages);
   if(pk.length&&!aud.pkgs.some(function(p){return pk.indexOf(p)>=0;})) return false;
   if(aud.role){ var rl=scAsList(s.roles); if(rl.length&&rl.indexOf(aud.role)<0) return false; }
@@ -710,8 +716,9 @@ function scLiveCardHTML(s,canManage){
   var now=Date.now(), st=scLiveStatus(s,now), t=scLiveTimes(s), pf=scLivePlatform(s.link);
   var pk=scAsList(s.packages), rl=scAsList(s.roles);
   var chips='<span class="scx-chip '+pf.key+'">'+scEsc(pf.label)+'</span>';
+  var tys=scAsList(s.types); if(canManage) chips+='<span class="scx-chip pkg">'+scEsc(tys.length?tys.map(function(t){ return (NF_LEVELS[t]||{}).plural||t; }).join(', '):'All types')+'</span>';
   chips+=pk.length?pk.map(function(p){return '<span class="scx-chip pkg">'+scEsc(scPkgShort(p))+'</span>';}).join(''):'<span class="scx-chip pkg">All packages</span>';
-  if(rl.length) chips+=rl.map(function(r){return '<span class="scx-chip role">'+scEsc(r)+'</span>';}).join('');
+  if(rl.length){ var rlab=function(r){ var t=tys[0]||'sc', x=(((NF_LEVELS[t]||{}).roles)||[]).find(function(y){ return y.id===r; }); return x?x.label:r; }; chips+=rl.map(function(r){return '<span class="scx-chip role">'+scEsc(rlab(r))+'</span>';}).join(''); }
   var fcs=scAsList(s.facilities), fnm=function(c){ return ((scMasterFacilities||{})[c]||((_scq&&_scq.facs)||{})[c]||{}).name||c; };
   chips+=fcs.length?'<span class="scx-chip fac" title="'+scEsc(fcs.map(fnm).join(', '))+'"><i class="ti ti-building-hospital"></i> '+(fcs.length<=3?scEsc(fcs.map(fnm).join(', ')):fcs.length+' facilities')+'</span>':(canManage?'<span class="scx-chip fac">All facilities</span>':'');
   var stChip=st==='live'?'<span class="scx-chip livenow">● LIVE</span>':st==='upcoming'?'<span class="scx-chip up">Starts in '+scCountdown(t.start-now)+'</span>':'<span class="scx-chip end">Ended</span>';
@@ -777,10 +784,43 @@ function _scLocalDateTime(iso){
   return {date:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),
           time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
 }
+// Live session targets (HealSol 21 Oct): facility type first, then that type's packages, its facilities and its staff roles.
+// Saved as types:[type] (empty = every type); packages / facilities / roles empty = everyone of that type.
+function scLiveTypePkgs(t){
+  if(!t) return [];
+  if(t==='sc') return PROGRAMS.map(function(p){ return {value:p.id,label:scPkgShort(p.id)+' · '+p.name}; });
+  return ((NF_LEVELS[t]||{}).programmes||[]).map(function(p){ return {value:p.id,label:p.label}; });
+}
+function scLiveTypeRoles(t){
+  if(!t) return [];
+  return ((NF_LEVELS[t]||{}).roles||[]).filter(function(r){ return r.id!=='General'; }).map(function(r){ return {value:r.id,label:r.label}; });
+}
+function scLiveTypeOf(s){
+  var ty=scAsList(s&&s.types); if(ty.length) return ty[0];
+  var pk=scAsList(s&&s.packages); if(!pk.length) return '';
+  var hit=''; Object.keys(NF_LEVELS).forEach(function(t){ if(!hit&&scLiveTypePkgs(t).some(function(o){ return pk.indexOf(o.value)>=0; })) hit=t; });
+  return hit;
+}
+// refill a scDialog checklist in place, keeping the ticks that are still offered
+function scChkFill(el,options,selected,emptyText){
+  if(!el) return;
+  var sel=(selected||[]).map(String);
+  el.innerHTML=''; el.style.cssText='';
+  options.forEach(function(o){
+    var lb=document.createElement('label'); lb.className='scx-chk'+(sel.indexOf(String(o.value))>=0?' on':''); if(o.search) lb.setAttribute('data-q',o.search);
+    var cb=document.createElement('input'); cb.type='checkbox'; cb.value=o.value; cb.checked=sel.indexOf(String(o.value))>=0;
+    cb.addEventListener('change',function(){ lb.classList.toggle('on',cb.checked); });
+    lb.appendChild(cb); lb.appendChild(document.createTextNode(o.label)); el.appendChild(lb);
+  });
+  if(!options.length){ el.textContent=emptyText||'Nothing to choose from.'; el.style.cssText='font-size:11px;color:var(--t3);'; }
+}
+function scChkVals(el){ return el?Array.prototype.slice.call(el.querySelectorAll('input:checked')).map(function(c){ return c.value; }):[]; }
 async function scEditLive(id){
   var s=id?_scLive[id]:null;
   var dt=_scLocalDateTime(s?s.startAt:null);
   if(!s) dt.time='16:00';
+  var ty0=scLiveTypeOf(s);
+  var F=scMasterFacilities||{};
   var v=await scDialog({
     title:s?'Edit live session':'Schedule live session', icon:'📡', wide:true, okLabel:s?'Save changes':'Schedule',
     fields:[
@@ -790,20 +830,46 @@ async function scEditLive(id){
       {key:'date',label:'Date',type:'date',required:true,value:dt.date},
       {key:'time',label:'Start time',type:'time',required:true,value:dt.time},
       {key:'durationMin',label:'Duration (minutes)',type:'number',required:true,value:s?s.durationMin:60,min:5},
-      {key:'packages',label:'Target packages',type:'checklist',value:s?scAsList(s.packages):[],
-        options:PROGRAMS.map(function(p){return {value:p.id,label:scPkgShort(p.id)+' · '+p.name};}),hint:'Leave all unticked to show to every package.'},
-      {key:'facilities',label:'Target facilities',type:'checklist',value:s?scAsList(s.facilities):[],options:scLiveFacilityOptions(),emptyText:'No facilities enrolled yet.',hint:'Leave all unticked to show to every facility.'},
-      {key:'roles',label:'Target staff roles',type:'checklist',value:s?scAsList(s.roles):[],
-        options:SC_ROLES.filter(function(r){return r.id!=='General';}).map(function(r){return {value:r.id,label:r.label};}),hint:'Leave all unticked to show to every role.'},
+      {key:'type',label:'1 · Facility type',type:'select',value:ty0,
+        options:[{value:'',label:'All facility types (everyone)'}].concat(Object.keys(NF_LEVELS).map(function(k){ return {value:k,label:NF_LEVELS[k].plural}; })),
+        hint:'Choose a type to target its packages, facilities and staff roles.'},
+      {key:'packages',label:'2 · Target packages',type:'checklist',value:[],options:[],hint:'Leave all unticked to show to every package of this type.'},
+      {key:'facilities',label:'3 · Target facilities',type:'checklist',value:[],options:[],hint:'Leave all unticked to show to every facility of this type.'},
+      {key:'roles',label:'4 · Target staff roles',type:'checklist',value:[],options:[],hint:'Leave all unticked to show to every role.'},
       {key:'recordingUrl',label:'Recording URL (optional)',type:'url',value:s?s.recordingUrl:'',placeholder:'YouTube, Wix video, or .mp4 link'}
     ],
+    onRender:function(I){
+      var tySel=I.type.el, pk=I.packages.el, fc=I.facilities.el, rl=I.roles.el;
+      // search box over the facility list
+      var q=document.createElement('input'); q.className='scx-in'; q.placeholder='Search facility or district…'; q.style.marginBottom='6px'; q.autocomplete='off';
+      fc.parentNode.insertBefore(q,fc);
+      var filt=function(){ var t=q.value.trim().toLowerCase(); fc.querySelectorAll('label.scx-chk').forEach(function(lb){ lb.style.display=!t||String(lb.getAttribute('data-q')||'').indexOf(t)>=0?'':'none'; }); };
+      q.addEventListener('input',filt);
+      var first=true;
+      var fill=function(){
+        var t=tySel.value, keepPk=first?scAsList(s&&s.packages):scChkVals(pk), keepFc=first?scAsList(s&&s.facilities):scChkVals(fc), keepRl=first?scAsList(s&&s.roles):scChkVals(rl);
+        first=false;
+        var none='Choose a facility type first.';
+        scChkFill(pk,scLiveTypePkgs(t),keepPk,none);
+        var opts=!t?[]:Object.keys(F).filter(function(c){ return F[c]&&!F[c].migratedTo&&nfTypeOf(F[c])===t; })
+          .sort(function(a,b){ return String(F[a].district||'~').localeCompare(String(F[b].district||'~'))||String(F[a].name||a).localeCompare(String(F[b].name||b)); })
+          .map(function(c){ var f=F[c]; return {value:c,label:(f.district||'No district')+' — '+(f.name||c)+' · '+scPkgShort(f.progId||'nqas_12A'),search:((f.district||'')+' '+(f.name||'')+' '+c).toLowerCase()}; });
+        scChkFill(fc,opts,keepFc,t?'No '+NF_LEVELS[t].plural+' enrolled yet.':none);
+        scChkFill(rl,scLiveTypeRoles(t),keepRl,none);
+        q.style.display=t&&opts.length>6?'':'none'; q.value=''; filt();
+        // ticking a package narrows the facility list to that package
+        pk.querySelectorAll('input').forEach(function(cb){ cb.addEventListener('change',narrow); }); narrow();
+      };
+      var narrow=function(){ var p=scChkVals(pk); fc.querySelectorAll('label.scx-chk').forEach(function(lb){ var c=lb.querySelector('input').value, f=F[c]||{}; var off=p.length&&p.indexOf(f.progId||'nqas_12A')<0; lb.classList.toggle('scx-off',!!off); if(off){ lb.querySelector('input').checked=false; lb.classList.remove('on'); } }); };
+      tySel.addEventListener('change',fill); fill();
+    },
     validate:function(v){
       if(!scIsHttpUrl(v.link)) return 'Enter a valid meeting link starting with https://';
       if(v.recordingUrl&&!scIsHttpUrl(v.recordingUrl)) return 'Recording URL must start with https://';
       if(!(parseInt(v.durationMin,10)>=5)) return 'Duration must be at least 5 minutes.';
       if(v.facilities&&v.facilities.length&&v.packages&&v.packages.length){
-        var miss=v.facilities.filter(function(c){ var f=(scMasterFacilities||{})[c]; return f&&v.packages.indexOf(f.progId||'nqas_12A')<0; });
-        if(miss.length) return 'These facilities are not in the ticked packages, so they would not see the session: '+miss.map(function(c){ return ((scMasterFacilities||{})[c]||{}).name||c; }).join(', ')+'. Tick their package too, or untick the packages.'; }
+        var miss=v.facilities.filter(function(c){ var f=F[c]; return f&&v.packages.indexOf(f.progId||'nqas_12A')<0; });
+        if(miss.length) return 'These facilities are not in the ticked packages, so they would not see the session: '+miss.map(function(c){ return (F[c]||{}).name||c; }).join(', ')+'. Tick their package too, or untick the packages.'; }
       var p=v.date.split('-'), tm=v.time.split(':');
       var d=new Date(+p[0],+p[1]-1,+p[2],+tm[0],+tm[1]); if(isNaN(d.getTime())) return 'Enter a valid date and time.';
       return null;
@@ -814,7 +880,7 @@ async function scEditLive(id){
   var start=new Date(+p[0],+p[1]-1,+p[2],+tm[0],+tm[1]);
   var rec=Object.assign({},s||{},{
     title:v.title, description:v.description, link:v.link, startAt:start.toISOString(),
-    durationMin:parseInt(v.durationMin,10)||60, packages:v.packages, roles:v.roles, facilities:v.facilities||[], recordingUrl:v.recordingUrl||'',
+    durationMin:parseInt(v.durationMin,10)||60, types:v.type?[v.type]:[], packages:v.packages||[], roles:v.roles||[], facilities:v.facilities||[], recordingUrl:v.recordingUrl||'',
     updatedAt:scNowIso(), updatedBy:scActor().name
   });
   if(!s){ rec.createdAt=scNowIso(); rec.createdBy=scActor().name; }
@@ -823,6 +889,7 @@ async function scEditLive(id){
   var ok=await fbSet('sc_live_sessions/'+newId,scClean(rec));
   if(!ok){ showToast('Could not save session — check connection.','err'); return; }
   _scLive[newId]=rec; scRenderLiveList();
+  try{ if(typeof hsOn==='function'&&hsOn()&&typeof nfRenderOverview==='function') nfRenderOverview(); }catch(e){}
   showToast(s?'Session updated.':'Session scheduled.','ok');
 }
 async function scSetRecording(id){

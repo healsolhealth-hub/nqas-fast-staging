@@ -35,6 +35,9 @@ function hsInfo(code) {
     o.pct = s && s.assessed ? s.pct : null; o.base = s && s.base != null ? s.base : null; o.assessed = s ? s.assessed : 0;
     o.overdue = s ? s.acts.od : 0; o.toCheck = s ? s.checksDue : 0; o.loading = !s && !!f.startDate;
     o.byStd = s ? s.byStd || {} : {}; o.byDept = s ? s.byDept || {} : {}; o.byAoc = s ? s.byAoc || {} : {};
+    // on track / slipping / behind with this type's timeline settings (Settings → Programme rules → Timeline)
+    if (s && s.tl) { var G = typeof nfgCfgFor === 'function' ? nfgCfgFor(t) : { green: 80, amber: 60, missDays: 3, blLate: 10 }, tl = s.tl;
+      o.comp = { pct: tl.pct, oldMiss: tl.oldMiss, state: tl.pct < G.amber || (s.day || 0) > G.blLate && !tl.blDone ? 'r' : tl.pct < G.green || tl.oldMiss > G.missDays ? 'a' : 'g' }; }
   } else {
     var p = getProg(f.progId || 'nqas_12A') || {}, a = scFacAggFor(code), b = a.baseline || {};
     o.days = p.days || 60; o.S = { bN: 7, iN: 49, e1: 50, eN: 56, r1: 57, rN: 60, days: o.days };
@@ -101,7 +104,7 @@ function hsTodo(list) {
   att.forEach(function (x) { if (/without an action/.test(x.txt)) return; var o = byCode[x.code]; if (!o) return;
     if (o.payDue && /trial ended|payment due/i.test(x.txt)) return; if (seen[x.code + '|endchk'] && /waiting for the check/.test(x.txt)) return; add({ code: x.code, key: x.txt, lvl: x.lvl === 'red' ? 'red' : 'amber', t: x.txt.charAt(0).toLowerCase() + x.txt.slice(1), sub: (o.day ? 'Day ' + o.day + ' · ' : '') + HS_PHASE[o.phase], btn: open(x.code) }); });
   var behind = list.filter(function (o) { return o.behind; });
-  if (behind.length) add({ key: 'behind', lvl: 'amber', t: '<b>' + behind.length + ' ' + (behind.length === 1 ? 'facility' : 'facilities') + ' behind schedule</b> — ' + hsE(behind.map(function (o) { return o.name; }).slice(0, 5).join(', ')), raw: 1, sub: 'Under ' + (typeof NF_GRAD !== 'undefined' ? NF_GRAD.amber : 60) + '% of cards on time', btn: { l: 'See list', js: "_hs.status='behind';nfAdminView('hsfac')" } });
+  if (behind.length) add({ key: 'behind', lvl: 'amber', t: '<b>' + behind.length + ' ' + (behind.length === 1 ? 'facility' : 'facilities') + ' behind schedule</b> — ' + hsE(behind.map(function (o) { return o.name; }).slice(0, 5).join(', ')), raw: 1, sub: 'Cards on time under the Slipping mark, or baseline late (Timeline settings of each type)', btn: { l: 'See list', js: "_hs.status='behind';nfAdminView('hsfac')" } });
   var rank = { red: 0, amber: 1 }; out.sort(function (a, b) { return rank[a.lvl] - rank[b.lvl]; });
   return out;
 }
@@ -327,7 +330,7 @@ function hsEnsureTabs() {
   ct.innerHTML = '<h1 class="hs-h1">Content</h1><button type="button" role="tab" aria-selected="' + (_nfOv.view === 'editor') + '" class="' + (_nfOv.view === 'editor' ? 'on' : '') + '" onclick="nfAdminView(\'editor\')">Sub-Centre (Card editor)</button>'
     + '<button type="button" role="tab" aria-selected="' + (_nfOv.view === 'dm') + '" class="' + (_nfOv.view === 'dm' ? 'on' : '') + '" onclick="nfAdminView(\'dm\')">UPHC · PHC · CHC (Checkpoints)</button>';
   if (!document.getElementById('hs-rules')) { var r = document.createElement('div'); r.id = 'hs-rules'; r.dataset.nfv = 'setup'; r.className = 'nfo-card hs-rules';
-    r.innerHTML = '<b><i class="ti ti-adjustments"></i> Programme rules</b><p>NQAS criteria (overall, Area of Concern, Standard minimums) are set in Content → Card editor → NQAS criteria; UPHC / PHC / CHC use 70% overall, per department and per Area of Concern, 50% per Standard. Grace days after the last day, catch-up length and on-time thresholds:</p>'
+    r.innerHTML = '<b><i class="ti ti-adjustments"></i> Programme rules</b><p>NQAS criteria (overall, Area of Concern, Standard minimums) are set in Content → Card editor → NQAS criteria; UPHC / PHC / CHC use 70% overall, per department and per Area of Concern, 50% per Standard. Timeline — grace days after the last day, catch-up, on-time thresholds — is set separately for Sub-Centres, UPHCs, PHCs and CHCs:</p>'
       + '<button type="button" class="hs-btn p" onclick="nfgSettings()">Timeline settings</button>';
     main.appendChild(r); }
   if (main.firstChild !== ct) main.insertBefore(ct, main.firstChild); if (main.firstChild !== st) main.insertBefore(st, main.firstChild);

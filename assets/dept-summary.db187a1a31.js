@@ -25,11 +25,16 @@ function nfDeptSumFacility(st) {   // synchronous; st = {code, fac, cl (checklis
     var F = ndLatestFinal(), noAct = Object.keys(F).filter(function (id) { var a = A[id]; return F[id].s < 2 && (!a || a.status === 'closed'); }).length;
     var day = f.startDate ? nfDeptDayNo(f.startDate, today) : null, checksDue = 0;
     if (day) ndDeptDefs().forEach(function (d) { for (var n = 1; n <= Math.min(day, S.days); n++) { if (ndRes(d.id, n).chk) continue; var c = ndPc(d.id, n); if (Object.keys(c).some(function (m) { return c[m] && c[m].done; }) && !ndSoloDone(d.id, n)) checksDue++; } });
+    // timeline (HealSol 21 Oct, for "behind schedule" with the type's timeline settings): department-days up to yesterday with a card in,
+    // the oldest day still without a card, and whether every baseline day has its cards
+    var due = 0, cin = 0, oldMiss = 0, blOpen = 0;
+    if (day && day > 1) ndDeptDefs().forEach(function (d) { for (var n = 1; n <= Math.min(day - 1, S.days); n++) { due++; var c = ndPc(d.id, n), any = Object.keys(c).some(function (m) { return c[m] && c[m].done; });
+      if (any) cin++; else { oldMiss = Math.max(oldMiss, day - n); if (n <= S.bN) blOpen++; } } });
     var staff = Object.keys(f.staff || {}).filter(function (m) { return f.staff[m] && !f.staff[m].disabled; }).length;
     return JSON.parse(JSON.stringify({ v: ND_SUM_VER, type: T, code: st.code, name: f.name || st.code, state: f.state || '', district: f.district || '', block: f.block || '',
       staff: staff, startDate: f.startDate || null, day: day, days: S.days, phase: !day || day < 1 ? 'notstarted' : f.catchup && f.catchup.on && !f.catchup.done ? 'catchup' : f.graduation || day > S.days ? 'complete' : 'running',
       pct: R.overall, base: B.n ? B.overall : null, assessed: R.n || 0, total: R.of || 0, meets: !!R.meets, byAoc: byAoc, byStd: byStd, byDept: byDept,
-      noAct: noAct, acts: acts, checksDue: checksDue, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
+      noAct: noAct, acts: acts, checksDue: checksDue, tl: due ? { due: due, cin: cin, pct: Math.round(100 * cin / due), oldMiss: oldMiss, blDone: day > S.bN && !blOpen } : null, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
       // Step 3: graduation, catch-up, certification records (roll-ups count graduated / ready / almost / notyet / catch-up / certified)
       grad: f.graduation ? { result: f.graduation.result, overall: f.graduation.overall, base: f.graduation.base, round: f.graduation.round || 0, at: f.graduation.at || null, deptFails: f.graduation.deptFails || [] } : null,
       catchup: f.catchup && f.catchup.on ? { round: f.catchup.round || 1, start: f.catchup.start || null, end: f.catchup.end || null, done: !!f.catchup.done, depts: f.catchup.depts || [] } : null,

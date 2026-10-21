@@ -261,27 +261,45 @@ function nfLvlApply(root){
 // HealSol enrolment: one option per facility type (types not ready yet are marked "testing")
 function nfFillTypeSelect(sel){
   if(!sel||sel.options.length) return;
-  Object.keys(NF_LEVELS).forEach(function(k){ var L=NF_LEVELS[k], o=document.createElement('option'); o.value=k; o.textContent=L.name+(L.ready?'':' (testing — app not ready yet)'); sel.appendChild(o); });
+  Object.keys(NF_LEVELS).forEach(function(k){ var L=NF_LEVELS[k], o=document.createElement('option'); o.value=k; o.textContent=L.name; sel.appendChild(o); });
 }
+// CHC (FRU) / CHC (Non-FRU) — HealSol 21 Oct. A Non-FRU CHC usually has no Maternity OT, Operation Theatre or Blood
+// Storage Unit; picking the kind pre-ticks the departments (they can still be changed). Saved as sc_facilities/{code}/chcKind.
+var NF_CHC_KINDS={fru:{label:'CHC (FRU)',off:[]},nonfru:{label:'CHC (Non-FRU)',off:['MOT','OT','BSU']}};
+function nfChcKindLabel(fac){ var k=fac&&fac.chcKind; return (NF_CHC_KINDS[k]||{}).label||''; }
+// example facility names and ID codes on the enrolment form
+var NF_ENROLL_EG={sc:['e.g. Rampur Sub-Centre','UP-JHS-SC-0001'],uphc:['e.g. Aliganj UPHC','UP-LKO-UPHC-0001'],phc:['e.g. Bakshi Ka Talab PHC','UP-LKO-PHC-0001'],chc:['e.g. Malihabad CHC','UP-LKO-CHC-0001']};
 // the Programme list follows the facility type: SC keeps its own options (12A / 12B), other types list NF_LEVELS[type].programmes
 function nfEnrollTypeChanged(sel){
   var p=document.getElementById('sc-enroll-prog'); if(!p||!sel) return;
   if(p.__nfSc==null) p.__nfSc=p.innerHTML;
-  var L=NF_LEVELS[sel.value]||NF_LEVELS.sc;
+  var L=NF_LEVELS[sel.value]||NF_LEVELS.sc, t=L.id;
   if(sel.value==='sc'||!L.programmes){ p.innerHTML=p.__nfSc; }
   else p.innerHTML=L.programmes.map(function(x){ return '<option value="'+x.id+'">'+x.label+'</option>'; }).join('');
-  p.parentNode.style.display='';
+  p.parentNode.style.display=''; p.onchange=function(){ try{ nfEnrollPriceLine(); }catch(e){} };
+  // wording: the in-charge of this type, example name and Facility ID
+  var set=function(id,prop,v){ var el=document.getElementById(id); if(el) el[prop]=v; };
+  var lab=L.inChargeLabel, eg=NF_ENROLL_EG[t]||NF_ENROLL_EG.sc;
+  set('sc-enroll-choname-lbl','textContent',lab+' name'); set('sc-enroll-choname','placeholder',lab+' name');
+  set('sc-enroll-chomob-lbl','textContent',lab+' mobile *'); set('sc-enroll-chomob','placeholder','10-digit mobile ('+lab+' login)');
+  set('sc-enroll-name','placeholder',eg[0]); set('sc-enroll-idex','textContent',eg[1]); set('sc-enroll-incharge','textContent',lab);
   // department-core types: tick the departments this facility has (the optional ones; the others are always there)
   var box=document.getElementById('sc-enroll-depts');
   if(!box){ var grid=p.closest('.sc-enroll-grid'); if(grid){ box=document.createElement('div'); box.id='sc-enroll-depts'; box.style.cssText='margin:-2px 0 12px;'; grid.parentNode.insertBefore(box,grid.nextSibling); } }
   if(!box) return;
   var ds=(L.core==='dept'&&L.departments)||[];
-  if(!ds.some(function(d){ return d.optional; })){ box.innerHTML=''; box.style.display='none'; return; }
+  if(!ds.some(function(d){ return d.optional; })){ box.innerHTML=''; box.style.display='none'; try{ nfEnrollPriceLine(); }catch(e){} return; }
   box.style.display='';
-  box.innerHTML='<div class="lc-label" style="margin-bottom:6px;">Departments at this '+L.name+' <span style="font-weight:600;color:var(--t3);">— untick the ones it does not have (can be switched on later)</span></div>'
+  var kind=t==='chc'?((document.querySelector('input[name="nf-chc-kind"]:checked')||{}).value||'fru'):'', off=kind?NF_CHC_KINDS[kind].off:[];
+  var kindRow=t==='chc'?'<div class="lc-label" style="margin-bottom:6px;">CHC kind</div><div style="display:flex;gap:8px;margin-bottom:10px;">'+Object.keys(NF_CHC_KINDS).map(function(k){
+      return '<label style="flex:1;display:flex;align-items:center;gap:7px;padding:9px 12px;border:1.5px solid '+(k===kind?'var(--teal);background:var(--teal-lt)':'var(--br)')+';border-radius:10px;cursor:pointer;font-size:12px;font-weight:700;"><input type="radio" name="nf-chc-kind" value="'+k+'"'+(k===kind?' checked':'')+' onchange="nfEnrollTypeChanged(document.getElementById(\'sc-enroll-type\'))"> '+NF_CHC_KINDS[k].label
+        +' <span style="color:var(--t3);font-weight:600;">'+(k==='fru'?'(First Referral Unit — C-section, blood storage)':'(no Maternity OT, OT or Blood Storage)')+'</span></label>'; }).join('')+'</div>':'';
+  box.innerHTML=kindRow+'<div class="lc-label" style="margin-bottom:6px;">Departments at this '+L.name+' <span style="font-weight:600;color:var(--t3);">— untick the ones it does not have (can be switched on later)</span></div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:6px;">'+ds.map(function(d){ return d.optional
-      ?'<label style="display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--br);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" data-nf-dept="'+d.id+'" checked> '+d.name+'</label>'
-      :'<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bgs);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--t2);" title="Every '+L.name+' has this department">✓ '+d.name+'</span>'; }).join('')+'</div>';
+      ?'<label style="display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--br);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" data-nf-dept="'+d.id+'"'+(off.indexOf(d.id)<0?' checked':'')+' onchange="try{nfEnrollPriceLine()}catch(e){}"> '+d.name+'</label>'
+      :'<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bgs);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--t2);" title="Every '+L.name+' has this department">✓ '+d.name+'</span>'; }).join('')+'</div>'
+    +'<div id="nf-enroll-price" style="margin-top:8px;font-size:12px;font-weight:700;color:var(--teal-dk);"></div>';
+  try{ nfEnrollPriceLine(); }catch(e){}
 }
 // the departments unticked on the enrolment form (saved as switched off once the facility is created)
 function nfEnrollDeptsOff(){ return [].map.call(document.querySelectorAll('#sc-enroll-depts input[data-nf-dept]'),function(c){ return c.checked?null:c.getAttribute('data-nf-dept'); }).filter(Boolean); }

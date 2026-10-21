@@ -197,19 +197,30 @@ async function nfVerifyBoot(){
   return true;
 }
 // ── HealSol Setup: who signs for HealSol Academy ──
+// one HealSol signatory per facility type (HealSol 21 Oct): Sub-Centre = coordName / coordTitle (as before), others under byType/{type};
+// a type left blank uses the Sub-Centre name. The other signatories are taken from the records when the certificate is issued.
 async function nfEnsureCertSetup(){
   if(appMode!=='sc-admin') return; var main=document.querySelector('#admin-app .admin-main'); if(!main||document.getElementById('nf-certset')) return;
   var c=document.createElement('div'); c.id='nf-certset'; c.className='nf-certset'; c.dataset.nfv='setup';
-  c.innerHTML='<h3><i class="ti ti-certificate"></i> Certificate signatory</h3><p>Signs every new certificate for HealSol Academy. Sub-Centres: next to the facility\'s Mentor (Supervisor) and Quality Champion. UPHC · PHC · CHC: next to the facility in-charge (MO In-charge / UPHC Coordinator) and the Quality Mentor. Until a name is saved, certificates show “Programme Coordinator”. Certificates already issued keep the names they were signed with.</p>'
-    +'<div class="row"><label>Name<input id="nf-cs-name" placeholder="e.g. Meera Kapoor" maxlength="60"></label><label>Title<input id="nf-cs-title" placeholder="Programme Coordinator" maxlength="60"></label><button type="button" onclick="nfSaveCertSetup(this)">Save</button></div>';
+  var T=Object.keys(NF_LEVELS);
+  c.innerHTML='<h3><i class="ti ti-certificate"></i> Certificate signatory</h3><p>HealSol Academy signs every new certificate. Set one name for each facility type (left blank: the Sub-Centre name is used). Certificates already issued keep the names they were signed with.</p>'
+    +'<div class="nf-cs-grid"><b>Facility type</b><b>Name</b><b>Title</b><b>Signs next to (taken automatically)</b>'
+    +T.map(function(t){ var L=NF_LEVELS[t]; return '<span class="nf-cs-t">'+scEsc(L.plural)+'</span><input id="nf-cs-name-'+t+'" placeholder="'+(t==='sc'?'e.g. Meera Kapoor':'Same as Sub-Centres')+'" maxlength="60"><input id="nf-cs-title-'+t+'" placeholder="Programme Coordinator" maxlength="60">'
+      +'<small>'+(t==='sc'?'Mentor (Supervisor) · Quality Champion':scEsc(L.inChargeLabel)+' · Quality Mentor')+'</small>'; }).join('')+'</div>'
+    +'<div class="row" style="justify-content:flex-end"><button type="button" onclick="nfSaveCertSetup(this)">Save</button></div>'
+    +'<details class="nf-cs-how"><summary>How the other signatures come on the certificate</summary><p>They are automatic. When a certificate is issued the app takes each name from the records: the Mentor / Quality Mentor from the Supervisor who looks after the facility, the Quality Champion from the Champion allotted to it, and for UPHC · PHC · CHC the in-charge from the facility\'s staff list (never the person receiving the certificate). Each name is printed in a signature-style font with “Digitally signed · date”, and the QR code on the certificate proves it is genuine. Nobody uploads a signature image; if a person is missing (for example no Supervisor yet), that box is left out.</p></details>';
   main.appendChild(c);
-  var cfg=await fbGet('shared/sc_cert_config')||{}; var n=document.getElementById('nf-cs-name'), t=document.getElementById('nf-cs-title'); if(n) n.value=cfg.coordName||''; if(t) t.value=cfg.coordTitle||'';
+  var cfg=await fbGet('shared/sc_cert_config')||{}, set=function(id,v){ var el=document.getElementById(id); if(el) el.value=v||''; };
+  set('nf-cs-name-sc',cfg.coordName); set('nf-cs-title-sc',cfg.coordTitle);
+  T.forEach(function(t){ if(t==='sc') return; var b=(cfg.byType||{})[t]||{}; set('nf-cs-name-'+t,b.name); set('nf-cs-title-'+t,b.title); });
 }
 async function nfSaveCertSetup(btn){
-  var n=(document.getElementById('nf-cs-name').value||'').trim(), t=(document.getElementById('nf-cs-title').value||'').trim();
-  if(!n){ showToast('Enter the name that signs the certificates.','err'); return; }
-  btn.disabled=true; var ok=await fbSet('shared/sc_cert_config',{coordName:n,coordTitle:t||'Programme Coordinator',updatedAt:scNowIso()}); btn.disabled=false;
-  showToast(ok?'Saved — new certificates will be signed by '+n+'.':'Could not save — check the connection.',ok?'ok':'err');
+  var g=function(id){ return ((document.getElementById(id)||{}).value||'').trim(); }, n=g('nf-cs-name-sc');
+  if(!n){ showToast('Enter the name that signs Sub-Centre certificates (used for any type left blank).','err'); return; }
+  var up={coordName:n,coordTitle:g('nf-cs-title-sc')||'Programme Coordinator',updatedAt:scNowIso()};
+  Object.keys(NF_LEVELS).forEach(function(t){ if(t==='sc') return; var nm=g('nf-cs-name-'+t); up['byType/'+t]=nm?{name:nm,title:g('nf-cs-title-'+t)||'Programme Coordinator'}:null; });
+  btn.disabled=true; var ok=false; try{ await db.ref('shared/sc_cert_config').update(up); ok=true; }catch(e){} btn.disabled=false;
+  showToast(ok?'Saved — new certificates will be signed by these names.':'Could not save — check the connection.',ok?'ok':'err');
 }
 // ── Mentor / HealSol: certificate chip on the facility's staff list ──
 async function nfDrillCertChips(code){
