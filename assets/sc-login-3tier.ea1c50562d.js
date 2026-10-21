@@ -366,7 +366,7 @@ async function scChoSetStartDate(){
 // scRenderChoProgress() → see SC v2 module
 
 async function scChoLogout(){
-  const ok = await showConfirm('Logout of Facility Admin panel?','👋','Logout','Logout','var(--teal)');
+  const ok = await showConfirm('Log out of the Facility dashboard?','👋','Logout','Logout','var(--teal)');
   if(!ok) return;
   document.getElementById('sc-cho-app').classList.remove('vis');
   document.getElementById('login-screen').style.display='';
@@ -464,7 +464,7 @@ async function scEditFacility(code){
       {key:'block',label:'Block',value:fac.block||((fac.links||{}).chc||{}).block||'',hint:'Used for block and state dashboards. Filled from the CHC link when linked.'},
       {key:'state',label:'State',value:fac.state||''},
       {key:'choName',label:'CHO name',value:fac.choName||''},
-      {key:'choPwd',label:'CHO password',placeholder:'Leave blank to keep current',hint:'Only fill this in to change the Facility Admin password.'}
+      {key:'choPwd',label:'CHO password',placeholder:'Leave blank to keep current',hint:'Only fill this in to change the Facility dashboard password.'}
     ],
     validate:v=>v.choPwd&&v.choPwd.length<4?'CHO password must be at least 4 characters.':null});
   if(!v) return;

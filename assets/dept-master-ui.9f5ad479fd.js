@@ -126,7 +126,7 @@ function nmSideHTML(T, c) {
     + '<dl class="nm-dl2"><dt>Area</dt><dd>' + nmE(c.aoc + ' · ' + String((data.aocs || {})[c.aoc] || '').replace(/^[:\s]+/, '')) + '</dd>'
     + '<dt>Method</dt><dd>' + (c.method.length ? c.method.map(function (m) { return NM_MLABEL[m]; }).join(', ') : '<span class="nm-tag tc">Not set</span>') + '</dd>'
     + '<dt>Best filled by</dt><dd>' + (c.roles.length ? c.roles.map(function (r) { return nmE(nmRoleLabel(T, r)); }).join(', ') : 'Staff posted in ' + nmE(nmDeptName(T, c.dept))) + '</dd>'
-    + '<dt>Days</dt><dd>' + (c.retired || !d ? '—' : 'Baseline ' + d.b + (d.i ? ' · Impl. ' + d.i : '') + ' · End-line ' + d.e) + '</dd>'
+    + '<dt>Days</dt><dd>' + (c.retired || !d ? '—' : 'Baseline ' + d.b + (d.i ? ' · Implementation ' + d.i : '') + ' · End-line ' + d.e) + '</dd>'
     + '<dt>Content</dt><dd>' + [c.hi ? 'Hindi' : '', fixN ? 'How to fix ' + fixN : '', c.video || c.videoHi ? 'Video' : ''].filter(Boolean).join(' · ') + ([c.hi, fixN, c.video || c.videoHi].some(Boolean) ? '' : 'Not added yet') + '</dd>'
     + '<dt>In use at</dt><dd>' + nmFacs(T).length + ' ' + nmE(nmCfg(T).short || T) + (nmFacs(T).length === 1 ? '' : 's') + '</dd></dl>'
     + '<div class="nm-sbtn"><button type="button" class="nm-btn pri" onclick="nmEditOpen(\'' + nmJ(c.id) + '\')">Edit</button>'
@@ -557,7 +557,7 @@ function nmPlanHTML() {
     + '<div class="nm-bar"><label class="nm-lbl">Department<select onchange="_nm.ui.psel=null;nmPlanUi(\'pdept\',this.value)">' + B.depts.map(function (d) { return nmOpt(d.id, d.name, u.pdept); }).join('') + '</select></label>'
     + '<span class="nm-live">' + all + ' checkpoints' + (moved ? ' · ' + moved + ' moved on this board' : '') + '</span>'
     + '<div class="nm-acts"><button type="button" class="nm-btn"' + (moved ? '' : ' disabled') + ' onclick="nmPlanRespread()">Re-spread evenly</button></div></div>'
-    + '<section class="nm-card"><div class="nm-phases">' + ph('baseline', 'Baseline', 1, S.bN, S.base) + ph('impl', 'Implementation · ' + S.implWeeks + ' weeks', S.i1, S.iN, S.implWeeks * 7) + ph('endline', 'End-line', S.e1, S.eN, S.end) + ph('ready', 'Ready', S.r1, S.rN, S.ready) + '</div>' + sub + '</section>'
+    + '<section class="nm-card"><div class="nm-phases">' + ph('baseline', 'Baseline', 1, S.bN, S.base) + ph('impl', 'Implementation · ' + S.implWeeks + ' weeks', S.i1, S.iN, S.implWeeks * 7) + ph('endline', 'End-line', S.e1, S.eN, S.end) + ph('ready', 'Readiness week', S.r1, S.rN, S.ready) + '</div>' + sub + '</section>'
     + '<div class="nm-psplit"><div class="nm-pcols-wrap">'
     + (cols.length ? '<div class="nm-pcols" style="grid-template-columns:repeat(' + cols.length + ',minmax(104px,1fr));min-width:' + (cols.length * 112) + 'px">' + cols.map(function (c) {
         var heavy = c.ids.length > NM_DAY_WARN;
@@ -567,7 +567,7 @@ function nmPlanHTML() {
       : '<div class="nm-empty">' + (u.pphase === 'endline' ? 'End-line days ' + S.e1 + '–' + S.eN + ' repeat the baseline days 1–' + S.bN + ' in the same order. Move a checkpoint on the baseline to change its end-line day too.' : 'Readiness days ' + S.r1 + '–' + S.rN + ': end-line verification, final team review and graduation — no checklist cards.') + '</div>')
     + '</div><aside class="nm-ecol">'
     + (sel ? '<section class="nm-card"><div class="nm-sh"><span>' + nmE(sel.id + ' · ' + sel.me) + '</span>' + nmTag(nmStatus(T, sel.id)) + '</div><div class="nm-st">' + nmE(sel.t) + '</div>'
-        + (sd ? '<div class="nm-days"><div><span class="b">Baseline · Day ' + sd.b + '</span>' + (sd.i ? '<span class="i">Impl. · Day ' + sd.i + '</span>' : '') + '<span class="e">End-line · Day ' + sd.e + '</span></div></div>' : '')
+        + (sd ? '<div class="nm-days"><div><span class="b">Baseline · Day ' + sd.b + '</span>' + (sd.i ? '<span class="i">Implementation · Day ' + sd.i + '</span>' : '') + '<span class="e">End-line · Day ' + sd.e + '</span></div></div>' : '')
         + (u.pphase === 'baseline' || u.pphase === 'impl' ? '<label>Move to<select id="nm-mvto">' + opts(kind) + '</select></label><button type="button" class="nm-btn pri" onclick="nmPlanMove(\'' + kind + '\',document.getElementById(\'nm-mvto\').value)">Move</button>'
           + '<small class="nm-hint">' + (kind === 'b' ? 'A new baseline day also changes its implementation week and its end-line day.' : 'Only its implementation day changes; baseline and end-line stay.') + ' Or drag the card onto another day.</small>' : '')
         + (nmStatus(T, sel.id) ? '<button type="button" class="nm-btn" onclick="nmUndoAsk(\'' + nmJ(sel.id) + '\')">Undo changes to ' + nmE(sel.id) + '</button>' : '') + '</section>'

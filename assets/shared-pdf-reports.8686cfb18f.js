@@ -94,8 +94,7 @@ function nfRptOpen(html){
 function nfRptStatus(a){
   var n=a.nqas||scNqasCheckV2(a);
   if(!a.coverage||!a.coverage.assessed) return {cls:'n',txt:'Not assessed yet'};
-  if(n.meets) return {cls:'g',txt:'✓ Meets NQAS'};
-  return {cls:n.stdFails.length?'a':'r',txt:n.stdFails.length?n.stdFails.length+' Std below min':'Overall below 70%'};
+  var r=nfResult(nfResultSc(a)); return {cls:r.cls==='green'?'g':r.cls==='grey'?'n':(a.pct<(n.overallMin||70)?'r':'a'),txt:r.txt};
 }
 function nfRptActions(code){
   var acts=((_scRvAll||{})[code])||null;

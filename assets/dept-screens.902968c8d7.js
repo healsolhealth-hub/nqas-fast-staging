@@ -398,7 +398,7 @@ function ndReadyHTML() {
   var h = '<div class="nx"><div class="nx-ph-r"><h1 style="margin:0;font-size:21px;font-weight:700;flex:1">' + (mineOnly ? 'My progress' : 'Facility progress') + '</h1><span class="nx-chip o">Day ' + Math.max(day, 0) + ' / ' + _nd.cfg.days + '</span></div>'
     + '<div class="nx-card nx-pring"><div class="nx-ring">' + nxRing(pct, 104, 11, '#1E6B5E', '#E6F2EF') + '<span><b>' + pct + '%</b><small>readiness</small></span></div><div class="nx-kv">'
     + '<div><span>Baseline</span><b>' + fmt(B) + '</b></div><div><span>Implementation</span><b style="color:#135A55">' + (I ? fmt(I) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.i1 + '</span>') + '</b></div>'
-    + '<div><span>Endline</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">Target to pass: ' + pass + '% · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
+    + '<div><span>End-line</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">Target to pass: ' + pass + '% · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
   if (!_nd.view && mineOnly) {
     var I2 = nxImpact();
     h += '<div class="nx-stat c3"><div><b style="color:#9A5A12">' + ndStreak() + '</b><small>days on time in a row</small></div><div><b style="color:#135A55">' + I2.checked + '</b><small>checkpoints checked</small></div><div><b style="color:#166534">' + I2.fixed + '</b><small>gaps you fixed</small></div></div>';
@@ -451,7 +451,7 @@ function nxBadges() {
     { t: '7-day<br>streak', on: st >= 7, icon: 'ti-flame', bg: '#FFF1DE', fg: '#E8963A' },
     { t: 'Baseline<br>done', on: nxBaselineDone(), icon: 'ti-circle-check', bg: '#DCFCE7', fg: '#166534' },
     { t: 'First gap<br>fixed', on: I.fixed > 0, icon: 'ti-tools', bg: '#E0F2FE', fg: '#075985' },
-    { t: 'Endline<br>70%+', on: !!(E && E.overall !== null && E.overall >= 70), icon: 'ti-award', bg: '#F1F5F9', fg: '#64748B' }];
+    { t: 'End-line<br>70%+', on: !!(E && E.overall !== null && E.overall >= 70), icon: 'ti-award', bg: '#F1F5F9', fg: '#64748B' }];
 }
 
 // ═══ ME ═══
@@ -827,7 +827,7 @@ function nxFaReadyHTML() {
   var S = ndShape(), R = nxReady(all), B = nxReady(all, S.bN), I = day > S.bN ? nxReady(all, S.iN, S.i1) : null, E = day >= S.e1 ? nxReady(all, 999, S.e1) : null, pct = R.overall === null ? 0 : R.overall, fmt = function (x) { return x && x.overall !== null ? x.overall + '%' : '–'; };
   var h = '<div class="nx-card nx-pring"><div class="nx-ring">' + nxRing(pct, 104, 11, '#1E6B5E', '#E6F2EF') + '<span><b>' + pct + '%</b><small>facility</small></span></div><div class="nx-kv">'
     + '<div><span>Baseline</span><b>' + fmt(B) + '</b></div><div><span>Implementation</span><b style="color:#135A55">' + (I ? fmt(I) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.i1 + '</span>') + '</b></div>'
-    + '<div><span>Endline</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">' + (R.meets ? '✓ Meets NQAS criteria' : 'Needs ' + pass + '% overall, in each department and each Area of Concern') + ' · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
+    + '<div><span>End-line</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">' + (R.meets ? '✓ Meets NQAS criteria' : 'Needs ' + pass + '% overall, in each department and each Area of Concern') + ' · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
   var tab = _nd.ptab || 'dept';
   h += '<div class="nx-seg"><button type="button" class="' + (tab === 'dept' ? 'on' : '') + '" onclick="_nd.ptab=\'dept\';ndKeepScroll()">Departments</button><button type="button" class="' + (tab === 'aoc' ? 'on' : '') + '" onclick="_nd.ptab=\'aoc\';ndKeepScroll()">Areas of Concern</button><button type="button" class="' + (tab === 'grid' ? 'on' : '') + '" onclick="_nd.ptab=\'grid\';ndKeepScroll()">Grid</button></div>';
   if (tab === 'grid') return h + '<div class="nx-card">' + nxGridHTML() + '</div>';

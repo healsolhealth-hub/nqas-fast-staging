@@ -2002,14 +2002,14 @@ async function phcSubmitDemoSignup(){
       body.innerHTML='<div style="text-align:center;padding:10px 0;">'
         +'<div style="font-size:40px;margin-bottom:10px;">🎉</div>'
         +'<div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px;">'+nfRegT('Your facility is registered!')+'</div>'
-        +'<div style="font-size:12px;color:var(--t3);margin-bottom:18px;">Save these details. Log in with Staff Login — as CHO you get both My Cards and the Facility Dashboard.</div>'
+        +'<div style="font-size:12px;color:var(--t3);margin-bottom:18px;">Save these details. Log in with Staff Login — as CHO you get both My Cards and the Facility dashboard.</div>'
         +'<div style="background:var(--bgs,#F9FAFB);border-radius:12px;padding:14px;margin-bottom:8px;text-align:left;">'
         +'<div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;">Facility ID</div>'
         +'<div style="font-size:16px;font-weight:800;color:var(--teal-dk);font-family:monospace;">'+code+'</div></div>'
         +'<div style="background:var(--bgs,#F9FAFB);border-radius:12px;padding:14px;margin-bottom:18px;text-align:left;">'
         +'<div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;">Your mobile · Password</div>'
         +'<div style="font-size:16px;font-weight:800;color:var(--teal-dk);font-family:monospace;">'+mobile+' · '+mobile.slice(-4)+'</div>'
-        +'<div style="font-size:10px;color:var(--t3);margin-top:4px;">Password is the last 4 digits of your mobile. You can change it later from the Facility Dashboard.</div></div>'
+        +'<div style="font-size:10px;color:var(--t3);margin-top:4px;">Password is the last 4 digits of your mobile. You can change it later from the Facility dashboard.</div></div>'
         +'<button class="fc-add-btn" style="width:100%;padding:12px;border-radius:10px;font-size:13px;" id="demo-login-now-btn">'
         +'<i class="ti ti-login-2"></i> Log in now</button></div>';
       var loginBtn=document.getElementById('demo-login-now-btn');

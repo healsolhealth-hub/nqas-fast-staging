@@ -52,6 +52,13 @@ function fpScActHTML(code) {
       h += '<tr><td><b>' + fpE(a.cpId || '') + '</b><small>' + fpE(a.cpText || '') + (a.itemText ? ' — ' + fpE(a.itemText) : '') + '</small></td><td>' + fpE(a.action || '—') + '</td><td>' + fpE(a.assignedToName || a.ownerName || '—') + '</td><td class="' + (a.st === 'overdue' ? 'r' : '') + '">' + fpE(a.dueDate ? fpShortDate(a.dueDate) : '—') + '</td><td><span class="fp-st ' + s[1] + '">' + s[0] + '</span></td></tr>'; }); });
   return h + '</tbody></table></div><p class="fp-dim">' + (canAssign ? 'You assign, publish and close actions in Work on actions.' : 'View only — the Supervisor assigns and closes actions; staff mark them done in their app.') + '</p>';
 }
+// card days of one person: expected up to yesterday (today when done), done, verified — same count as UPHC / PHC / CHC
+function fpScCardDays(f, pid, progress, mob, role, present) {
+  var day = nfDayOf(f), todayDi = day == null || day < 1 ? -1 : day - 1, hi = Math.min(todayDi, getDaysArr(pid).length - 1), cards = scCardsFromRemote(progress || {}, pid), exp = 0, done = 0, ver = 0;
+  for (var di = 0; di <= hi; di++) { var d = scDayDef(pid, di), mine = !!(d && (d.cps || []).some(function (cp) { return scCpForRoleIn(cp, role, present); })), c = cards[di], dn = !!(c && c.taskDone);
+    if (mine && (di < todayDi || dn)) { exp++; if (dn) { done++; if (c.verified) ver++; } } }
+  return { exp: exp, done: done, ver: ver, pct: exp ? Math.round(100 * done / exp) : null, cards: cards, todayDi: todayDi, hi: hi };
+}
 // ── Staff & cards ──
 function fpScStaffHTML(code) {
   var f = (scMasterFacilities || {})[code] || {}, pid = f.progId || 'nqas_12A', pr = (scMasterProgress || {})[code] || {}, staff = f.staff || {}, present = scRolesFromRoster(staff);

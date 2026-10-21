@@ -3,7 +3,7 @@
 // CERTIFICATE — earned, graded, signed, verifiable (server function issueCertificate decides)
 //  Conditions: Baseline 7/7 · at least 48 of 60 daily cards done · at least half of the done cards verified · from Day 60 · PRO facility
 //  Grade from the facility score: Distinction ≥80 · Merit 70–79 · Completion below 70
-//  Signers (digital): Mentor (Supervisor), Quality Champion, HealSol Academy Coordinator (Setup → Certificate signatory)
+//  Signers (digital): Supervisor (printed as Quality Mentor), Quality Champion, HealSol Academy Coordinator (Setup → Certificate signatory)
 //  Every certificate has a number and a QR code → public Verify page (?cert=NUMBER).
 // ══════════════════════════════════════════════════════════════
 var NF_CERT={days:60,baseline:7,minDone:48,share:0.5};
@@ -206,9 +206,9 @@ async function nfEnsureCertSetup(){
   c.innerHTML='<h3><i class="ti ti-certificate"></i> Certificate signatory</h3><p>HealSol Academy signs every new certificate. Set one name for each facility type (left blank: the Sub-Centre name is used). Certificates already issued keep the names they were signed with.</p>'
     +'<div class="nf-cs-grid"><b>Facility type</b><b>Name</b><b>Title</b><b>Signs next to (taken automatically)</b>'
     +T.map(function(t){ var L=NF_LEVELS[t]; return '<span class="nf-cs-t">'+scEsc(L.plural)+'</span><input id="nf-cs-name-'+t+'" placeholder="'+(t==='sc'?'e.g. Meera Kapoor':'Same as Sub-Centres')+'" maxlength="60"><input id="nf-cs-title-'+t+'" placeholder="Programme Coordinator" maxlength="60">'
-      +'<small>'+(t==='sc'?'Mentor (Supervisor) · Quality Champion':scEsc(L.inChargeLabel)+' · Quality Mentor')+'</small>'; }).join('')+'</div>'
+      +'<small>'+(t==='sc'?'Quality Mentor (the Supervisor) · Quality Champion':scEsc(L.inChargeLabel)+' · Quality Mentor (the Supervisor)')+'</small>'; }).join('')+'</div>'
     +'<div class="row" style="justify-content:flex-end"><button type="button" onclick="nfSaveCertSetup(this)">Save</button></div>'
-    +'<details class="nf-cs-how"><summary>How the other signatures come on the certificate</summary><p>They are automatic. When a certificate is issued the app takes each name from the records: the Mentor / Quality Mentor from the Supervisor who looks after the facility, the Quality Champion from the Champion allotted to it, and for UPHC · PHC · CHC the in-charge from the facility\'s staff list (never the person receiving the certificate). Each name is printed in a signature-style font with “Digitally signed · date”, and the QR code on the certificate proves it is genuine. Nobody uploads a signature image; if a person is missing (for example no Supervisor yet), that box is left out.</p></details>';
+    +'<details class="nf-cs-how"><summary>How the other signatures come on the certificate</summary><p>They are automatic. When a certificate is issued the app takes each name from the records: the Supervisor who looks after the facility, the Quality Champion from the Champion allotted to it, and for UPHC · PHC · CHC the in-charge from the facility\'s staff list (never the person receiving the certificate). Each name is printed in a signature-style font with “Digitally signed · date”, and the QR code on the certificate proves it is genuine. Nobody uploads a signature image; if a person is missing (for example no Supervisor yet), that box is left out.</p></details>';
   main.appendChild(c);
   var cfg=await fbGet('shared/sc_cert_config')||{}, set=function(id,v){ var el=document.getElementById(id); if(el) el.value=v||''; };
   set('nf-cs-name-sc',cfg.coordName); set('nf-cs-title-sc',cfg.coordTitle);

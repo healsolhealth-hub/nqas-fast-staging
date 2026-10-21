@@ -1526,7 +1526,7 @@ textarea.scx-in{resize:vertical;min-height:70px;}
         <button type="button" data-lang="en" class="on" onclick="setLang('en')">EN</button>
         <button type="button" data-lang="hi" onclick="setLang('hi')">हिं</button>
       </div>
-      <button onclick="scShowChoLogin()" title="Facility Admin Login"
+      <button onclick="scShowChoLogin()" title="Facility dashboard login"
         style="width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;"
         onmouseover="this.style.background='rgba(255,255,255,0.25)'"
         onmouseout="this.style.background='rgba(255,255,255,0.1)'">
@@ -1590,13 +1590,13 @@ textarea.scx-in{resize:vertical;min-height:70px;}
         <i class="ti ti-arrow-left"></i>
       </button>
       <div>
-        <div class="lc-title" style="margin-bottom:0;">Facility Admin Login</div>
+        <div class="lc-title" style="margin-bottom:0;">Facility dashboard login</div>
         <div style="font-size:10px;color:var(--t3);font-weight:600;">CHO / Facility In-charge</div>
       </div>
     </div>
     <div style="background:var(--teal-lt);border:1px solid rgba(30,107,94,0.2);border-radius:9px;padding:9px 11px;margin-bottom:12px;font-size:11px;color:var(--teal-dk);font-weight:600;line-height:1.5;">
       <i class="ti ti-info-circle" style="font-size:12px;vertical-align:-2px;"></i>
-      CHOs can now sign in once through <strong>Staff Login</strong> with their mobile number and get both <strong>My Cards</strong> and the <strong>Facility Dashboard</strong>. This older login still works.
+      CHOs can now sign in once through <strong>Staff Login</strong> with their mobile number and get both <strong>My Cards</strong> and the <strong>Facility dashboard</strong>. This older login still works.
     </div>
     <div class="lc-field">
       <label class="lc-label">Facility ID</label>
@@ -1618,7 +1618,7 @@ textarea.scx-in{resize:vertical;min-height:70px;}
     </div>
     <div class="lc-err" id="sc-cho-err"></div>
     <button class="lc-btn staff" style="background:var(--teal);" onclick="scChoLogin()">
-      <i class="ti ti-building" style="font-size:14px;"></i> Enter Facility Admin Panel
+      <i class="ti ti-building" style="font-size:14px;"></i> Open the Facility dashboard
     </button>
   </div>
 
@@ -2127,7 +2127,7 @@ textarea.scx-in{resize:vertical;min-height:70px;}
     <div style="display:flex;align-items:center;gap:9px;">
       <div class="sc-cho-nav-icon">H</div>
       <div>
-        <div style="font-size:13px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">Facility Admin — <span id="sc-cho-fac-name"></span></div>
+        <div style="font-size:13px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">Facility dashboard — <span id="sc-cho-fac-name"></span></div>
         <div style="font-size:9px;color:rgba(255,255,255,0.7);font-weight:600;">Code: <span id="sc-cho-fac-code"></span> · NQAS | FAST</div>
       </div>
     </div>
@@ -2608,7 +2608,7 @@ async function scChoSetStartDate(){
 // scRenderChoProgress() → see SC v2 module
 
 async function scChoLogout(){
-  const ok = await showConfirm('Logout of Facility Admin panel?','👋','Logout','Logout','var(--teal)');
+  const ok = await showConfirm('Log out of the Facility dashboard?','👋','Logout','Logout','var(--teal)');
   if(!ok) return;
   document.getElementById('sc-cho-app').classList.remove('vis');
   document.getElementById('login-screen').style.display='';
@@ -2706,7 +2706,7 @@ async function scEditFacility(code){
       {key:'block',label:'Block',value:fac.block||((fac.links||{}).chc||{}).block||'',hint:'Used for block and state dashboards. Filled from the CHC link when linked.'},
       {key:'state',label:'State',value:fac.state||''},
       {key:'choName',label:'CHO name',value:fac.choName||''},
-      {key:'choPwd',label:'CHO password',placeholder:'Leave blank to keep current',hint:'Only fill this in to change the Facility Admin password.'}
+      {key:'choPwd',label:'CHO password',placeholder:'Leave blank to keep current',hint:'Only fill this in to change the Facility dashboard password.'}
     ],
     validate:v=>v.choPwd&&v.choPwd.length<4?'CHO password must be at least 4 characters.':null});
   if(!v) return;
@@ -5078,14 +5078,14 @@ async function phcSubmitDemoSignup(){
       body.innerHTML='<div style="text-align:center;padding:10px 0;">'
         +'<div style="font-size:40px;margin-bottom:10px;">🎉</div>'
         +'<div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px;">'+nfRegT('Your facility is registered!')+'</div>'
-        +'<div style="font-size:12px;color:var(--t3);margin-bottom:18px;">Save these details. Log in with Staff Login — as CHO you get both My Cards and the Facility Dashboard.</div>'
+        +'<div style="font-size:12px;color:var(--t3);margin-bottom:18px;">Save these details. Log in with Staff Login — as CHO you get both My Cards and the Facility dashboard.</div>'
         +'<div style="background:var(--bgs,#F9FAFB);border-radius:12px;padding:14px;margin-bottom:8px;text-align:left;">'
         +'<div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;">Facility ID</div>'
         +'<div style="font-size:16px;font-weight:800;color:var(--teal-dk);font-family:monospace;">'+code+'</div></div>'
         +'<div style="background:var(--bgs,#F9FAFB);border-radius:12px;padding:14px;margin-bottom:18px;text-align:left;">'
         +'<div style="font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;">Your mobile · Password</div>'
         +'<div style="font-size:16px;font-weight:800;color:var(--teal-dk);font-family:monospace;">'+mobile+' · '+mobile.slice(-4)+'</div>'
-        +'<div style="font-size:10px;color:var(--t3);margin-top:4px;">Password is the last 4 digits of your mobile. You can change it later from the Facility Dashboard.</div></div>'
+        +'<div style="font-size:10px;color:var(--t3);margin-top:4px;">Password is the last 4 digits of your mobile. You can change it later from the Facility dashboard.</div></div>'
         +'<button class="fc-add-btn" style="width:100%;padding:12px;border-radius:10px;font-size:13px;" id="demo-login-now-btn">'
         +'<i class="ti ti-login-2"></i> Log in now</button></div>';
       var loginBtn=document.getElementById('demo-login-now-btn');
@@ -6501,7 +6501,7 @@ var _scSup=null; // {id,name,facilities:[codes]} when a supervisor is logged in
 function scActor(){
   if(appMode==='sc-cho'){
     var nm=((scSubAdminData||{}).choName||'').trim();
-    return {name:nm||('Facility Admin · '+scSubAdminCode),role:'Facility Admin',id:scSubAdminCode};
+    return {name:nm||('CHO · '+scSubAdminCode),role:'CHO',id:scSubAdminCode};
   }
   if(appMode==='sc-supervisor'&&_scSup) return {name:_scSup.name||_scSup.id,role:'Supervisor',id:_scSup.id};
   if(appMode==='sc-admin') return {name:'HealSol Admin',role:'HealSol',id:'healsol'};
@@ -7066,7 +7066,7 @@ function scRenderMasterDashboard(){
     var code=it.code, fac=it.fac, agg=it.agg, pct=agg.pct, C=scJs(code);
     var barCol=fac.suspended||!(agg.max>0)?'var(--grey-dk)':scPctColor(pct);
     var staffCount=Object.keys(fac.staff||{}).length;
-    var nq=agg.max>0?(agg.nqas.meets?'<span class="scx-nq-badge ok">NQAS ✓</span>':'<span class="scx-nq-badge no">Below NQAS</span>'):'';
+    var nq=agg.max>0?(function(){ var r=typeof nfResult==='function'?nfResult(nfResultSc(agg)):null; return agg.nqas.meets?'<span class="scx-nq-badge ok">✓ Meets NQAS</span>':'<span class="scx-nq-badge no">'+scEsc(r?r.word:'Not yet ready')+'</span>'; })():'';
     var card=document.createElement('div'); card.className='master-fac-card';
     card.style.opacity=fac.suspended?'0.7':'1';
     // one labelled "Manage" menu instead of four unlabelled icon buttons (HealSol 17 Oct)
@@ -7084,7 +7084,7 @@ function scRenderMasterDashboard(){
       +'<div style="font-size:9px;color:var(--teal);font-weight:700;margin-top:1px;">📋 '+scEsc(scPkgShort(fac.progId))+' · 👥 '+staffCount+' staff · '+agg.gaps.filter(function(g){return !g.closed;}).length+' open gaps</div>'
       +'</div><div class="mfc-pct" style="color:'+barCol+';">'+(agg.max>0?pct+'%':'<span style="font-size:11px;font-weight:700;">No data</span>')+'</div></div>'
       +'<div style="height:6px;border-radius:10px;background:var(--br);margin:7px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:'+pct+'%;background:'+barCol+';transition:width 0.5s;"></div></div>'
-      +'<div class="mfc-meta"><span>'+(fac.startDate?'Started '+scEsc(fac.startDate):'Not started')+'</span><span>CHO: '+scEsc(fac.choName||(function(){ var st=fac.staff||{}, m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||'CHO')==='CHO'; }); return m?(st[m].name||m):'Not set'; })())+'</span></div>'
+      +'<div class="mfc-meta"><span>'+(fac.startDate?'Started '+scEsc(nfDateTxt(fac.startDate)):'Not started')+'</span><span>CHO: '+scEsc(fac.choName||(function(){ var st=fac.staff||{}, m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||'CHO')==='CHO'; }); return m?(st[m].name||m):'Not set'; })())+'</span></div>'
       +'<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">'
       +'<button class="mfc-btn mfc-open" onclick="scDrillIn(\''+C+'\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>'
       +adminBtns+'</div>';
@@ -8023,7 +8023,7 @@ var _scb1StaffScreen='home';   // staff screen to restore when returning to My C
 var _scb1Busy=false;
 
 Object.assign(HINDI_UI,{
-  'My Cards':'मेरे कार्ड','Facility Dashboard':'स्वास्थ्य केंद्र डैशबोर्ड','Signed in as':'लॉगिन किया है',
+  'My Cards':'मेरे कार्ड','Facility dashboard':'स्वास्थ्य केंद्र डैशबोर्ड','Signed in as':'लॉगिन किया है',
   'Not you? Log out':'आप नहीं? लॉगआउट करें','Facility ID':'स्वास्थ्य केंद्र आईडी','Mobile':'मोबाइल',
   'for you':'आपके लिए','No checkpoints for you today':'आज आपके लिए कोई चेकपॉइंट नहीं',
   'Your next checkpoints':'आपके अगले चेकपॉइंट','No more checkpoints for you in this programme.':'इस कार्यक्रम में आपके लिए और कोई चेकपॉइंट नहीं।',
@@ -8078,7 +8078,7 @@ function scb1RenderNavWho(){
   var sub=document.querySelector('#cho-nav .cho-nav-sub'); if(!sub||!choState.staffMobile) return;
   sub.textContent=(choState.staffName||scb1Mask(choState.staffMobile))+' · '+scb1Role();
 }
-// Facility Dashboard header: who is signed in (single-login CHO only)
+// Facility dashboard header: who is signed in (single-login CHO only)
 function scb1RenderDashWho(){
   var code=document.getElementById('sc-cho-fac-code'); if(!code) return;
   var host=code.parentNode&&code.parentNode.parentNode; if(!host) return;
@@ -8089,7 +8089,7 @@ function scb1RenderDashWho(){
 }
 
 // ══════════════════════════════════════════════════════════════
-// TABS — My Cards / Facility Dashboard
+// TABS — My Cards / Facility dashboard
 // ══════════════════════════════════════════════════════════════
 function scb1EnsureTabs(){
   var bar=document.getElementById('scb1-tabs');
@@ -8097,7 +8097,7 @@ function scb1EnsureTabs(){
     bar=document.createElement('nav'); bar.id='scb1-tabs'; bar.className='scb1-tabs'; bar.style.display='none';
     bar.innerHTML='<div class="scb1-tabs-in">'
       +'<button type="button" data-tab="cards" onclick="scb1ShowTab(\'cards\')"><i class="ti ti-cards"></i><span data-i18n="My Cards">My Cards</span></button>'
-      +'<button type="button" data-tab="dash" onclick="scb1ShowTab(\'dash\')"><i class="ti ti-building-hospital"></i><span data-i18n="Facility Dashboard">Facility Dashboard</span></button>'
+      +'<button type="button" data-tab="dash" onclick="scb1ShowTab(\'dash\')"><i class="ti ti-building-hospital"></i><span data-i18n="Facility dashboard">Facility dashboard</span></button>'
       +'</div>';
     document.body.appendChild(bar);
   }
@@ -8128,17 +8128,17 @@ async function scb1OpenDashboard(){
   if(!db){ initFirebase(); await new Promise(function(r){setTimeout(r,800);}); }
   var code=_scDual.code;
   var fac=await fbGet(scFacilityPath(code));
-  if(!fac){ await scAlert('This facility could not be found.','Facility Dashboard','⚠️'); return; }
-  if(fac.suspended){ await scAlert('This facility is currently suspended. Contact HealSol Academy.','Facility Dashboard','⚠️'); return; }
+  if(!fac){ await scAlert('This facility could not be found.','Facility dashboard','⚠️'); return; }
+  if(fac.suspended){ await scAlert('This facility is currently suspended. Contact HealSol Academy.','Facility dashboard','⚠️'); return; }
   // Re-check on every open: still registered here, still the CHO
   var me=(fac.staff||{})[choState.staffMobile];
   if(!me||(me.role||'CHO')!=='CHO'){
-    await scAlert('The Facility Dashboard is only for the CHO of this facility.','Facility Dashboard','🔒');
+    await scAlert('The Facility dashboard is only for the CHO of this facility.','Facility dashboard','🔒');
     _scDual=null; return;
   }
   // Older facilities: one-time activation key (same rule as the Facility Admin login)
   if(!fac.accessKeyVerified){
-    var v=await scDialog({title:'Activate Facility Dashboard',icon:'🔑',okLabel:'Activate',
+    var v=await scDialog({title:'Activate Facility dashboard',icon:'🔑',okLabel:'Activate',
       message:'Enter the one-time activation key from HealSol Academy. You will not be asked again.',
       fields:[{key:'ak',label:'Activation key',required:true,placeholder:'Activation key'}]});
     if(!v) return;
@@ -8273,7 +8273,7 @@ function scb1Lighten(){
   // Dashboard actions are recorded under the CHO's own name when signed in once
   var oActor=scActor;
   scActor=function(){
-    if(appMode==='sc-cho'&&_scDual) return {name:choState.staffName||('CHO · '+scSubAdminCode),role:'Facility Admin',id:scSubAdminCode,mob:choState.staffMobile};
+    if(appMode==='sc-cho'&&_scDual) return {name:choState.staffName||('CHO · '+scSubAdminCode),role:'CHO',id:scSubAdminCode,mob:choState.staffMobile};
     return oActor.apply(this,arguments);
   };
 
@@ -10389,7 +10389,7 @@ function scCpmRender(){
     +'<div class="scm-stats">'
     +'<div class="scm-stat"><b>'+nq.length+'</b><span>NQAS checkpoints</span></div>'
     +'<div class="scm-stat"><b>'+(all.length-nq.length)+'</b><span>Programme milestones</span></div>'
-    +'<div class="scm-stat wide"><span>By AoC</span><div class="scm-bars">'+Object.keys(SC_CPM_AOC).map(function(a){ return '<em title="'+scEsc(SC_CPM_AOC[a])+'">'+a+' <b>'+(st.aoc[a]||0)+'</b></em>'; }).join('')+'</div></div>'
+    +'<div class="scm-stat wide"><span>By Area of Concern</span><div class="scm-bars">'+Object.keys(SC_CPM_AOC).map(function(a){ return '<em title="'+scEsc(SC_CPM_AOC[a])+'">'+a+' <b>'+(st.aoc[a]||0)+'</b></em>'; }).join('')+'</div></div>'
     +'<div class="scm-stat wide"><span>By role (NQAS) — balance the load</span><div class="scm-bars">'+['CHO','ANM','ASHA','MPW','MO','General'].map(function(r){ var n=st.role[r]||0; return '<em>'+r+' <b>'+n+'</b> <i>'+Math.round(n/roleTot*100)+'%</i></em>'; }).join('')+'</div></div>'
     +'</div>'
     +'<div class="scm-filters">'
@@ -13233,7 +13233,7 @@ _scCpmUi.phase=''; _scCpmUi.day='';
     var h=oRow.apply(this,arguments); if(c.kind!=='nqas') return h;
     var pk=_scCpmUi.pkg==='12A'?'nqas_12A':'nqas_12B'; if(c.pk.indexOf(scPkgCode(pk))<0) pk=c.pk.indexOf('12B')>=0?'nqas_12B':'nqas_12A';
     var d=scCpDays(pk,c.id); if(!d) return h;
-    var chip='<span class="dy" title="'+scEsc(scPkgCode(pk))+' day cards — click to move" onclick="event.stopPropagation();scCpMoveDay(\''+scJs(c.id)+'\')">📅 Baseline D'+d.bl+(d.blMoved?'✎':'')+' · Impl. D'+d.impl+(d.implMoved?'✎':'')+' · Revision D'+d.rev+'</span>';
+    var chip='<span class="dy" title="'+scEsc(scPkgCode(pk))+' day cards — click to move" onclick="event.stopPropagation();scCpMoveDay(\''+scJs(c.id)+'\')">📅 Baseline D'+d.bl+(d.blMoved?'✎':'')+' · Implementation D'+d.impl+(d.implMoved?'✎':'')+' · Revision D'+d.rev+'</span>';
     return h.replace('<span class="pk">',chip+'<span class="pk">');
   };
   var oFil=scCpmFiltered;
@@ -14501,8 +14501,7 @@ function nfStatusChip(r){
   var a=r.agg;
   if(r.planMissing) return '<span class="nfo-chip red">Plan not published</span>';
   if(!a.coverage||!a.coverage.assessed) return '<span class="nfo-chip grey">Not assessed yet</span>';
-  if(a.nqas.meets) return '<span class="nfo-chip green">✓ Meets NQAS</span>';
-  var n=a.nqas.stdFails.length; return '<span class="nfo-chip amber">'+(n?n+' Std below':'Overall below 70%')+'</span>';
+  return nfResultChip(nfResultSc(a));
 }
 function nfSortRows(rows){
   var k=_nfOv.sort, d=_nfOv.dir, val=function(r){ var a=r.agg, b=a.baseline||{};
@@ -15072,8 +15071,7 @@ function nfRptOpen(html){
 function nfRptStatus(a){
   var n=a.nqas||scNqasCheckV2(a);
   if(!a.coverage||!a.coverage.assessed) return {cls:'n',txt:'Not assessed yet'};
-  if(n.meets) return {cls:'g',txt:'✓ Meets NQAS'};
-  return {cls:n.stdFails.length?'a':'r',txt:n.stdFails.length?n.stdFails.length+' Std below min':'Overall below 70%'};
+  var r=nfResult(nfResultSc(a)); return {cls:r.cls==='green'?'g':r.cls==='grey'?'n':(a.pct<(n.overallMin||70)?'r':'a'),txt:r.txt};
 }
 function nfRptActions(code){
   var acts=((_scRvAll||{})[code])||null;
@@ -15263,7 +15261,7 @@ function nfBaselinePdf(hostId){
 // ══════════════════════════════════════════════════════════════
 var NF_WEEK_START=[0,7,14,21,28,35,42,49,56], NF_WEEK_END=[6,13,20,27,34,41,48,55,59];
 var NF_PH_COL={B:'#94A3B8',I:'#135A55',E:'#5048B4'};
-var NF_PHASES=[{k:'Baseline',a:1,b:7},{k:'Implementation',a:8,b:49},{k:'Endline',a:50,b:56},{k:'Readiness week',a:57,b:60}];
+var NF_PHASES=[{k:'Baseline',a:1,b:7},{k:'Implementation',a:8,b:49},{k:'End-line',a:50,b:56},{k:'Readiness week',a:57,b:60}];
 function nfFilterProg(progress,maxDi){ var out={}; Object.keys(progress||{}).forEach(function(m){ var recs=progress[m]||{}, o={};
   Object.keys(recs).forEach(function(k){ var x=/^day_(\d+)$/.exec(k); if(!x||+x[1]<=maxDi) o[k]=recs[k]; }); out[m]=o; }); return out; }
 function nfHasDone(progress,a,b){ return Object.keys(progress||{}).some(function(m){ return Object.keys(progress[m]||{}).some(function(k){ var x=/^day_(\d+)$/.exec(k); return x&&+x[1]>=a&&+x[1]<=b&&(progress[m][k]||{}).taskDone; }); }); }
@@ -15321,7 +15319,7 @@ function nfPhRows(bB,bI,bE,opts){
   opts=opts||{}; var row=function(lbl,col,b,chip,note){ var v=nfPhVal(b);
     return '<div class="phr'+(v==null?' mut':'')+'"><i style="background:'+col+'"></i><span>'+lbl+'</span><b>'+(v==null?'—':v+'%')+'</b>'+(v==null?'<em>'+(note||'')+'</em>':(chip||'<em></em>'))+'</div>'; };
   var base=nfPhVal(bB), ch=function(b){ var v=nfPhVal(b); if(base==null||v==null) return ''; var d=v-base; return '<span class="phc '+(d>0?'up':d<0?'dn':'eq')+'">'+(d>0?'+':'')+d+'</span>'; };
-  return row(opts.hi?'बेसलाइन':'Baseline',NF_PH_COL.B,bB,'<em></em>','')+row(opts.hi?'क्रियान्वयन':'Implementation',NF_PH_COL.I,bI,ch(bI),opts.hi?'दिन 8 से':'from Day 8')+row(opts.hi?'एंड-लाइन':'Endline',NF_PH_COL.E,bE,ch(bE),opts.hi?'दिन 50 से':'from Day 50');
+  return row(opts.hi?'बेसलाइन':'Baseline',NF_PH_COL.B,bB,'<em></em>','')+row(opts.hi?'क्रियान्वयन':'Implementation',NF_PH_COL.I,bI,ch(bI),opts.hi?'दिन 8 से':'from Day 8')+row(opts.hi?'एंड-लाइन':'End-line',NF_PH_COL.E,bE,ch(bE),opts.hi?'दिन 50 से':'from Day 50');
 }
 function nfRingCardHTML(title,sub,bB,bI,bE,size){
   return '<div class="phrc">'+nfRing3SVG(nfPhVal(bB),nfPhVal(bI),nfPhVal(bE),size||112)+'<div class="phrc-l"><b>'+scEsc(title)+'</b><small>'+scEsc(sub||'')+'</small>'+nfPhRows(bB,bI,bE)+'</div></div>';
@@ -15336,7 +15334,7 @@ function nfCard3HTML(title,sub,bB,bI,bE){
 function nfWeekChartSVG(weeks,todayDi,W,H){
   W=W||760; H=H||250; var L=40,T=16,R=14,Bm=28, n=9, x=function(k){ return L+k*(W-L-R)/(n-1); }, y=function(v){ return T+(100-v)*(H-T-Bm)/100; }, hw=(x(1)-x(0))/2;
   var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;font-family:inherit">';
-  [[0,0,'Baseline','#F1F5F9'],[1,6,'Implementation','#E7F2F0'],[7,7,'Endline','#EEEDFA'],[8,8,'Mock','#FDF0E1']].forEach(function(b){ var x0=Math.max(x(b[0])-hw,L), x1=Math.min(x(b[1])+hw,W-R);
+  [[0,0,'Baseline','#F1F5F9'],[1,6,'Implementation','#E7F2F0'],[7,7,'End-line','#EEEDFA'],[8,8,'Mock','#FDF0E1']].forEach(function(b){ var x0=Math.max(x(b[0])-hw,L), x1=Math.min(x(b[1])+hw,W-R);
     s+='<rect x="'+x0+'" y="'+T+'" width="'+(x1-x0)+'" height="'+(H-T-Bm)+'" fill="'+b[3]+'"/><text x="'+((x0+x1)/2)+'" y="'+(T+12)+'" font-size="10" text-anchor="middle" fill="#6B7A78">'+b[2]+'</text>'; });
   [0,25,50,75,100].forEach(function(g){ s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(g)+'" y2="'+y(g)+'" stroke="#E3EAE8"/><text x="'+(L-6)+'" y="'+(y(g)+4)+'" font-size="10" text-anchor="end" fill="#8A9896">'+g+'%</text>'; });
   s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(70)+'" y2="'+y(70)+'" stroke="#E9963A" stroke-dasharray="6 4" stroke-width="1.5"/><text x="'+(W-R-4)+'" y="'+(y(70)-5)+'" font-size="10" text-anchor="end" fill="#C47A24">NQAS 70%</text>';
@@ -15351,7 +15349,7 @@ function nfWeekChartSVG(weeks,todayDi,W,H){
   return s+'</svg>';
 }
 function nfWeekLegend(){ return [['#135A55','Overall'],['#22C55E','Structure'],['#F59E0B','Process'],['#3B82F6','Outcome'],['#E9963A','NQAS 70%']].map(function(x){ return '<span><i style="background:'+x[0]+'"></i>'+x[1]+'</span>'; }).join(''); }
-function nfPhLegend(){ return [['B',NF_PH_COL.B,'Baseline'],['I',NF_PH_COL.I,'Implementation'],['E',NF_PH_COL.E,'Endline']].map(function(x){ return '<span><i style="background:'+x[1]+'"></i>'+x[2]+'</span>'; }).join(''); }
+function nfPhLegend(){ return [['B',NF_PH_COL.B,'Baseline'],['I',NF_PH_COL.I,'Implementation'],['E',NF_PH_COL.E,'End-line']].map(function(x){ return '<span><i style="background:'+x[1]+'"></i>'+x[2]+'</span>'; }).join(''); }
 // Standards heat-map: rows by AoC, tile per Standard (current %, coloured against its minimum)
 function nfStdHeatHTML(A,limitLow){
   var byAoc={}, stds=Object.keys(A.byStd||{}).sort(scStdCmp);
@@ -15386,7 +15384,7 @@ scInsReadinessHTML=function(st,openCnt,overdueCnt){
   var h=nfPhaseCardHTML(st.fac,P.day,P.blDone)
     +'<div class="scx-tiles">'+tile(A.coverage.assessed?A.pct+'%':'—','Current readiness',A.coverage.assessed?scPctText(A.pct):'var(--t3)')
     +tile(hasB?B.pct+'%':'—','Baseline',hasB?scPctText(B.pct):'var(--t3)')+tile(gain==null?'—':(gain>=0?'+':'')+gain,'Growth since baseline',gain==null?'var(--t3)':gain>0?'var(--green-dk)':gain<0?'var(--red-dk)':'var(--t3)')
-    +tile(ev==null?'—':ev+'%',ev==null?'Endline (from Day 50)':'Endline',ev==null?'var(--t3)':scPctText(ev))
+    +tile(ev==null?'—':ev+'%',ev==null?'End-line (from Day 50)':'End-line',ev==null?'var(--t3)':scPctText(ev))
     +tile(A.coverage.assessed+'/'+A.total,'Checkpoints assessed')+tile(openCnt,'Open gaps','var(--amber-dk)')+tile(overdueCnt,'Overdue actions',overdueCnt?'var(--red-dk)':'var(--t3)')+tile(A.daysVerified+'/'+A.daysDone,'Cards verified')+'</div>'
     +rdNqasLine(A,st.hostId);
   var aocsOf=function(k){ return Object.keys(SC_CPM_AOC).filter(function(x){ return scAocCat(x)===k; }).join(', '); };
@@ -15395,10 +15393,10 @@ scInsReadinessHTML=function(st,openCnt,overdueCnt){
     +SC_AOC_CATS.map(function(k){ return nfRingCardHTML(k,'AoC '+aocsOf(k),B.byCat&&B.byCat[k],I&&I.byCat[k],E&&E.byCat[k],96); }).join('')+'</div></div></div>';
   h+=nfHeatBlockHTML(st.hostId,P);
   var stds=Object.keys(A.byStd).sort(scStdCmp), pv=function(x){ return x&&x.assessed?x.pct+'%':'—'; };
-  h+='<div class="scc-std nf-stdtbl'+(_nfStdOpen[st.hostId]?' open':'')+'" id="nfstd-'+scEsc(st.hostId)+'"><div class="nf-stdtbl-h">By Standard — minimum to pass NQAS shown for each</div><table><thead><tr><th>Standard</th><th>Current</th><th>Min</th><th></th><th>Baseline</th><th>Implementation</th><th>Endline</th><th>Assessed</th></tr></thead><tbody>'
+  h+='<div class="scc-std nf-stdtbl'+(_nfStdOpen[st.hostId]?' open':'')+'" id="nfstd-'+scEsc(st.hostId)+'"><div class="nf-stdtbl-h">By Standard — minimum to pass NQAS shown for each</div><table><thead><tr><th>Standard</th><th>Current</th><th>Min</th><th></th><th>Baseline</th><th>Implementation</th><th>End-line</th><th>Assessed</th></tr></thead><tbody>'
     +stds.map(function(s){ var b=A.byStd[s], m=scNqasStdMin(s), ok=b.pct>=m;
       return '<tr class="'+(ok?'ok':'no')+'"><td><b>'+s+'</b> <span>'+scEsc((scRegTitle('std',s)||'').slice(0,40))+'</span></td><td style="color:'+scPctText(b.pct)+';"><b>'+b.pct+'%</b></td><td>'+m+'%</td><td>'+(ok?'✓':'✗')+'</td><td>'+pv(B.byStd&&B.byStd[s])+'</td><td>'+pv(I&&I.byStd[s])+'</td><td>'+pv(E&&E.byStd[s])+'</td><td>'+b.assessed+'/'+b.n+'</td></tr>'; }).join('')+'</tbody></table></div>';
-  h+='<div class="scx-sub">Areas of Concern <span class="scc-hint">B baseline · I implementation · E endline · chip = growth since baseline</span></div><div class="phgrid">'
+  h+='<div class="scx-sub">Areas of Concern <span class="scc-hint">B baseline · I implementation · E end-line · chip = growth since baseline</span></div><div class="phgrid">'
     +Object.keys(SC_CPM_AOC).map(function(k){ return nfCard3HTML('AoC '+k+' · '+SC_CPM_AOC[k],scAocCat(k),B.byAoc&&B.byAoc[k],I&&I.byAoc[k],E&&E.byAoc[k]); }).join('')+'</div>';
   ['service','support'].forEach(function(g){
     var order=SC_SVC_GROUPS[g], names=Object.keys(A.byService).filter(function(k){ return scSvcGroup(k)===g; });
@@ -15458,7 +15456,7 @@ scInsReadinessHTML=function(st,openCnt,overdueCnt){
       rebuild('Service packages',svc,function(k){ return nfCard3HTML(k,'',B.byService&&B.byService[k],I&&I.byService[k],E&&E.byService[k]); });
       rebuild('Cross-cutting areas',cc,function(k){ return nfCard3HTML(k,'',B.byService&&B.byService[k],I&&I.byService[k],E&&E.byService[k]); });
       // Standards table: Baseline · Implementation · Endline columns
-      html=html.replace('<th class="c">Baseline</th><th class="c">Assessed</th></tr></thead>','<th class="c">Baseline</th><th class="c">Impl.</th><th class="c">Endline</th><th class="c">Assessed</th></tr></thead>');
+      html=html.replace('<th class="c">Baseline</th><th class="c">Assessed</th></tr></thead>','<th class="c">Baseline</th><th class="c">Implementation</th><th class="c">End-line</th><th class="c">Assessed</th></tr></thead>');
       Object.keys(A.byStd).forEach(function(s){ var re=new RegExp('(<tr><td><b>'+s+'</b></td>(?:(?!</tr>).)*?<td class="c">(?:\\d+%|—)</td>)(<td class="c">\\d+/\\d+</td></tr>)');
         var pv=function(x){ return x&&x.assessed?x.pct+'%':'—'; }; html=html.replace(re,'$1<td class="c">'+pv(I&&I.byStd[s])+'</td><td class="c">'+pv(E&&E.byStd[s])+'</td>$2'); });
     }catch(e){ console.warn('[SC] phase report',e); }
@@ -15511,7 +15509,7 @@ function nfStaffPhaseDecorate(){
 <script>
 // ══ Heat-map tabs (Baseline · Implementation · Endline) + "By Standard" toggle + baseline-incomplete attention ══
 var _nfHeatTab={}, _nfStdOpen={};
-function nfHeatPhases(P){ return [{k:'B',label:'Baseline',agg:P.B&&P.B.assessed?P.B:null,note:'from Day 1'},{k:'I',label:'Implementation',agg:P.I,note:'from Day 8'},{k:'E',label:'Endline',agg:P.E,note:'from Day 50'}]; }
+function nfHeatPhases(P){ return [{k:'B',label:'Baseline',agg:P.B&&P.B.assessed?P.B:null,note:'from Day 1'},{k:'I',label:'Implementation',agg:P.I,note:'from Day 8'},{k:'E',label:'End-line',agg:P.E,note:'from Day 50'}]; }
 function nfHeatLatest(P){ var L=nfHeatPhases(P).filter(function(x){ return x.agg; }); return L.length?L[L.length-1]:{k:'B',label:'Baseline',agg:P.A}; }
 function nfHeatBlockHTML(hostId,P){
   var ph=nfHeatPhases(P), cur=_nfHeatTab[hostId], pick=ph.find(function(x){ return x.k===cur&&x.agg; })||nfHeatLatest(P), H=JSON.stringify(hostId).replace(/"/g,'&quot;');
@@ -16670,7 +16668,7 @@ var NF_PDF_FONT_SIGN='AAEAAAARAQAABAAQR0RFRgabB6EAAMXIAAAAmkdQT1OG1G63AADGZAAADO
 // CERTIFICATE — earned, graded, signed, verifiable (server function issueCertificate decides)
 //  Conditions: Baseline 7/7 · at least 48 of 60 daily cards done · at least half of the done cards verified · from Day 60 · PRO facility
 //  Grade from the facility score: Distinction ≥80 · Merit 70–79 · Completion below 70
-//  Signers (digital): Mentor (Supervisor), Quality Champion, HealSol Academy Coordinator (Setup → Certificate signatory)
+//  Signers (digital): Supervisor (printed as Quality Mentor), Quality Champion, HealSol Academy Coordinator (Setup → Certificate signatory)
 //  Every certificate has a number and a QR code → public Verify page (?cert=NUMBER).
 // ══════════════════════════════════════════════════════════════
 var NF_CERT={days:60,baseline:7,minDone:48,share:0.5};
@@ -16873,9 +16871,9 @@ async function nfEnsureCertSetup(){
   c.innerHTML='<h3><i class="ti ti-certificate"></i> Certificate signatory</h3><p>HealSol Academy signs every new certificate. Set one name for each facility type (left blank: the Sub-Centre name is used). Certificates already issued keep the names they were signed with.</p>'
     +'<div class="nf-cs-grid"><b>Facility type</b><b>Name</b><b>Title</b><b>Signs next to (taken automatically)</b>'
     +T.map(function(t){ var L=NF_LEVELS[t]; return '<span class="nf-cs-t">'+scEsc(L.plural)+'</span><input id="nf-cs-name-'+t+'" placeholder="'+(t==='sc'?'e.g. Meera Kapoor':'Same as Sub-Centres')+'" maxlength="60"><input id="nf-cs-title-'+t+'" placeholder="Programme Coordinator" maxlength="60">'
-      +'<small>'+(t==='sc'?'Mentor (Supervisor) · Quality Champion':scEsc(L.inChargeLabel)+' · Quality Mentor')+'</small>'; }).join('')+'</div>'
+      +'<small>'+(t==='sc'?'Quality Mentor (the Supervisor) · Quality Champion':scEsc(L.inChargeLabel)+' · Quality Mentor (the Supervisor)')+'</small>'; }).join('')+'</div>'
     +'<div class="row" style="justify-content:flex-end"><button type="button" onclick="nfSaveCertSetup(this)">Save</button></div>'
-    +'<details class="nf-cs-how"><summary>How the other signatures come on the certificate</summary><p>They are automatic. When a certificate is issued the app takes each name from the records: the Mentor / Quality Mentor from the Supervisor who looks after the facility, the Quality Champion from the Champion allotted to it, and for UPHC · PHC · CHC the in-charge from the facility\'s staff list (never the person receiving the certificate). Each name is printed in a signature-style font with “Digitally signed · date”, and the QR code on the certificate proves it is genuine. Nobody uploads a signature image; if a person is missing (for example no Supervisor yet), that box is left out.</p></details>';
+    +'<details class="nf-cs-how"><summary>How the other signatures come on the certificate</summary><p>They are automatic. When a certificate is issued the app takes each name from the records: the Supervisor who looks after the facility, the Quality Champion from the Champion allotted to it, and for UPHC · PHC · CHC the in-charge from the facility\'s staff list (never the person receiving the certificate). Each name is printed in a signature-style font with “Digitally signed · date”, and the QR code on the certificate proves it is genuine. Nobody uploads a signature image; if a person is missing (for example no Supervisor yet), that box is left out.</p></details>';
   main.appendChild(c);
   var cfg=await fbGet('shared/sc_cert_config')||{}, set=function(id,v){ var el=document.getElementById(id); if(el) el.value=v||''; };
   set('nf-cs-name-sc',cfg.coordName); set('nf-cs-title-sc',cfg.coordTitle);
@@ -17748,7 +17746,7 @@ var FA_HI={'Facility dashboard':'सुविधा डैशबोर्ड','H
   'Facility readiness':'सुविधा की तैयारी','Baseline':'बेसलाइन','Growth':'बढ़त','Checkpoints':'चेकपॉइंट','Loading…':'लोड हो रहा है…',
   'Programme':'कार्यक्रम','Account':'खाता','Change my password':'मेरा पासवर्ड बदलें','Help on WhatsApp':'WhatsApp पर मदद','Logout':'लॉग आउट','Live sessions':'लाइव सत्र',
   'Programme start date':'कार्यक्रम शुरू होने की तारीख','Set date':'तारीख सेट करें','people':'लोग','person':'व्यक्ति','Close':'बंद करें','you':'आप',
-  'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',
+  'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','cards in':'कार्ड जमा','no card days yet':'अभी कोई कार्ड दिन नहीं','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',
   'Downloads':'डाउनलोड','Refresh':'रीफ़्रेश'};
 function faT(k){ return (typeof _appLang!=='undefined'&&_appLang==='hi'&&FA_HI[k])?FA_HI[k]:k; }
 function faOn(){ var a=document.getElementById('sc-cho-app'); return !!(a&&a.classList.contains('fa')); }
@@ -17886,11 +17884,12 @@ function faStaffList(){
 function faStaffRender(){
   var cont=document.getElementById('sc-cho-staff-roster'); if(!cont) return;
   var st=faSt(), by={}; ((st&&st.agg&&st.agg.staff)||[]).forEach(function(s){ by[s.mob]=s; });
-  var list=faStaffList(), me=faDual()?String(choState.staffMobile):'';
+  var list=faStaffList(), me=faDual()?String(choState.staffMobile):'', S0=(typeof scSubAdminStaff!=='undefined'&&scSubAdminStaff)||{};
   if(!list.length){ cont.innerHTML='<div class="nf-empty">No staff added yet. Tap <b>'+faT('Add staff')+'</b> to start.</div>'; faStaffMeta(); return; }
   cont.innerHTML=list.map(function(s){
     var rd=getScRole(s.role||'CHO')||{}, r=(by[s.mob]||{}).res, you=String(s.mob)===me, m=scJs(s.mob);
-    var pg=r?'<div class="fa-pg"><div class="nf-bar"><i style="width:'+Math.max(0,Math.min(100,r.pct||0))+'%"></i></div><span>'+(r.daysDone||0)+' '+faT('cards done')+' · '+(r.pct||0)+'%</span></div>':'';
+    var cd=null; try{ var ff=faFac(); cd=fpScCardDays(ff,ff.progId||(st&&st.progId)||'nqas_12A',((st&&st.progress)||{})[s.mob]||{},s.mob,s.role||'CHO',scRolesFromRoster(S0)); }catch(e){}
+    var pg=cd&&cd.exp?'<div class="fa-pg"><div class="nf-bar"><i style="width:'+cd.pct+'%"></i></div><span>'+cd.done+' '+faT('of')+' '+cd.exp+' '+faT('cards in')+' · '+cd.pct+'%</span></div>':(r?'<div class="fa-pg"><span>'+faT('no card days yet')+'</span></div>':'');
     return '<div class="fa-p" data-mob="'+scEsc(s.mob)+'"><div class="fa-p-r"><span class="fa-av">'+scEsc(String(s.name||s.mob||'?').charAt(0).toUpperCase())+'</span>'
       +'<div class="fa-pb"><b>'+scEsc(s.name||s.mob)+'</b><small><span class="fa-chip" title="'+scEsc(rd.label||s.role)+'">'+scEsc(s.role||'CHO')+'</span>'+(you?'<span class="fa-chip you">'+faT('you')+'</span>':'')+'<span>📱 '+scEsc(s.mob)+'</span></small>'+pg+'</div>'
       +'<button type="button" class="fa-dots" aria-label="More options" onclick="faToggle(this)"><i class="ti ti-dots-vertical"></i></button></div>'
@@ -21148,7 +21147,7 @@ async function nfDPdf(btn){ var v=_nfD.v; if(!v) return; var old=btn&&btn.innerH
     y+=10+Math.max(1,g.length)*5.5;
     var dist=Object.keys(v.roll.district||{}).map(function(k){ var r=v.roll.district[k]; return [r.name,r.state||'',r.n,r.avgPct!=null?r.avgPct+'%':'—',r.avgGain!=null?'+'+r.avgGain:'—',r.ready||0,r.certified||0,r.behind||0]; });
     doc.autoTable({startY:y,head:[['District','State','Facilities','Average','Gain','Ready','Certified','Behind']],body:dist,styles:{font:doc._nfFont,fontSize:8.5},headStyles:{fillColor:[19,90,85]},margin:{left:14,right:14}});
-    var F=v.fac||{}, rows=Object.keys(F).map(function(c){ var r=F[c]; return [r.n,[r.di,r.bl].filter(Boolean).join(' · '),r.day?(r.day>60?'Done':r.day):'—',r.assessed&&r.pct!=null?r.pct+'%':'—',r.base!=null&&r.pct!=null?'+'+Math.max(0,r.pct-r.base):'—',{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'—',r.nh==='certified'?'Certified':r.grad==='ready'?'NQAS Ready':r.grad==='almost'?'Almost ready':r.grad?'Not yet':'In programme']; })
+    var F=v.fac||{}, rows=Object.keys(F).map(function(c){ var r=F[c]; return [r.n,[r.di,r.bl].filter(Boolean).join(' · '),r.day?(r.day>60?'Done':r.day):'—',r.assessed&&r.pct!=null?r.pct+'%':'—',r.base!=null&&r.pct!=null?'+'+Math.max(0,r.pct-r.base):'—',{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'—',r.nh==='certified'?'Certified':r.grad==='ready'?'NQAS Ready':r.grad==='almost'?'Almost ready':r.grad?'Not yet ready':'In programme']; })
       .sort(function(a,b){ return String(a[0]).localeCompare(String(b[0])); });
     doc.autoTable({startY:doc.lastAutoTable.finalY+8,head:[['Facility','District · block','Day','Readiness','Gain','Timeline','Result']],body:rows,styles:{font:doc._nfFont,fontSize:8},headStyles:{fillColor:[19,90,85]},margin:{left:14,right:14}});
     var pages=doc.getNumberOfPages(); for(var p=1;p<=pages;p++){ doc.setPage(p); doc.setFontSize(7.5); doc.setTextColor(120); doc.text(nfPdfTxt(doc,'NQAS | FAST · HealSol Academy · facility-level figures; staff names are never shown · page '+p+' of '+pages),14,290); }
@@ -22206,7 +22205,7 @@ async function ndRemoveStaff(mob) {
 // ── dates ──
 function ndToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function ndAddDays(iso, n) { var d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-function ndDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '-' + m[2] + '-' + m[1] : (iso || ''); }   // 2026-10-23 → 23-10-2026
+function ndDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2] - 1] + ' ' + m[1] : (iso || ''); }   // 2026-10-23 → 23 Oct 2026 (one date format, 21 Oct)
 function ndWeekEnd() { var d = new Date(), add = (7 - d.getDay()) % 7; return ndAddDays(ndToday(), add); }   // this Sunday
 function ndCpText(id) { var r = _nd.byId[id]; return r ? r[5] : id; }
 
@@ -23132,7 +23131,7 @@ function ndReadyHTML() {
   var h = '<div class="nx"><div class="nx-ph-r"><h1 style="margin:0;font-size:21px;font-weight:700;flex:1">' + (mineOnly ? 'My progress' : 'Facility progress') + '</h1><span class="nx-chip o">Day ' + Math.max(day, 0) + ' / ' + _nd.cfg.days + '</span></div>'
     + '<div class="nx-card nx-pring"><div class="nx-ring">' + nxRing(pct, 104, 11, '#1E6B5E', '#E6F2EF') + '<span><b>' + pct + '%</b><small>readiness</small></span></div><div class="nx-kv">'
     + '<div><span>Baseline</span><b>' + fmt(B) + '</b></div><div><span>Implementation</span><b style="color:#135A55">' + (I ? fmt(I) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.i1 + '</span>') + '</b></div>'
-    + '<div><span>Endline</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">Target to pass: ' + pass + '% · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
+    + '<div><span>End-line</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">Target to pass: ' + pass + '% · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
   if (!_nd.view && mineOnly) {
     var I2 = nxImpact();
     h += '<div class="nx-stat c3"><div><b style="color:#9A5A12">' + ndStreak() + '</b><small>days on time in a row</small></div><div><b style="color:#135A55">' + I2.checked + '</b><small>checkpoints checked</small></div><div><b style="color:#166534">' + I2.fixed + '</b><small>gaps you fixed</small></div></div>';
@@ -23185,7 +23184,7 @@ function nxBadges() {
     { t: '7-day<br>streak', on: st >= 7, icon: 'ti-flame', bg: '#FFF1DE', fg: '#E8963A' },
     { t: 'Baseline<br>done', on: nxBaselineDone(), icon: 'ti-circle-check', bg: '#DCFCE7', fg: '#166534' },
     { t: 'First gap<br>fixed', on: I.fixed > 0, icon: 'ti-tools', bg: '#E0F2FE', fg: '#075985' },
-    { t: 'Endline<br>70%+', on: !!(E && E.overall !== null && E.overall >= 70), icon: 'ti-award', bg: '#F1F5F9', fg: '#64748B' }];
+    { t: 'End-line<br>70%+', on: !!(E && E.overall !== null && E.overall >= 70), icon: 'ti-award', bg: '#F1F5F9', fg: '#64748B' }];
 }
 
 // ═══ ME ═══
@@ -23561,7 +23560,7 @@ function nxFaReadyHTML() {
   var S = ndShape(), R = nxReady(all), B = nxReady(all, S.bN), I = day > S.bN ? nxReady(all, S.iN, S.i1) : null, E = day >= S.e1 ? nxReady(all, 999, S.e1) : null, pct = R.overall === null ? 0 : R.overall, fmt = function (x) { return x && x.overall !== null ? x.overall + '%' : '–'; };
   var h = '<div class="nx-card nx-pring"><div class="nx-ring">' + nxRing(pct, 104, 11, '#1E6B5E', '#E6F2EF') + '<span><b>' + pct + '%</b><small>facility</small></span></div><div class="nx-kv">'
     + '<div><span>Baseline</span><b>' + fmt(B) + '</b></div><div><span>Implementation</span><b style="color:#135A55">' + (I ? fmt(I) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.i1 + '</span>') + '</b></div>'
-    + '<div><span>Endline</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">' + (R.meets ? '✓ Meets NQAS criteria' : 'Needs ' + pass + '% overall, in each department and each Area of Concern') + ' · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
+    + '<div><span>End-line</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">' + (R.meets ? '✓ Meets NQAS criteria' : 'Needs ' + pass + '% overall, in each department and each Area of Concern') + ' · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
   var tab = _nd.ptab || 'dept';
   h += '<div class="nx-seg"><button type="button" class="' + (tab === 'dept' ? 'on' : '') + '" onclick="_nd.ptab=\'dept\';ndKeepScroll()">Departments</button><button type="button" class="' + (tab === 'aoc' ? 'on' : '') + '" onclick="_nd.ptab=\'aoc\';ndKeepScroll()">Areas of Concern</button><button type="button" class="' + (tab === 'grid' ? 'on' : '') + '" onclick="_nd.ptab=\'grid\';ndKeepScroll()">Grid</button></div>';
   if (tab === 'grid') return h + '<div class="nx-card">' + nxGridHTML() + '</div>';
@@ -24225,7 +24224,7 @@ function nmSideHTML(T, c) {
     + '<dl class="nm-dl2"><dt>Area</dt><dd>' + nmE(c.aoc + ' · ' + String((data.aocs || {})[c.aoc] || '').replace(/^[:\s]+/, '')) + '</dd>'
     + '<dt>Method</dt><dd>' + (c.method.length ? c.method.map(function (m) { return NM_MLABEL[m]; }).join(', ') : '<span class="nm-tag tc">Not set</span>') + '</dd>'
     + '<dt>Best filled by</dt><dd>' + (c.roles.length ? c.roles.map(function (r) { return nmE(nmRoleLabel(T, r)); }).join(', ') : 'Staff posted in ' + nmE(nmDeptName(T, c.dept))) + '</dd>'
-    + '<dt>Days</dt><dd>' + (c.retired || !d ? '—' : 'Baseline ' + d.b + (d.i ? ' · Impl. ' + d.i : '') + ' · End-line ' + d.e) + '</dd>'
+    + '<dt>Days</dt><dd>' + (c.retired || !d ? '—' : 'Baseline ' + d.b + (d.i ? ' · Implementation ' + d.i : '') + ' · End-line ' + d.e) + '</dd>'
     + '<dt>Content</dt><dd>' + [c.hi ? 'Hindi' : '', fixN ? 'How to fix ' + fixN : '', c.video || c.videoHi ? 'Video' : ''].filter(Boolean).join(' · ') + ([c.hi, fixN, c.video || c.videoHi].some(Boolean) ? '' : 'Not added yet') + '</dd>'
     + '<dt>In use at</dt><dd>' + nmFacs(T).length + ' ' + nmE(nmCfg(T).short || T) + (nmFacs(T).length === 1 ? '' : 's') + '</dd></dl>'
     + '<div class="nm-sbtn"><button type="button" class="nm-btn pri" onclick="nmEditOpen(\'' + nmJ(c.id) + '\')">Edit</button>'
@@ -24656,7 +24655,7 @@ function nmPlanHTML() {
     + '<div class="nm-bar"><label class="nm-lbl">Department<select onchange="_nm.ui.psel=null;nmPlanUi(\'pdept\',this.value)">' + B.depts.map(function (d) { return nmOpt(d.id, d.name, u.pdept); }).join('') + '</select></label>'
     + '<span class="nm-live">' + all + ' checkpoints' + (moved ? ' · ' + moved + ' moved on this board' : '') + '</span>'
     + '<div class="nm-acts"><button type="button" class="nm-btn"' + (moved ? '' : ' disabled') + ' onclick="nmPlanRespread()">Re-spread evenly</button></div></div>'
-    + '<section class="nm-card"><div class="nm-phases">' + ph('baseline', 'Baseline', 1, S.bN, S.base) + ph('impl', 'Implementation · ' + S.implWeeks + ' weeks', S.i1, S.iN, S.implWeeks * 7) + ph('endline', 'End-line', S.e1, S.eN, S.end) + ph('ready', 'Ready', S.r1, S.rN, S.ready) + '</div>' + sub + '</section>'
+    + '<section class="nm-card"><div class="nm-phases">' + ph('baseline', 'Baseline', 1, S.bN, S.base) + ph('impl', 'Implementation · ' + S.implWeeks + ' weeks', S.i1, S.iN, S.implWeeks * 7) + ph('endline', 'End-line', S.e1, S.eN, S.end) + ph('ready', 'Readiness week', S.r1, S.rN, S.ready) + '</div>' + sub + '</section>'
     + '<div class="nm-psplit"><div class="nm-pcols-wrap">'
     + (cols.length ? '<div class="nm-pcols" style="grid-template-columns:repeat(' + cols.length + ',minmax(104px,1fr));min-width:' + (cols.length * 112) + 'px">' + cols.map(function (c) {
         var heavy = c.ids.length > NM_DAY_WARN;
@@ -24666,7 +24665,7 @@ function nmPlanHTML() {
       : '<div class="nm-empty">' + (u.pphase === 'endline' ? 'End-line days ' + S.e1 + '–' + S.eN + ' repeat the baseline days 1–' + S.bN + ' in the same order. Move a checkpoint on the baseline to change its end-line day too.' : 'Readiness days ' + S.r1 + '–' + S.rN + ': end-line verification, final team review and graduation — no checklist cards.') + '</div>')
     + '</div><aside class="nm-ecol">'
     + (sel ? '<section class="nm-card"><div class="nm-sh"><span>' + nmE(sel.id + ' · ' + sel.me) + '</span>' + nmTag(nmStatus(T, sel.id)) + '</div><div class="nm-st">' + nmE(sel.t) + '</div>'
-        + (sd ? '<div class="nm-days"><div><span class="b">Baseline · Day ' + sd.b + '</span>' + (sd.i ? '<span class="i">Impl. · Day ' + sd.i + '</span>' : '') + '<span class="e">End-line · Day ' + sd.e + '</span></div></div>' : '')
+        + (sd ? '<div class="nm-days"><div><span class="b">Baseline · Day ' + sd.b + '</span>' + (sd.i ? '<span class="i">Implementation · Day ' + sd.i + '</span>' : '') + '<span class="e">End-line · Day ' + sd.e + '</span></div></div>' : '')
         + (u.pphase === 'baseline' || u.pphase === 'impl' ? '<label>Move to<select id="nm-mvto">' + opts(kind) + '</select></label><button type="button" class="nm-btn pri" onclick="nmPlanMove(\'' + kind + '\',document.getElementById(\'nm-mvto\').value)">Move</button>'
           + '<small class="nm-hint">' + (kind === 'b' ? 'A new baseline day also changes its implementation week and its end-line day.' : 'Only its implementation day changes; baseline and end-line stay.') + ' Or drag the card onto another day.</small>' : '')
         + (nmStatus(T, sel.id) ? '<button type="button" class="nm-btn" onclick="nmUndoAsk(\'' + nmJ(sel.id) + '\')">Undo changes to ' + nmE(sel.id) + '</button>' : '') + '</section>'
@@ -24889,13 +24888,7 @@ function nfOvType(t) { _nfOv.type = t; nfRenderOverview(); }
     if (!r.dept) return oChip.apply(this, arguments);
     if (r.loading) return '<span class="nfo-chip grey">Loading…</span>';
     var f = (scMasterFacilities || {})[r.code] || {}, g = f.graduation, s = _nfDs.map[r.code] || {};
-    if (g) { var R = { ready: ['green', 'NQAS Ready'], almost: ['amber', 'Almost ready'], notyet: ['red', 'Not yet ready'], incomplete: ['red', 'Incomplete'] }[g.result] || ['grey', g.result]; return '<span class="nfo-chip ' + R[0] + '">' + R[1] + '</span>'; }
-    if (!s.assessed) return '<span class="nfo-chip grey">Not assessed yet</span>';
-    var low = Object.keys(s.byDept || {}).filter(function (k) { return s.byDept[k] < 70; }).length, aoc = Object.keys(s.byAoc || {}).filter(function (k) { return s.byAoc[k] < 70; }).length;
-    if (s.pct < 70) return '<span class="nfo-chip amber">Overall below 70%</span>';
-    if (low) return '<span class="nfo-chip amber">' + low + ' department' + (low > 1 ? 's' : '') + ' below</span>';
-    if (aoc) return '<span class="nfo-chip amber">' + aoc + ' Area' + (aoc > 1 ? 's' : '') + ' below</span>';
-    return s.meets ? '<span class="nfo-chip green">✓ Meets NQAS</span>' : '<span class="nfo-chip grey">' + s.assessed + ' of ' + (s.total || 0) + ' assessed</span>';
+    return nfResultChip(nfResultDept(s, g));
   };
 })();
 
@@ -25604,23 +25597,16 @@ function hsInfo(code) {
   o.onTime = o.comp && o.comp.pct != null && o.inProg ? o.comp.pct : null;
   o.gradDate = f.startDate ? hsAddDays(f.startDate, o.days - 1) : '';
   o.gradSoon = !o.grad && d != null && d >= 1 && d <= o.days && o.days - d <= 6;
+  o.grad14 = !o.grad && d != null && d >= 1 && o.days - d <= 13;   // the Programme list's window (incl. past the last day, waiting)
   var ti = typeof nfTrialInfo === 'function' ? nfTrialInfo(f) : null; o.trial = ti; o.payDue = !!(ti && ti.ended);
   o.access = f.subscriptionStatus === 'paid' ? 'Paid' + (dept ? '' : ' · ' + (String(f.progId || '').indexOf('12B') >= 0 ? '12B' : '12A')) : f.subscriptionStatus === 'trial' ? (o.payDue ? 'Trial ended' : 'Trial') : 'Contract';
   return o;
 }
 var HS_PHASE = { notstarted: 'Not started', baseline: 'Baseline', impl: 'Implementation', endline: 'End-line', ready: 'Readiness week', closing: 'Waiting for graduation', graduated: 'Graduated', catchup: 'Catch-up' };
 function hsResult(o) {   // the result column: graduation result, else the NQAS check by the type's own rules
-  if (o.grad) { var r = HS_RES[o.grad.result] || HS_RES.incomplete; return '<span class="nfo-chip ' + r[1] + '">' + r[0] + '</span>'; }
-  if (o.loading) return '<span class="nfo-chip grey">Loading…</span>';
-  if (!o.assessed) return '<span class="hs-dim">—</span>';
-  if (o.cov != null && o.cov < 50) return '<span class="nfo-chip grey" title="Less than half of the checklist has a score — the result would not mean much yet">Too early · ' + o.cov + '% checked</span>';
-  if (o.dept) { var s = o.s || {}, low = Object.keys(o.byDept).filter(function (k) { return o.byDept[k] < 70; }).length, aoc = Object.keys(o.byAoc).filter(function (k) { return o.byAoc[k] < 70; }).length;
-    if (o.pct < 70) return '<span class="nfo-chip amber">Overall below 70%</span>';
-    if (low) return '<span class="nfo-chip amber">' + low + ' department' + (low > 1 ? 's' : '') + ' below</span>';
-    if (aoc) return '<span class="nfo-chip amber">' + aoc + ' Area' + (aoc > 1 ? 's' : '') + ' below</span>';
-    return s.meets ? '<span class="nfo-chip green">✓ Meets NQAS</span>' : '<span class="nfo-chip grey">' + o.assessed + ' of ' + (s.total || 0) + ' assessed</span>'; }
-  var n = o.agg.nqas; if (n.meets) return '<span class="nfo-chip green">✓ Meets NQAS</span>';
-  var k = n.stdFails.length; return '<span class="nfo-chip amber">' + (o.pct < 70 ? 'Overall below 70%' : k ? k + ' Standard' + (k > 1 ? 's' : '') + ' below' : 'Areas below 70%') + '</span>';
+  if (o.loading && !o.grad) return '<span class="nfo-chip grey">Loading…</span>';
+  if (!o.assessed && !o.grad) return '<span class="hs-dim">—</span>';
+  return nfResultChip(o.dept ? nfResultDept(o.s, o.grad) : nfResultSc(o.agg, o.grad));
 }
 function hsAll() { return hsCodes().map(hsInfo); }
 function hsSplit(list, pred) { var by = {}; list.forEach(function (o) { if (pred(o)) by[o.type] = (by[o.type] || 0) + 1; }); var n = 0; Object.keys(by).forEach(function (k) { n += by[k]; });
@@ -25705,15 +25691,15 @@ function hsRenderToday() {
   hsLoadSide();
   var all = hsAll(), list = _hs.type ? all.filter(function (o) { return o.type === _hs.type; }) : all, dist = {};
   all.forEach(function (o) { if (o.district) dist[o.district] = 1; });
-  var k1 = hsSplit(list, function (o) { return o.inProg; }), k2 = hsSplit(list, function (o) { return o.behind; }), k3 = hsSplit(list, function (o) { return o.gradSoon; }), k4 = hsSplit(list, function (o) { return o.payDue; });
-  var soon = list.filter(function (o) { return o.gradSoon; }).sort(function (a, b) { return a.gradDate < b.gradDate ? -1 : 1; })[0];
+  var k1 = hsSplit(list, function (o) { return o.inProg; }), k2 = hsSplit(list, function (o) { return o.behind; }), k3 = hsSplit(list, function (o) { return o.grad14; }), k4 = hsSplit(list, function (o) { return o.payDue; });
+  var soon = list.filter(function (o) { return o.grad14; }).sort(function (a, b) { return a.gradDate < b.gradDate ? -1 : 1; })[0];
   var kpi = function (l, k, sub, cls, js) { return '<button type="button" class="hs-kpi ' + cls + '" onclick="' + js + '"><small>' + l + '</small><b>' + k.n + '</b><span>' + hsE(k.txt || sub) + '</span></button>'; };
   var items = hsTodo(list), ib = null; try { ib = nfInboxData().tot; } catch (e) {}
   var foot = ib ? [[ib.ver, 'cards to verify'], [ib.confirm, 'actions to confirm'], [ib.overdue, 'overdue actions'], [ib.drafts, 'draft actions']].map(function (x) { return x[0] ? '<button type="button" class="hs-zero n" onclick="nfAdminView(\'inbox\')">' + x[0] + ' ' + x[1] + '</button>' : '<span class="hs-zero">✓ 0 ' + x[1] + '</span>'; }).join('') : '';
   var h = '<div class="nfo-top"><div><h1>Today</h1><small>' + hsE(new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })) + ' · ' + all.length + ' facilit' + (all.length === 1 ? 'y' : 'ies') + (Object.keys(dist).length ? ' in ' + Object.keys(dist).length + ' district' + (Object.keys(dist).length > 1 ? 's' : '') : '') + (typeof _nfLight !== 'undefined' && _nfLight ? ' · from the nightly summary' : '') + '</small></div>'
     + hsTypeTabs(_hs.type, 'hsSetType', all) + '<button type="button" class="nfo-ic" title="Refresh" onclick="scRefreshDashboard()"><i class="ti ti-refresh"></i></button></div>'
     + '<div class="hs-kpis">' + kpi('In programme', k1, 'none', '', "_hs.phase='inprog';nfAdminView('hsfac')") + kpi('Behind schedule', k2, 'none behind', k2.n ? 'r' : '', "_hs.status='behind';nfAdminView('hsfac')")
-    + kpi('Graduating this week', k3, soon ? soon.name + ' · ' + hsShortDate(soon.gradDate) : 'none this week', k3.n ? 't' : '', "_hs.ptab='grad';nfAdminView('hsprog')") + kpi('Payment due', k4, 'none', k4.n ? 'a' : '', "_hs.status='pay';nfAdminView('hsfac')") + '</div>'
+    + kpi('Graduating in 14 days', k3, soon ? soon.name + ' · ' + hsShortDate(soon.gradDate) : 'none in 14 days', k3.n ? 't' : '', "_hs.ptab='grad';nfAdminView('hsprog')") + kpi('Payment due', k4, 'none', k4.n ? 'a' : '', "_hs.status='pay';nfAdminView('hsfac')") + '</div>'
     + '<div class="hs-two"><div class="nfo-card hs-todo"><div class="nfo-ch"><b>To do</b><span>' + items.length + ' item' + (items.length === 1 ? '' : 's') + ' · most urgent first</span></div>' + hsTodoHTML(items) + (foot ? '<div class="hs-foot">' + foot + '<button type="button" class="hs-link" onclick="nfAdminView(\'inbox\')">Review inbox</button></div>' : '') + '</div>'
     + '<div class="hs-col">' + hsPeerCardHTML() + hsLiveCardHTML() + hsBizLineHTML(all) + '</div></div>';
   box.innerHTML = h;
@@ -25793,7 +25779,7 @@ function hsGradHTML(all) {
   h += '<div class="hs-two"><div class="nfo-card hs-tw"><div class="nfo-ch"><b>Results</b><span>graduated facilities, newest first</span></div>'
     + (g.length ? '<table class="nfo-t"><thead><tr><th>Facility</th><th>Result</th><th>Score</th><th>Below the mark</th><th>Next step</th></tr></thead><tbody>' + g.map(function (o) { var r = HS_RES[o.grad.result] || HS_RES.incomplete;
       return '<tr class="nfo-row" onclick="scDrillIn(\'' + hsJ(o.code) + '\')"><td><b>' + hsE(o.name) + '</b> ' + hsTypeChip(o.type) + '<small>' + hsE(hsShortDate(String(o.grad.at || '').slice(0, 10)) + ' · ' + (o.district || '')) + (o.grad.round ? ' · after catch-up' : '') + '</small></td><td><span class="nfo-chip ' + r[1] + '">' + r[0] + '</span></td>'
-        + '<td>' + (o.grad.base != null ? o.grad.base + ' → ' : '') + o.grad.overall + '%</td><td>' + hsE(below(o)) + '</td><td>' + next(o) + '</td></tr>'; }).join('') + '</tbody></table>'
+        + '<td>' + (o.grad.base != null ? o.grad.base + ' → ' : '') + o.grad.overall + '%' + (nfOldRule(o.grad, o.type) ? nfOldRuleNote() : '') + '</td><td>' + hsE(below(o)) + '</td><td>' + next(o) + '</td></tr>'; }).join('') + '</tbody></table>'
       : '<div class="nfo-empty sm">No facility has graduated yet.</div>') + '</div>';
   var soon = all.filter(function (o) { return !o.grad && o.rawDay != null && o.rawDay >= 1 && o.days - o.rawDay <= 13; }).sort(function (a, b) { return a.gradDate < b.gradDate ? -1 : 1; });
   h += '<div class="nfo-card hs-col1"><div class="nfo-ch"><b>Graduating in the next 14 days</b></div>' + (soon.length ? soon.map(function (o) { var note = o.rawDay > o.days ? 'waiting — past Day ' + o.days : o.dept ? (o.toCheck ? o.toCheck + ' department-days to check' : 'end-line on track') : (o.comp && o.comp.state === 'r' ? 'behind schedule' : HS_PHASE[o.phase]);
@@ -26232,7 +26218,45 @@ body.nf-viewas #sc-cho-app.vis{position:fixed;inset:0;z-index:10000;overflow-y:a
   .fp-tabs{gap:14px;}
 }
 @container (max-width:720px){ .fp-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;} .fp-tabs button{white-space:nowrap;flex:0 0 auto;} }
+.nf-oldrule{display:block;font-size:10.5px;color:#8A6D1F;font-weight:500;margin-top:2px;}
 </style>
+<script id="nf-vocab">// ══════════════════════════════════════════════════════════════
+// ONE WORDING FOR EVERY SCREEN (consistency review, agreed 21 Oct 2026)
+//   Result: NQAS Ready · Almost ready · Not yet ready · Too early — and one result label for lists, chips and reports.
+//   Dates: "19 Sep 2026" ("19 Sep" when short and this year). End-line · Supervisor · Facility dashboard · no "Std" / "Impl.".
+// ══════════════════════════════════════════════════════════════
+var NF_RES_WORD = { ready: 'NQAS Ready', almost: 'Almost ready', notyet: 'Not yet ready', incomplete: 'Incomplete', early: 'Too early' };
+// o: {grad?, assessed, cov (% checked), meets, pct, mark?, deptFails[], aocFails[], stdFails[]} → {cls, txt, word}
+function nfResult(o) {
+  o = o || {}; var mark = o.mark || 70, A = o.aocFails || [], S = o.stdFails || [], D = o.deptFails || [];
+  if (o.grad) { var g = o.grad.result; return { cls: g === 'ready' ? 'green' : g === 'almost' ? 'amber' : 'red', txt: NF_RES_WORD[g] || g, word: NF_RES_WORD[g] || g }; }
+  if (!o.assessed) return { cls: 'grey', txt: 'Not assessed yet', word: '—' };
+  if (o.cov != null && o.cov < 50) return { cls: 'grey', txt: 'Too early · ' + o.cov + '% checked', word: 'Too early' };
+  if (o.meets) return { cls: 'green', txt: '✓ Meets NQAS', word: NF_RES_WORD.ready };
+  var word = o.pct != null && o.pct >= mark ? NF_RES_WORD.almost : NF_RES_WORD.notyet, txt;
+  if (o.pct != null && o.pct < mark) txt = 'Overall below ' + mark + '%';
+  else if (D.length) txt = D.length + ' department' + (D.length === 1 ? '' : 's') + ' below ' + mark + '%';
+  else if (A.length) txt = 'Area' + (A.length === 1 ? ' ' : 's ') + A.slice(0, 3).join(', ') + (A.length > 3 ? ' …' : '') + ' below ' + mark + '%';
+  else if (S.length) txt = S.length + ' Standard' + (S.length === 1 ? '' : 's') + ' below minimum';
+  else txt = 'Not all checked yet';
+  return { cls: 'amber', txt: txt, word: word };
+}
+function nfResultChip(o) { var r = nfResult(o); return '<span class="nfo-chip ' + r.cls + '">' + scEsc(r.txt) + '</span>'; }
+// Sub-Centre facility readiness (scFacilityReadiness result) → nfResult input
+function nfResultSc(a, grad) { var n = (a && a.nqas) || (a ? scNqasCheckV2(a) : {}), cov = a && a.coverage ? a.coverage : {};
+  return { grad: grad, assessed: cov.assessed || 0, cov: cov.assessed ? cov.pct : null, meets: !!n.meets, pct: a ? a.pct : null, mark: n.overallMin || 70, aocFails: n.aocFails || [], stdFails: n.stdFails || [] }; }
+// department summary record (dept/summary.js) → nfResult input
+function nfResultDept(s, grad) { s = s || {}; var low = function (o) { return Object.keys(o || {}).filter(function (k) { return o[k] != null && o[k] < 70; }).sort(); };
+  return { grad: grad, assessed: s.assessed || 0, cov: s.total ? Math.round(100 * (s.assessed || 0) / s.total) : null, meets: !!s.meets, pct: s.pct, deptFails: low(s.byDept), aocFails: low(s.byAoc), stdFails: Object.keys(s.byStd || {}).filter(function (k) { return s.byStd[k] < 50; }) }; }
+// dates
+var NF_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function nfDateTxt(iso, short) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); if (!m) return String(iso || '');
+  var y = +m[1], s = (+m[3]) + ' ' + NF_MON[+m[2] - 1]; return short && y === new Date().getFullYear() ? s : s + ' ' + y; }
+// UPHC · PHC · CHC results saved before the whole-checklist readiness rule (21 Oct 2026) keep their numbers (the official record)
+var NF_RULE_DATE = '2026-10-21';
+function nfOldRule(g, type) { return !!(g && type && type !== 'sc' && String(g.at || '').slice(0, 10) < NF_RULE_DATE); }
+function nfOldRuleNote() { return '<small class="nf-oldrule" title="Saved before 21 Oct 2026, when UPHC / PHC / CHC readiness started counting the whole checklist. Kept as the official record.">scored before 21 Oct</small>'; }
+</script>
 <script id="nf-fac-page">// ══════════════════════════════════════════════════════════════
 // STEP 4 — ONE FACILITY PAGE for SC · UPHC · PHC · CHC (HealSol, Supervisor, District Admin; canvas
 // "Step 4 — One Facility Page & Shared Checkpoints", approved 21 Oct 2026)
@@ -26296,14 +26320,13 @@ function fpScTiles(code) {
   var o = null; try { o = hsInfo(code); } catch (e) {}
   if (!o) return [];
   var ch = o.pct != null && o.base != null ? o.pct - o.base : null, res, rs = '';
-  if (o.grad) { var R = HS_RES[o.grad.result] || HS_RES.incomplete; res = R[0]; rs = 'graduated ' + fpShortDate(String(o.grad.at || '').slice(0, 10)); }
-  else if (o.assessed && o.cov != null && o.cov < 50) { res = 'Too early'; rs = o.cov + '% of the checklist checked'; }
-  else { var n = o.agg && o.agg.nqas; res = !o.assessed ? '—' : n && n.meets ? 'Ready' : 'Almost'; rs = !o.assessed ? 'no cards yet' : n && n.meets ? 'meets NQAS today' : (n && n.aocFails && n.aocFails.length ? 'Area ' + n.aocFails.slice(0, 2).join(', ') + ' below' : n && n.stdFails && n.stdFails.length ? n.stdFails.length + ' Standards below' : 'overall below 70%'); }
+  var RR = nfResult(nfResultSc(o.agg, o.grad)); res = RR.word; rs = o.grad ? 'graduated ' + nfDateTxt(String(o.grad.at || '').slice(0, 10), true) : RR.cls === 'green' ? 'meets NQAS today' : RR.txt;
+  if (!o.assessed && !o.grad) rs = 'no cards yet';
   var ov = o.overdue || 0, open = 0; try { open = scRvList((_scRvAll || {})[code] || {}).filter(function (x) { return x.status !== 'draft' && x.status !== 'closed'; }).length; } catch (e) {}
   _fp.nAct = open;
   return [{ l: 'Day', v: o.phase === 'notstarted' ? '—' : (o.phase === 'catchup' ? o.days : o.day) + ' / ' + o.days, s: HS_PHASE[o.phase] || '' },
     { l: 'Readiness', v: o.pct == null ? '—' : o.pct + '%', s: (o.base != null ? 'baseline ' + o.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') + ' · ' : '') + (o.cov != null ? o.cov + '% checked' : ''), c: fpPctCls(o.pct) },
-    { l: o.grad ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: o.grad ? (o.grad.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === 'Almost' ? 'a' : '' },
+    { l: o.grad ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: o.grad ? (o.grad.result === 'ready' ? 'g' : 'a') : res === NF_RES_WORD.ready ? 'g' : res === NF_RES_WORD.almost || res === NF_RES_WORD.notyet ? 'a' : '' },
     { l: 'On time', v: o.onTime == null ? '—' : o.onTime + '%', s: o.behind ? 'behind schedule' : o.comp && o.inProg ? 'on track' : '', c: o.behind ? 'r' : '' },
     { l: 'Open actions', v: String(open), s: ov ? ov + ' overdue' : 'none overdue', c: ov ? 'r' : '' },
     { l: 'Staff', v: String(o.staffN), s: o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : 'no ' + o.inChargeLabel }];
@@ -26320,8 +26343,8 @@ function fpScMount(code) {
 }
 function fpPeopleHTML(code) {
   var out = [];
-  try { var S = _scSupervisors || {}; Object.keys(S).forEach(function (k) { var s = S[k]; if (s && !s.disabled && s.facilities && s.facilities[code]) out.push('Quality Mentor (Supervisor): ' + (s.name || k)); }); } catch (e) {}
-  try { if (fpRole() === 'supervisor' && typeof _scSup !== 'undefined' && _scSup && !_scSup.district) out.push('Quality Mentor (Supervisor): ' + (_scSup.name || _scSup.id) + ' — you'); } catch (e) {}
+  try { var S = _scSupervisors || {}; Object.keys(S).forEach(function (k) { var s = S[k]; if (s && !s.disabled && s.facilities && s.facilities[code]) out.push('Supervisor: ' + (s.name || k)); }); } catch (e) {}
+  try { if (fpRole() === 'supervisor' && typeof _scSup !== 'undefined' && _scSup && !_scSup.district) out.push('Supervisor: ' + (_scSup.name || _scSup.id) + ' — you'); } catch (e) {}
   try { var C = (_scq && _scq.champions) || {}; Object.keys(C).forEach(function (k) { var c = C[k]; if (c && !c.disabled && c.facilities && c.facilities[code]) out.push('Quality Champion: ' + (c.name || k)); }); } catch (e) {}
   try { var Dd = _scDistricts || {}; Object.keys(Dd).forEach(function (k) { var d = Dd[k]; if (d && !d.disabled && d.facilities && d.facilities[code]) out.push((d.scope === 'block' ? 'Block MOIC view: ' : 'District Admin: ') + (d.name || k) + (d.auto ? ' · all of ' + (d.district || 'the district') : '')); }); } catch (e) {}
   var f = (scMasterFacilities || {})[code] || {}; if (f.nin) out.push('Govt. facility ID (NIN / HFR): ' + f.nin);
@@ -26397,15 +26420,13 @@ function fpDeptCompute(D) {
 function fpDeptTiles(D) {
   var S = D.S, f = D.fac, g = f.graduation, d = D.day, phase = !f.startDate || !d || d < 1 ? 'Not started' : g ? 'Graduated' : d <= S.bN ? 'Baseline' : d <= S.iN ? 'Implementation' : d <= S.eN ? 'End-line' : d <= S.days ? 'Readiness week' : 'Waiting for graduation';
   var sc = D.sc, ch = sc.overall != null && sc.base != null ? sc.overall - sc.base : null, R = D.rule, res, rs;
-  if (g) { res = (ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete).t; rs = 'graduated ' + fpShortDate(String(g.at || '').slice(0, 10)); }
-  else if (sc.overall == null) { res = '—'; rs = 'no cards yet'; }
-  else if (D.cov < 50) { res = 'Too early'; rs = D.cov + '% of the checklist checked'; }
-  else { res = R.result === 'ready' ? 'Ready' : R.result === 'almost' ? 'Almost' : 'Not yet'; rs = R.deptFails.length ? ndDeptDefName(D, R.deptFails[0]) + ' ' + sc.byDept[R.deptFails[0]] + '%' : R.aocFails.length ? 'Area ' + R.aocFails.join(', ') + ' below' : R.stdFails.length ? R.stdFails.length + ' Standards below' : R.result === 'ready' ? 'meets NQAS today' : 'overall below ' + D.crit.overall + '%'; }
+  var RR = nfResult(g ? { grad: g } : { assessed: D.n, cov: D.cov, meets: R.result === 'ready', pct: sc.overall, mark: D.crit.overall, deptFails: R.deptFails.map(function (x) { return ndDeptDefName(D, x); }), aocFails: R.aocFails, stdFails: R.stdFails });
+  res = RR.word; rs = g ? 'graduated ' + nfDateTxt(String(g.at || '').slice(0, 10), true) : sc.overall == null ? 'no cards yet' : RR.cls === 'green' ? 'meets NQAS today' : R.deptFails.length === 1 && sc.overall >= D.crit.overall ? ndDeptDefName(D, R.deptFails[0]) + ' ' + sc.byDept[R.deptFails[0]] + '%' : RR.txt;
   var open = D.acts.filter(function (a) { return a.st !== 'closed'; }).length, od = D.acts.filter(function (a) { return a.st === 'od'; }).length; _fp.nAct = open;
   var on = D.depts.length;
   return [{ l: 'Day', v: !d || d < 1 ? '—' : Math.min(d, S.days) + ' / ' + S.days, s: phase },
     { l: 'Readiness', v: sc.overall == null ? '—' : sc.overall + '%', s: (sc.base != null ? 'baseline ' + sc.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') + ' · ' : '') + D.cov + '% checked', c: fpPctCls(sc.overall) },
-    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === '—' || res === 'Too early' ? '' : 'a' },
+    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === NF_RES_WORD.ready ? 'g' : res === '—' || res === NF_RES_WORD.early ? '' : 'a' },
     { l: 'On time', v: D.onTime == null ? '—' : D.onTime + '%', s: D.onState === 'r' ? 'behind schedule' : D.onState === 'a' ? 'slipping' : D.onState ? 'on track' : '', c: D.onState === 'r' ? 'r' : '' },
     { l: 'Open actions', v: String(open), s: od ? od + ' overdue' : 'none overdue', c: od ? 'r' : '' },
     { l: 'Staff', v: String(D.staff.length), s: on + ' department' + (on === 1 ? '' : 's') + ' on' }];
@@ -26477,11 +26498,11 @@ function fpDeptProgHTML(D) {
   var seg = function (n, l, cls) { return '<div class="' + cls + '" style="flex:' + n + '">' + l + '</div>'; };
   var d = D.day || 0, st = function (a, b) { return d > b ? 'done' : d >= a ? 'now' : ''; };
   var grace = (typeof nfgCfgFor === 'function' ? nfgCfgFor(D.type) : { grace: 7 }).grace;
-  var h = '<div class="fp-card"><b>Timeline</b><div class="fp-tl">' + seg(S.bN, 'Baseline 1–' + S.bN, st(1, S.bN)) + seg(S.iN - S.bN, 'Implementation ' + (S.bN + 1) + '–' + S.iN, st(S.bN + 1, S.iN)) + seg(S.eN - S.iN, 'End-line ' + (S.iN + 1) + '–' + S.eN, st(S.iN + 1, S.eN)) + seg(S.days - S.eN, 'Ready', st(S.eN + 1, S.days)) + seg(Math.max(2, grace), 'Grace ' + grace, d > S.days ? 'now' : 'g') + '</div>'
+  var h = '<div class="fp-card"><b>Timeline</b><div class="fp-tl">' + seg(S.bN, 'Baseline 1–' + S.bN, st(1, S.bN)) + seg(S.iN - S.bN, 'Implementation ' + (S.bN + 1) + '–' + S.iN, st(S.bN + 1, S.iN)) + seg(S.eN - S.iN, 'End-line ' + (S.iN + 1) + '–' + S.eN, st(S.iN + 1, S.eN)) + seg(S.days - S.eN, 'Readiness week', st(S.eN + 1, S.days)) + seg(Math.max(2, grace), 'Grace ' + grace, d > S.days ? 'now' : 'g') + '</div>'
     + '<small class="fp-dim">' + (f.startDate ? 'Started ' + fpShortDate(f.startDate) + ' · graduation ' + fpShortDate(ndAddDays(f.startDate, S.days - 1)) + ' · close date ' + fpShortDate(ndAddDays(f.startDate, S.days - 1 + grace)) : 'Start date not set — the ' + fpE(D.cfg.inChargeLabel) + ' sets it') + ' · Timeline settings for ' + fpE(D.cfg.plural) + ' apply.</small></div>';
   h += '<div class="fp-grid"><div class="fp-col"><div class="fp-card"><div class="fp-ch"><b>Graduation result</b>' + (role === 'admin' || role === 'district' ? '<button type="button" class="fp-btn sm" onclick="fpOpenProg(\'' + C + '\')">' + (role === 'admin' ? 'Run again · change · catch-up…' : 'Certification records…') + '</button>' : '') + '</div>';
   if (g) { var R = ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete, cr = g.criteria || {};
-    h += '<div class="fp-res ' + R.c + '"><b>' + fpE(R.t) + '</b><span>Overall ' + g.overall + '%' + (g.base != null ? ' (baseline ' + g.base + '%)' : '') + (g.deptFails && g.deptFails.length ? ' · below: ' + g.deptFails.map(function (x) { return ndDeptDefName(D, x) + ' ' + ((g.byDept || {})[x] != null ? g.byDept[x] + '%' : ''); }).join(', ') : '') + ' · ' + fpE(fpShortDate(String(g.at || '').slice(0, 10))) + (g.round ? ' · after catch-up' : '') + '</span></div>'
+    h += '<div class="fp-res ' + R.c + '"><b>' + fpE(R.t) + '</b><span>Overall ' + g.overall + '%' + (g.base != null ? ' (baseline ' + g.base + '%)' : '') + (g.deptFails && g.deptFails.length ? ' · below: ' + g.deptFails.map(function (x) { return ndDeptDefName(D, x) + ' ' + ((g.byDept || {})[x] != null ? g.byDept[x] + '%' : ''); }).join(', ') : '') + ' · ' + fpE(fpShortDate(String(g.at || '').slice(0, 10))) + (g.round ? ' · after catch-up' : '') + '</span>' + (nfOldRule(g, D.type) ? nfOldRuleNote() : '') + '</div>'
       + '<table class="fp-t sm"><thead><tr><th>Rule</th><th>Needed</th><th>Here</th></tr></thead><tbody>'
       + '<tr><td>Overall</td><td>' + (cr.overall || 70) + '%</td><td class="' + (g.overall >= (cr.overall || 70) ? 'g' : 'r') + '">' + g.overall + '%</td></tr>'
       + '<tr><td>Every department</td><td>' + (cr.dept || 70) + '%</td><td class="' + ((g.deptFails || []).length ? 'r' : 'g') + '">' + ((g.deptFails || []).length ? g.deptFails.length + ' below' : '✓') + '</td></tr>'
@@ -26812,6 +26833,13 @@ function fpScActHTML(code) {
     by[g].sort(function (a, b) { return String(a.dueDate || '').localeCompare(String(b.dueDate || '')); }).forEach(function (a) { var s = FP_SC_ST[a.st] || FP_SC_ST.open;
       h += '<tr><td><b>' + fpE(a.cpId || '') + '</b><small>' + fpE(a.cpText || '') + (a.itemText ? ' — ' + fpE(a.itemText) : '') + '</small></td><td>' + fpE(a.action || '—') + '</td><td>' + fpE(a.assignedToName || a.ownerName || '—') + '</td><td class="' + (a.st === 'overdue' ? 'r' : '') + '">' + fpE(a.dueDate ? fpShortDate(a.dueDate) : '—') + '</td><td><span class="fp-st ' + s[1] + '">' + s[0] + '</span></td></tr>'; }); });
   return h + '</tbody></table></div><p class="fp-dim">' + (canAssign ? 'You assign, publish and close actions in Work on actions.' : 'View only — the Supervisor assigns and closes actions; staff mark them done in their app.') + '</p>';
+}
+// card days of one person: expected up to yesterday (today when done), done, verified — same count as UPHC / PHC / CHC
+function fpScCardDays(f, pid, progress, mob, role, present) {
+  var day = nfDayOf(f), todayDi = day == null || day < 1 ? -1 : day - 1, hi = Math.min(todayDi, getDaysArr(pid).length - 1), cards = scCardsFromRemote(progress || {}, pid), exp = 0, done = 0, ver = 0;
+  for (var di = 0; di <= hi; di++) { var d = scDayDef(pid, di), mine = !!(d && (d.cps || []).some(function (cp) { return scCpForRoleIn(cp, role, present); })), c = cards[di], dn = !!(c && c.taskDone);
+    if (mine && (di < todayDi || dn)) { exp++; if (dn) { done++; if (c.verified) ver++; } } }
+  return { exp: exp, done: done, ver: ver, pct: exp ? Math.round(100 * done / exp) : null, cards: cards, todayDi: todayDi, hi: hi };
 }
 // ── Staff & cards ──
 function fpScStaffHTML(code) {

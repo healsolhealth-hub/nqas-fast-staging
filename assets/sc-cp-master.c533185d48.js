@@ -257,7 +257,7 @@ function scCpmRender(){
     +'<div class="scm-stats">'
     +'<div class="scm-stat"><b>'+nq.length+'</b><span>NQAS checkpoints</span></div>'
     +'<div class="scm-stat"><b>'+(all.length-nq.length)+'</b><span>Programme milestones</span></div>'
-    +'<div class="scm-stat wide"><span>By AoC</span><div class="scm-bars">'+Object.keys(SC_CPM_AOC).map(function(a){ return '<em title="'+scEsc(SC_CPM_AOC[a])+'">'+a+' <b>'+(st.aoc[a]||0)+'</b></em>'; }).join('')+'</div></div>'
+    +'<div class="scm-stat wide"><span>By Area of Concern</span><div class="scm-bars">'+Object.keys(SC_CPM_AOC).map(function(a){ return '<em title="'+scEsc(SC_CPM_AOC[a])+'">'+a+' <b>'+(st.aoc[a]||0)+'</b></em>'; }).join('')+'</div></div>'
     +'<div class="scm-stat wide"><span>By role (NQAS) — balance the load</span><div class="scm-bars">'+['CHO','ANM','ASHA','MPW','MO','General'].map(function(r){ var n=st.role[r]||0; return '<em>'+r+' <b>'+n+'</b> <i>'+Math.round(n/roleTot*100)+'%</i></em>'; }).join('')+'</div></div>'
     +'</div>'
     +'<div class="scm-filters">'

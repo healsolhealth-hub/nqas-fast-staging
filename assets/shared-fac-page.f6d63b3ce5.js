@@ -61,14 +61,13 @@ function fpScTiles(code) {
   var o = null; try { o = hsInfo(code); } catch (e) {}
   if (!o) return [];
   var ch = o.pct != null && o.base != null ? o.pct - o.base : null, res, rs = '';
-  if (o.grad) { var R = HS_RES[o.grad.result] || HS_RES.incomplete; res = R[0]; rs = 'graduated ' + fpShortDate(String(o.grad.at || '').slice(0, 10)); }
-  else if (o.assessed && o.cov != null && o.cov < 50) { res = 'Too early'; rs = o.cov + '% of the checklist checked'; }
-  else { var n = o.agg && o.agg.nqas; res = !o.assessed ? '—' : n && n.meets ? 'Ready' : 'Almost'; rs = !o.assessed ? 'no cards yet' : n && n.meets ? 'meets NQAS today' : (n && n.aocFails && n.aocFails.length ? 'Area ' + n.aocFails.slice(0, 2).join(', ') + ' below' : n && n.stdFails && n.stdFails.length ? n.stdFails.length + ' Standards below' : 'overall below 70%'); }
+  var RR = nfResult(nfResultSc(o.agg, o.grad)); res = RR.word; rs = o.grad ? 'graduated ' + nfDateTxt(String(o.grad.at || '').slice(0, 10), true) : RR.cls === 'green' ? 'meets NQAS today' : RR.txt;
+  if (!o.assessed && !o.grad) rs = 'no cards yet';
   var ov = o.overdue || 0, open = 0; try { open = scRvList((_scRvAll || {})[code] || {}).filter(function (x) { return x.status !== 'draft' && x.status !== 'closed'; }).length; } catch (e) {}
   _fp.nAct = open;
   return [{ l: 'Day', v: o.phase === 'notstarted' ? '—' : (o.phase === 'catchup' ? o.days : o.day) + ' / ' + o.days, s: HS_PHASE[o.phase] || '' },
     { l: 'Readiness', v: o.pct == null ? '—' : o.pct + '%', s: (o.base != null ? 'baseline ' + o.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') + ' · ' : '') + (o.cov != null ? o.cov + '% checked' : ''), c: fpPctCls(o.pct) },
-    { l: o.grad ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: o.grad ? (o.grad.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === 'Almost' ? 'a' : '' },
+    { l: o.grad ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: o.grad ? (o.grad.result === 'ready' ? 'g' : 'a') : res === NF_RES_WORD.ready ? 'g' : res === NF_RES_WORD.almost || res === NF_RES_WORD.notyet ? 'a' : '' },
     { l: 'On time', v: o.onTime == null ? '—' : o.onTime + '%', s: o.behind ? 'behind schedule' : o.comp && o.inProg ? 'on track' : '', c: o.behind ? 'r' : '' },
     { l: 'Open actions', v: String(open), s: ov ? ov + ' overdue' : 'none overdue', c: ov ? 'r' : '' },
     { l: 'Staff', v: String(o.staffN), s: o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : 'no ' + o.inChargeLabel }];
@@ -85,8 +84,8 @@ function fpScMount(code) {
 }
 function fpPeopleHTML(code) {
   var out = [];
-  try { var S = _scSupervisors || {}; Object.keys(S).forEach(function (k) { var s = S[k]; if (s && !s.disabled && s.facilities && s.facilities[code]) out.push('Quality Mentor (Supervisor): ' + (s.name || k)); }); } catch (e) {}
-  try { if (fpRole() === 'supervisor' && typeof _scSup !== 'undefined' && _scSup && !_scSup.district) out.push('Quality Mentor (Supervisor): ' + (_scSup.name || _scSup.id) + ' — you'); } catch (e) {}
+  try { var S = _scSupervisors || {}; Object.keys(S).forEach(function (k) { var s = S[k]; if (s && !s.disabled && s.facilities && s.facilities[code]) out.push('Supervisor: ' + (s.name || k)); }); } catch (e) {}
+  try { if (fpRole() === 'supervisor' && typeof _scSup !== 'undefined' && _scSup && !_scSup.district) out.push('Supervisor: ' + (_scSup.name || _scSup.id) + ' — you'); } catch (e) {}
   try { var C = (_scq && _scq.champions) || {}; Object.keys(C).forEach(function (k) { var c = C[k]; if (c && !c.disabled && c.facilities && c.facilities[code]) out.push('Quality Champion: ' + (c.name || k)); }); } catch (e) {}
   try { var Dd = _scDistricts || {}; Object.keys(Dd).forEach(function (k) { var d = Dd[k]; if (d && !d.disabled && d.facilities && d.facilities[code]) out.push((d.scope === 'block' ? 'Block MOIC view: ' : 'District Admin: ') + (d.name || k) + (d.auto ? ' · all of ' + (d.district || 'the district') : '')); }); } catch (e) {}
   var f = (scMasterFacilities || {})[code] || {}; if (f.nin) out.push('Govt. facility ID (NIN / HFR): ' + f.nin);
@@ -162,15 +161,13 @@ function fpDeptCompute(D) {
 function fpDeptTiles(D) {
   var S = D.S, f = D.fac, g = f.graduation, d = D.day, phase = !f.startDate || !d || d < 1 ? 'Not started' : g ? 'Graduated' : d <= S.bN ? 'Baseline' : d <= S.iN ? 'Implementation' : d <= S.eN ? 'End-line' : d <= S.days ? 'Readiness week' : 'Waiting for graduation';
   var sc = D.sc, ch = sc.overall != null && sc.base != null ? sc.overall - sc.base : null, R = D.rule, res, rs;
-  if (g) { res = (ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete).t; rs = 'graduated ' + fpShortDate(String(g.at || '').slice(0, 10)); }
-  else if (sc.overall == null) { res = '—'; rs = 'no cards yet'; }
-  else if (D.cov < 50) { res = 'Too early'; rs = D.cov + '% of the checklist checked'; }
-  else { res = R.result === 'ready' ? 'Ready' : R.result === 'almost' ? 'Almost' : 'Not yet'; rs = R.deptFails.length ? ndDeptDefName(D, R.deptFails[0]) + ' ' + sc.byDept[R.deptFails[0]] + '%' : R.aocFails.length ? 'Area ' + R.aocFails.join(', ') + ' below' : R.stdFails.length ? R.stdFails.length + ' Standards below' : R.result === 'ready' ? 'meets NQAS today' : 'overall below ' + D.crit.overall + '%'; }
+  var RR = nfResult(g ? { grad: g } : { assessed: D.n, cov: D.cov, meets: R.result === 'ready', pct: sc.overall, mark: D.crit.overall, deptFails: R.deptFails.map(function (x) { return ndDeptDefName(D, x); }), aocFails: R.aocFails, stdFails: R.stdFails });
+  res = RR.word; rs = g ? 'graduated ' + nfDateTxt(String(g.at || '').slice(0, 10), true) : sc.overall == null ? 'no cards yet' : RR.cls === 'green' ? 'meets NQAS today' : R.deptFails.length === 1 && sc.overall >= D.crit.overall ? ndDeptDefName(D, R.deptFails[0]) + ' ' + sc.byDept[R.deptFails[0]] + '%' : RR.txt;
   var open = D.acts.filter(function (a) { return a.st !== 'closed'; }).length, od = D.acts.filter(function (a) { return a.st === 'od'; }).length; _fp.nAct = open;
   var on = D.depts.length;
   return [{ l: 'Day', v: !d || d < 1 ? '—' : Math.min(d, S.days) + ' / ' + S.days, s: phase },
     { l: 'Readiness', v: sc.overall == null ? '—' : sc.overall + '%', s: (sc.base != null ? 'baseline ' + sc.base + '%' + (ch != null ? ' · ' + (ch >= 0 ? '+' : '') + ch : '') + ' · ' : '') + D.cov + '% checked', c: fpPctCls(sc.overall) },
-    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === 'Ready' ? 'g' : res === '—' || res === 'Too early' ? '' : 'a' },
+    { l: g ? 'Graduation result' : 'If graduated today', v: res, s: rs, c: g ? (g.result === 'ready' ? 'g' : 'a') : res === NF_RES_WORD.ready ? 'g' : res === '—' || res === NF_RES_WORD.early ? '' : 'a' },
     { l: 'On time', v: D.onTime == null ? '—' : D.onTime + '%', s: D.onState === 'r' ? 'behind schedule' : D.onState === 'a' ? 'slipping' : D.onState ? 'on track' : '', c: D.onState === 'r' ? 'r' : '' },
     { l: 'Open actions', v: String(open), s: od ? od + ' overdue' : 'none overdue', c: od ? 'r' : '' },
     { l: 'Staff', v: String(D.staff.length), s: on + ' department' + (on === 1 ? '' : 's') + ' on' }];
@@ -242,11 +239,11 @@ function fpDeptProgHTML(D) {
   var seg = function (n, l, cls) { return '<div class="' + cls + '" style="flex:' + n + '">' + l + '</div>'; };
   var d = D.day || 0, st = function (a, b) { return d > b ? 'done' : d >= a ? 'now' : ''; };
   var grace = (typeof nfgCfgFor === 'function' ? nfgCfgFor(D.type) : { grace: 7 }).grace;
-  var h = '<div class="fp-card"><b>Timeline</b><div class="fp-tl">' + seg(S.bN, 'Baseline 1–' + S.bN, st(1, S.bN)) + seg(S.iN - S.bN, 'Implementation ' + (S.bN + 1) + '–' + S.iN, st(S.bN + 1, S.iN)) + seg(S.eN - S.iN, 'End-line ' + (S.iN + 1) + '–' + S.eN, st(S.iN + 1, S.eN)) + seg(S.days - S.eN, 'Ready', st(S.eN + 1, S.days)) + seg(Math.max(2, grace), 'Grace ' + grace, d > S.days ? 'now' : 'g') + '</div>'
+  var h = '<div class="fp-card"><b>Timeline</b><div class="fp-tl">' + seg(S.bN, 'Baseline 1–' + S.bN, st(1, S.bN)) + seg(S.iN - S.bN, 'Implementation ' + (S.bN + 1) + '–' + S.iN, st(S.bN + 1, S.iN)) + seg(S.eN - S.iN, 'End-line ' + (S.iN + 1) + '–' + S.eN, st(S.iN + 1, S.eN)) + seg(S.days - S.eN, 'Readiness week', st(S.eN + 1, S.days)) + seg(Math.max(2, grace), 'Grace ' + grace, d > S.days ? 'now' : 'g') + '</div>'
     + '<small class="fp-dim">' + (f.startDate ? 'Started ' + fpShortDate(f.startDate) + ' · graduation ' + fpShortDate(ndAddDays(f.startDate, S.days - 1)) + ' · close date ' + fpShortDate(ndAddDays(f.startDate, S.days - 1 + grace)) : 'Start date not set — the ' + fpE(D.cfg.inChargeLabel) + ' sets it') + ' · Timeline settings for ' + fpE(D.cfg.plural) + ' apply.</small></div>';
   h += '<div class="fp-grid"><div class="fp-col"><div class="fp-card"><div class="fp-ch"><b>Graduation result</b>' + (role === 'admin' || role === 'district' ? '<button type="button" class="fp-btn sm" onclick="fpOpenProg(\'' + C + '\')">' + (role === 'admin' ? 'Run again · change · catch-up…' : 'Certification records…') + '</button>' : '') + '</div>';
   if (g) { var R = ND_GRAD_RES[g.result] || ND_GRAD_RES.incomplete, cr = g.criteria || {};
-    h += '<div class="fp-res ' + R.c + '"><b>' + fpE(R.t) + '</b><span>Overall ' + g.overall + '%' + (g.base != null ? ' (baseline ' + g.base + '%)' : '') + (g.deptFails && g.deptFails.length ? ' · below: ' + g.deptFails.map(function (x) { return ndDeptDefName(D, x) + ' ' + ((g.byDept || {})[x] != null ? g.byDept[x] + '%' : ''); }).join(', ') : '') + ' · ' + fpE(fpShortDate(String(g.at || '').slice(0, 10))) + (g.round ? ' · after catch-up' : '') + '</span></div>'
+    h += '<div class="fp-res ' + R.c + '"><b>' + fpE(R.t) + '</b><span>Overall ' + g.overall + '%' + (g.base != null ? ' (baseline ' + g.base + '%)' : '') + (g.deptFails && g.deptFails.length ? ' · below: ' + g.deptFails.map(function (x) { return ndDeptDefName(D, x) + ' ' + ((g.byDept || {})[x] != null ? g.byDept[x] + '%' : ''); }).join(', ') : '') + ' · ' + fpE(fpShortDate(String(g.at || '').slice(0, 10))) + (g.round ? ' · after catch-up' : '') + '</span>' + (nfOldRule(g, D.type) ? nfOldRuleNote() : '') + '</div>'
       + '<table class="fp-t sm"><thead><tr><th>Rule</th><th>Needed</th><th>Here</th></tr></thead><tbody>'
       + '<tr><td>Overall</td><td>' + (cr.overall || 70) + '%</td><td class="' + (g.overall >= (cr.overall || 70) ? 'g' : 'r') + '">' + g.overall + '%</td></tr>'
       + '<tr><td>Every department</td><td>' + (cr.dept || 70) + '%</td><td class="' + ((g.deptFails || []).length ? 'r' : 'g') + '">' + ((g.deptFails || []).length ? g.deptFails.length + ' below' : '✓') + '</td></tr>'

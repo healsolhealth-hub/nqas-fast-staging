@@ -97,7 +97,7 @@ _scCpmUi.phase=''; _scCpmUi.day='';
     var h=oRow.apply(this,arguments); if(c.kind!=='nqas') return h;
     var pk=_scCpmUi.pkg==='12A'?'nqas_12A':'nqas_12B'; if(c.pk.indexOf(scPkgCode(pk))<0) pk=c.pk.indexOf('12B')>=0?'nqas_12B':'nqas_12A';
     var d=scCpDays(pk,c.id); if(!d) return h;
-    var chip='<span class="dy" title="'+scEsc(scPkgCode(pk))+' day cards — click to move" onclick="event.stopPropagation();scCpMoveDay(\''+scJs(c.id)+'\')">📅 Baseline D'+d.bl+(d.blMoved?'✎':'')+' · Impl. D'+d.impl+(d.implMoved?'✎':'')+' · Revision D'+d.rev+'</span>';
+    var chip='<span class="dy" title="'+scEsc(scPkgCode(pk))+' day cards — click to move" onclick="event.stopPropagation();scCpMoveDay(\''+scJs(c.id)+'\')">📅 Baseline D'+d.bl+(d.blMoved?'✎':'')+' · Implementation D'+d.impl+(d.implMoved?'✎':'')+' · Revision D'+d.rev+'</span>';
     return h.replace('<span class="pk">',chip+'<span class="pk">');
   };
   var oFil=scCpmFiltered;

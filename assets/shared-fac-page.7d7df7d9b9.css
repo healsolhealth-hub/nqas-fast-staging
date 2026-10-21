@@ -186,3 +186,4 @@ body.nf-viewas #sc-cho-app.vis{position:fixed;inset:0;z-index:10000;overflow-y:a
   .fp-tabs{gap:14px;}
 }
 @container (max-width:720px){ .fp-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;} .fp-tabs button{white-space:nowrap;flex:0 0 auto;} }
+.nf-oldrule{display:block;font-size:10.5px;color:#8A6D1F;font-weight:500;margin-top:2px;}

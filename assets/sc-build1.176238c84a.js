@@ -7,7 +7,7 @@ var _scb1StaffScreen='home';   // staff screen to restore when returning to My C
 var _scb1Busy=false;
 
 Object.assign(HINDI_UI,{
-  'My Cards':'मेरे कार्ड','Facility Dashboard':'स्वास्थ्य केंद्र डैशबोर्ड','Signed in as':'लॉगिन किया है',
+  'My Cards':'मेरे कार्ड','Facility dashboard':'स्वास्थ्य केंद्र डैशबोर्ड','Signed in as':'लॉगिन किया है',
   'Not you? Log out':'आप नहीं? लॉगआउट करें','Facility ID':'स्वास्थ्य केंद्र आईडी','Mobile':'मोबाइल',
   'for you':'आपके लिए','No checkpoints for you today':'आज आपके लिए कोई चेकपॉइंट नहीं',
   'Your next checkpoints':'आपके अगले चेकपॉइंट','No more checkpoints for you in this programme.':'इस कार्यक्रम में आपके लिए और कोई चेकपॉइंट नहीं।',
@@ -62,7 +62,7 @@ function scb1RenderNavWho(){
   var sub=document.querySelector('#cho-nav .cho-nav-sub'); if(!sub||!choState.staffMobile) return;
   sub.textContent=(choState.staffName||scb1Mask(choState.staffMobile))+' · '+scb1Role();
 }
-// Facility Dashboard header: who is signed in (single-login CHO only)
+// Facility dashboard header: who is signed in (single-login CHO only)
 function scb1RenderDashWho(){
   var code=document.getElementById('sc-cho-fac-code'); if(!code) return;
   var host=code.parentNode&&code.parentNode.parentNode; if(!host) return;
@@ -73,7 +73,7 @@ function scb1RenderDashWho(){
 }
 
 // ══════════════════════════════════════════════════════════════
-// TABS — My Cards / Facility Dashboard
+// TABS — My Cards / Facility dashboard
 // ══════════════════════════════════════════════════════════════
 function scb1EnsureTabs(){
   var bar=document.getElementById('scb1-tabs');
@@ -81,7 +81,7 @@ function scb1EnsureTabs(){
     bar=document.createElement('nav'); bar.id='scb1-tabs'; bar.className='scb1-tabs'; bar.style.display='none';
     bar.innerHTML='<div class="scb1-tabs-in">'
       +'<button type="button" data-tab="cards" onclick="scb1ShowTab(\'cards\')"><i class="ti ti-cards"></i><span data-i18n="My Cards">My Cards</span></button>'
-      +'<button type="button" data-tab="dash" onclick="scb1ShowTab(\'dash\')"><i class="ti ti-building-hospital"></i><span data-i18n="Facility Dashboard">Facility Dashboard</span></button>'
+      +'<button type="button" data-tab="dash" onclick="scb1ShowTab(\'dash\')"><i class="ti ti-building-hospital"></i><span data-i18n="Facility dashboard">Facility dashboard</span></button>'
       +'</div>';
     document.body.appendChild(bar);
   }
@@ -112,17 +112,17 @@ async function scb1OpenDashboard(){
   if(!db){ initFirebase(); await new Promise(function(r){setTimeout(r,800);}); }
   var code=_scDual.code;
   var fac=await fbGet(scFacilityPath(code));
-  if(!fac){ await scAlert('This facility could not be found.','Facility Dashboard','⚠️'); return; }
-  if(fac.suspended){ await scAlert('This facility is currently suspended. Contact HealSol Academy.','Facility Dashboard','⚠️'); return; }
+  if(!fac){ await scAlert('This facility could not be found.','Facility dashboard','⚠️'); return; }
+  if(fac.suspended){ await scAlert('This facility is currently suspended. Contact HealSol Academy.','Facility dashboard','⚠️'); return; }
   // Re-check on every open: still registered here, still the CHO
   var me=(fac.staff||{})[choState.staffMobile];
   if(!me||(me.role||'CHO')!=='CHO'){
-    await scAlert('The Facility Dashboard is only for the CHO of this facility.','Facility Dashboard','🔒');
+    await scAlert('The Facility dashboard is only for the CHO of this facility.','Facility dashboard','🔒');
     _scDual=null; return;
   }
   // Older facilities: one-time activation key (same rule as the Facility Admin login)
   if(!fac.accessKeyVerified){
-    var v=await scDialog({title:'Activate Facility Dashboard',icon:'🔑',okLabel:'Activate',
+    var v=await scDialog({title:'Activate Facility dashboard',icon:'🔑',okLabel:'Activate',
       message:'Enter the one-time activation key from HealSol Academy. You will not be asked again.',
       fields:[{key:'ak',label:'Activation key',required:true,placeholder:'Activation key'}]});
     if(!v) return;
@@ -257,7 +257,7 @@ function scb1Lighten(){
   // Dashboard actions are recorded under the CHO's own name when signed in once
   var oActor=scActor;
   scActor=function(){
-    if(appMode==='sc-cho'&&_scDual) return {name:choState.staffName||('CHO · '+scSubAdminCode),role:'Facility Admin',id:scSubAdminCode,mob:choState.staffMobile};
+    if(appMode==='sc-cho'&&_scDual) return {name:choState.staffName||('CHO · '+scSubAdminCode),role:'CHO',id:scSubAdminCode,mob:choState.staffMobile};
     return oActor.apply(this,arguments);
   };
 

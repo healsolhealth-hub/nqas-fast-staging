@@ -7,7 +7,7 @@
 // ══════════════════════════════════════════════════════════════
 var NF_WEEK_START=[0,7,14,21,28,35,42,49,56], NF_WEEK_END=[6,13,20,27,34,41,48,55,59];
 var NF_PH_COL={B:'#94A3B8',I:'#135A55',E:'#5048B4'};
-var NF_PHASES=[{k:'Baseline',a:1,b:7},{k:'Implementation',a:8,b:49},{k:'Endline',a:50,b:56},{k:'Readiness week',a:57,b:60}];
+var NF_PHASES=[{k:'Baseline',a:1,b:7},{k:'Implementation',a:8,b:49},{k:'End-line',a:50,b:56},{k:'Readiness week',a:57,b:60}];
 function nfFilterProg(progress,maxDi){ var out={}; Object.keys(progress||{}).forEach(function(m){ var recs=progress[m]||{}, o={};
   Object.keys(recs).forEach(function(k){ var x=/^day_(\d+)$/.exec(k); if(!x||+x[1]<=maxDi) o[k]=recs[k]; }); out[m]=o; }); return out; }
 function nfHasDone(progress,a,b){ return Object.keys(progress||{}).some(function(m){ return Object.keys(progress[m]||{}).some(function(k){ var x=/^day_(\d+)$/.exec(k); return x&&+x[1]>=a&&+x[1]<=b&&(progress[m][k]||{}).taskDone; }); }); }
@@ -65,7 +65,7 @@ function nfPhRows(bB,bI,bE,opts){
   opts=opts||{}; var row=function(lbl,col,b,chip,note){ var v=nfPhVal(b);
     return '<div class="phr'+(v==null?' mut':'')+'"><i style="background:'+col+'"></i><span>'+lbl+'</span><b>'+(v==null?'—':v+'%')+'</b>'+(v==null?'<em>'+(note||'')+'</em>':(chip||'<em></em>'))+'</div>'; };
   var base=nfPhVal(bB), ch=function(b){ var v=nfPhVal(b); if(base==null||v==null) return ''; var d=v-base; return '<span class="phc '+(d>0?'up':d<0?'dn':'eq')+'">'+(d>0?'+':'')+d+'</span>'; };
-  return row(opts.hi?'बेसलाइन':'Baseline',NF_PH_COL.B,bB,'<em></em>','')+row(opts.hi?'क्रियान्वयन':'Implementation',NF_PH_COL.I,bI,ch(bI),opts.hi?'दिन 8 से':'from Day 8')+row(opts.hi?'एंड-लाइन':'Endline',NF_PH_COL.E,bE,ch(bE),opts.hi?'दिन 50 से':'from Day 50');
+  return row(opts.hi?'बेसलाइन':'Baseline',NF_PH_COL.B,bB,'<em></em>','')+row(opts.hi?'क्रियान्वयन':'Implementation',NF_PH_COL.I,bI,ch(bI),opts.hi?'दिन 8 से':'from Day 8')+row(opts.hi?'एंड-लाइन':'End-line',NF_PH_COL.E,bE,ch(bE),opts.hi?'दिन 50 से':'from Day 50');
 }
 function nfRingCardHTML(title,sub,bB,bI,bE,size){
   return '<div class="phrc">'+nfRing3SVG(nfPhVal(bB),nfPhVal(bI),nfPhVal(bE),size||112)+'<div class="phrc-l"><b>'+scEsc(title)+'</b><small>'+scEsc(sub||'')+'</small>'+nfPhRows(bB,bI,bE)+'</div></div>';
@@ -80,7 +80,7 @@ function nfCard3HTML(title,sub,bB,bI,bE){
 function nfWeekChartSVG(weeks,todayDi,W,H){
   W=W||760; H=H||250; var L=40,T=16,R=14,Bm=28, n=9, x=function(k){ return L+k*(W-L-R)/(n-1); }, y=function(v){ return T+(100-v)*(H-T-Bm)/100; }, hw=(x(1)-x(0))/2;
   var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;font-family:inherit">';
-  [[0,0,'Baseline','#F1F5F9'],[1,6,'Implementation','#E7F2F0'],[7,7,'Endline','#EEEDFA'],[8,8,'Mock','#FDF0E1']].forEach(function(b){ var x0=Math.max(x(b[0])-hw,L), x1=Math.min(x(b[1])+hw,W-R);
+  [[0,0,'Baseline','#F1F5F9'],[1,6,'Implementation','#E7F2F0'],[7,7,'End-line','#EEEDFA'],[8,8,'Mock','#FDF0E1']].forEach(function(b){ var x0=Math.max(x(b[0])-hw,L), x1=Math.min(x(b[1])+hw,W-R);
     s+='<rect x="'+x0+'" y="'+T+'" width="'+(x1-x0)+'" height="'+(H-T-Bm)+'" fill="'+b[3]+'"/><text x="'+((x0+x1)/2)+'" y="'+(T+12)+'" font-size="10" text-anchor="middle" fill="#6B7A78">'+b[2]+'</text>'; });
   [0,25,50,75,100].forEach(function(g){ s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(g)+'" y2="'+y(g)+'" stroke="#E3EAE8"/><text x="'+(L-6)+'" y="'+(y(g)+4)+'" font-size="10" text-anchor="end" fill="#8A9896">'+g+'%</text>'; });
   s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(70)+'" y2="'+y(70)+'" stroke="#E9963A" stroke-dasharray="6 4" stroke-width="1.5"/><text x="'+(W-R-4)+'" y="'+(y(70)-5)+'" font-size="10" text-anchor="end" fill="#C47A24">NQAS 70%</text>';
@@ -95,7 +95,7 @@ function nfWeekChartSVG(weeks,todayDi,W,H){
   return s+'</svg>';
 }
 function nfWeekLegend(){ return [['#135A55','Overall'],['#22C55E','Structure'],['#F59E0B','Process'],['#3B82F6','Outcome'],['#E9963A','NQAS 70%']].map(function(x){ return '<span><i style="background:'+x[0]+'"></i>'+x[1]+'</span>'; }).join(''); }
-function nfPhLegend(){ return [['B',NF_PH_COL.B,'Baseline'],['I',NF_PH_COL.I,'Implementation'],['E',NF_PH_COL.E,'Endline']].map(function(x){ return '<span><i style="background:'+x[1]+'"></i>'+x[2]+'</span>'; }).join(''); }
+function nfPhLegend(){ return [['B',NF_PH_COL.B,'Baseline'],['I',NF_PH_COL.I,'Implementation'],['E',NF_PH_COL.E,'End-line']].map(function(x){ return '<span><i style="background:'+x[1]+'"></i>'+x[2]+'</span>'; }).join(''); }
 // Standards heat-map: rows by AoC, tile per Standard (current %, coloured against its minimum)
 function nfStdHeatHTML(A,limitLow){
   var byAoc={}, stds=Object.keys(A.byStd||{}).sort(scStdCmp);
@@ -130,7 +130,7 @@ scInsReadinessHTML=function(st,openCnt,overdueCnt){
   var h=nfPhaseCardHTML(st.fac,P.day,P.blDone)
     +'<div class="scx-tiles">'+tile(A.coverage.assessed?A.pct+'%':'—','Current readiness',A.coverage.assessed?scPctText(A.pct):'var(--t3)')
     +tile(hasB?B.pct+'%':'—','Baseline',hasB?scPctText(B.pct):'var(--t3)')+tile(gain==null?'—':(gain>=0?'+':'')+gain,'Growth since baseline',gain==null?'var(--t3)':gain>0?'var(--green-dk)':gain<0?'var(--red-dk)':'var(--t3)')
-    +tile(ev==null?'—':ev+'%',ev==null?'Endline (from Day 50)':'Endline',ev==null?'var(--t3)':scPctText(ev))
+    +tile(ev==null?'—':ev+'%',ev==null?'End-line (from Day 50)':'End-line',ev==null?'var(--t3)':scPctText(ev))
     +tile(A.coverage.assessed+'/'+A.total,'Checkpoints assessed')+tile(openCnt,'Open gaps','var(--amber-dk)')+tile(overdueCnt,'Overdue actions',overdueCnt?'var(--red-dk)':'var(--t3)')+tile(A.daysVerified+'/'+A.daysDone,'Cards verified')+'</div>'
     +rdNqasLine(A,st.hostId);
   var aocsOf=function(k){ return Object.keys(SC_CPM_AOC).filter(function(x){ return scAocCat(x)===k; }).join(', '); };
@@ -139,10 +139,10 @@ scInsReadinessHTML=function(st,openCnt,overdueCnt){
     +SC_AOC_CATS.map(function(k){ return nfRingCardHTML(k,'AoC '+aocsOf(k),B.byCat&&B.byCat[k],I&&I.byCat[k],E&&E.byCat[k],96); }).join('')+'</div></div></div>';
   h+=nfHeatBlockHTML(st.hostId,P);
   var stds=Object.keys(A.byStd).sort(scStdCmp), pv=function(x){ return x&&x.assessed?x.pct+'%':'—'; };
-  h+='<div class="scc-std nf-stdtbl'+(_nfStdOpen[st.hostId]?' open':'')+'" id="nfstd-'+scEsc(st.hostId)+'"><div class="nf-stdtbl-h">By Standard — minimum to pass NQAS shown for each</div><table><thead><tr><th>Standard</th><th>Current</th><th>Min</th><th></th><th>Baseline</th><th>Implementation</th><th>Endline</th><th>Assessed</th></tr></thead><tbody>'
+  h+='<div class="scc-std nf-stdtbl'+(_nfStdOpen[st.hostId]?' open':'')+'" id="nfstd-'+scEsc(st.hostId)+'"><div class="nf-stdtbl-h">By Standard — minimum to pass NQAS shown for each</div><table><thead><tr><th>Standard</th><th>Current</th><th>Min</th><th></th><th>Baseline</th><th>Implementation</th><th>End-line</th><th>Assessed</th></tr></thead><tbody>'
     +stds.map(function(s){ var b=A.byStd[s], m=scNqasStdMin(s), ok=b.pct>=m;
       return '<tr class="'+(ok?'ok':'no')+'"><td><b>'+s+'</b> <span>'+scEsc((scRegTitle('std',s)||'').slice(0,40))+'</span></td><td style="color:'+scPctText(b.pct)+';"><b>'+b.pct+'%</b></td><td>'+m+'%</td><td>'+(ok?'✓':'✗')+'</td><td>'+pv(B.byStd&&B.byStd[s])+'</td><td>'+pv(I&&I.byStd[s])+'</td><td>'+pv(E&&E.byStd[s])+'</td><td>'+b.assessed+'/'+b.n+'</td></tr>'; }).join('')+'</tbody></table></div>';
-  h+='<div class="scx-sub">Areas of Concern <span class="scc-hint">B baseline · I implementation · E endline · chip = growth since baseline</span></div><div class="phgrid">'
+  h+='<div class="scx-sub">Areas of Concern <span class="scc-hint">B baseline · I implementation · E end-line · chip = growth since baseline</span></div><div class="phgrid">'
     +Object.keys(SC_CPM_AOC).map(function(k){ return nfCard3HTML('AoC '+k+' · '+SC_CPM_AOC[k],scAocCat(k),B.byAoc&&B.byAoc[k],I&&I.byAoc[k],E&&E.byAoc[k]); }).join('')+'</div>';
   ['service','support'].forEach(function(g){
     var order=SC_SVC_GROUPS[g], names=Object.keys(A.byService).filter(function(k){ return scSvcGroup(k)===g; });
@@ -202,7 +202,7 @@ scInsReadinessHTML=function(st,openCnt,overdueCnt){
       rebuild('Service packages',svc,function(k){ return nfCard3HTML(k,'',B.byService&&B.byService[k],I&&I.byService[k],E&&E.byService[k]); });
       rebuild('Cross-cutting areas',cc,function(k){ return nfCard3HTML(k,'',B.byService&&B.byService[k],I&&I.byService[k],E&&E.byService[k]); });
       // Standards table: Baseline · Implementation · Endline columns
-      html=html.replace('<th class="c">Baseline</th><th class="c">Assessed</th></tr></thead>','<th class="c">Baseline</th><th class="c">Impl.</th><th class="c">Endline</th><th class="c">Assessed</th></tr></thead>');
+      html=html.replace('<th class="c">Baseline</th><th class="c">Assessed</th></tr></thead>','<th class="c">Baseline</th><th class="c">Implementation</th><th class="c">End-line</th><th class="c">Assessed</th></tr></thead>');
       Object.keys(A.byStd).forEach(function(s){ var re=new RegExp('(<tr><td><b>'+s+'</b></td>(?:(?!</tr>).)*?<td class="c">(?:\\d+%|—)</td>)(<td class="c">\\d+/\\d+</td></tr>)');
         var pv=function(x){ return x&&x.assessed?x.pct+'%':'—'; }; html=html.replace(re,'$1<td class="c">'+pv(I&&I.byStd[s])+'</td><td class="c">'+pv(E&&E.byStd[s])+'</td>$2'); });
     }catch(e){ console.warn('[SC] phase report',e); }

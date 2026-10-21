@@ -929,7 +929,7 @@ var _scSup=null; // {id,name,facilities:[codes]} when a supervisor is logged in
 function scActor(){
   if(appMode==='sc-cho'){
     var nm=((scSubAdminData||{}).choName||'').trim();
-    return {name:nm||('Facility Admin · '+scSubAdminCode),role:'Facility Admin',id:scSubAdminCode};
+    return {name:nm||('CHO · '+scSubAdminCode),role:'CHO',id:scSubAdminCode};
   }
   if(appMode==='sc-supervisor'&&_scSup) return {name:_scSup.name||_scSup.id,role:'Supervisor',id:_scSup.id};
   if(appMode==='sc-admin') return {name:'HealSol Admin',role:'HealSol',id:'healsol'};
@@ -1494,7 +1494,7 @@ function scRenderMasterDashboard(){
     var code=it.code, fac=it.fac, agg=it.agg, pct=agg.pct, C=scJs(code);
     var barCol=fac.suspended||!(agg.max>0)?'var(--grey-dk)':scPctColor(pct);
     var staffCount=Object.keys(fac.staff||{}).length;
-    var nq=agg.max>0?(agg.nqas.meets?'<span class="scx-nq-badge ok">NQAS ✓</span>':'<span class="scx-nq-badge no">Below NQAS</span>'):'';
+    var nq=agg.max>0?(function(){ var r=typeof nfResult==='function'?nfResult(nfResultSc(agg)):null; return agg.nqas.meets?'<span class="scx-nq-badge ok">✓ Meets NQAS</span>':'<span class="scx-nq-badge no">'+scEsc(r?r.word:'Not yet ready')+'</span>'; })():'';
     var card=document.createElement('div'); card.className='master-fac-card';
     card.style.opacity=fac.suspended?'0.7':'1';
     // one labelled "Manage" menu instead of four unlabelled icon buttons (HealSol 17 Oct)
@@ -1512,7 +1512,7 @@ function scRenderMasterDashboard(){
       +'<div style="font-size:9px;color:var(--teal);font-weight:700;margin-top:1px;">📋 '+scEsc(scPkgShort(fac.progId))+' · 👥 '+staffCount+' staff · '+agg.gaps.filter(function(g){return !g.closed;}).length+' open gaps</div>'
       +'</div><div class="mfc-pct" style="color:'+barCol+';">'+(agg.max>0?pct+'%':'<span style="font-size:11px;font-weight:700;">No data</span>')+'</div></div>'
       +'<div style="height:6px;border-radius:10px;background:var(--br);margin:7px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:'+pct+'%;background:'+barCol+';transition:width 0.5s;"></div></div>'
-      +'<div class="mfc-meta"><span>'+(fac.startDate?'Started '+scEsc(fac.startDate):'Not started')+'</span><span>CHO: '+scEsc(fac.choName||(function(){ var st=fac.staff||{}, m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||'CHO')==='CHO'; }); return m?(st[m].name||m):'Not set'; })())+'</span></div>'
+      +'<div class="mfc-meta"><span>'+(fac.startDate?'Started '+scEsc(nfDateTxt(fac.startDate)):'Not started')+'</span><span>CHO: '+scEsc(fac.choName||(function(){ var st=fac.staff||{}, m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||'CHO')==='CHO'; }); return m?(st[m].name||m):'Not set'; })())+'</span></div>'
       +'<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">'
       +'<button class="mfc-btn mfc-open" onclick="scDrillIn(\''+C+'\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>'
       +adminBtns+'</div>';

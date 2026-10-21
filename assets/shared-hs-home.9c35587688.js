@@ -55,23 +55,16 @@ function hsInfo(code) {
   o.onTime = o.comp && o.comp.pct != null && o.inProg ? o.comp.pct : null;
   o.gradDate = f.startDate ? hsAddDays(f.startDate, o.days - 1) : '';
   o.gradSoon = !o.grad && d != null && d >= 1 && d <= o.days && o.days - d <= 6;
+  o.grad14 = !o.grad && d != null && d >= 1 && o.days - d <= 13;   // the Programme list's window (incl. past the last day, waiting)
   var ti = typeof nfTrialInfo === 'function' ? nfTrialInfo(f) : null; o.trial = ti; o.payDue = !!(ti && ti.ended);
   o.access = f.subscriptionStatus === 'paid' ? 'Paid' + (dept ? '' : ' · ' + (String(f.progId || '').indexOf('12B') >= 0 ? '12B' : '12A')) : f.subscriptionStatus === 'trial' ? (o.payDue ? 'Trial ended' : 'Trial') : 'Contract';
   return o;
 }
 var HS_PHASE = { notstarted: 'Not started', baseline: 'Baseline', impl: 'Implementation', endline: 'End-line', ready: 'Readiness week', closing: 'Waiting for graduation', graduated: 'Graduated', catchup: 'Catch-up' };
 function hsResult(o) {   // the result column: graduation result, else the NQAS check by the type's own rules
-  if (o.grad) { var r = HS_RES[o.grad.result] || HS_RES.incomplete; return '<span class="nfo-chip ' + r[1] + '">' + r[0] + '</span>'; }
-  if (o.loading) return '<span class="nfo-chip grey">Loading…</span>';
-  if (!o.assessed) return '<span class="hs-dim">—</span>';
-  if (o.cov != null && o.cov < 50) return '<span class="nfo-chip grey" title="Less than half of the checklist has a score — the result would not mean much yet">Too early · ' + o.cov + '% checked</span>';
-  if (o.dept) { var s = o.s || {}, low = Object.keys(o.byDept).filter(function (k) { return o.byDept[k] < 70; }).length, aoc = Object.keys(o.byAoc).filter(function (k) { return o.byAoc[k] < 70; }).length;
-    if (o.pct < 70) return '<span class="nfo-chip amber">Overall below 70%</span>';
-    if (low) return '<span class="nfo-chip amber">' + low + ' department' + (low > 1 ? 's' : '') + ' below</span>';
-    if (aoc) return '<span class="nfo-chip amber">' + aoc + ' Area' + (aoc > 1 ? 's' : '') + ' below</span>';
-    return s.meets ? '<span class="nfo-chip green">✓ Meets NQAS</span>' : '<span class="nfo-chip grey">' + o.assessed + ' of ' + (s.total || 0) + ' assessed</span>'; }
-  var n = o.agg.nqas; if (n.meets) return '<span class="nfo-chip green">✓ Meets NQAS</span>';
-  var k = n.stdFails.length; return '<span class="nfo-chip amber">' + (o.pct < 70 ? 'Overall below 70%' : k ? k + ' Standard' + (k > 1 ? 's' : '') + ' below' : 'Areas below 70%') + '</span>';
+  if (o.loading && !o.grad) return '<span class="nfo-chip grey">Loading…</span>';
+  if (!o.assessed && !o.grad) return '<span class="hs-dim">—</span>';
+  return nfResultChip(o.dept ? nfResultDept(o.s, o.grad) : nfResultSc(o.agg, o.grad));
 }
 function hsAll() { return hsCodes().map(hsInfo); }
 function hsSplit(list, pred) { var by = {}; list.forEach(function (o) { if (pred(o)) by[o.type] = (by[o.type] || 0) + 1; }); var n = 0; Object.keys(by).forEach(function (k) { n += by[k]; });
@@ -156,15 +149,15 @@ function hsRenderToday() {
   hsLoadSide();
   var all = hsAll(), list = _hs.type ? all.filter(function (o) { return o.type === _hs.type; }) : all, dist = {};
   all.forEach(function (o) { if (o.district) dist[o.district] = 1; });
-  var k1 = hsSplit(list, function (o) { return o.inProg; }), k2 = hsSplit(list, function (o) { return o.behind; }), k3 = hsSplit(list, function (o) { return o.gradSoon; }), k4 = hsSplit(list, function (o) { return o.payDue; });
-  var soon = list.filter(function (o) { return o.gradSoon; }).sort(function (a, b) { return a.gradDate < b.gradDate ? -1 : 1; })[0];
+  var k1 = hsSplit(list, function (o) { return o.inProg; }), k2 = hsSplit(list, function (o) { return o.behind; }), k3 = hsSplit(list, function (o) { return o.grad14; }), k4 = hsSplit(list, function (o) { return o.payDue; });
+  var soon = list.filter(function (o) { return o.grad14; }).sort(function (a, b) { return a.gradDate < b.gradDate ? -1 : 1; })[0];
   var kpi = function (l, k, sub, cls, js) { return '<button type="button" class="hs-kpi ' + cls + '" onclick="' + js + '"><small>' + l + '</small><b>' + k.n + '</b><span>' + hsE(k.txt || sub) + '</span></button>'; };
   var items = hsTodo(list), ib = null; try { ib = nfInboxData().tot; } catch (e) {}
   var foot = ib ? [[ib.ver, 'cards to verify'], [ib.confirm, 'actions to confirm'], [ib.overdue, 'overdue actions'], [ib.drafts, 'draft actions']].map(function (x) { return x[0] ? '<button type="button" class="hs-zero n" onclick="nfAdminView(\'inbox\')">' + x[0] + ' ' + x[1] + '</button>' : '<span class="hs-zero">✓ 0 ' + x[1] + '</span>'; }).join('') : '';
   var h = '<div class="nfo-top"><div><h1>Today</h1><small>' + hsE(new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })) + ' · ' + all.length + ' facilit' + (all.length === 1 ? 'y' : 'ies') + (Object.keys(dist).length ? ' in ' + Object.keys(dist).length + ' district' + (Object.keys(dist).length > 1 ? 's' : '') : '') + (typeof _nfLight !== 'undefined' && _nfLight ? ' · from the nightly summary' : '') + '</small></div>'
     + hsTypeTabs(_hs.type, 'hsSetType', all) + '<button type="button" class="nfo-ic" title="Refresh" onclick="scRefreshDashboard()"><i class="ti ti-refresh"></i></button></div>'
     + '<div class="hs-kpis">' + kpi('In programme', k1, 'none', '', "_hs.phase='inprog';nfAdminView('hsfac')") + kpi('Behind schedule', k2, 'none behind', k2.n ? 'r' : '', "_hs.status='behind';nfAdminView('hsfac')")
-    + kpi('Graduating this week', k3, soon ? soon.name + ' · ' + hsShortDate(soon.gradDate) : 'none this week', k3.n ? 't' : '', "_hs.ptab='grad';nfAdminView('hsprog')") + kpi('Payment due', k4, 'none', k4.n ? 'a' : '', "_hs.status='pay';nfAdminView('hsfac')") + '</div>'
+    + kpi('Graduating in 14 days', k3, soon ? soon.name + ' · ' + hsShortDate(soon.gradDate) : 'none in 14 days', k3.n ? 't' : '', "_hs.ptab='grad';nfAdminView('hsprog')") + kpi('Payment due', k4, 'none', k4.n ? 'a' : '', "_hs.status='pay';nfAdminView('hsfac')") + '</div>'
     + '<div class="hs-two"><div class="nfo-card hs-todo"><div class="nfo-ch"><b>To do</b><span>' + items.length + ' item' + (items.length === 1 ? '' : 's') + ' · most urgent first</span></div>' + hsTodoHTML(items) + (foot ? '<div class="hs-foot">' + foot + '<button type="button" class="hs-link" onclick="nfAdminView(\'inbox\')">Review inbox</button></div>' : '') + '</div>'
     + '<div class="hs-col">' + hsPeerCardHTML() + hsLiveCardHTML() + hsBizLineHTML(all) + '</div></div>';
   box.innerHTML = h;
@@ -244,7 +237,7 @@ function hsGradHTML(all) {
   h += '<div class="hs-two"><div class="nfo-card hs-tw"><div class="nfo-ch"><b>Results</b><span>graduated facilities, newest first</span></div>'
     + (g.length ? '<table class="nfo-t"><thead><tr><th>Facility</th><th>Result</th><th>Score</th><th>Below the mark</th><th>Next step</th></tr></thead><tbody>' + g.map(function (o) { var r = HS_RES[o.grad.result] || HS_RES.incomplete;
       return '<tr class="nfo-row" onclick="scDrillIn(\'' + hsJ(o.code) + '\')"><td><b>' + hsE(o.name) + '</b> ' + hsTypeChip(o.type) + '<small>' + hsE(hsShortDate(String(o.grad.at || '').slice(0, 10)) + ' · ' + (o.district || '')) + (o.grad.round ? ' · after catch-up' : '') + '</small></td><td><span class="nfo-chip ' + r[1] + '">' + r[0] + '</span></td>'
-        + '<td>' + (o.grad.base != null ? o.grad.base + ' → ' : '') + o.grad.overall + '%</td><td>' + hsE(below(o)) + '</td><td>' + next(o) + '</td></tr>'; }).join('') + '</tbody></table>'
+        + '<td>' + (o.grad.base != null ? o.grad.base + ' → ' : '') + o.grad.overall + '%' + (nfOldRule(o.grad, o.type) ? nfOldRuleNote() : '') + '</td><td>' + hsE(below(o)) + '</td><td>' + next(o) + '</td></tr>'; }).join('') + '</tbody></table>'
       : '<div class="nfo-empty sm">No facility has graduated yet.</div>') + '</div>';
   var soon = all.filter(function (o) { return !o.grad && o.rawDay != null && o.rawDay >= 1 && o.days - o.rawDay <= 13; }).sort(function (a, b) { return a.gradDate < b.gradDate ? -1 : 1; });
   h += '<div class="nfo-card hs-col1"><div class="nfo-ch"><b>Graduating in the next 14 days</b></div>' + (soon.length ? soon.map(function (o) { var note = o.rawDay > o.days ? 'waiting — past Day ' + o.days : o.dept ? (o.toCheck ? o.toCheck + ' department-days to check' : 'end-line on track') : (o.comp && o.comp.state === 'r' ? 'behind schedule' : HS_PHASE[o.phase]);

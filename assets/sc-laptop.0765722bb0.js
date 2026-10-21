@@ -39,8 +39,7 @@ function nfStatusChip(r){
   var a=r.agg;
   if(r.planMissing) return '<span class="nfo-chip red">Plan not published</span>';
   if(!a.coverage||!a.coverage.assessed) return '<span class="nfo-chip grey">Not assessed yet</span>';
-  if(a.nqas.meets) return '<span class="nfo-chip green">✓ Meets NQAS</span>';
-  var n=a.nqas.stdFails.length; return '<span class="nfo-chip amber">'+(n?n+' Std below':'Overall below 70%')+'</span>';
+  return nfResultChip(nfResultSc(a));
 }
 function nfSortRows(rows){
   var k=_nfOv.sort, d=_nfOv.dir, val=function(r){ var a=r.agg, b=a.baseline||{};

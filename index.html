@@ -65,7 +65,7 @@ function nfLoadData(name){
         <button type="button" data-lang="en" class="on" onclick="setLang('en')">EN</button>
         <button type="button" data-lang="hi" onclick="setLang('hi')">हिं</button>
       </div>
-      <button onclick="scShowChoLogin()" title="Facility Admin Login"
+      <button onclick="scShowChoLogin()" title="Facility dashboard login"
         style="width:38px;height:38px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;"
         onmouseover="this.style.background='rgba(255,255,255,0.25)'"
         onmouseout="this.style.background='rgba(255,255,255,0.1)'">
@@ -129,13 +129,13 @@ function nfLoadData(name){
         <i class="ti ti-arrow-left"></i>
       </button>
       <div>
-        <div class="lc-title" style="margin-bottom:0;">Facility Admin Login</div>
+        <div class="lc-title" style="margin-bottom:0;">Facility dashboard login</div>
         <div style="font-size:10px;color:var(--t3);font-weight:600;">CHO / Facility In-charge</div>
       </div>
     </div>
     <div style="background:var(--teal-lt);border:1px solid rgba(30,107,94,0.2);border-radius:9px;padding:9px 11px;margin-bottom:12px;font-size:11px;color:var(--teal-dk);font-weight:600;line-height:1.5;">
       <i class="ti ti-info-circle" style="font-size:12px;vertical-align:-2px;"></i>
-      CHOs can now sign in once through <strong>Staff Login</strong> with their mobile number and get both <strong>My Cards</strong> and the <strong>Facility Dashboard</strong>. This older login still works.
+      CHOs can now sign in once through <strong>Staff Login</strong> with their mobile number and get both <strong>My Cards</strong> and the <strong>Facility dashboard</strong>. This older login still works.
     </div>
     <div class="lc-field">
       <label class="lc-label">Facility ID</label>
@@ -157,7 +157,7 @@ function nfLoadData(name){
     </div>
     <div class="lc-err" id="sc-cho-err"></div>
     <button class="lc-btn staff" style="background:var(--teal);" onclick="scChoLogin()">
-      <i class="ti ti-building" style="font-size:14px;"></i> Enter Facility Admin Panel
+      <i class="ti ti-building" style="font-size:14px;"></i> Open the Facility dashboard
     </button>
   </div>
 
@@ -666,7 +666,7 @@ function nfLoadData(name){
     <div style="display:flex;align-items:center;gap:9px;">
       <div class="sc-cho-nav-icon">H</div>
       <div>
-        <div style="font-size:13px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">Facility Admin — <span id="sc-cho-fac-name"></span></div>
+        <div style="font-size:13px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">Facility dashboard — <span id="sc-cho-fac-name"></span></div>
         <div style="font-size:9px;color:rgba(255,255,255,0.7);font-weight:600;">Code: <span id="sc-cho-fac-code"></span> · NQAS | FAST</div>
       </div>
     </div>
@@ -779,8 +779,8 @@ function nfLoadData(name){
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
-<script src="assets/sc-login-3tier.27abd84fee.js" onerror="nfAssetFail(this)"></script>
-<script src="assets/data-sc-days.7879def481.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-login-3tier.ea1c50562d.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/data-sc-days.0eb3c1d272.js" onerror="nfAssetFail(this)"></script>
 
 <div class="report-modal-overlay" id="rpt-filter-modal">
   <div class="report-modal" style="max-width:560px;padding:0;overflow:hidden;">
@@ -929,7 +929,7 @@ function nfLoadData(name){
     <div style="padding:20px;overflow-y:auto;" id="demo-convert-body"></div>
   </div>
 </div>
-<script src="assets/sc-v2-core.60647aca2b.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-v2-core.e5a63c8bb0.js" onerror="nfAssetFail(this)"></script>
 <!-- ══════════════════════════════════════════════════════════════
      BUILD 1 — SC simplification
      · Single CHO login: My Cards + Facility Dashboard tabs
@@ -962,7 +962,7 @@ body.scb1-tabs-on .toast{bottom:84px;}
 body.scb1-light #bnav-board{display:none;}
 body.scb1-light #ws-guide-toggle-btn{display:none !important;}
 </style>
-<script src="assets/sc-build1.7a975d02d8.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-build1.176238c84a.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══════════════════════════════════════════════════════════════
      BUILD 2 — Full 60-day timeline with prep preview
@@ -1019,7 +1019,7 @@ body.scb1-light #ws-guide-toggle-btn{display:none !important;}
 .scm-meta span.pk{background:#fff;border:1px solid #E2E8F0;}
 </style>
 <script src="assets/data-sc-checkpoints.faf119347a.js" onerror="nfAssetFail(this)"></script>
-<script src="assets/sc-cp-master.01f36caf69.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-cp-master.c533185d48.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ STEP A.2 — NQAS hierarchy (AoC → Standard → ME) ══ -->
 <style>
@@ -1245,7 +1245,7 @@ body.scb1-light #ws-guide-toggle-btn{display:none !important;}
 .scdp-list td{padding:6px 8px;border-top:1px solid var(--br);vertical-align:top;color:var(--t1);}
 .scdp-list tr.ret td{opacity:0.5;}
 </style>
-<script src="assets/sc-day-placement.9020e8e4d1.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-day-placement.b469e958c3.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Mark Done guidance — which checkpoints still need an answer ══ -->
 <style>
@@ -1348,7 +1348,7 @@ function scMdNext(di){
 
 <!-- ══ BUILD 4.4 — laptop dashboards ══ -->
 <link rel="stylesheet" href="assets/sc-laptop.3b958233dd.css" onerror="nfAssetFail(this)">
-<script src="assets/sc-laptop.c55d6f8774.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-laptop.0765722bb0.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Readiness redesign + separate service dropdowns ══ -->
 <style>
@@ -1387,11 +1387,11 @@ function scMdNext(di){
 <script src="assets/shared-business-ind.a9e4d359b8.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Branded PDF reports ══ -->
-<script src="assets/shared-pdf-reports.77cff64a9b.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-pdf-reports.8686cfb18f.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Phases: Baseline · Implementation · Endline ══ -->
 <link rel="stylesheet" href="assets/sc-phases.07a2a34a96.css" onerror="nfAssetFail(this)">
-<script src="assets/sc-phases.97a845a0a6.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-phases.23968f3a3c.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Heat-map tabs, By Standard toggle, baseline incomplete ══ -->
 <style>
@@ -1409,7 +1409,7 @@ function scMdNext(di){
 <script>
 // ══ Heat-map tabs (Baseline · Implementation · Endline) + "By Standard" toggle + baseline-incomplete attention ══
 var _nfHeatTab={}, _nfStdOpen={};
-function nfHeatPhases(P){ return [{k:'B',label:'Baseline',agg:P.B&&P.B.assessed?P.B:null,note:'from Day 1'},{k:'I',label:'Implementation',agg:P.I,note:'from Day 8'},{k:'E',label:'Endline',agg:P.E,note:'from Day 50'}]; }
+function nfHeatPhases(P){ return [{k:'B',label:'Baseline',agg:P.B&&P.B.assessed?P.B:null,note:'from Day 1'},{k:'I',label:'Implementation',agg:P.I,note:'from Day 8'},{k:'E',label:'End-line',agg:P.E,note:'from Day 50'}]; }
 function nfHeatLatest(P){ var L=nfHeatPhases(P).filter(function(x){ return x.agg; }); return L.length?L[L.length-1]:{k:'B',label:'Baseline',agg:P.A}; }
 function nfHeatBlockHTML(hostId,P){
   var ph=nfHeatPhases(P), cur=_nfHeatTab[hostId], pick=ph.find(function(x){ return x.k===cur&&x.agg; })||nfHeatLatest(P), H=JSON.stringify(hostId).replace(/"/g,'&quot;');
@@ -1548,7 +1548,7 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 <script id="nf-qr" src="assets/vendor-qrcode.fabb956c75.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-sign-font-data" src="assets/vendor-sign-font.245deebf21.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-cert-css" rel="stylesheet" href="assets/shared-cert.50af794399.css" onerror="nfAssetFail(this)">
-<script id="nf-cert" src="assets/shared-cert.2164ff1b2b.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-cert" src="assets/shared-cert.53499078c8.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-wa-css">
 /* WhatsApp: help card, help links, one-tap message buttons */
 .nf-help{display:flex;gap:12px;align-items:center;margin-top:12px;border-radius:20px;padding:14px 16px;background:#fff;border:1px solid var(--br,#E2E8F0);}
@@ -1727,7 +1727,7 @@ function nfCoverDone(){
 </style>
 <!-- ══ Facility Admin dashboard — new look (Home · Staff · Readiness · More) ══ -->
 <link id="nf-fadm-css" rel="stylesheet" href="assets/sc-fadm.1fb01e6ce7.css" onerror="nfAssetFail(this)">
-<script id="nf-fadm" src="assets/sc-fadm.90548a4c15.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-fadm" src="assets/sc-fadm.4749059f95.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Action Plan → tell each staff member on WhatsApp ══ -->
 <style id="nf-plan-wa-css">
@@ -1917,23 +1917,23 @@ function nfCoverDone(){
 <script id="nf-imp" src="assets/shared-impact.2d70258cc2.js" onerror="nfAssetFail(this)"></script>
 
 <link id="nf-dash-css" rel="stylesheet" href="assets/shared-dashboards.c05c6b7e04.css" onerror="nfAssetFail(this)">
-<script id="nf-dash" src="assets/shared-dashboards.524d7561de.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dash" src="assets/shared-dashboards.e526ddccf2.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-css" rel="stylesheet" href="assets/dept-core.05bad2d39a.css" onerror="nfAssetFail(this)">
 <link id="nf-dept-screens-css" rel="stylesheet" href="assets/dept-screens.f786feb4e5.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-plan" src="assets/dept-plan.e35a7f99c9.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept" src="assets/dept-core.a901507589.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept" src="assets/dept-core.81b441613b.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-review" src="assets/dept-review.7e29837ee2.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-content" src="assets/dept-content.9efe67bbd1.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-screens" src="assets/dept-screens.acc4b50f26.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-screens" src="assets/dept-screens.902968c8d7.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-master-css" rel="stylesheet" href="assets/dept-master.d737b49cc8.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-master" src="assets/dept-master.0c48018e85.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-master-ui" src="assets/dept-master-ui.61064e6f9f.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-master-ui" src="assets/dept-master-ui.9f5ad479fd.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-summary" src="assets/dept-summary.12c5f15f53.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-admin" src="assets/dept-admin.e83e9004db.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-admin" src="assets/dept-admin.ee8d5ffab0.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-grad-css" rel="stylesheet" href="assets/dept-grad.c07401b26c.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-grad" src="assets/dept-grad.cb9a8cd134.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-hs-home-css" rel="stylesheet" href="assets/shared-hs-home.f2fa190596.css" onerror="nfAssetFail(this)">
-<script id="nf-hs-home" src="assets/shared-hs-home.58962e11de.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hs-home" src="assets/shared-hs-home.9c35587688.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-hs-settings-css">/* HealSol Settings refinements (21 Oct 2026) */
 .hsx-pick{display:block!important;max-height:280px;overflow-y:auto;border:1px solid var(--br);border-radius:10px;padding:6px 8px;}
 .hsx-grp+.hsx-grp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--br);}
@@ -1946,10 +1946,11 @@ function nfCoverDone(){
 .nfg-ttabs{margin:0 0 10px;gap:16px;}
 </style>
 <script id="nf-hs-settings" src="assets/shared-hs-settings.f1365f98fb.js" onerror="nfAssetFail(this)"></script>
-<link id="nf-fac-page-css" rel="stylesheet" href="assets/shared-fac-page.e2af7bdea4.css" onerror="nfAssetFail(this)">
-<script id="nf-fac-page" src="assets/shared-fac-page.9a90acc35f.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-fac-page-css" rel="stylesheet" href="assets/shared-fac-page.7d7df7d9b9.css" onerror="nfAssetFail(this)">
+<script id="nf-vocab" src="assets/shared-vocab.22993a26fc.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-fac-page" src="assets/shared-fac-page.f6d63b3ce5.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-fac-ready" src="assets/shared-fac-ready.3755ce3545.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-fac-sc" src="assets/shared-fac-sc.bd4a42b5be.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-fac-sc" src="assets/shared-fac-sc.5e2a4ee502.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-sc-draft" src="assets/shared-sc-draft.672ef4231a.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-day-score">// ══════════════════════════════════════════════════════════════
 // Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".

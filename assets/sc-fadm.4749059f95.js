@@ -12,7 +12,7 @@ var FA_HI={'Facility dashboard':'सुविधा डैशबोर्ड','H
   'Facility readiness':'सुविधा की तैयारी','Baseline':'बेसलाइन','Growth':'बढ़त','Checkpoints':'चेकपॉइंट','Loading…':'लोड हो रहा है…',
   'Programme':'कार्यक्रम','Account':'खाता','Change my password':'मेरा पासवर्ड बदलें','Help on WhatsApp':'WhatsApp पर मदद','Logout':'लॉग आउट','Live sessions':'लाइव सत्र',
   'Programme start date':'कार्यक्रम शुरू होने की तारीख','Set date':'तारीख सेट करें','people':'लोग','person':'व्यक्ति','Close':'बंद करें','you':'आप',
-  'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',
+  'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','cards in':'कार्ड जमा','no card days yet':'अभी कोई कार्ड दिन नहीं','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',
   'Downloads':'डाउनलोड','Refresh':'रीफ़्रेश'};
 function faT(k){ return (typeof _appLang!=='undefined'&&_appLang==='hi'&&FA_HI[k])?FA_HI[k]:k; }
 function faOn(){ var a=document.getElementById('sc-cho-app'); return !!(a&&a.classList.contains('fa')); }
@@ -150,11 +150,12 @@ function faStaffList(){
 function faStaffRender(){
   var cont=document.getElementById('sc-cho-staff-roster'); if(!cont) return;
   var st=faSt(), by={}; ((st&&st.agg&&st.agg.staff)||[]).forEach(function(s){ by[s.mob]=s; });
-  var list=faStaffList(), me=faDual()?String(choState.staffMobile):'';
+  var list=faStaffList(), me=faDual()?String(choState.staffMobile):'', S0=(typeof scSubAdminStaff!=='undefined'&&scSubAdminStaff)||{};
   if(!list.length){ cont.innerHTML='<div class="nf-empty">No staff added yet. Tap <b>'+faT('Add staff')+'</b> to start.</div>'; faStaffMeta(); return; }
   cont.innerHTML=list.map(function(s){
     var rd=getScRole(s.role||'CHO')||{}, r=(by[s.mob]||{}).res, you=String(s.mob)===me, m=scJs(s.mob);
-    var pg=r?'<div class="fa-pg"><div class="nf-bar"><i style="width:'+Math.max(0,Math.min(100,r.pct||0))+'%"></i></div><span>'+(r.daysDone||0)+' '+faT('cards done')+' · '+(r.pct||0)+'%</span></div>':'';
+    var cd=null; try{ var ff=faFac(); cd=fpScCardDays(ff,ff.progId||(st&&st.progId)||'nqas_12A',((st&&st.progress)||{})[s.mob]||{},s.mob,s.role||'CHO',scRolesFromRoster(S0)); }catch(e){}
+    var pg=cd&&cd.exp?'<div class="fa-pg"><div class="nf-bar"><i style="width:'+cd.pct+'%"></i></div><span>'+cd.done+' '+faT('of')+' '+cd.exp+' '+faT('cards in')+' · '+cd.pct+'%</span></div>':(r?'<div class="fa-pg"><span>'+faT('no card days yet')+'</span></div>':'');
     return '<div class="fa-p" data-mob="'+scEsc(s.mob)+'"><div class="fa-p-r"><span class="fa-av">'+scEsc(String(s.name||s.mob||'?').charAt(0).toUpperCase())+'</span>'
       +'<div class="fa-pb"><b>'+scEsc(s.name||s.mob)+'</b><small><span class="fa-chip" title="'+scEsc(rd.label||s.role)+'">'+scEsc(s.role||'CHO')+'</span>'+(you?'<span class="fa-chip you">'+faT('you')+'</span>':'')+'<span>📱 '+scEsc(s.mob)+'</span></small>'+pg+'</div>'
       +'<button type="button" class="fa-dots" aria-label="More options" onclick="faToggle(this)"><i class="ti ti-dots-vertical"></i></button></div>'
