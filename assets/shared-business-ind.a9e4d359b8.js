@@ -16,6 +16,9 @@ function nfTrialInfo(f){
   return {ended:over>=0,daysOver:over,endISO:end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0')};
 }
 function nfPriceFor(progId){ var items=((_nfBiz.pricing||{}).items)||[]; var it=items.find(function(x){ return x&&x.id===progId; }); return it&&it.price!=null?Number(it.price):null; }
+// registered facilities by type: "SC 6 (A 4 · B 2) · UPHC 1 · CHC 2" (21 Oct: every facility type, not only Sub-Centres)
+function nfBizTypeLine(){ var F=scMasterFacilities||{}, n={}, a=0, b=0; Object.keys(F).forEach(function(c){ var f=F[c]; if(!f||f.migratedTo) return; var t=typeof nfTypeOf==='function'?nfTypeOf(f):'sc'; n[t]=(n[t]||0)+1; if(t==='sc'){ if(String(f.progId||'').indexOf('12B')>=0) b++; else a++; } });
+  return ['sc','uphc','phc','chc'].filter(function(t){ return n[t]; }).map(function(t){ return (t==='sc'?'SC':((NF_LEVELS[t]||{}).short||t.toUpperCase()))+' '+n[t]+(t==='sc'?' (A '+a+' · B '+b+')':''); }).join(' · ')||'none'; }
 function nfBizStats(){
   var F=scMasterFacilities||{}, codes=Object.keys(F).filter(function(c){ var f=F[c]; return f&&!f.migratedTo; });
   var thisMonth=nfMonthKey(new Date().toISOString()), S={total:codes.length,typeA:0,typeB:0,paid:0,contract:0,trial:0,demos:0,demosMonth:0,converted:0,
@@ -44,7 +47,7 @@ function nfBizHTML(){
   var S=nfBizStats(), conv=S.demos?Math.round(S.converted/S.demos*100):0, nd=Object.keys(S.districts).filter(function(d){ return d!=='—'; }).length;
   var card=function(icon,cls,label,val,sub,onclick){ return '<div class="nfb-card '+cls+(onclick?' click':'')+'"'+(onclick?' onclick="'+onclick+'"':'')+'><span class="nfb-i"><i class="ti '+icon+'"></i></span><div><small>'+scEsc(label)+'</small><b>'+val+'</b><em>'+sub+'</em></div></div>'; };
   var h='<div class="nfb-head"><b><i class="ti ti-briefcase"></i> Business</b><span>HealSol only · as of '+scEsc(scFmtDate(scTodayStr()))+' · <button type="button" class="nfo-link" onclick="nfAdminView(\'business\')">Open Business tab — dates, charts, downloads</button></span></div><div class="nfb-grid">'
-    +card('ti-building-hospital','t','Registered '+NF_CFG.plural,S.total,'Type A '+S.typeA+' · Type B '+S.typeB,"nfAdminView('facilities')")
+    +card('ti-building-hospital','t','Registered facilities',S.total,nfBizTypeLine(),"nfAdminView('facilities')")
     +card('ti-circle-check','g','Paid',S.paid,nfRupee(S.paidSum)+' received')
     +card('ti-file-certificate','v','Contract',S.contract,'government / district contracts')
     +card('ti-hourglass','a','On trial',S.trial,S.due.length?'<span class="r">'+S.due.length+' trial'+(S.due.length===1?'':'s')+' ended</span>':'none ended yet')

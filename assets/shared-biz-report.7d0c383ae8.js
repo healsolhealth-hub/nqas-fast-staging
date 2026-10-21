@@ -23,7 +23,8 @@ function nfFacilityRows(){
   var F=scMasterFacilities||{}, today=scTodayStr(), L=(_nfBiz.leads)||{};
   return Object.keys(F).filter(function(c){ return F[c]&&!F[c].migratedTo; }).sort().map(function(c){
     var f=F[c], st=f.subscriptionStatus||'contract', prog=getProg(f.progId||'nqas_12A')||{}, staff=f.staff||{};
-    var cho=Object.keys(staff).map(function(m){ return Object.assign({mob:m},staff[m]); }).find(function(s){ return !s.disabled&&(s.role||'CHO')==='CHO'; })||{};
+    var LVt=(typeof NF_LEVELS!=='undefined'&&typeof nfTypeOf==='function')?(NF_LEVELS[nfTypeOf(f)]||{}):{}, icr=LVt.inCharge||'CHO';   // CHO · UPHC Coordinator · MO In-charge
+    var cho=Object.keys(staff).map(function(m){ return Object.assign({mob:m},staff[m]); }).find(function(s){ return !s.disabled&&(s.role||icr)===icr; })||{};
     var day=nfDayOf(f), agg=null; try{ agg=scFacAggFor(c); }catch(e){}
     var last=nfLastActivity(c), idle=last?nfDaysBetween(last,today):null, ti=nfTrialInfo(f), price=nfPriceFor(f.progId);
     var started=day!=null&&day>=1, done=started&&day>=(prog.days||60);
@@ -32,8 +33,8 @@ function nfFacilityRows(){
     else if(ti&&ti.daysOver>=-2) follow.push('Trial ends '+(ti.daysOver===0?'today':'in '+(-ti.daysOver)+' day'+(ti.daysOver===-1?'':'s')));
     if(!f.startDate) follow.push('Start date not set');
     if(started&&!done&&(idle==null||idle>=NF_IDLE_DAYS)) follow.push(idle==null?'No card saved yet':'No activity for '+idle+' days');
-    if(!cho.mob) follow.push('No CHO on the roster');
-    return {code:c, name:f.name||c, district:f.district||'', state:f.state||'', block:f.block||'', package:prog.name||f.progId||'', type:(f.progId||'').indexOf('12B')>=0?'B':'A',
+    if(!cho.mob) follow.push('No '+(LVt.inChargeLabel||'CHO')+' on the roster');
+    return {code:c, name:f.name||c, district:f.district||'', state:f.state||'', block:f.block||'', package:prog.name||f.progId||'', type:LVt.core==='dept'?(LVt.short||''):(f.progId||'').indexOf('12B')>=0?'B':'A', ftype:typeof nfTypeOf==='function'?nfTypeOf(f):'sc',
       status:st==='paid'?'Paid':st==='trial'?'Trial':'Contract', demo:(f.isDemo||f.convertedFromDemoCode)?'Yes':'No', converted:(f.isDemo||f.convertedFromDemoCode)&&st==='paid'?'Yes':'',
       enrolled:String(f.enrolledAt||f.trialStartDate||'').slice(0,10), start:f.startDate||'', day:day==null?'':(day<1?'Not started':Math.min(day,prog.days||60)),
       phase:!started?'Not started':done?'Completed':'In progress', readiness:agg&&agg.coverage&&agg.coverage.assessed?agg.pct:'',

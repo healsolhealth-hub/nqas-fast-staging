@@ -105,7 +105,18 @@ function nfOvType(t) { _nfOv.type = t; nfRenderOverview(); }
   // the PRO / package badge is for Sub-Centres; department-core facilities show their type
   if (typeof nfProBadge === 'function') { var oPro = nfProBadge; nfProBadge = function (f) { if (nfIsDeptFac(f)) return ' <span class="nfo-chip blue sm">' + scEsc((NF_LEVELS[nfTypeOf(f)] || {}).short || '') + '</span>'; return oPro.apply(this, arguments); }; }
   var oChip = nfStatusChip;
-  nfStatusChip = function (r) { if (r.dept && r.loading) return '<span class="nfo-chip grey">Loading…</span>'; return oChip.apply(this, arguments); };
+  nfStatusChip = function (r) {
+    if (!r.dept) return oChip.apply(this, arguments);
+    if (r.loading) return '<span class="nfo-chip grey">Loading…</span>';
+    var f = (scMasterFacilities || {})[r.code] || {}, g = f.graduation, s = _nfDs.map[r.code] || {};
+    if (g) { var R = { ready: ['green', 'NQAS Ready'], almost: ['amber', 'Almost ready'], notyet: ['red', 'Not yet ready'], incomplete: ['red', 'Incomplete'] }[g.result] || ['grey', g.result]; return '<span class="nfo-chip ' + R[0] + '">' + R[1] + '</span>'; }
+    if (!s.assessed) return '<span class="nfo-chip grey">Not assessed yet</span>';
+    var low = Object.keys(s.byDept || {}).filter(function (k) { return s.byDept[k] < 70; }).length, aoc = Object.keys(s.byAoc || {}).filter(function (k) { return s.byAoc[k] < 70; }).length;
+    if (s.pct < 70) return '<span class="nfo-chip amber">Overall below 70%</span>';
+    if (low) return '<span class="nfo-chip amber">' + low + ' department' + (low > 1 ? 's' : '') + ' below</span>';
+    if (aoc) return '<span class="nfo-chip amber">' + aoc + ' Area' + (aoc > 1 ? 's' : '') + ' below</span>';
+    return s.meets ? '<span class="nfo-chip green">✓ Meets NQAS</span>' : '<span class="nfo-chip grey">' + s.assessed + ' of ' + (s.total || 0) + ' assessed</span>';
+  };
 })();
 
 // ── Reports: UPHC · PHC · CHC (Excel) ──

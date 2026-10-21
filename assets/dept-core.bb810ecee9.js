@@ -317,7 +317,7 @@ function nfDeptFacCardHTML(code, fac, LV, adminBtns) {
     + '<div style="font-size:9.5px;color:var(--teal);font-weight:700;margin-top:2px;">' + e(pkg) + ' · ' + staffN + ' staff</div>'
     + '</div><div class="mfc-pct" style="color:var(--teal);font-size:13px;text-align:right;line-height:1.2;">' + (day && day >= 1 && day <= days ? 'Day ' + day + '<br><span style="font-size:9.5px;font-weight:700;color:var(--t3);">' + e(phase) + '</span>' : '') + '</div></div>'
     + '<div style="height:6px;border-radius:10px;background:var(--br);margin:8px 0;overflow:hidden;"><div style="height:100%;border-radius:10px;width:' + pct + '%;background:var(--teal);"></div></div>'
-    + '<div class="mfc-meta"><span>' + e(when) + '</span><span>' + e(LV.inChargeLabel || LV.inCharge) + ': ' + e(fac.choName || 'Not set') + '</span></div>'
+    + '<div class="mfc-meta"><span>' + e(when) + '</span><span>' + e(LV.inChargeLabel || LV.inCharge) + ': ' + e(fac.choName || (function () { var st = fac.staff || {}, m = Object.keys(st).find(function (k) { return st[k] && !st[k].disabled && (st[k].role || LV.inCharge) === LV.inCharge; }); return m ? (st[m].name || m) : 'Not set'; })()) + '</span></div>'
     + '<div style="display:flex;gap:6px;margin-top:8px;"><button class="mfc-btn mfc-open" onclick="ndOpenView(\'' + e(code) + '\')"><i class="ti ti-zoom-in" style="font-size:12px;"></i> Open</button>' + (adminBtns || '') + '</div>';
 }
 

@@ -829,7 +829,7 @@ function scqRenderReviews(){
   var k=scqActorKind(), all=scqVisibleSessions(), pend=scqPending();
   var tabs=[['approve','Needs approval ('+pend.length+')'],['calendar','Calendar'],['load','Champion load']].concat(k==='healsol'?[['records','Records & hours']]:[]);
   var h='<div class="scx-tabs" style="margin-bottom:12px;">'+tabs.map(function(t){ return '<button class="scx-tab'+(_scqTab===t[0]?' on':'')+'" onclick="scqSetTab(\''+t[0]+'\')">'+scEsc(t[1])+'</button>'; }).join('')+'</div>'
-    +(k==='healsol'?'<div class="scrv-intro">View only — Supervisors schedule and approve Peer Review sessions. To move a facility to another Supervisor or Champion, use Setup → Hand over a facility.</div>':'<button class="scx-btn" style="width:100%;margin-bottom:12px;" onclick="scqEditSession(null)"><i class="ti ti-calendar-plus"></i> Schedule a session</button>');
+    +(k==='healsol'?'<div class="scrv-intro">Supervisors approve Peer Review sessions and their summaries; you can schedule one with “+ Schedule a peer review”. To move a facility to another Supervisor or Champion, use Settings → People → Hand over a facility.</div>':'<button class="scx-btn" style="width:100%;margin-bottom:12px;" onclick="scqEditSession(null)"><i class="ti ti-calendar-plus"></i> Schedule a session</button>');
   if(_scqTab==='approve'){
     var prop=pend.filter(function(s){ return s.status==='proposed'; }), sub=pend.filter(function(s){ return s.status==='submitted'; });
     h+='<div class="scq-sec"><div class="scq-sec-t"><i class="ti ti-calendar-question"></i> Proposed sessions ('+prop.length+')</div>'+(prop.map(function(s){ return scqSessionRow(s,scqReviewActions(s)); }).join('')||'<div class="scx-empty">Nothing waiting.</div>')+'</div>'

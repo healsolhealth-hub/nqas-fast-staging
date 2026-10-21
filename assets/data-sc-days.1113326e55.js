@@ -2096,8 +2096,12 @@ async function phcCloseLead(id){
 // ── Pricing config (4 packages, not departments) ────────────────
 var _phcPricingCache=null;
 function _phcAllPriceableItems(){
-  return Object.keys(_SC_PKG_LABELS).map(function(id){return {id:id,label:_SC_PKG_LABELS[id]};});
+  var L=Object.keys(_SC_PKG_LABELS).map(function(id){return {id:id,label:'Sub-Centre · '+_SC_PKG_LABELS[id]};});
+  // 21 Oct: UPHC / PHC / CHC packages and a catch-up price per package (prices decided later; blank = not sold yet)
+  try{ ['uphc','phc','chc'].forEach(function(t){ var LV=NF_LEVELS[t]||{}; (LV.programmes||[]).forEach(function(p){ L.push({id:p.id,label:(LV.short||t.toUpperCase())+' · '+String(p.label).replace(/^[^—]*—\s*/,'')}); }); }); }catch(e){}
+  return L.concat(L.map(function(it){ return {id:'catchup_'+it.id,label:'Catch-up · '+it.label}; }));
 }
+function _phcPriceLabel(id){ var it=_phcAllPriceableItems().find(function(x){ return x.id===id; }); return it?it.label:(_SC_PKG_LABELS[id]||''); }
 async function phcLoadPricing(force){
   if(_phcPricingCache&&!force)return _phcPricingCache;
   var cfg=null;
@@ -2126,7 +2130,7 @@ async function adminSavePricing(){
   var cont=document.getElementById('pricing-list');if(!cont)return;
   var items=[];
   cont.querySelectorAll('input[data-item-id]').forEach(function(inp){
-    var v=inp.value.trim();items.push({id:inp.dataset.itemId,label:_SC_PKG_LABELS[inp.dataset.itemId]||'',price:v===''?null:Number(v)});
+    var v=inp.value.trim();items.push({id:inp.dataset.itemId,label:_phcPriceLabel(inp.dataset.itemId),price:v===''?null:Number(v)});
   });
   var ok=await fbSet('shared/sc_pricing_config',{items:items});
   _phcPricingCache=null;

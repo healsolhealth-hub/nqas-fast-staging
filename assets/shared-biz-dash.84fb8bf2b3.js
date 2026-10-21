@@ -74,7 +74,7 @@ function nfBizSheets(D){
     ['Cards saved',D.cards,'by '+D.active+' facilit'+(D.active===1?'y':'ies')],
     [],
     ['Position today','Value','Detail'],
-    ['Registered '+NF_CFG.plural,S.total,'Type A '+S.typeA+' · Type B '+S.typeB],
+    ['Registered facilities',S.total,nfBizTypeLine()],
     ['Paid',S.paid,''],['Contract (government / district)',S.contract,''],['On trial',S.trial,S.due.length+' trial(s) ended, not paid'],
     ['Self-registrations (all)',S.demos,S.converted+' paid ('+conv+'%)'],
     ['Payments received to date (₹)',D.payAllSum,D.payAll.length+' payment(s)'],
@@ -130,7 +130,7 @@ async function nfBizPdf(D){
   row([['New registrations',D.regs.length,'HealSol '+(D.regs.length-D.selfR.length)+' · self '+D.selfR.length,TEAL],['Self-registrations',D.selfR.length,D.selfPaid.length+' paid',[29,78,216]],
     ['Payments received',M(D.paySum),D.pays.length+' payment'+(D.pays.length===1?'':'s'),[21,128,61]],['Enquiries',D.enq.length,'district / bulk',[109,40,217]],['Cards saved',D.cards,'by '+D.active+' facilit'+(D.active===1?'y':'ies'),[146,64,14]]]);
   title('Position today');
-  row([['Registered',S.total,'Type A '+S.typeA+' · Type B '+S.typeB,TEAL],['Paid',S.paid,'contract '+S.contract,[21,128,61]],['On trial',S.trial,S.due.length+' ended, not paid',[146,64,14]],
+  row([['Registered',S.total,nfBizTypeLine(),TEAL],['Paid',S.paid,'contract '+S.contract,[21,128,61]],['On trial',S.trial,S.due.length+' ended, not paid',[146,64,14]],
     ['Payment due',S.due.length,S.dueValue?M(S.dueValue)+' expected':'nothing due',[185,28,28]],['Need follow-up',D.follow.length,'not moving '+D.idle.length,[185,28,28]],['Received to date',M(D.payAllSum),D.payAll.length+' payments',[21,128,61]]]);
   // money by month chart
   var ms=D.months.slice(-12);
@@ -194,7 +194,7 @@ async function nfRenderBizDash(load){
     +nfBizCard('ti-mail-opened','v','Enquiries received',D.enq.length,'district / bulk enrolment','enq')
     +nfBizCard('ti-cards','a','Cards saved',D.cards,'by '+D.active+' facilit'+(D.active===1?'y':'ies'),'')
     +'</div><div class="nfbd-sec"><b><i class="ti ti-layout-dashboard"></i> Position today</b><span>'+scEsc(scFmtDate(D.today))+'</span></div><div class="nfb-grid">'
-    +nfBizCard('ti-building-hospital','t','Registered '+NF_CFG.plural,S.total,'Type A '+S.typeA+' · Type B '+S.typeB,'dist')
+    +nfBizCard('ti-building-hospital','t','Registered facilities',S.total,nfBizTypeLine(),'dist')
     +nfBizCard('ti-circle-check','g','Paid',S.paid,'contract '+S.contract+' · received to date '+nfRupee(D.payAllSum),'')
     +nfBizCard('ti-hourglass','a','On trial',S.trial,S.due.length?'<span class="r">'+S.due.length+' ended, not paid</span>':'none ended yet','due')
     +nfBizCard('ti-alert-circle','r','Payment due',S.due.length,S.due.length?(S.dueValue?nfRupee(S.dueValue)+' expected':'trial ended, not paid'):'nothing due','due')

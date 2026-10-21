@@ -297,10 +297,12 @@ function ndGradResultHTML() {
 function ndGradIsHS() { return typeof appMode !== 'undefined' && appMode === 'sc-admin'; }
 function ndGradCanRecords() { if (ndGradIsHS()) return true; try { return typeof appMode !== 'undefined' && appMode === 'sc-district' && !(typeof _scSup !== 'undefined' && _scSup && _scSup.scope === 'block'); } catch (e) { return false; } }
 function ndGradAdminHTML() {   // short block at the top of the facility view
-  if (!_nd.view || !_nd.fac.startDate) return '';
+  if (!_nd.view) return '';
+  var strip = typeof hsFacStripHTML === 'function' ? '<div class="ng-hsstrip">' + hsFacStripHTML(_nd.code) + '</div>' : '';
+  if (!_nd.fac.startDate) return strip;
   var g = _nd.fac.graduation, r = g ? ND_GRAD_RES[g.result] : null, D = ndGradDates(), cu = ndCu();
   var st = g ? r.t + ' · ' + g.overall + '%' : ndProgDay() > ndShape().days ? 'Waiting for graduation' : 'Day ' + Math.max(0, Math.min(ndProgDay(), ndShape().days)) + ' of ' + ndShape().days;
-  return '<button type="button" class="nx-card ng-res ' + (r ? r.c : 'b') + '" onclick="ndGradOpen(\'admin\')"><span class="ng-ic"><i class="ti ti-timeline"></i></span><span style="flex:1;min-width:0"><small>Programme · ' + ndShape().days + ' days · close date ' + ndEsc(ndShortDate(D.close)) + '</small><b>' + ndEsc(st) + '</b><small>'
+  return strip + '<button type="button" class="nx-card ng-res ' + (r ? r.c : 'b') + '" onclick="ndGradOpen(\'admin\')"><span class="ng-ic"><i class="ti ti-timeline"></i></span><span style="flex:1;min-width:0"><small>Programme · ' + ndShape().days + ' days · close date ' + ndEsc(ndShortDate(D.close)) + '</small><b>' + ndEsc(st) + '</b><small>'
     + (cu ? 'Catch-up ' + (cu.done ? 'done' : 'on') + ' · ' : '') + 'Graduation, catch-up, certification records, certificates</small></span><i class="ti ti-chevron-right"></i></button>';
 }
 var _ndCerts = { code: '', list: null };

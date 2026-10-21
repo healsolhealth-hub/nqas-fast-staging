@@ -14,7 +14,7 @@ function nfInboxData(){
   rows.forEach(function(r){ var f=(scMasterFacilities||{})[r.code]||{}, raw=(_scRvAll||{})[r.code]||{};
     r.drafts=Object.keys(raw).filter(function(k){ return (raw[k]||{}).status==='draft'; }).length;
     var day=nfDayOf(f); r.blDone=7; try{ r.blDone=scBaselineStatus(f.progId||'nqas_12A',(scMasterProgress||{})[r.code]||{},f.staff||{}).filter(function(x){ return x.complete; }).length; }catch(e){}
-    r.blLate=day!=null&&day>7&&r.blDone<7; r.day=day;
+    r.blLate=day!=null&&day>7&&r.blDone<7; r.day=day; if(r.dept){ r.blDone=7; r.blLate=false; }   // the 7-day baseline rule is the Sub-Centre one
     var ctx=null; try{ ctx=scVCtx(r.code); }catch(e){}
     if(ctx){ if(!scQvIsOversight(r.code)) scVPending(ctx).forEach(function(p){ ver.push(Object.assign({code:r.code,fname:r.name},p)); });
       Object.keys(ctx.progress||{}).forEach(function(mob){ Object.keys(ctx.progress[mob]||{}).forEach(function(k){ var m=/^day_(\d+)$/.exec(k), rec=ctx.progress[mob][k]; if(m&&rec&&rec.verified&&rec.verifiedByRole==='Quality Champion') champ.push({code:r.code,fname:r.name,mob:mob,di:+m[1],rec:rec,name:(ctx.roster[mob]||{}).name||mob,role:(ctx.roster[mob]||{}).role||'CHO'}); }); }); }

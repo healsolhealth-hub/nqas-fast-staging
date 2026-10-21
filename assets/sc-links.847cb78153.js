@@ -71,7 +71,7 @@ async function nfEnsureLinks(){
 async function nfLinksLoad(){ try{ _nfLk.facs=await fbGet('sc_facilities')||{}; }catch(e){} try{ _nfUnits=await fbGet('sc_units')||{}; }catch(e){} }
 function nfLinksRender(){
   var body=document.getElementById('nfl-body'); if(!body) return;
-  var F=_nfLk.facs, codes=Object.keys(F).filter(function(k){ return F[k]&&!F[k].migratedTo; });
+  var F=_nfLk.facs, codes=Object.keys(F).filter(function(k){ return F[k]&&!F[k].migratedTo&&!(typeof nfTypeOf==='function'&&nfTypeOf(F[k])!=='sc'); });   // links are for Sub-Centres (UPHC / PHC / CHC are not linked here)
   var pend=codes.filter(function(k){ return F[k].linkProposal; }), un=codes.filter(function(k){ return !F[k].links&&!F[k].linkProposal; });
   var h='<div class="scx-sub" style="margin-top:4px;">Waiting for you ('+pend.length+')</div>';
   h+=pend.length?pend.map(function(k){ var f=F[k], p=f.linkProposal;
