@@ -6,7 +6,7 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "4ba675258aa1";
+const BUILD = "3573fd41c384";
 const ASSETS = [
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.0eb3c1d272.js",
@@ -49,8 +49,8 @@ const ASSETS = [
  "assets/sc-hierarchy.4d51074fef.js",
  "assets/sc-how-to-fix.7dbba620cc.js",
  "assets/sc-implementation.27485be94c.js",
- "assets/sc-laptop.0765722bb0.js",
  "assets/sc-laptop.3b958233dd.css",
+ "assets/sc-laptop.6008c00403.js",
  "assets/sc-linked-checks.047edf7bec.js",
  "assets/sc-links.847cb78153.js",
  "assets/sc-login-3tier.ea1c50562d.js",
@@ -83,10 +83,11 @@ const ASSETS = [
  "assets/shared-fac-page.f6d63b3ce5.js",
  "assets/shared-fac-ready.3755ce3545.js",
  "assets/shared-fac-sc.5e2a4ee502.js",
- "assets/shared-hs-home.9c35587688.js",
+ "assets/shared-hs-home.8afe936c63.js",
  "assets/shared-hs-home.f2fa190596.css",
+ "assets/shared-hs-roles.aed064dab9.js",
  "assets/shared-hs-settings.f1365f98fb.js",
- "assets/shared-impact.2d70258cc2.js",
+ "assets/shared-impact.9f7d5ac345.js",
  "assets/shared-impact.b1cba457b4.css",
  "assets/shared-one-login.6f478da916.css",
  "assets/shared-one-login.c204d6395c.js",

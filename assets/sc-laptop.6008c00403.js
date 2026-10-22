@@ -92,7 +92,7 @@ function nfOverviewHTML(rows,opts){
     +'<small>'+meets+' of '+rows.length+' facilit'+(rows.length===1?'y meets':'ies meet')+' NQAS criteria</small></div>'
     +opts.kpis.map(function(k){ return '<div class="nfo-kpi'+(k.onclick?' click':'')+'"'+(k.onclick?' onclick="'+k.onclick+'"':'')+'><small>'+scEsc(k.l)+'</small><b style="color:'+k.c+'">'+k.v+'</b><small>'+scEsc(k.s)+'</small></div>'; }).join('')+'</div>'
     +'<div class="nfo-grid"><div class="nfo-col">'
-    +'<div class="nfo-card"><div class="nfo-ch"><b>Facilities</b><span>'+rows.length+' · click a column to sort · click a row to open'+(opts.champ?' (view only)':'')+'</span></div><div class="nfo-tw">'+nfTableHTML(rows,opts.champ)+'</div></div>'
+    +'<div class="nfo-card"><div class="nfo-ch"><b>Facilities</b><span>'+rows.length+' · click a row to open'+(opts.champ?' (view only)':'')+'</span></div><div class="nfo-tw">'+nfTableHTML(rows,opts.champ)+'</div></div>'
     +'<div class="nfo-card"><div class="nfo-ch"><b>Standards across facilities</b><span>green ≥70% · amber at minimum · red below minimum'
     +' · <button type="button" class="nfo-link" onclick="_nfOv.allStd=!_nfOv.allStd;nfRenderOverview()">'+(_nfOv.allStd?'Show the weakest 12':'Show all Standards')+'</button></span></div>'+nfHeatHTML(rows)+'</div></div>'
     +'<div class="nfo-side">'+(opts.attention!=null?'<div class="nfo-card"><div class="nfo-ch"><b><i class="ti ti-alert-triangle" style="color:var(--red-dk)"></i> Needs attention</b></div>'+opts.attention+'</div>':'')

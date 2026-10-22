@@ -221,7 +221,7 @@ function nfImpMyKey(){ if(appMode==='sc-champion'&&typeof _scq!=='undefined'&&_s
     return oO.call(this,rows,opts); }; })();
 (function(){ if(typeof scqRenderChampionApp!=='function') return; var oA=scqRenderChampionApp;
   scqRenderChampionApp=function(){ var r=oA.apply(this,arguments);
-    try{ var app=document.getElementById('scq-app'); var me=nfImpMyKey(); if(!app||!me||document.getElementById('nfi-scq')) return r; var main=app.querySelector('.scq-main')||app;
+    try{ var app=document.getElementById('scq-app'); var me=nfImpMyKey(); if(!app||!me||document.getElementById('nfi-scq')||typeof nfRenderChampOverview==='function') return r;   // one impact card: the Overview's (consistency review 22 Oct) var main=app.querySelector('.scq-main')||app;
       var d=document.createElement('div'); d.id='nfi-scq'; d.innerHTML=nfImpCardHTML(_nfImp.key===me.key?_nfImp.rec:null,'champion'); main.insertBefore(d,main.firstChild);
       Promise.all([nfImpCfg(),nfImpLoad(me.key)]).then(function(a){ var x=document.getElementById('nfi-scq'); if(x) x.innerHTML=nfImpCardHTML(a[1],'champion'); }); }catch(e){}
     return r; }; })();

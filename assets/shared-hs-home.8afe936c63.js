@@ -24,8 +24,9 @@ function hsTodayIso() { return scTodayStr(); }
 function hsAddDays(iso, n) { var p = String(iso).split('-'), d = new Date(+p[0], +p[1] - 1, +p[2] + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function hsShortDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? (+m[3]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m[2] - 1] : ''; }
 // one record per facility, the same shape for every type
-function hsInfo(code) {
-  var F = scMasterFacilities || {}, f = F[code] || {}, t = nfTypeOf(f), dept = t !== 'sc', LV = NF_LEVELS[t] || {}, today = hsTodayIso();
+function hsInfo(code, f0, agg0, prog0) {   // f0 / agg0 / prog0: the Champion's own copies (the HealSol lists use the master)
+  if (typeof f0 !== 'object') { f0 = null; agg0 = null; prog0 = null; }   // called from .map(hsInfo): index / array are not copies
+  var F = scMasterFacilities || {}, f = f0 || F[code] || {}, t = nfTypeOf(f), dept = t !== 'sc', LV = NF_LEVELS[t] || {}, today = hsTodayIso();
   var staff = f.staff || {}, ic = LV.inCharge || 'CHO', who = Object.keys(staff).find(function (m) { return staff[m] && !staff[m].disabled && (staff[m].role || ic) === ic; });
   var o = { code: code, f: f, type: t, dept: dept, name: f.name || code, district: f.district || '', inCharge: who ? (staff[who].name || who) : '', inChargeMob: who || '', inChargeLabel: LV.inChargeLabel || ic,
     grad: f.graduation || null, cu: f.catchup && f.catchup.on ? f.catchup : null, staffN: Object.keys(staff).filter(function (m) { return staff[m] && !staff[m].disabled; }).length };
@@ -39,13 +40,13 @@ function hsInfo(code) {
     if (s && s.tl) { var G = typeof nfgCfgFor === 'function' ? nfgCfgFor(t) : { green: 80, amber: 60, missDays: 3, blLate: 10 }, tl = s.tl;
       o.comp = { pct: tl.pct, oldMiss: tl.oldMiss, state: tl.pct < G.amber || (s.day || 0) > G.blLate && !tl.blDone ? 'r' : tl.pct < G.green || tl.oldMiss > G.missDays ? 'a' : 'g' }; }
   } else {
-    var p = getProg(f.progId || 'nqas_12A') || {}, a = scFacAggFor(code), b = a.baseline || {};
+    var p = getProg(f.progId || 'nqas_12A') || {}, a = agg0 || scFacAggFor(code), b = a.baseline || {};
     o.days = p.days || 60; o.S = { bN: 7, iN: 49, e1: 50, eN: 56, r1: 57, rN: 60, days: o.days };
     o.rawDay = f.startDate ? Math.floor((Date.parse(today) - Date.parse(f.startDate)) / 86400000) + 1 : null;
     o.agg = a; o.pct = a.coverage && a.coverage.assessed ? a.pct : null; o.base = b.assessed ? b.pct : null; o.assessed = a.coverage ? a.coverage.assessed : 0; o.cov = a.coverage ? a.coverage.pct : null;
     o.byStd = {}; Object.keys(a.byStd || {}).forEach(function (k) { var x = a.byStd[k]; if (x && x.assessed) o.byStd[k] = x.pct; });
     var acts = scRvList((_scRvAll || {})[code] || {}); o.overdue = acts.filter(function (x) { return x.status !== 'draft' && x.status !== 'closed' && x.dueDate && x.dueDate < today; }).length;
-    try { var c = nfgCompFor(code, f, (scMasterProgress || {})[code] || {}, (_scRvAll || {})[code] || null); o.comp = c; } catch (e) {}
+    try { var c = nfgCompFor(code, f, prog0 || (scMasterProgress || {})[code] || {}, (_scRvAll || {})[code] || null); o.comp = c; } catch (e) {}
   }
   var d = o.rawDay, S2 = o.S;
   o.day = d == null ? null : Math.min(d, o.days);

@@ -1,0 +1,89 @@
+// ══════════════════════════════════════════════════════════════
+// SUPERVISOR · DISTRICT ADMIN · QUALITY CHAMPION — the same Facilities table and Reports page as HealSol
+// (consistency review items 5–7, agreed 22 Oct 2026). Each role sees only its own facilities; nothing HealSol-only
+// (enrol, access / payments, Manage ⋯).
+// ══════════════════════════════════════════════════════════════
+var _hsr = { type: '', dist: '', phase: '', status: '' };
+function hsrRole() { try { return document.body.classList.contains('nf-champ') ? 'champion' : nfAdminRole(); } catch (e) { return ''; } }
+function hsrOn() { var r = hsrRole(); return !!r && r !== 'admin'; }
+// one row object per facility, from the role's own rows (nfAdminRows / nfChampRows)
+function hsrInfo(r, champ) {
+  var f = champ ? ((_scq.facs || {})[r.code] || {}) : null, o = hsInfo(r.code, f, r.agg, champ ? ((_scq.prog || {})[r.code] || {}) : null);
+  o.toVerify = r.toVerify || 0; o.next = r.next || null; if (r.overdue != null) o.overdue = r.overdue; return o;
+}
+function hsrFilter(list) {
+  var q = String(_nfOv.q || '').trim().toLowerCase();
+  return list.filter(function (o) {
+    if (q && (o.name + ' ' + o.code + ' ' + o.district + ' ' + o.inCharge).toLowerCase().indexOf(q) < 0) return false;
+    if (_hsr.type && o.type !== _hsr.type) return false; if (_hsr.dist && o.district !== _hsr.dist) return false;
+    if (_hsr.phase === 'inprog' ? !o.inProg : _hsr.phase && o.phase !== _hsr.phase) return false;
+    if (_hsr.status === 'behind' && !o.behind) return false; if (_hsr.status === 'overdue' && !o.overdue) return false; if (_hsr.status === 'verify' && !o.toVerify) return false;
+    return true; });
+}
+// the table: the HealSol Facilities table without Access / Manage; Supervisor + Champion get "To verify"; Champion its session buttons
+function hsrTableHTML(list, champ, compact) {
+  var sk = _nfOv.sort, dir = _nfOv.dir || -1, val = function (o) { return sk === 'name' ? o.name : sk === 'day' ? (o.rawDay == null ? -99 : o.rawDay) : sk === 'overdue' ? (o.overdue || 0) : sk === 'verify' ? (o.toVerify || 0) : sk === 'change' ? (o.pct != null && o.base != null ? o.pct - o.base : -999) : (o.pct == null ? -1 : o.pct); };
+  var sorted = list.slice().sort(function (a, b) { if (!sk) return (b.behind - a.behind) || ((b.rawDay || -1) - (a.rawDay || -1)) || a.name.localeCompare(b.name);
+    var x = val(a), y = val(b), c = typeof x === 'string' ? x.localeCompare(y) : x - y; return (c * dir) || a.name.localeCompare(b.name); });
+  var th = function (k, l, cls) { return '<th' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" class="hs-sort" onclick="nfOvSort(\'' + k + '\')">' + l + (sk === k ? (dir < 0 ? ' ↓' : ' ↑') : '') + '</button></th>'; };
+  var role = hsrRole(), ver = role !== 'district', cols = (compact ? 4 : 6) + (ver ? 1 : 0) + (champ ? 1 : 0);
+  return '<table class="nfo-t hs-ft hs-rt' + (compact ? ' cmp' : '') + '"><thead><tr>' + th('name', 'Facility') + (compact ? '' : th('day', 'Day · phase')) + th('readiness', 'Readiness (baseline → now)') + '<th>Result</th>' + (compact ? '' : '<th class="c">On time</th>') + th('overdue', 'Overdue actions', 'c') + (ver ? th('verify', 'To verify', 'c') : '') + (champ ? '<th></th>' : '') + '</tr></thead><tbody>'
+    + (sorted.length ? sorted.map(function (o) { var ch = o.pct != null && o.base != null ? o.pct - o.base : null, J = hsJ(o.code);
+      return '<tr class="nfo-row' + (o.behind ? ' hs-warn' : '') + '" onclick="' + (champ ? "nfChampFacility('" + J + "')" : "scDrillIn('" + J + "')") + '"><td data-l=""><b>' + hsE(o.name) + '</b> ' + hsTypeChip(o.type) + '<small>' + hsE([o.district || o.code, o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : 'No ' + o.inChargeLabel + ' yet'].join(' · ')) + '</small>' + (compact ? '<small>' + (o.phase === 'notstarted' ? 'Not started · ' + (o.f.startDate ? 'starts ' + hsE(hsShortDate(o.f.startDate)) : 'start date not set') : 'Day ' + (o.phase === 'catchup' ? o.days : o.day) + ' · ' + hsE(HS_PHASE[o.phase])) + (o.onTime != null ? ' · ' + o.onTime + '% on time' : '') + '</small>' : '') + '</td>'
+        + (compact ? '' : '<td data-l="Day">' + (o.phase === 'notstarted' ? 'Not started<small>' + (o.f.startDate ? 'starts ' + hsE(hsShortDate(o.f.startDate)) : 'start date not set') + '</small>' : 'Day ' + (o.phase === 'catchup' ? o.days : o.day) + '<small>' + hsE(HS_PHASE[o.phase]) + '</small>') + '</td>')
+        + '<td data-l="Readiness">' + (o.pct == null ? '<span class="hs-dim">' + (o.loading ? 'Loading…' : o.phase === 'notstarted' ? 'Not assessed yet' : 'No cards yet') + '</span>' : (o.base != null ? o.base + '% → ' : '') + '<b>' + o.pct + '%</b>' + (ch != null ? ' <b class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch + '</b>' : '') + (o.cov != null ? '<small>' + o.cov + '% checked</small>' : '')) + '</td>'
+        + '<td data-l="Result">' + hsResult(o) + '</td>' + (compact ? '' : '<td data-l="On time" class="c' + (o.behind ? ' red' : '') + '">' + (o.onTime == null ? '—' : o.onTime + '%') + '</td>') + '<td data-l="Overdue actions" class="c' + (o.overdue ? ' red' : '') + '">' + (o.overdue || 0) + '</td>'
+        + (ver ? '<td data-l="To verify" class="c">' + (o.toVerify || 0) + '</td>' : '')
+        + (champ ? '<td class="nfo-acts"><button type="button" class="hs-btn" onclick="event.stopPropagation();scqOpenActionPlan(\'' + J + '\')">Action Plan</button><button type="button" class="hs-btn p" onclick="event.stopPropagation();scqEditSession(null,\'' + J + '\')">' + (o.next ? 'Session ' + hsE(hsShortDate(String(o.next.startAt || '').slice(0, 10))) : 'Plan session') + '</button></td>' : '') + '</tr>'; }).join('')
+      : '<tr><td colspan="' + cols + '" class="nfo-empty">' + (_nfOv.q ? 'No facility matches "' + hsE(_nfOv.q) + '".' : 'No facility matches these filters.') + '</td></tr>') + '</tbody></table>';
+}
+// Overview: the old table in nfOverviewHTML becomes the shared one
+(function () {
+  if (typeof nfTableHTML !== 'function') return;
+  var oT = nfTableHTML;
+  nfTableHTML = function (rows, champ) { if (!hsrOn() && !champ) return oT.apply(this, arguments);
+    try { return hsrTableHTML(hsrFilter(rows.map(function (r) { return hsrInfo(r, champ); })), champ, true); } catch (e) { console.warn('[HSR] table', e); return oT.apply(this, arguments); } };
+})();
+// Facilities page (Supervisor · District Admin)
+function hsrBox(id, v) { var main = document.querySelector('#admin-app .admin-main'); if (!main) return null; var b = document.getElementById(id); if (!b) { b = document.createElement('div'); b.id = id; b.dataset.nfv = v; b.className = 'hs-page'; main.insertBefore(b, main.firstChild); } return b; }
+function hsrSet(k, v) { if (k === 'q') _nfOv.q = v; else _hsr[k] = v; hsrRenderFac(); if (k === 'q') { var i = document.getElementById('hsr-fq'); if (i) { i.focus(); try { i.setSelectionRange(v.length, v.length); } catch (e) {} } } }
+function hsrRenderFac() {
+  if (!hsrOn() || hsrRole() === 'champion') return; var box = hsrBox('hsr-fac', 'facilities'); if (!box) return;
+  var all = nfAdminRows().map(function (r) { return hsrInfo(r, false); }), list = hsrFilter(all), dist = {}, types = {};
+  all.forEach(function (o) { if (o.district) dist[o.district] = 1; types[o.type] = 1; });
+  var sel = function (k, opts) { return '<select class="hs-sel" aria-label="' + k + '" onchange="hsrSet(\'' + k + '\',this.value)">' + opts.map(function (x) { return '<option value="' + hsE(x[0]) + '"' + (_hsr[k] === x[0] ? ' selected' : '') + '>' + hsE(x[1]) + '</option>'; }).join('') + '</select>'; };
+  var role = hsrRole(), behind = all.filter(function (o) { return o.behind; }).length, inprog = all.filter(function (o) { return o.inProg; }).length;
+  box.innerHTML = '<div class="nfo-top"><div><h1>Facilities</h1><small>' + all.length + ' ' + (role === 'district' ? 'in your district · view only' : 'assigned to you') + (Object.keys(dist).length ? ' · ' + hsE(Object.keys(dist).sort().join(', ')) : '') + ' · ' + inprog + ' in programme' + (behind ? ' · ' + behind + ' behind schedule' : '') + '</small></div></div>'
+    + '<div class="hs-filters"><label class="hs-search"><i class="ti ti-search"></i><input id="hsr-fq" type="search" aria-label="Search facilities" placeholder="Search name, ID, in-charge" value="' + hsE(_nfOv.q || '') + '" oninput="hsrSet(\'q\',this.value)"></label>'
+    + (Object.keys(types).length > 1 ? sel('type', [['', 'All types']].concat(HS_TYPES.filter(function (t) { return types[t]; }).map(function (t) { return [t, hsShort(t)]; }))) : '')
+    + (Object.keys(dist).length > 1 ? sel('dist', [['', 'All districts']].concat(Object.keys(dist).sort().map(function (d) { return [d, d]; }))) : '')
+    + sel('phase', [['', 'Any phase'], ['inprog', 'In programme'], ['notstarted', 'Not started'], ['baseline', 'Baseline'], ['impl', 'Implementation'], ['endline', 'End-line'], ['ready', 'Readiness week'], ['closing', 'Waiting for graduation'], ['graduated', 'Graduated'], ['catchup', 'Catch-up']])
+    + sel('status', [['', 'Any status'], ['behind', 'Behind schedule'], ['overdue', 'Overdue actions']].concat(role === 'district' ? [] : [['verify', 'Cards to verify']]))
+    + (_hsr.type || _hsr.dist || _hsr.phase || _hsr.status || _nfOv.q ? '<button type="button" class="hs-link" onclick="_hsr.type=_hsr.dist=_hsr.phase=_hsr.status=\'\';_nfOv.q=\'\';hsrRenderFac()">Clear filters</button>' : '') + '</div>'
+    + '<div class="nfo-card hs-tw">' + hsrTableHTML(list, false) + '</div>';
+}
+// Reports page (Supervisor · District Admin): the HealSol cards they may open
+function hsrRenderReports() {
+  if (!hsrOn() || hsrRole() === 'champion') return; var box = hsrBox('hsr-rep', 'reports'); if (!box) return;
+  var role = hsrRole(), card = function (title, txt, who, btns) { return '<div class="nfo-card hs-rc"><b>' + title + '</b><p>' + txt + '</p><small>' + who + '</small><div>' + btns + '</div></div>'; };
+  var b = function (l, js, p) { return '<button type="button" class="hs-btn' + (p ? ' p' : '') + '" onclick="' + js + '">' + l + '</button>'; };
+  var rows = nfAdminRows(), hasSc = rows.some(function (r) { return !r.dept; }), hasDept = typeof nfDeptCodes === 'function' && nfDeptCodes().length;
+  box.innerHTML = '<div class="nfo-top"><div><h1>Reports</h1><small>Your ' + rows.length + ' facilit' + (rows.length === 1 ? 'y' : 'ies') + ' · what each report contains and its format</small></div><button type="button" class="nfo-ic" title="Refresh" aria-label="Refresh" onclick="scRefreshDashboard()"><i class="ti ti-refresh"></i></button></div><div class="hs-rg">'
+    + (hasSc ? card('Facility progress — Sub-Centres', 'Readiness, baseline and change, NQAS check and actions for each of your Sub-Centres, by package and Area of Concern.', 'Printable', b('Open', "openReportModal('prog')", 1)) : '')
+    + (hasDept ? card('Facility progress — UPHC · PHC · CHC', 'One row per facility: day, readiness, baseline and change, NQAS result, actions, department-days to check — with sheets by department and by Area of Concern.', 'Excel', b('Download', 'nfDeptReport()', 1)) : '')
+    + card('One facility (printable)', 'A facility\'s full report: readiness, weakest Standards, gaps and actions, staff.', 'PDF / print', b('Choose facility…', "openReportModal('facility')"))
+    + (role === 'district' ? card('Graduation &amp; certificates', 'Results, criteria below the mark, catch-ups, NHSRC / LaQshya / MusQan status and certificates issued, for your facilities.', 'Excel', b('Download', 'hsGradReport()', 1))
+      : card('Staff &amp; roles', 'Each staff member\'s cards, verification and readiness, by role.', 'Printable', b('Open', "openReportModal('role')", 1)))
+    + '</div>';
+}
+(function () {
+  if (typeof nfAdminView !== 'function') return;
+  var oV = nfAdminView;
+  nfAdminView = function (v) { var r = oV.apply(this, arguments);
+    try { document.body.classList.toggle('hs-roles', hsrOn()); if (hsrOn()) { if (v === 'facilities') hsrRenderFac(); else if (v === 'reports') hsrRenderReports(); } } catch (e) { console.warn('[HSR] view', e); }
+    return r; };
+  if (typeof nfRenderOverview === 'function') { var oO = nfRenderOverview;
+    nfRenderOverview = function () { var r = oO.apply(this, arguments);
+      try { document.body.classList.toggle('hs-roles', hsrOn()); if (hsrOn() && hsrRole() !== 'champion') { if (_nfOv.view === 'facilities') hsrRenderFac(); if (_nfOv.view === 'reports') hsrRenderReports(); } } catch (e) {}
+      return r; }; }
+})();

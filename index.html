@@ -1348,7 +1348,7 @@ function scMdNext(di){
 
 <!-- ══ BUILD 4.4 — laptop dashboards ══ -->
 <link rel="stylesheet" href="assets/sc-laptop.3b958233dd.css" onerror="nfAssetFail(this)">
-<script src="assets/sc-laptop.0765722bb0.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-laptop.6008c00403.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Readiness redesign + separate service dropdowns ══ -->
 <style>
@@ -1914,7 +1914,7 @@ function nfCoverDone(){
 
 <!-- ══ Step 3 of CQI: Social impact — levels, stars, shareable card with QR, Verify page, partner strip ══ -->
 <link id="nf-imp-css" rel="stylesheet" href="assets/shared-impact.b1cba457b4.css" onerror="nfAssetFail(this)">
-<script id="nf-imp" src="assets/shared-impact.2d70258cc2.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-imp" src="assets/shared-impact.9f7d5ac345.js" onerror="nfAssetFail(this)"></script>
 
 <link id="nf-dash-css" rel="stylesheet" href="assets/shared-dashboards.c05c6b7e04.css" onerror="nfAssetFail(this)">
 <script id="nf-dash" src="assets/shared-dashboards.e526ddccf2.js" onerror="nfAssetFail(this)"></script>
@@ -1933,7 +1933,7 @@ function nfCoverDone(){
 <link id="nf-dept-grad-css" rel="stylesheet" href="assets/dept-grad.c07401b26c.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-grad" src="assets/dept-grad.3d65c1e346.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-hs-home-css" rel="stylesheet" href="assets/shared-hs-home.f2fa190596.css" onerror="nfAssetFail(this)">
-<script id="nf-hs-home" src="assets/shared-hs-home.9c35587688.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hs-home" src="assets/shared-hs-home.8afe936c63.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-hs-settings-css">/* HealSol Settings refinements (21 Oct 2026) */
 .hsx-pick{display:block!important;max-height:280px;overflow-y:auto;border:1px solid var(--br);border-radius:10px;padding:6px 8px;}
 .hsx-grp+.hsx-grp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--br);}
@@ -1944,6 +1944,23 @@ function nfCoverDone(){
 .pr-grp{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);margin:12px 0 2px;}
 .pr-tabs{margin-bottom:4px;}
 .nfg-ttabs{margin:0 0 10px;gap:16px;}
+/* Supervisor · District Admin · Champion: the shared Facilities table and Reports page (hs-roles.js) */
+body.hs-roles.nfv-facilities .admin-main > #sc-master-grid{display:none!important;}
+body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none!important;}
+.hs-rt td small{display:block;}
+@media (max-width:700px){
+  .nfo-tw .hs-rt, .hs-tw .hs-rt{min-width:0;}
+  .hs-rt thead{display:none;}
+  .hs-rt tr.nfo-row{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:12px 4px;border-bottom:1px solid var(--br,#DCE4E1);}
+  .hs-rt tr.nfo-row td{border:0!important;padding:0!important;text-align:left!important;font-size:12.5px;}
+  .hs-rt tr.nfo-row td:first-child{grid-column:1 / -1;font-size:14px;}
+  .hs-rt tr.nfo-row td[data-l]:not([data-l=""]):before{content:attr(data-l);display:block;font-size:10.5px;color:var(--t3,#6B7A75);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .hs-rt tr.nfo-row td.nfo-acts{grid-column:1 / -1;display:flex;gap:8px;}
+}
+.hs-rt.cmp td:first-child small + small{color:var(--t2,#4F5E59);}
+/* sortable headers in the shared role table */
+.hs-rt th .hs-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: inherit; min-height: 32px; }
+.hs-rt th .hs-sort:hover { color: #134A41; text-decoration: underline; }
 </style>
 <script id="nf-hs-settings" src="assets/shared-hs-settings.f1365f98fb.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-fac-page-css" rel="stylesheet" href="assets/shared-fac-page.7d7df7d9b9.css" onerror="nfAssetFail(this)">
@@ -1953,6 +1970,7 @@ function nfCoverDone(){
 <script id="nf-fac-page" src="assets/shared-fac-page.f6d63b3ce5.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-fac-ready" src="assets/shared-fac-ready.3755ce3545.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-fac-sc" src="assets/shared-fac-sc.5e2a4ee502.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hs-roles" src="assets/shared-hs-roles.aed064dab9.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-sc-draft" src="assets/shared-sc-draft.672ef4231a.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-day-score">// ══════════════════════════════════════════════════════════════
 // Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".
