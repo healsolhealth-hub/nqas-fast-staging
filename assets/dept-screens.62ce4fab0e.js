@@ -69,21 +69,23 @@ function ndTodayHTML() {
   var doneN = fillToday.filter(function (d) { var c = ndPc(d.id, day)[me] || {}; return c.done || c.absent; }).length;
   var scored = 0, total = 0; fillToday.forEach(function (d) { var c = ndPc(d.id, day)[me] || {}, ids = ndDayIds(d.id, day); total += ids.length; scored += ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length; });
   var cta = _nd.view || !fillToday.length ? '<button type="button" class="nx-cta" onclick="ndTab(\'cards\')">Open the cards ›</button>'
-    : t.fill.length ? '<button type="button" class="nx-cta" onclick="ndGoCard(\'' + t.fill[0].id + '\',' + day + ')">Continue today\'s card · ' + scored + ' of ' + total + ' done ›</button>'
+    : t.fill.length ? '<button type="button" class="nx-cta" onclick="ndGoCard(\'' + t.fill[0].id + '\',' + day + ')">Open today\'s card · ' + scored + ' of ' + total + ' done ›</button>'
     : '<button type="button" class="nx-cta" onclick="ndTab(\'cards\')">All done for today ✓</button>';
   var h = '<div class="nx">' + top
     + '<div class="nx-hero"><div class="nx-hero-row"><div class="nx-hero-txt"><div class="nx-hero-k">' + (cuD ? 'Catch-up · day ' + Math.min(day - 100, ND_GRAD.cuDays) + ' / ' + ND_GRAD.cuDays : 'Day ' + d0 + ' / ' + n) + ' · ' + ndEsc(ndWeekLabel(d0)) + '</div>'
-    + '<div class="nx-hero-t">' + ndEsc((cuD ? day > ndLastDay() : day > n) ? (_nd.fac.graduation ? 'Programme complete · ' + (ND_GRAD_RES[_nd.fac.graduation.result] || {}).t : 'Programme complete') : nxTheme(d0)) + '</div>'
+    + '<div class="nx-hero-t">' + ndEsc((cuD ? day > ndLastDay() : day > n) ? (_nd.fac.graduation ? 'Programme complete · ' + (ND_GRAD_RES[_nd.fac.graduation.result] || {}).t : 'Programme complete') : nxTheme(d0)) + '</div></div>'
+    + '<div class="nx-ring">' + nxRing(F.overall === null ? 0 : F.overall, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + (F.overall === null ? '–' : F.overall + '%') + '</b><small>facility</small></span></div></div>'
+    + oneStrip(cuD ? 4 : onePhaseIdx(day, S))
     + '<div class="nx-hero-n"><div><b>' + (R.overall === null ? '–' : R.overall + '%') + '</b><small>' + (_nd.view || !nxFillIds().length ? 'Facility readiness' : 'My readiness') + '</small></div><i></i>'
-    + (gain !== null ? '<div><b class="acc">' + (gain >= 0 ? '+' : '') + gain + '</b><small>since baseline</small></div>' : '<div><b>' + R.n + '</b><small>of ' + R.of + ' assessed</small></div>') + '</div></div>'
-    + '<div class="nx-ring">' + nxRing(my, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + my + '%</b><small>Facility ' + (F.overall === null ? '–' : F.overall + '%') + '</small></span></div></div>' + cta + '</div>';
+    + (gain !== null ? '<div><b class="acc">' + (gain >= 0 ? '+' : '') + gain + '</b><small>since baseline</small></div>' : '<div><b>' + R.n + '</b><small>of ' + R.of + ' checked</small></div>')
+    + (total ? '<i></i><div><b>' + scored + ' / ' + total + '</b><small>checked today</small></div>' : '') + '</div>' + cta + '</div>';
   // Step 3: programme end (readiness week, graduation result, catch-up); HealSol / District: the programme block
   if (_nd.view) h += ndGradAdminHTML();
   h += ndGradTodayHTML();
   if (day <= n && day < ndShape().e1) h += '<div class="nx-ban o"><b>Graduation on Day ' + n + ' · ' + ndEsc(nxLongDate(nxDateOf(n))) + '</b><span>Finish any missing cards and comparisons as you go — the end-line starts on Day ' + ndShape().e1 + '.</span></div>';
   if (!_nd.view && nxFillIds().length) {
     var ts = nxTeamOnTime(), late = t.late.length, chips = [];
-    if (ts !== null) chips.push('<span class="nx-chip ' + (ts >= 80 ? 'g' : ts >= 60 ? 'a' : 'r') + '">Team: ' + (ts >= 80 ? 'On track' : ts >= 60 ? 'Slightly behind' : 'Behind') + ' · ' + ts + '% cards in</span>');
+    if (ts !== null) chips.push('<span class="nx-chip ' + (ts >= 80 ? 'g' : ts >= 60 ? 'a' : 'r') + '">Team: ' + (ts >= 80 ? 'On track' : ts >= 60 ? 'Slipping' : 'Behind') + ' · ' + ts + '% on time</span>');
     if (late) chips.push('<span class="nx-chip r">You are ' + late + ' card' + (late > 1 ? 's' : '') + ' behind — catch up today</span>');
     if (chips.length) h += '<div class="nx-chips">' + chips.join('') + '</div>';
   }
@@ -252,7 +254,7 @@ function ndRemindHTML() {
 function nxCardsHead() {
   var today = Math.min(ndDay(), ndLastDay()), cv = _nd.cv || 'day';
   return '<div class="nx-ph"><div class="nx-ph-in"><div class="nx-ph-r"><h1>Cards</h1><span class="nd-qb" id="nd-q" hidden></span>'
-    + ndLangSeg() + '<span class="nx-chip t">' + ndEsc(nxPkgLabel()) + '</span><span class="nx-chip o">' + (today > 100 ? 'Catch-up · day ' + (today - 100) : 'Day ' + Math.max(today, 0)) + '</span></div>'
+    + '<span class="nx-chip o">' + (today > 100 ? 'Catch-up · day ' + (today - 100) : ndEsc(ndWeekLabel(Math.max(today, 1))) + ' · Day ' + Math.max(today, 0) + ' / ' + _nd.cfg.days) + '</span></div>'
     + '<div class="nx-ul"><button type="button" class="' + (cv === 'day' ? 'on' : '') + '" onclick="ndCv(\'day\')">Daily Cards</button><button type="button" class="' + (cv === 'timeline' ? 'on' : '') + '" onclick="ndCv(\'timeline\')">Timeline</button></div></div></div>';
 }
 function ndCardsHTML() {
@@ -266,7 +268,7 @@ function ndCardsHTML() {
   h += '<div class="nx-strip" id="nd-ds">';
   for (var d = d1; d <= dN; d++) {
     var st = _nd.view ? nxFacSt(d) : ndDaySt(d), can = d <= today;
-    h += '<button type="button" class="nx-d ds-day ' + st + (d === day ? ' sel' : '') + '" title="' + (d > 100 ? 'Catch-up day ' + (d - 100) : 'Day ' + d) + ' · ' + ndEsc(nxLongDate(nxDateOf(d))) + ' · ' + ndEsc(ND_ST[st].t) + '"' + (can ? ' onclick="ndOpenDay(' + d + ')"' : ' disabled') + '><small>' + ndEsc(nxWd(d)) + '</small><b>' + (d > 100 ? d - 100 : d) + '</b></button>';
+    h += '<button type="button" class="nx-d ds-day ' + st + (d === day ? ' sel' : '') + '" title="' + (d > 100 ? 'Catch-up day ' + (d - 100) : 'Day ' + d) + ' · ' + ndEsc(nxLongDate(nxDateOf(d))) + ' · ' + ndEsc(ND_ST[st].t) + '"' + (can ? ' onclick="ndOpenDay(' + d + ')"' : ' disabled') + '><small>' + ndEsc(nxWd(d)) + '</small><b>' + (d > 100 ? d - 100 : d) + '</b><small>' + ndEsc(String(nxLongDate(nxDateOf(d))).replace(/ \d{4}$/, '')) + '</small></button>';
   }
   h += '</div><div class="nx-leg"><span><i class="g">●</i> Checked</span><span><i class="a">●</i> Waiting for the check</span><span><i class="r">●</i> Missed — still open</span></div>';
   var depts = ndCardDepts(day);
@@ -393,27 +395,18 @@ function ndWeek(w) { _ndWkOpen[w] = !_ndWkOpen[w]; ndKeepScroll(); }
 // ═══ PROGRESS ═══
 function ndReadyHTML() {
   var me = ndMob(), day = Math.min(ndDay(), _nd.cfg.days), mine = nxMineIds(), mineOnly = !!nxFillIds().length, pass = (_nd.cfg.passMark || {}).overall || 70;
-  var S = ndShape(), R = nxReady(mine), B = nxReady(mine, S.bN), I = day > S.bN ? nxReady(mine, S.iN, S.i1) : null, E = day >= S.e1 ? nxReady(mine, 999, S.e1) : null;
-  var pct = R.overall === null ? 0 : R.overall, fmt = function (x) { return x && x.overall !== null ? x.overall + '%' : '–'; };
+  var S = ndShape(), R = nxReady(mine), B = nxReady(mine, S.bN), I = day > S.bN ? nxReady(mine, S.iN, S.i1) : null, E = day >= S.e1 ? nxReady(mine, 999, S.e1) : null, F = nxReady(ndDeptDefs().map(function (d) { return d.id; }));
+  var v = function (x) { return x && x.overall !== null ? x.overall : null; };
   var h = '<div class="nx"><div class="nx-ph-r"><h1 style="margin:0;font-size:21px;font-weight:700;flex:1">' + (mineOnly ? 'My progress' : 'Facility progress') + '</h1><span class="nx-chip o">Day ' + Math.max(day, 0) + ' / ' + _nd.cfg.days + '</span></div>'
-    + '<div class="nx-card nx-pring"><div class="nx-ring">' + nxRing(pct, 104, 11, '#1E6B5E', '#E6F2EF') + '<span><b>' + pct + '%</b><small>readiness</small></span></div><div class="nx-kv">'
-    + '<div><span>Baseline</span><b>' + fmt(B) + '</b></div><div><span>Implementation</span><b style="color:#135A55">' + (I ? fmt(I) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.i1 + '</span>') + '</b></div>'
-    + '<div><span>End-line</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">Target to pass: ' + pass + '% · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
-  if (!_nd.view && mineOnly) {
-    var I2 = nxImpact();
-    h += '<div class="nx-stat c3"><div><b style="color:#9A5A12">' + ndStreak() + '</b><small>days on time in a row</small></div><div><b style="color:#135A55">' + I2.checked + '</b><small>checkpoints checked</small></div><div><b style="color:#166534">' + I2.fixed + '</b><small>gaps you fixed</small></div></div>';
-  }
+    + oneRingCard({ pct: v(R), label: mineOnly ? 'my readiness' : 'readiness', base: v(B), impl: v(I), implFrom: 'from Day ' + S.i1, end: v(E), endFrom: 'from Day ' + S.e1,
+      foot: (mineOnly && F.overall !== null ? 'Facility ' + F.overall + '% · ' : '') + 'target ' + pass + '% · ' + R.n + ' of ' + R.of + ' checked' });
+  if (!_nd.view && mineOnly) { var I2 = nxImpact(); h += oneCounters([[ndStreak(), 'days on time in a row', 'o'], [I2.checked, 'checkpoints checked'], [I2.fixed, 'gaps you fixed', 'g']]); }
   var tab = _nd.ptab || 'dept';
-  h += '<div class="nx-seg"><button type="button" class="' + (tab === 'aoc' ? 'on' : '') + '" onclick="_nd.ptab=\'aoc\';ndKeepScroll()">Areas of Concern</button><button type="button" class="' + (tab === 'dept' ? 'on' : '') + '" onclick="_nd.ptab=\'dept\';ndKeepScroll()">' + (mineOnly ? 'My departments' : 'Departments') + '</button></div>';
-  var bar = function (name, cur, base) {
-    if (cur === null || cur === undefined) return '<div class="nx-hb"><div><b>' + ndEsc(name) + '</b><span class="nx-dim">not assessed</span></div><p></p></div>';
-    var b = base === null || base === undefined ? cur : Math.min(base, cur);
-    return '<div class="nx-hb"><div><b>' + ndEsc(name) + '</b><span>' + cur + '%</span></div><p><span class="b" style="width:' + b + '%"></span>' + (cur > b ? '<span class="i" style="width:' + (cur - b) + '%"></span>' : '') + '</p></div>';
-  };
-  h += '<div class="nx-card"><div class="nx-leg"><span><i style="color:#CBD5E1">■</i> Baseline</span><span><i style="color:#1E6B5E">■</i> Gain since baseline</span></div>';
-  if (tab === 'aoc') Object.keys(_nd.cl.aocs).forEach(function (a) { if (!R.byAoc[a]) return; h += bar(a + ' · ' + String(_nd.cl.aocs[a]).replace(/^[:\s]+/, ''), R.byAoc[a].pct, (B.byAoc[a] || {}).pct); });
-  else mine.forEach(function (id) { if (!R.byDept[id]) return; h += bar(ndDeptDef(id).name, R.byDept[id].pct, (B.byDept[id] || {}).pct); });
-  h += '<span class="nx-dim">' + (mineOnly ? 'Only the departments you are part of. Your department lead sees the whole team.' : 'Latest checked score of each checkpoint, % of the maximum.') + '</span></div>';
+  h += oneSeg([['aoc', 'Areas of Concern'], ['dept', mineOnly ? 'My departments' : 'Departments']], tab, function (k) { return "_nd.ptab='" + k + "';ndKeepScroll()"; });
+  var rows = [];
+  if (tab === 'aoc') Object.keys(_nd.cl.aocs).forEach(function (a) { if (!R.byAoc[a]) return; rows.push({ label: a + ' · ' + String(_nd.cl.aocs[a]).replace(/^[:\s]+/, ''), now: R.byAoc[a].pct, base: (B.byAoc[a] || {}).pct }); });
+  else mine.forEach(function (id) { if (!R.byDept[id]) return; rows.push({ label: ndDeptDef(id).name, now: R.byDept[id].pct, base: (B.byDept[id] || {}).pct, sub: R.byDept[id].n + ' of ' + R.byDept[id].of + ' checked' }); });
+  h += oneDumbRows(rows, pass) + '<p class="one-dim" style="margin:6px 2px 0">' + (mineOnly ? 'Only the departments you are part of. Your department lead sees the whole team.' : 'Whole checklist — not yet checked counts as 0.') + '</p>';
   if (_nd.view) h += '<details class="nx-card"><summary style="cursor:pointer;font-weight:700;font-size:14px">Department × Area of Concern grid</summary>' + nxGridHTML() + '</details>';
   if (!_nd.view && mineOnly) {
     var BD = nxBadges();
@@ -457,15 +450,12 @@ function nxBadges() {
 // ═══ ME ═══
 function ndMeHTML() {
   var me = ndMob(), st = ndStaff()[me] || {}, nm = st.name || me, day = Math.min(ndDay(), _nd.cfg.days), I = nxImpact(), fillIds = nxFillIds();
-  var h = '<div class="nx"><div class="nx-card nx-prof"><div class="nx-av">' + ndEsc(String(nm).charAt(0).toUpperCase()) + '</div><div><b>' + ndEsc(nm) + '</b><small>' + ndEsc(nxRoleOf(me) + ' · ' + (_nd.fac.name || _nd.code) + (_nd.fac.district ? ', ' + _nd.fac.district : '')) + '</small>'
-    + '<div class="nx-chips"><span class="nx-chip t" style="font-size:10.5px;padding:2px 8px">' + ndEsc(nxPkgLabel()) + '</span>' + (_nd.fac.startDate && day >= 1 ? '<span class="nx-chip o" style="font-size:10.5px;padding:2px 8px">Day ' + day + '</span>' : '') + '</div></div></div>';
+  var type = (NF_LEVELS[nfTypeOf(_nd.fac)] || {}).short || _nd.cfg.short || '';
+  var h = '<div class="nx"><div class="nx-ph-r"><h1 style="margin:0;font-size:21px;font-weight:700;flex:1">Me</h1></div>'
+    + oneProfile({ name: nm, sub: nxRoleOf(me) + ' · ' + (_nd.fac.name || _nd.code) + (_nd.fac.district ? ', ' + _nd.fac.district : ''), chips: [[ndEsc(type)]].concat(_nd.fac.startDate && day >= 1 ? [['Day ' + day + ' / ' + _nd.cfg.days, 'o'], [ndStreak() + ' on time', 'o']] : []) });
   var depts = ndMyDepts().filter(function (d) { return ndFills(d.id, me) || ndCanCheck(d.id, me); });
-  h += '<div class="nx-card"><b>My departments</b><div class="nx-chips">' + (depts.length ? depts.map(function (d) {
-    var lab = d.name + (ndLead(d.id) === me ? ' · you lead' : ndChecker(d.id) === me ? ' · you compare' : ndFills(d.id, me) && ndChecker(d.id) ? ' · checker: ' + nxRoleOf(ndChecker(d.id)) + ' ' + nxFirst(ndChecker(d.id)) : '');
-    return '<span class="nx-chip' + (ndFills(d.id, me) ? ' t' : '') + '">' + ndEsc(lab) + '</span>'; }).join('') : '<span class="nx-dim">None yet — the ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you in Set-up.</span>') + '</div></div>';
-  if (fillIds.length) {
-    h += '<div class="nx-card"><b>My impact</b><div class="nx-stat c3" style="gap:4px"><div style="border:0;padding:4px"><b style="color:#135A55">' + I.checked + '</b><small>checked</small></div><div style="border:0;padding:4px"><b style="color:#166534">' + I.fixed + '</b><small>gaps fixed</small></div><div style="border:0;padding:4px"><b style="color:#9A5A12">' + (I.onTime === null ? '–' : I.onTime + '%') + '</b><small>days on time</small></div></div></div>';
-  }
+  h += onePkgCard('My departments', depts.map(function (d) { return d.name + (ndLead(d.id) === me ? ' · you lead' : ndChecker(d.id) === me ? ' · you compare' : ndFills(d.id, me) && ndChecker(d.id) ? ' · checked by ' + nxRoleOf(ndChecker(d.id)) + ' ' + nxFirst(ndChecker(d.id)) : ''); }), depts.length ? '' : 'None yet — the ' + _nd.cfg.inChargeLabel + ' adds you in Set-up.');
+  if (fillIds.length) h += oneImpact({ title: 'My work so far', nums: [[I.checked, 'checked'], [I.fixed, 'gaps fixed'], [I.onTime === null ? '–' : I.onTime + '%', 'days on time']], line: 'Updated as you finish cards.' });
   h += ndCertCardHTML();   // Step 3: the real certificate (issueCertificate)
   var help = ''; try { if (typeof nfSupportOn === 'function' && nfSupportOn()) help = '<button type="button" class="nx-btn sm" style="background:#16A34A" onclick="nfOpenSupport(\'me\')">Chat</button>'; } catch (e) {}
   h += '<div class="nx-card" style="flex-direction:row;align-items:center;gap:12px"><i class="ti ti-message" style="width:40px;height:40px;border-radius:12px;background:#DCFCE7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none"></i><span style="flex:1;display:flex;flex-direction:column"><b style="font-size:13.5px">Need help?</b><small class="nx-dim">' + (help ? 'WhatsApp HealSol support' : 'Ask your ' + ndEsc(_nd.cfg.inChargeLabel) + ' or HealSol Academy') + '</small></span>' + help + '</div>';
@@ -779,20 +769,26 @@ function nxFaHomeHTML() {
   var day = ndDay(), n = _nd.cfg.days, all = ndDeptDefs().map(function (d) { return d.id; });
   var S = ndShape(), R = nxReady(all), B = nxReady(all, S.bN), cur = R.overall, gain = day > S.bN && B.overall !== null && cur !== null ? cur - B.overall : null;
   var ph = !_nd.fac.startDate ? 'Not started' : day < 1 ? 'Starts ' + nxLongDate(_nd.fac.startDate) : day > n ? 'Programme complete' : ndWeekLabel(day);
-  var nq = R.n === 0 ? 'Readiness appears once staff mark day cards as done.' : R.meets ? '<b>✓ Meets NQAS criteria</b> — overall ' + cur + '%' : '<b>Not yet at NQAS criteria</b> — overall ' + (cur === null ? '–' : cur + '%') + ' (needs ' + ((_nd.cfg.passMark || {}).overall || 70) + '% overall, in each department and each Area of Concern)';
+  var gs = null, rr = null; try { gs = ndGradScores(); rr = ndGradRule(gs, true); } catch (e) {}
+  var why = []; if (rr) { var C = rr.crit; if (cur !== null && cur < C.overall) why.push('overall ' + cur + '% (needs ' + C.overall + '%)'); if (rr.deptFails.length) why.push(rr.deptFails.length === 1 ? ndDeptDef(rr.deptFails[0]).name + ' ' + gs.byDept[rr.deptFails[0]] + '% (needs ' + C.dept + '%)' : rr.deptFails.length + ' departments below ' + C.dept + '%'); if (rr.aocFails.length) why.push('Area' + (rr.aocFails.length === 1 ? ' ' : 's ') + rr.aocFails.join(', ') + ' below ' + C.aoc + '%'); if (rr.stdFails.length) why.push(rr.stdFails.length + ' Standard' + (rr.stdFails.length === 1 ? '' : 's') + ' below minimum'); }
+  var nq = R.n === 0 ? 'Readiness appears once staff mark day cards as done.' : rr && rr.result === 'ready' ? '<b>✓ Meets NQAS criteria</b> — overall ' + cur + '%' : '<b>Not yet at NQAS</b> — ' + ndEsc(why.join(' · ') || 'not every checkpoint checked yet');
   var h = '<div class="nx-hero"><div class="nx-hero-row"><div class="nx-hero-txt"><div class="nx-hero-k">Facility readiness</div><div class="nx-hero-t" style="font-size:18px">' + ndEsc(ph) + '</div>'
     + '<div class="nx-hero-k">' + (_nd.fac.startDate && day >= 1 ? 'Day ' + Math.min(day, n) + ' of ' + n : _nd.fac.startDate ? '' : 'Start date not set') + '</div></div>'
     + '<div class="nx-ring">' + nxRing(cur || 0, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + (cur === null ? '–' : cur + '%') + '</b><small>readiness</small></span></div></div>'
-    + '<div class="nx-hero-n"><div><b class="acc">' + (B.overall === null ? '–' : B.overall + '%') + '</b><small>Baseline</small></div><i></i><div><b>' + (gain === null ? '–' : (gain >= 0 ? '+' : '') + gain) + '</b><small>Growth</small></div><i></i><div><b>' + R.n + '<small style="font-size:13px;opacity:.8">/' + R.of + '</small></b><small>Checkpoints</small></div></div>'
+    + '<div class="nx-hero-n"><div><b class="acc">' + (B.overall === null ? '–' : B.overall + '%') + '</b><small>Baseline</small></div><i></i><div><b>' + (gain === null ? '–' : (gain >= 0 ? '+' : '') + gain) + '</b><small>Growth</small></div><i></i><div><b>' + R.n + '<small style="font-size:13px;opacity:.8">/' + R.of + '</small></b><small>checked' + (R.of ? ' · ' + Math.round(100 * R.n / R.of) + '%' : '') + '</small></div></div>'
     + '<div class="nx-fa-nq">' + nq + '</div>'
     + (_nd.fac.startDate ? '<button type="button" class="nx-cta" onclick="ndFaTab(\'ready\')">Open readiness</button>' : '<div class="nx-card" style="color:#0F172A"><b>Set the programme start date</b><span class="nx-dim">All departments start the baseline together on this date (Day 1).</span>' + ndStartForm() + '</div>') + '</div>';
-  h += ndGradTodayHTML();   // Step 3: readiness week / graduation result / catch-up
+  var rw = _nd.fac.startDate && day >= S.r1 && day <= S.rN && !_nd.fac.graduation;
+  if (_nd.fac.startDate && !rw) { var nxt = day < 1 ? 'Day 1 · ' + nfDateTxt(_nd.fac.startDate, true) : day <= S.bN ? 'Implementation starts on Day ' + (S.bN + 1) + ' · ' + nfDateTxt(nxDateOf(S.bN + 1), true) : day <= S.iN ? 'End-line starts on Day ' + (S.iN + 1) + ' · ' + nfDateTxt(nxDateOf(S.iN + 1), true) : day <= S.eN ? 'Readiness week starts on Day ' + (S.eN + 1) + ' · ' + nfDateTxt(nxDateOf(S.eN + 1), true) : '';
+    h += oneProgCard({ S: S, day: day, gradDate: nxDateOf(n), next: nxt ? 'Next: ' + nxt : '' }); }
+  h += ndGradTodayHTML();   // Step 3: readiness week (phase strip, end-line checks, If we graduated today) / graduation result / catch-up
+  if (!rw && !_nd.fac.graduation && R.n > 0 && rr) { var RR = nfResult({ assessed: R.n, cov: R.of ? Math.round(100 * R.n / R.of) : null, meets: rr.result === 'ready', pct: cur, mark: rr.crit.overall, deptFails: rr.deptFails.map(function (x) { return ndDeptDef(x).name; }), aocFails: rr.aocFails, stdFails: rr.stdFails });
+    h += oneIfGrad({ pct: cur, word: RR.word, cls: RR.cls, why: RR.cls === 'green' ? '' : RR.txt }); }
   var items = nxFaItems();
   h += '<div class="nx-sec"><b>Needs your attention</b>' + (items.length ? '<span class="nx-dim">' + items.length + '</span>' : '') + '</div>';
   h += items.length ? '<div class="nx-card p0 nx-list">' + items.map(function (x) { return nxLi(x.ic, x.cls === 'v' ? 'b' : x.cls, x.t, x.s, x.go); }).join('') + '</div>'
     : '<div class="nx-card"><div class="nx-empty"><i class="ti ti-circle-check"></i><b>All clear</b><br>Nothing needs your attention right now.</div></div>';
-  h += '<div class="nx-sec"><b>Quick actions</b></div><div class="nx-fa-qa"><button type="button" onclick="ndFaTab(\'staff\');setTimeout(function(){var d=document.getElementById(\'nd-add\');if(d){d.open=true;d.scrollIntoView({block:\'center\'});}},80)"><i class="ti ti-user-plus"></i>Add staff</button>'
-    + '<button type="button" onclick="ndLeadOpen(\'plan\')"><i class="ti ti-checklist"></i>Action plan</button><button type="button" onclick="ndFaTab(\'more\')"><i class="ti ti-send"></i>Reminders</button></div>';
+  h += '<div class="nx-sec"><b>Quick actions</b></div>' + oneQuick([['ti-user-plus', 'Add staff', "ndFaTab('staff');setTimeout(function(){var d=document.getElementById('nd-add');if(d){d.open=true;d.scrollIntoView({block:'center'});}},80)"], ['ti-checklist', 'Action plan', "ndLeadOpen('plan')", 'o'], ['ti-download', 'Download', "ndFaTab('more')", 'g']].concat(typeof scOpenLiveSessions === 'function' ? [['ti-broadcast', 'Live session', 'scOpenLiveSessions()']] : []));
   if (_nd.fac.startDate && day >= 1) h += nxDeptListHTML();
   return h;
 }
@@ -801,10 +797,10 @@ function nxFaStaffHTML() {
   var mobs = Object.keys(staff).sort(function (a, b) { var ra = roles.indexOf(ndRole(a)), rb = roles.indexOf(ndRole(b)); return (ra - rb) || String(staff[a].name || '').localeCompare(String(staff[b].name || '')); });
   var have = {}; mobs.forEach(function (m) { have[ndRole(m)] = 1; });
   var miss = (_nd.cfg.roles || []).filter(function (r) { return !have[r.id] && r.id !== 'MO'; }).map(function (r) { return r.label; });
-  var h = '<div class="nx-sec"><b>Staff</b><span class="nx-dim">' + mobs.length + ' ' + (mobs.length === 1 ? 'person' : 'people') + '</span></div>' + (miss.length ? '<div class="nx-dim">Not added yet: ' + ndEsc(miss.join(' · ')) + '</div>' : '');
+  var h = '<div class="nx-sec"><b>Staff</b><span class="nx-dim">' + mobs.length + ' ' + (mobs.length === 1 ? 'person' : 'people') + ' · cards in on time</span></div>';
   h += '<div class="nx-card p0">' + mobs.map(function (m) {
     var st = staff[m], due = 0, done = 0, lead = [], fill = [];
-    ndDeptDefs().forEach(function (d) { if (ndLead(d.id) === m) lead.push(d.id); else if (ndChecker(d.id) === m) lead.push(d.id + ' (compares)'); if (!ndFills(d.id, m)) return; fill.push(d.id);
+    ndDeptDefs().forEach(function (d) { var dn = ndDeptDef(d.id).name; if (ndLead(d.id) === m) lead.push(dn); else if (ndChecker(d.id) === m) lead.push(dn + ' (compares)'); if (!ndFills(d.id, m)) return; fill.push(dn);
       for (var k = 1; k <= day; k++) { if (!ndDayInfo(d.id, k).ids.length) continue; due++; var c = ndPc(d.id, k)[m] || {}; if (c.done || c.absent) done++; } });
     var pct = due ? Math.round(100 * done / due) : null, ic = ndIsInCharge(m), you = m === me;
     return '<details class="nx-fa-p"><summary><span class="nx-av" style="width:42px;height:42px;font-size:16px">' + ndEsc(String(st.name || m).charAt(0).toUpperCase()) + '</span><span class="nx-fa-pb"><b>' + ndEsc(st.name || m) + '</b>'
@@ -814,6 +810,7 @@ function nxFaStaffHTML() {
       + (ic || you ? '<div class="nx-dim" style="padding:0 0 10px 54px">The ' + ndEsc(_nd.cfg.inChargeLabel) + '\'s own login is managed by HealSol.</div>' : '<div class="nx-two" style="padding:0 0 12px 54px"><button type="button" class="nx-btn sm ghost" onclick="ndResetStaff(\'' + m + '\')"><i class="ti ti-key"></i> Reset password</button><button type="button" class="nx-btn sm ghost" style="color:#B91C1C;border-color:#FCA5A5" onclick="ndRemoveStaff(\'' + m + '\')"><i class="ti ti-trash"></i> Remove</button></div>')
       + '</details>';
   }).join('') + '</div>';
+  if (miss.length) h += '<details class="nx-dim one-miss"><summary>Not added yet: ' + ndEsc(miss.slice(0, 5).join(' · ')) + (miss.length > 5 ? ' + ' + (miss.length - 5) + ' more' : '') + '</summary>' + (miss.length > 5 ? ndEsc(miss.slice(5).join(' · ')) : '') + '</details>';
   h += '<details class="nx-card" id="nd-add"' + (mobs.length < 3 ? ' open' : '') + '><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#135A55;display:flex;gap:8px;align-items:center"><i class="ti ti-user-plus"></i> Add staff</summary>'
     + '<label class="nx-lbl">Role<select class="nx-in" id="nd-add-role">' + ndStaffRoles().map(function (r) { return '<option value="' + ndEsc(r.id) + '">' + ndEsc(r.label) + '</option>'; }).join('') + '</select></label>'
     + '<label class="nx-lbl">Full name<input class="nx-in" id="nd-add-name" maxlength="60" autocomplete="off"></label>'

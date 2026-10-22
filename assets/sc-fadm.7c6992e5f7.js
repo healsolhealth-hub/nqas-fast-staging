@@ -12,8 +12,8 @@ var FA_HI={'Facility dashboard':'सुविधा डैशबोर्ड','H
   'Facility readiness':'सुविधा की तैयारी','Baseline':'बेसलाइन','Growth':'बढ़त','Checkpoints':'चेकपॉइंट','Loading…':'लोड हो रहा है…',
   'Programme':'कार्यक्रम','Account':'खाता','Change my password':'मेरा पासवर्ड बदलें','Help on WhatsApp':'WhatsApp पर मदद','Logout':'लॉग आउट','Live sessions':'लाइव सत्र',
   'Programme start date':'कार्यक्रम शुरू होने की तारीख','Set date':'तारीख सेट करें','people':'लोग','person':'व्यक्ति','Close':'बंद करें','you':'आप',
-  'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','cards in':'कार्ड जमा','no card days yet':'अभी कोई कार्ड दिन नहीं','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',
-  'Downloads':'डाउनलोड','Refresh':'रीफ़्रेश'};
+  'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','cards in':'कार्ड जमा','cards in on time':'समय पर जमा कार्ड','no card days yet':'अभी कोई कार्ड दिन नहीं','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',
+  'Downloads':'डाउनलोड','Refresh':'रीफ़्रेश','Action plan':'कार्य योजना','Next':'अगला','checked':'जाँचे'};
 function faT(k){ return (typeof _appLang!=='undefined'&&_appLang==='hi'&&FA_HI[k])?FA_HI[k]:k; }
 function faOn(){ var a=document.getElementById('sc-cho-app'); return !!(a&&a.classList.contains('fa')); }
 function faSt(){ return (typeof _scIns!=='undefined'&&_scIns)?_scIns['sc-cho-progress']:null; }
@@ -62,7 +62,7 @@ function faHeader(){
   var f=faFac(), code=(typeof scSubAdminCode!=='undefined'&&scSubAdminCode)||'', d=typeof nfDayOf==='function'?nfDayOf(f):null;
   var sub=(d!=null&&d>0?faT('Day')+' '+d+' '+faT('of')+' 60 · ':'')+faT('Facility dashboard');
   hd.innerHTML='<div class="fa-hd-l"><small>'+sub+'</small><h1><span class="n">'+scEsc(f.name||code)+'</span>'+(typeof nfProBadge==='function'?nfProBadge(f,''):'')+'</h1></div>'
-    +'<button type="button" class="fa-ib" title="'+faT('Live sessions')+'" aria-label="Live sessions" onclick="scOpenLiveSessions()"><i class="ti ti-broadcast"></i></button>'
+    +'<button type="button" class="fa-ib" title="'+faT('Refresh')+'" aria-label="Refresh" onclick="faRefresh()"><i class="ti ti-refresh"></i></button>'
     +(faDual()?'<button type="button" class="fa-mc" onclick="faMyCards()"><i class="ti ti-cards"></i><span>'+faT('My cards')+'</span></button>':'');
   var nav=document.getElementById('fa-nav'); if(nav) nav.innerHTML=faNavHTML();
 }
@@ -121,21 +121,22 @@ function faHome(){
   var B=(P&&P.B)||A.baseline||{}, hasB=!!B.assessed, cur=A.coverage&&A.coverage.assessed?A.pct:null, d=P?P.day:(typeof nfDayOf==='function'?nfDayOf(f):null);
   var idx=d==null||d<1?-1:d<=7?0:d<=49?1:d<=56?2:d<=60?3:4, ph=idx<0?'Not started':idx>3?'Programme complete':(typeof NF_PHASES!=='undefined'?NF_PHASES[idx].k:'');
   var gain=hasB&&cur!=null?cur-B.pct:null, n=null; try{ n=A.nqas||scNqasCheckV2(A); }catch(e){}
-  var nq=!n||!n.hasData?'Readiness appears once staff mark day cards as done.':n.meets?'<b>✓ Meets NQAS criteria</b> — overall '+A.pct+'%':'<b>Not yet at NQAS criteria</b> — overall '+A.pct+'% (needs 70%)'+(n.stdFails&&n.stdFails.length?' · '+n.stdFails.length+' Standards below minimum':'');
+  var why=[]; if(n&&n.hasData&&!n.meets){ if(!n.overallOk) why.push('overall '+A.pct+'% (needs '+(n.overallMin||70)+'%)'); if(n.aocFails&&n.aocFails.length) why.push('Area'+(n.aocFails.length===1?' ':'s ')+n.aocFails.join(', ')+' below '+(n.aocMin||70)+'%'); if(n.stdFails&&n.stdFails.length) why.push(n.stdFails.length+' Standard'+(n.stdFails.length===1?'':'s')+' below minimum'); }
+  var nq=!n||!n.hasData?'Readiness appears once staff mark day cards as done.':n.meets?'<b>✓ Meets NQAS criteria</b> — overall '+A.pct+'%':'<b>Not yet at NQAS</b> — '+scEsc(why.join(' · '));
   var h='<div class="nf-hero fa-hero" style="margin-top:6px;"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">'+faT('Facility readiness')+'</div>'
     +'<div class="nf-hero-t">'+scEsc(ph)+'</div><div class="nf-hero-s">'+(d!=null&&d>0?faT('Day')+' '+d+' '+faT('of')+' 60':(f.startDate?'Starts '+scFmtDate(f.startDate):'Start date not set'))+'</div></div>'
     +'<div class="nf-hero-ring">'+nfRing(cur||0,hasB?B.pct:null,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+(cur==null?'—':cur+'%')+'</b><small>'+faT('readiness')+'</small></span></div></div>'
-    +'<div class="nf-hero-nums"><div><b class="acc">'+(hasB?B.pct+'%':'—')+'</b><small>'+faT('Baseline')+'</small></div><i></i><div><b>'+(gain==null?'—':(gain>=0?'+':'')+gain)+'</b><small>'+faT('Growth')+'</small></div><i></i><div><b>'+((A.coverage&&A.coverage.assessed)||0)+'<span style="font-size:13px;opacity:.75;">/'+A.total+'</span></b><small>'+faT('Checkpoints')+'</small></div></div>'
+    +'<div class="nf-hero-nums"><div><b class="acc">'+(hasB?B.pct+'%':'—')+'</b><small>'+faT('Baseline')+'</small></div><i></i><div><b>'+(gain==null?'—':(gain>=0?'+':'')+gain)+'</b><small>'+faT('Growth')+'</small></div><i></i><div><b>'+((A.coverage&&A.coverage.assessed)||0)+'<span style="font-size:13px;opacity:.75;">/'+A.total+'</span></b><small>'+faT('checked')+(A.coverage&&A.coverage.total?' · '+A.coverage.pct+'%':'')+'</small></div></div>'
     +'<div class="fa-nq">'+nq+'</div>'
     +'<button type="button" class="nf-cta" onclick="faTab(\'ready\')"><i class="ti ti-chart-bar"></i> '+faT('Open readiness')+'</button></div>';
+  if(f.startDate){ var SS={bN:7,iN:49,eN:56,days:60}, at=function(n){ return nfDateTxt(hsAddDays?hsAddDays(f.startDate,n-1):f.startDate,true); }, nx=idx<0?'Day 1 · '+at(1):idx===0?'Implementation starts on Day 8 · '+at(8):idx===1?'End-line starts on Day 50 · '+at(50):idx===2?'Readiness week starts on Day 57 · '+at(57):idx===3?'Graduation on Day 60 · '+at(60):'';
+    h+=oneProgCard({S:SS,day:d,gradDate:typeof hsAddDays==='function'?hsAddDays(f.startDate,59):'',next:nx?faT('Next')+': '+nx:''}); }
+  if(n&&n.hasData){ var RR=nfResult(nfResultSc(A,f.graduation||null)); h+=oneIfGrad({pct:cur,word:RR.word,cls:RR.cls,why:RR.cls==='green'?'':RR.txt}); }
   var items=faItems();
   h+='<div class="fa-sec"><b>'+faT('Needs your attention')+'</b>'+(items.length?'<small>'+items.length+'</small>':'')+'</div>';
   if(items.length) h+='<div class="nf-card nf-list fa-att">'+items.map(function(x){ return '<button type="button" class="nf-task" onclick="'+x.go+'"><span class="nf-ti '+x.cls+'"><i class="ti '+x.ic+'"></i></span><span class="nf-tt"><b>'+scEsc(x.t)+'</b><small>'+scEsc(x.s)+'</small></span><i class="ti ti-chevron-right"></i></button>'; }).join('')+'</div>';
   else h+='<div class="nf-card nf-list"><div class="fa-ok"><span class="nf-ti"><i class="ti ti-circle-check"></i></span><div><b>'+faT('All clear')+'</b><small>'+faT('Nothing needs your attention right now.')+'</small></div></div></div>';
-  h+='<div class="fa-sec"><b>'+faT('Quick actions')+'</b></div><div class="fa-qa">'
-    +'<button type="button" onclick="faAddStaff()"><i class="ti ti-user-plus"></i>'+faT('Add staff')+'</button>'
-    +'<button type="button" onclick="faDownloads()"><i class="ti ti-download"></i>'+faT('Download')+'</button>'
-    +'<button type="button" onclick="scOpenLiveSessions()"><i class="ti ti-broadcast"></i>'+faT('Live session')+'</button></div>';
+  h+='<div class="fa-sec"><b>'+faT('Quick actions')+'</b></div>'+oneQuick([['ti-user-plus',faT('Add staff'),'faAddStaff()'],['ti-checklist',faT('Action plan'),"faOpenReady('gaps')",'o'],['ti-download',faT('Download'),'faDownloads()','g'],['ti-broadcast',faT('Live session'),'scOpenLiveSessions()']]);
   host.innerHTML=h;
   var nav=document.getElementById('fa-nav'); if(nav) nav.innerHTML=faNavHTML();
 }
@@ -166,7 +167,7 @@ function faStaffRender(){
 }
 function faStaffMeta(){
   var list=faStaffList(), n=document.getElementById('fa-staff-n'), miss=document.getElementById('fa-staff-miss');
-  if(n) n.textContent=list.length+' '+faT(list.length===1?'person':'people');
+  if(n) n.textContent=list.length+' '+faT(list.length===1?'person':'people')+' · '+faT('cards in on time');
   if(miss){ var have={}; list.forEach(function(s){ have[s.role||'CHO']=1; }); var no=FA_ROLES.filter(function(r){ return !have[r]; });
     miss.textContent=no.length?'Not added yet: '+no.map(function(r){ return (getScRole(r)||{}).label||r; }).join(' · '):''; }
 }

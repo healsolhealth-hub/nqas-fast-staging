@@ -8587,6 +8587,7 @@ function scb2BuildModel(){
 // ══════════════════════════════════════════════════════════════
 // DAY STRIP (Daily Cards) — replaces buildDaySelector
 // ══════════════════════════════════════════════════════════════
+function scb2Wd(di){ try{ var iso=nfDayISO(di); if(!iso) return ''; var w=new Date(iso+'T00:00:00').getDay(); return (_appLang==='hi'?['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि']:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'])[w]; }catch(e){ return ''; } }
 buildDaySelector=function(){
   var scroll=document.getElementById('ds-scroll'); if(!scroll) return;
   var M=scb2BuildModel(); scroll.innerHTML='';
@@ -8600,7 +8601,7 @@ buildDaySelector=function(){
     var mid=m.date||('AoC '+(m.isBoss?'★':''));
     var low=m.status==='trial'?'<i class="ti ti-lock"></i>':(!M.fac?(m.mine?'<i class="ti ti-user"></i>'+m.mine:'—'):'');
     div.innerHTML=(m.markers.length?'<i class="ti ti-broadcast scb2-mk"></i>':'')+(m.gaps?'<span class="scb2-dot"></span>':'')
-      +'<div class="dd-n">'+String(m.day).padStart(2,'0')+'</div><div class="dd-z">'+scEsc(mid)+'</div>'
+      +'<div class="dd-w">'+scEsc(scb2Wd(m.di))+'</div><div class="dd-n">'+String(m.day).padStart(2,'0')+'</div><div class="dd-z">'+scEsc(mid)+'</div>'
       +(low?'<div class="scb2-dm">'+low+'</div>':'');
     div.title='Day '+m.day+': '+m.title+' · '+scb2L(SC_ST_LABEL[m.status]||m.status)+(M.fac?'':' · '+(m.mine?m.mine+' checkpoints for you':'No checkpoints for your role'));
     div.onclick=function(){ scb2DayTap(m.di,'strip'); };
@@ -14120,7 +14121,7 @@ var NF_BADGES=[
   {id:'ver50',icon:'ti-shield-check',c:'t',en:'50 verified',hi:'50 सत्यापित'},
   {id:'actions',icon:'ti-checklist',c:'o',en:'All actions done',hi:'सभी कार्य पूरे'},
   {id:'standards',icon:'ti-target',c:'q',en:'All my Standards OK',hi:'मेरे सभी मानक ठीक'},
-  {id:'revision',icon:'ti-refresh',c:'t',en:'Revision done',hi:'पुनरीक्षण पूरा'},
+  {id:'revision',icon:'ti-refresh',c:'t',en:'End-line done',hi:'एंड-लाइन पूरा'},
   {id:'nqas',icon:'ti-award',c:'q',en:'Facility NQAS-ready',hi:'स्वास्थ्य केंद्र NQAS-तैयार'}];
 function nfBadgeState(R,fac){
   var st=nfStreaks(), today=scb1TodayIdx(), earned={};
@@ -14185,7 +14186,7 @@ function nfMissionHTML(m){
     +'<span class="nf-ms-n">'+(m.pct?m.done+'%':m.done+'/'+m.target)+'</span></div>';
 }
 // ── helpers ────────────────────────────────────────────────────
-function nfPhase(di){ return di<7?t('Baseline audit'):di<49?t('Implementation'):di<56?t('Revision'):t('Readiness week'); }
+function nfPhase(di){ return di<7?t('Baseline'):di<49?t('Implementation'):di<56?(_appLang==='hi'?'एंड-लाइन':'End-line'):t('Readiness week'); }
 function nfRing(pct,base,size,stroke,col,track){
   var r=(size-stroke)/2, c=2*Math.PI*r, a=Math.max(0,Math.min(100,pct))/100*c;
   var b=base!=null?'<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" stroke="var(--org)" stroke-width="'+stroke+'" fill="none" stroke-dasharray="3 '+c+'" stroke-dashoffset="'+(-(base/100*c)+1.5)+'" transform="rotate(-90 '+size/2+' '+size/2+')"/>':'';
@@ -14213,11 +14214,13 @@ function nfRenderToday(){
     html+='<div class="nf-hero"><div class="nf-hero-k">'+scEsc(t('Programme starts'))+' · '+scEsc(scFmtDate(choState.startDate))+'</div><div class="nf-hero-t">'+days+' '+scEsc(t('days to go'))+'</div><div class="nf-hero-s">'+scEsc(hi?'दिन 1 पर बेसलाइन ऑडिट शुरू होगा।':'Day 1 starts the 7-day baseline audit.')+'</div></div>';
   } else {
     var fp=fac&&fac.agg?fac.agg.pct:null, gain=B.assessed?R.pct-B.pct:null;
-    html+='<div class="nf-hero"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">'+scEsc(t('Day'))+' '+(today+1)+' / 60 · '+scEsc(nfPhase(today))+'</div>'
-      +'<div class="nf-hero-t">'+scEsc(wk+theme)+'</div>'
-      +'<div class="nf-hero-nums"><div><b>'+R.pct+'%</b><small>'+scEsc(t('My readiness'))+'</small></div>'+(gain!==null?'<i></i><div><b class="acc">'+(gain>=0?'+':'')+gain+'</b><small>'+scEsc(t('since baseline'))+'</small></div>':'')+'</div></div>'
-      +'<div class="nf-hero-ring">'+nfRing(R.pct,B.assessed?B.pct:null,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+R.pct+'%</b>'+(fp!==null?'<small>'+scEsc(t('Facility'))+' '+fp+'%</small>':'')+'</span></div></div>'
-      +'<button type="button" class="nf-cta" onclick="nfOpenToday()">'+(focus.length&&answered===focus.length||c.taskDone?'✓ '+scEsc(c.taskDone?t('All done for today'):t('Continue today\'s card')):scEsc(t('Continue today\'s card'))+(focus.length?' · '+answered+' '+scEsc(t('of'))+' '+focus.length+' '+scEsc(t('done')):''))+' <i class="ti ti-chevron-right"></i></button></div>';
+    var phIdx=today<7?0:today<49?1:today<56?2:3;
+    html+='<div class="nf-hero"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">'+scEsc(t('Day'))+' '+(today+1)+' / 60 · '+scEsc(nfPhase(today))+(wk?' · '+scEsc(wk.replace(/ · $/,'')):'')+'</div>'
+      +'<div class="nf-hero-t">'+scEsc(theme)+'</div></div>'
+      +'<div class="nf-hero-ring">'+nfRing(R.pct,B.assessed?B.pct:null,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+(fp!==null?fp:R.pct)+'%</b><small>'+scEsc(fp!==null?t('Facility'):t('My readiness'))+'</small></span></div></div>'
+      +oneStrip(phIdx)
+      +'<div class="nf-hero-nums"><div><b>'+R.pct+'%</b><small>'+scEsc(t('My readiness'))+'</small></div>'+(gain!==null?'<i></i><div><b class="acc">'+(gain>=0?'+':'')+gain+'</b><small>'+scEsc(t('since baseline'))+'</small></div>':'')+(focus.length?'<i></i><div><b>'+answered+' / '+focus.length+'</b><small>'+scEsc(hi?'आज जाँचे':'checked today')+'</small></div>':'')+'</div>'
+      +'<button type="button" class="nf-cta" onclick="nfOpenToday()">'+(c.taskDone?'✓ '+scEsc(t('All done for today')):scEsc(hi?'आज का कार्ड खोलें':'Open today\'s card')+(focus.length?' · '+answered+' '+scEsc(t('of'))+' '+focus.length+' '+scEsc(t('done')):''))+' <i class="ti ti-chevron-right"></i></button></div>';
     html+='<div class="nf-sec"><b>'+scEsc(t('To do today'))+'</b><span>'+scEsc(t('Day'))+' '+(today+1)+'</span></div><div class="nf-card nf-list">';
     if(!focus.length) html+='<div class="nf-empty">'+scEsc(c.taskDone?t('All done for today'):t('Nothing to do today'))+'</div>';
     focus.slice(0,5).forEach(function(ci){ var cp=d.cps[ci], s=scNormScore((c.cpScores||[])[ci]), n=(cp.items||[]).length;
@@ -14240,26 +14243,32 @@ function nfOpenToday(ci){
 
 // ── PROGRESS ───────────────────────────────────────────────────
 function nfPage(id){ var p=document.getElementById(id); if(!p){ p=document.createElement('div'); p.id=id; p.className='nf-page'; p.style.display='none'; document.body.appendChild(p); } return p; }
+var _nfPrTab='aoc';
 async function nfRenderProgress(){
   var p=nfPage('nf-progress'); var draw=function(){
-    var R=scReadiness(choState.progId,choState.cards,choState.roleId||'CHO'), B=R.baseline||{}, fac=_nfFac.code===choState.facilityCode?_nfFac:null, hi=_appLang==='hi';
-    var bs=nfBadgeState(R,fac), fp=fac&&fac.agg?fac.agg.pct:null;
-    var h='<div class="nf-ph"><h1>'+scEsc(t('My progress'))+'</h1></div>'
-      +'<div class="nf-card nf-rings"><div class="nf-rr">'+nfRing(R.pct,null,112,12,'var(--qi)','var(--qi-lt)')+'<div class="nf-rr-in">'+(fp!==null?nfRing(fp,null,76,9,'var(--teal)','var(--teal-lt)'):'')+'</div><b>'+R.pct+'%</b></div>'
-      +'<div class="nf-rl"><div><i style="background:var(--qi)"></i>'+scEsc(t('My readiness'))+'<b>'+R.pct+'%</b></div>'
-      +(fp!==null?'<div><i style="background:var(--teal)"></i>'+scEsc(t('Facility'))+'<b>'+fp+'%</b></div>':'')
-      +'<div class="mut"><i style="background:#D5DDDB"></i>'+scEsc(t('Baseline'))+'<b>'+(B.assessed?B.pct+'%':'—')+'</b></div>'
-      +(B.assessed?'<span class="nf-gain'+(R.pct-B.pct<0?' neg':'')+'"><i class="ti ti-trending-up"></i> '+(R.pct-B.pct>=0?'+':'')+(R.pct-B.pct)+' '+scEsc(t('since baseline'))+'</span>':'')+'</div></div>'
-      +'<div class="nf-two"><div class="nf-card"><div class="nf-big"><i class="ti ti-flame" style="color:var(--org)"></i>'+bs.streak.current+'</div><small>'+scEsc(t('days on time in a row'))+'</small></div>'
-      +'<div class="nf-card"><div class="nf-big"><i class="ti ti-shield-check" style="color:var(--green-dk)"></i>'+bs.verified+'</div><small>'+scEsc(t('checkpoints verified'))+'</small></div></div>'
-      +'<div class="nf-sec"><b>'+scEsc(t('By Area of Concern'))+'</b><span>'+Object.keys(R.byAoc).length+'</span></div><div class="nf-card nf-aoc">'
-      +Object.keys(SC_CPM_AOC).filter(function(k){ return R.byAoc[k]&&R.byAoc[k].n; }).map(function(k){ var b=R.byAoc[k];
-        return '<div><span>'+k+' · '+scEsc(SC_CPM_AOC[k])+'</span><div class="nf-bar"><i style="width:'+b.pct+'%;background:'+scPctColor(b.pct)+'"></i></div><b>'+b.pct+'%</b></div>'; }).join('')+'</div>'
+    var hi=_appLang==='hi', today=scb1TodayIdx(), fac=_nfFac.code===choState.facilityCode?_nfFac:null;
+    var SP=typeof nfStaffPhases==='function'?nfStaffPhases():{R:scReadiness(choState.progId,choState.cards,choState.roleId||'CHO')}, R=SP.R, B=SP.B||R.baseline||{};
+    var v=function(b){ return b&&b.assessed?b.pct:null; }, bs=nfBadgeState(R,fac), fa=fac&&fac.agg?fac.agg:null;
+    var checked=0; Object.keys(choState.cards||{}).forEach(function(k){ var c=choState.cards[k]; if(c&&c.taskDone) (c.cpScores||[]).forEach(function(x){ if(scNormScore(x)!==null) checked++; }); });
+    var fixed=Object.keys(R.latest||{}).filter(function(id){ var x=R.latest[id]; return x.base!=null&&x.base<2&&x.score===2; }).length;
+    var h='<div class="nf-ph one-ph"><h1>'+scEsc(t('My progress'))+'</h1><span class="nf-chip o">'+scEsc(t('Day'))+' '+Math.max(0,today+1)+' / 60</span></div>'
+      +oneRingCard({pct:R.pct,base:v(B),impl:v(SP.I),implFrom:hi?'दिन 8 से':'from Day 8',end:v(SP.E),endFrom:hi?'दिन 50 से':'from Day 50',
+        foot:(fa?(hi?'स्वास्थ्य केंद्र ':'Facility ')+fa.pct+'% · ':'')+(hi?'लक्ष्य 70%':'target 70%')+(fa&&fa.coverage?' · '+fa.coverage.assessed+(hi?' / ':' of ')+fa.coverage.total+(hi?' जाँचे':' checked'):'')})
+      +oneCounters([[bs.streak.current,t('days on time in a row'),'o'],[checked,hi?'चेकपॉइंट जाँचे':'checkpoints checked'],[fixed,hi?'कमियाँ ठीक कीं':'gaps you fixed','g']])
+      +oneSeg([['aoc',t('Areas of Concern')],['svc',hi?'सेवा पैकेज':'Service packages']],_nfPrTab,function(k){ return "_nfPrTab='"+k+"';nfRenderProgress()"; });
+    var rows=[];
+    if(_nfPrTab==='svc'){ var order=SC_SVC_GROUPS.service; Object.keys(R.byService||{}).filter(function(k){ return order.indexOf(k)>=0&&R.byService[k].n; }).sort(function(a,b){ return order.indexOf(a)-order.indexOf(b); })
+      .forEach(function(k){ var x=R.byService[k]; rows.push({label:k,now:x.pct,base:v((B.byService||{})[k]),sub:x.assessed+(hi?' / ':' of ')+x.n+(hi?' जाँचे':' checked')}); }); }
+    else Object.keys(SC_CPM_AOC).forEach(function(k){ var x=R.byAoc[k]; if(!x||!x.n) return; rows.push({label:k+' · '+SC_CPM_AOC[k],now:x.pct,base:v((B.byAoc||{})[k])}); });
+    var ccRows=[]; if(_nfPrTab==='svc') Object.keys(R.byService||{}).filter(function(k){ return scSvcGroup(k)!=='service'&&R.byService[k].n; }).sort().forEach(function(k){ var x=R.byService[k]; ccRows.push({label:k,now:x.pct,base:v((B.byService||{})[k])}); });
+    h+=(rows.length||_nfPrTab!=='svc'?oneDumbRows(rows,70):'<div class="one-card"><p class="one-dim">'+scEsc(hi?'आपके कोई सेवा पैकेज चेकपॉइंट नहीं हैं।':'None of your checkpoints belong to a service package.')+'</p></div>')
+      +(ccRows.length?'<details class="one-card one-cc"><summary><b>'+scEsc(hi?'क्रॉस-कटिंग क्षेत्र':'Cross-cutting areas')+' ('+ccRows.length+')</b></summary>'+oneDumbRows(ccRows,70)+'</details>':'')
+      +'<p class="one-dim" style="margin:6px 2px 0">'+scEsc(hi?'केवल आपके चेकपॉइंट · जो अभी जाँचे नहीं गए वे 0 गिने जाते हैं':'Only your own checkpoints · not yet checked counts as 0')+'</p>'
       +'<div class="nf-sec"><b>'+scEsc(t('Badges'))+'</b><span>'+Object.keys(bs.earned).length+' / '+NF_BADGES.length+'</span></div><div class="nf-badges">'
       +NF_BADGES.map(function(b){ var on=!!bs.earned[b.id]; return '<div class="nf-bd'+(on?' '+b.c:' lock')+'"><span><i class="ti '+(on?b.icon:'ti-lock')+'"></i></span>'+scEsc(hi?b.hi:b.en)+'</div>'; }).join('')+'</div>';
     var ms=nfMissions(fac);
     if(ms.length) h+='<div class="nf-sec"><b>'+scEsc(t('Team missions'))+'</b><span>'+ms.filter(function(m){ return m.done>=m.target; }).length+' / '+ms.length+'</span></div><div class="nf-card nf-q">'+ms.map(nfMissionHTML).join('')+'</div>';
-    p.innerHTML=h; nfCelebrate(bs.earned);
+    p.innerHTML='<div class="one-wrap">'+h+'</div>'; nfCelebrate(bs.earned);
   };
   draw(); await nfLoadFacility(); if(p.style.display!=='none') draw();
 }
@@ -14269,18 +14278,18 @@ function nfRenderMe(){
   var p=nfPage('nf-me'), today=scb1TodayIdx(), st=nfStreaks(), hi=_appLang==='hi', role=choState.roleId||'CHO';
   var fname=((choState.facility||{}).name||''), cert=today>=59;
   var row=function(icon,label,onclick,right,cls){ return '<button type="button" class="nf-row'+(cls?' '+cls:'')+'" onclick="'+onclick+'"><i class="ti '+icon+'"></i><span>'+scEsc(label)+'</span>'+(right||'<i class="ti ti-chevron-right nf-row-chev"></i>')+'</button>'; };
+  var f=choState.facility||{}, pk=typeof scPkgLabel==='function'?scPkgLabel(choState.progId):scPkgCode(choState.progId);
   p.innerHTML='<div class="nf-ph"><h1>'+scEsc(t('Me'))+'</h1></div>'
-    +'<div class="nf-card nf-prof"><div class="nf-av">'+scEsc((choState.staffName||'?').charAt(0).toUpperCase())+'</div><b>'+scEsc(choState.staffName||'')+'</b>'
-    +'<small>'+scEsc(role)+' · '+scEsc(fname)+' · '+scEsc(scPkgCode(choState.progId))+'</small><div class="nf-chips">'+nfProBadge(choState.facility,'lg')+'<span class="t">'+scEsc(t('Day'))+' '+(today+1)+' / 60</span><span class="o">🔥 '+st.current+' '+scEsc(t('On time'))+'</span></div></div>'
-    +'<div class="nf-cert'+(cert?' on':'')+'"><span><i class="ti ti-certificate"></i></span><div><b>'+scEsc(t('Participation certificate'))+'</b><small>'+(cert?scEsc(hi?'आपका प्रमाणपत्र तैयार है':'Your certificate is ready'):scEsc(t('Unlocks on Day 60'))+' · '+(59-today)+' '+scEsc(t('days to go')))+'</small>'
-    +(cert?'<button type="button" onclick="nfCertificate()">'+scEsc(t('Download certificate'))+'</button>':'<div class="nf-bar lt"><i style="width:'+Math.round((today+1)/60*100)+'%"></i></div>')+'</div></div>'
+    +oneProfile({name:choState.staffName||'',sub:role+' · '+fname+(f.district?', '+f.district:''),chips:[[scEsc(hi?'उप-स्वास्थ्य केंद्र':'Sub-Centre')],[scEsc(t('Day'))+' '+(today+1)+' / 60','o'],[st.current+' '+scEsc(t('On time')),'o']]}).replace('class="one-card one-prof"','class="one-card one-prof nf-prof"')
+    +onePkgCard(hi?'मेरा पैकेज':'My package',[pk+(hi?' · आपके सुपरवाइज़र द्वारा जाँचा जाता है':' · checked by your Supervisor')])
+    +'<div class="nf-cert"></div>'
     +'<div class="nf-card nf-rows">'
     +'<div class="nf-row"><i class="ti ti-language"></i><span>'+scEsc(t('Language'))+'</span><span class="nf-lang"><button type="button" class="'+(hi?'':'on')+'" onclick="setLang(\'en\')">EN</button><button type="button" class="'+(hi?'on':'')+'" onclick="setLang(\'hi\')">हिं</button></span></div>'
     +(role==='CHO'&&_scDual?row('ti-building-hospital',t('Facility dashboard'),"scb1ShowTab('dash')"):'')
     +(scIsVerifier()?row('ti-shield-check',t('Staff cards to verify'),'scOpenVerifyQueue()'):'')
     +row('ti-broadcast',t('Live sessions'),'scOpenLiveSessions()')
     +row('ti-refresh',t('Refresh'),'scStaffRefresh(this)')
-    +row('ti-help-circle',t('Help'),'nfHelp()')
+    +row('ti-help-circle',_appLang==='hi'?'ऐप कैसे इस्तेमाल करें':'How to use the app','nfHelp()')
     +row('ti-logout',t('Log out'),'logoutCHO()','','danger')
     +'</div><div class="nf-byline">NQAS<i>|</i>FAST · by <img src="'+SC_BRAND.logoHealsol+'" alt="HealSol Academy"></div>';
 }
@@ -14348,8 +14357,8 @@ function nfTab(tab){
 function nfCardsHead(){
   var nav=document.getElementById('cho-nav'); if(!nav) return;
   var h=document.getElementById('nf-cards-head'); if(!h){ h=document.createElement('div'); h.id='nf-cards-head'; nav.insertBefore(h,nav.firstChild); }
-  var today=scb1TodayIdx(), wk=today<7?t('Baseline audit'):today<49?t('Week')+' '+(Math.floor((today-7)/7)+2):today<56?t('Revision'):t('Readiness week');
-  h.innerHTML='<h1>'+scEsc(t('Cards'))+'</h1><span class="nf-chip"><i class="ti ti-calendar"></i>'+scEsc(wk)+'</span><span class="nf-chip o">'+scEsc(t('Day'))+' '+(today+1)+' / 60</span>';
+  var today=scb1TodayIdx(), wk=today<7?t('Baseline'):today<49?t('Week')+' '+(Math.floor((today-7)/7)+2):today<56?(_appLang==='hi'?'एंड-लाइन':'End-line'):t('Readiness week');
+  h.innerHTML='<h1>'+scEsc(t('Cards'))+'</h1><span class="nf-chip o">'+scEsc(wk)+' · '+scEsc(t('Day'))+' '+(today+1)+' / 60</span>';
 }
 (function(){
   var oWel=showWelcomeScreen; showWelcomeScreen=function(){ var r=oWel.apply(this,arguments); try{ if(nfIsStaff()){ _nfTab='today'; nfRenderToday(); nfLoadFacility().then(function(){ if(_nfTab==='today') nfRenderToday(); }); } nfSync(); }catch(e){ console.warn(e); } return r; };
@@ -15082,7 +15091,7 @@ function nfRptActions(code){
 function nfFacilityReportHTML(code,preview){
   var f=(scMasterFacilities||{})[code]||{}, pr=(scMasterProgress||{})[code]||{}, pid=f.progId||'nqas_12A';
   var A=scFacilityReadiness(pid,pr,f.staff||{}), B=A.baseline||{}, hasB=!!B.assessed, n=A.nqas||scNqasCheckV2(A), day=nfDayOf(f);
-  var ph=day==null?'—':day<1?'Starts '+scFmtDate(f.startDate):day<=7?'Baseline audit':day<=49?'Implementation':day<=56?'Revision':'Readiness week';
+  var ph=day==null?'—':day<1?'Starts '+scFmtDate(f.startDate):day<=7?'Baseline':day<=49?'Implementation':day<=56?'End-line':'Readiness week';
   var cho=Object.keys(f.staff||{}).map(function(m){ return f.staff[m]; }).find(function(s){ return s&&(s.role||'CHO')==='CHO'; });
   var acts=nfRptActions(code), today=scTodayStr(), od=acts.filter(function(x){ return x.dueDate&&x.dueDate<today; }).length;
   var k=function(v,l,c){ return '<div><b style="color:'+(c||'#13201F')+'">'+v+'</b><small>'+l+'</small></div>'; };
@@ -16709,16 +16718,16 @@ function nfCertCardHTML(){
   if(rec) return '<div class="nf-cert nfc won on"><span><i class="ti ti-certificate"></i></span><div><b>'+scEsc(title)+'</b>'
     +'<small>'+scEsc(hi?'आपने यह अर्जित किया है':'You earned it')+' · '+scEsc(rec.certId)+'</small><div><span class="nfc-grade">'+scEsc(rec.grade.toUpperCase())+' · '+rec.facPct+'%</span></div>'
     +'<div class="nfc-acts"><button type="button" onclick="nfShowCert(_nfCert.rec)">'+scEsc(hi?'प्रमाणपत्र देखें':'View certificate')+'</button><button type="button" onclick="nfCertDownload(_nfCert.rec,this)">'+scEsc(hi?'PDF डाउनलोड':'Download PDF')+'</button></div></div></div>';
-  if(!nfProTier(choState.facility)) return '<div class="nf-cert nfc"><span><i class="ti ti-lock"></i></span><div><b>'+scEsc(title)+'</b><small>'+scEsc(hi?'पूर्ण प्रोग्राम (PRO) में उपलब्ध':'Available with the full programme (PRO).')+'</small></div></div>';
-  var li=function(ok,label,val){ return '<li class="'+(ok?'ok':'no')+'"><i class="ti '+(ok?'ti-circle-check':'ti-hourglass')+'"></i>'+scEsc(label)+'<em>'+val+'</em></li>'; };
-  var req='<ul class="nfc-req">'+li(E.okBase,hi?'बेसलाइन (7 दिन)':'Baseline days done',E.base+' / '+NF_CERT.baseline)+li(E.okDone,hi?'दैनिक कार्ड पूरे':'Daily cards done',E.done+' / '+NF_CERT.minDone)
-    +li(E.okVer,hi?'सत्यापित कार्ड (आधे)':'Cards verified (half of done)',E.ver+' / '+E.need)+'</ul>';
-  var status, btn='';
-  if(!E.dayOk) status=(hi?'दिन 60 पर खुलेगा':'Unlocks on Day 60')+' · '+(NF_CERT.days-1-E.day)+' '+(hi?'दिन बाकी':'days to go')+' · '+(hi?'इसे अर्जित करें:':'earn it:');
-  else if(!E.ok) status=hi?'अभी अर्जित नहीं — जो बाकी है उसे पूरा करें':'Not earned yet — complete what is still open';
-  else { status=hi?'बधाई! आपने सभी शर्तें पूरी कीं':'Well done — all conditions met'; btn='<button type="button" onclick="nfClaimCert(this)">'+scEsc(hi?'मेरा प्रमाणपत्र लें':'Get my certificate')+'</button>'; }
-  return '<div class="nf-cert nfc'+(E.ok&&E.dayOk?' on':'')+'"><span><i class="ti ti-certificate"></i></span><div><b>'+scEsc(title)+'</b><small>'+scEsc(status)+'</small>'+req+btn
-    +(!E.dayOk?'<div class="nf-bar lt"><i style="width:'+Math.round((E.day+1)/NF_CERT.days*100)+'%"></i></div>':'')+'</div></div>';
+  var title2=hi?'मेरा NQAS | FAST प्रमाणपत्र':'My NQAS | FAST certificate';
+  if(!nfProTier(choState.facility)) return oneCert({title:title2,sub:hi?'पूर्ण प्रोग्राम (PRO) में उपलब्ध':'Available with the full programme (PRO).',rows:[]}).replace('class="one-card one-cert"','class="one-card one-cert nf-cert nfc"');
+  var gd=choState.startDate?nfDateTxt(nfDayISO(NF_CERT.days-1),true):'';
+  var rows=[[E.okBase?'ok':'todo',hi?'बेसलाइन दिन पूरे':'Baseline days done',hi?'सभी 7 बेसलाइन दिन':'all 7 baseline days',E.base+' / '+NF_CERT.baseline],
+    [E.okDone?'ok':'todo',hi?'दैनिक कार्ड पूरे':'Day cards done',(hi?'60 में से कम से कम ':'at least ')+NF_CERT.minDone+(hi?'':' of 60'),E.done+' / '+NF_CERT.minDone],
+    [E.okVer?'ok':'todo',hi?'सुपरवाइज़र या CHO द्वारा जाँचे':'Checked by your Supervisor or CHO',hi?'पूरे कार्डों में से कम से कम आधे':'at least half of your done cards',E.ver+' / '+E.need],
+    [E.dayOk?'ok':'wait',hi?'स्वास्थ्य केंद्र का ग्रेजुएशन':'Facility graduates',(hi?'दिन 60':'Day 60')+(gd?' · '+gd:''),E.dayOk?'✓':'—']];
+  var sub=!E.dayOk?(hi?'दिन 60 पर खुलेगा — जो अभी बाकी है:':'Unlocks on Day 60 — what is still needed:'):!E.ok?(hi?'अभी अर्जित नहीं — जो बाकी है उसे पूरा करें':'Not earned yet — complete what is still open'):(hi?'बधाई! आपने सभी शर्तें पूरी कीं':'Well done — all conditions met');
+  var btn=E.ok&&E.dayOk?'<button type="button" onclick="nfClaimCert(this)">'+scEsc(hi?'मेरा प्रमाणपत्र लें':'Get my certificate')+'</button>':'';
+  return oneCert({title:title2,sub:sub,rows:rows,note:hi?'ग्रेड स्वास्थ्य केंद्र के स्कोर से: डिस्टिंक्शन 80%+, मेरिट 70–79%।':'Grade from the facility score: Distinction 80%+, Merit 70–79%.',btn:btn}).replace('class="one-card one-cert"','class="one-card one-cert nf-cert nfc'+(E.ok&&E.dayOk?' on':'')+'"');
 }
 function nfCertPaintMe(){ var p=document.getElementById('nf-me'); if(!p) return; var old=p.querySelector('.nf-cert'); if(!old) return; var w=document.createElement('div'); w.innerHTML=nfCertCardHTML(); old.replaceWith(w.firstChild); }
 async function nfCertScores(){
@@ -17746,8 +17755,8 @@ var FA_HI={'Facility dashboard':'सुविधा डैशबोर्ड','H
   'Facility readiness':'सुविधा की तैयारी','Baseline':'बेसलाइन','Growth':'बढ़त','Checkpoints':'चेकपॉइंट','Loading…':'लोड हो रहा है…',
   'Programme':'कार्यक्रम','Account':'खाता','Change my password':'मेरा पासवर्ड बदलें','Help on WhatsApp':'WhatsApp पर मदद','Logout':'लॉग आउट','Live sessions':'लाइव सत्र',
   'Programme start date':'कार्यक्रम शुरू होने की तारीख','Set date':'तारीख सेट करें','people':'लोग','person':'व्यक्ति','Close':'बंद करें','you':'आप',
-  'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','cards in':'कार्ड जमा','no card days yet':'अभी कोई कार्ड दिन नहीं','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',
-  'Downloads':'डाउनलोड','Refresh':'रीफ़्रेश'};
+  'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','cards in':'कार्ड जमा','cards in on time':'समय पर जमा कार्ड','no card days yet':'अभी कोई कार्ड दिन नहीं','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',
+  'Downloads':'डाउनलोड','Refresh':'रीफ़्रेश','Action plan':'कार्य योजना','Next':'अगला','checked':'जाँचे'};
 function faT(k){ return (typeof _appLang!=='undefined'&&_appLang==='hi'&&FA_HI[k])?FA_HI[k]:k; }
 function faOn(){ var a=document.getElementById('sc-cho-app'); return !!(a&&a.classList.contains('fa')); }
 function faSt(){ return (typeof _scIns!=='undefined'&&_scIns)?_scIns['sc-cho-progress']:null; }
@@ -17796,7 +17805,7 @@ function faHeader(){
   var f=faFac(), code=(typeof scSubAdminCode!=='undefined'&&scSubAdminCode)||'', d=typeof nfDayOf==='function'?nfDayOf(f):null;
   var sub=(d!=null&&d>0?faT('Day')+' '+d+' '+faT('of')+' 60 · ':'')+faT('Facility dashboard');
   hd.innerHTML='<div class="fa-hd-l"><small>'+sub+'</small><h1><span class="n">'+scEsc(f.name||code)+'</span>'+(typeof nfProBadge==='function'?nfProBadge(f,''):'')+'</h1></div>'
-    +'<button type="button" class="fa-ib" title="'+faT('Live sessions')+'" aria-label="Live sessions" onclick="scOpenLiveSessions()"><i class="ti ti-broadcast"></i></button>'
+    +'<button type="button" class="fa-ib" title="'+faT('Refresh')+'" aria-label="Refresh" onclick="faRefresh()"><i class="ti ti-refresh"></i></button>'
     +(faDual()?'<button type="button" class="fa-mc" onclick="faMyCards()"><i class="ti ti-cards"></i><span>'+faT('My cards')+'</span></button>':'');
   var nav=document.getElementById('fa-nav'); if(nav) nav.innerHTML=faNavHTML();
 }
@@ -17855,21 +17864,22 @@ function faHome(){
   var B=(P&&P.B)||A.baseline||{}, hasB=!!B.assessed, cur=A.coverage&&A.coverage.assessed?A.pct:null, d=P?P.day:(typeof nfDayOf==='function'?nfDayOf(f):null);
   var idx=d==null||d<1?-1:d<=7?0:d<=49?1:d<=56?2:d<=60?3:4, ph=idx<0?'Not started':idx>3?'Programme complete':(typeof NF_PHASES!=='undefined'?NF_PHASES[idx].k:'');
   var gain=hasB&&cur!=null?cur-B.pct:null, n=null; try{ n=A.nqas||scNqasCheckV2(A); }catch(e){}
-  var nq=!n||!n.hasData?'Readiness appears once staff mark day cards as done.':n.meets?'<b>✓ Meets NQAS criteria</b> — overall '+A.pct+'%':'<b>Not yet at NQAS criteria</b> — overall '+A.pct+'% (needs 70%)'+(n.stdFails&&n.stdFails.length?' · '+n.stdFails.length+' Standards below minimum':'');
+  var why=[]; if(n&&n.hasData&&!n.meets){ if(!n.overallOk) why.push('overall '+A.pct+'% (needs '+(n.overallMin||70)+'%)'); if(n.aocFails&&n.aocFails.length) why.push('Area'+(n.aocFails.length===1?' ':'s ')+n.aocFails.join(', ')+' below '+(n.aocMin||70)+'%'); if(n.stdFails&&n.stdFails.length) why.push(n.stdFails.length+' Standard'+(n.stdFails.length===1?'':'s')+' below minimum'); }
+  var nq=!n||!n.hasData?'Readiness appears once staff mark day cards as done.':n.meets?'<b>✓ Meets NQAS criteria</b> — overall '+A.pct+'%':'<b>Not yet at NQAS</b> — '+scEsc(why.join(' · '));
   var h='<div class="nf-hero fa-hero" style="margin-top:6px;"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">'+faT('Facility readiness')+'</div>'
     +'<div class="nf-hero-t">'+scEsc(ph)+'</div><div class="nf-hero-s">'+(d!=null&&d>0?faT('Day')+' '+d+' '+faT('of')+' 60':(f.startDate?'Starts '+scFmtDate(f.startDate):'Start date not set'))+'</div></div>'
     +'<div class="nf-hero-ring">'+nfRing(cur||0,hasB?B.pct:null,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+(cur==null?'—':cur+'%')+'</b><small>'+faT('readiness')+'</small></span></div></div>'
-    +'<div class="nf-hero-nums"><div><b class="acc">'+(hasB?B.pct+'%':'—')+'</b><small>'+faT('Baseline')+'</small></div><i></i><div><b>'+(gain==null?'—':(gain>=0?'+':'')+gain)+'</b><small>'+faT('Growth')+'</small></div><i></i><div><b>'+((A.coverage&&A.coverage.assessed)||0)+'<span style="font-size:13px;opacity:.75;">/'+A.total+'</span></b><small>'+faT('Checkpoints')+'</small></div></div>'
+    +'<div class="nf-hero-nums"><div><b class="acc">'+(hasB?B.pct+'%':'—')+'</b><small>'+faT('Baseline')+'</small></div><i></i><div><b>'+(gain==null?'—':(gain>=0?'+':'')+gain)+'</b><small>'+faT('Growth')+'</small></div><i></i><div><b>'+((A.coverage&&A.coverage.assessed)||0)+'<span style="font-size:13px;opacity:.75;">/'+A.total+'</span></b><small>'+faT('checked')+(A.coverage&&A.coverage.total?' · '+A.coverage.pct+'%':'')+'</small></div></div>'
     +'<div class="fa-nq">'+nq+'</div>'
     +'<button type="button" class="nf-cta" onclick="faTab(\'ready\')"><i class="ti ti-chart-bar"></i> '+faT('Open readiness')+'</button></div>';
+  if(f.startDate){ var SS={bN:7,iN:49,eN:56,days:60}, at=function(n){ return nfDateTxt(hsAddDays?hsAddDays(f.startDate,n-1):f.startDate,true); }, nx=idx<0?'Day 1 · '+at(1):idx===0?'Implementation starts on Day 8 · '+at(8):idx===1?'End-line starts on Day 50 · '+at(50):idx===2?'Readiness week starts on Day 57 · '+at(57):idx===3?'Graduation on Day 60 · '+at(60):'';
+    h+=oneProgCard({S:SS,day:d,gradDate:typeof hsAddDays==='function'?hsAddDays(f.startDate,59):'',next:nx?faT('Next')+': '+nx:''}); }
+  if(n&&n.hasData){ var RR=nfResult(nfResultSc(A,f.graduation||null)); h+=oneIfGrad({pct:cur,word:RR.word,cls:RR.cls,why:RR.cls==='green'?'':RR.txt}); }
   var items=faItems();
   h+='<div class="fa-sec"><b>'+faT('Needs your attention')+'</b>'+(items.length?'<small>'+items.length+'</small>':'')+'</div>';
   if(items.length) h+='<div class="nf-card nf-list fa-att">'+items.map(function(x){ return '<button type="button" class="nf-task" onclick="'+x.go+'"><span class="nf-ti '+x.cls+'"><i class="ti '+x.ic+'"></i></span><span class="nf-tt"><b>'+scEsc(x.t)+'</b><small>'+scEsc(x.s)+'</small></span><i class="ti ti-chevron-right"></i></button>'; }).join('')+'</div>';
   else h+='<div class="nf-card nf-list"><div class="fa-ok"><span class="nf-ti"><i class="ti ti-circle-check"></i></span><div><b>'+faT('All clear')+'</b><small>'+faT('Nothing needs your attention right now.')+'</small></div></div></div>';
-  h+='<div class="fa-sec"><b>'+faT('Quick actions')+'</b></div><div class="fa-qa">'
-    +'<button type="button" onclick="faAddStaff()"><i class="ti ti-user-plus"></i>'+faT('Add staff')+'</button>'
-    +'<button type="button" onclick="faDownloads()"><i class="ti ti-download"></i>'+faT('Download')+'</button>'
-    +'<button type="button" onclick="scOpenLiveSessions()"><i class="ti ti-broadcast"></i>'+faT('Live session')+'</button></div>';
+  h+='<div class="fa-sec"><b>'+faT('Quick actions')+'</b></div>'+oneQuick([['ti-user-plus',faT('Add staff'),'faAddStaff()'],['ti-checklist',faT('Action plan'),"faOpenReady('gaps')",'o'],['ti-download',faT('Download'),'faDownloads()','g'],['ti-broadcast',faT('Live session'),'scOpenLiveSessions()']]);
   host.innerHTML=h;
   var nav=document.getElementById('fa-nav'); if(nav) nav.innerHTML=faNavHTML();
 }
@@ -17900,7 +17910,7 @@ function faStaffRender(){
 }
 function faStaffMeta(){
   var list=faStaffList(), n=document.getElementById('fa-staff-n'), miss=document.getElementById('fa-staff-miss');
-  if(n) n.textContent=list.length+' '+faT(list.length===1?'person':'people');
+  if(n) n.textContent=list.length+' '+faT(list.length===1?'person':'people')+' · '+faT('cards in on time');
   if(miss){ var have={}; list.forEach(function(s){ have[s.role||'CHO']=1; }); var no=FA_ROLES.filter(function(r){ return !have[r]; });
     miss.textContent=no.length?'Not added yet: '+no.map(function(r){ return (getScRole(r)||{}).label||r; }).join(' · '):''; }
 }
@@ -22607,7 +22617,7 @@ function ndDayTitle(day) {
 // ═══ Cards tab in the SC design (17 Oct): Cards head · Day / Timeline switch · facility bar · day strip · the day card ═══
 function ndCur() { return _nd.card || { dept: _nd.cdept, day: _nd.cday }; }
 function ndAocColor(a) { try { if (typeof getAoCDef === 'function') { var c = (getAoCDef(a) || {}).color; if (c) return c; } } catch (e) {} return '#1E6B5E'; }
-function ndWeekLabel(day) { var S = ndShape(); if (day > 100) return day - 100 > ND_GRAD.cuWork ? 'Catch-up re-check' : 'Catch-up week ' + Math.ceil((day - 100) / 7); return day <= S.bN ? 'Baseline audit' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
+function ndWeekLabel(day) { var S = ndShape(); if (day > 100) return day - 100 > ND_GRAD.cuWork ? 'Catch-up re-check' : 'Catch-up week ' + Math.ceil((day - 100) / 7); return day <= S.bN ? 'Baseline' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
 function ndCardDepts(day) {   // my departments with a card on this day: the ones I fill first, then the ones I check
   var me = ndMob();
   return ndMyDepts().filter(function (d) { return ndDayIds(d.id, day).length && (_nd.view || (ndFills(d.id, me) && ndMyIds(d.id, day, me).length) || ndCanCheck(d.id, me)); })
@@ -22802,21 +22812,23 @@ function ndTodayHTML() {
   var doneN = fillToday.filter(function (d) { var c = ndPc(d.id, day)[me] || {}; return c.done || c.absent; }).length;
   var scored = 0, total = 0; fillToday.forEach(function (d) { var c = ndPc(d.id, day)[me] || {}, ids = ndDayIds(d.id, day); total += ids.length; scored += ids.filter(function (i) { return (c.s || {})[i] !== undefined; }).length; });
   var cta = _nd.view || !fillToday.length ? '<button type="button" class="nx-cta" onclick="ndTab(\'cards\')">Open the cards ›</button>'
-    : t.fill.length ? '<button type="button" class="nx-cta" onclick="ndGoCard(\'' + t.fill[0].id + '\',' + day + ')">Continue today\'s card · ' + scored + ' of ' + total + ' done ›</button>'
+    : t.fill.length ? '<button type="button" class="nx-cta" onclick="ndGoCard(\'' + t.fill[0].id + '\',' + day + ')">Open today\'s card · ' + scored + ' of ' + total + ' done ›</button>'
     : '<button type="button" class="nx-cta" onclick="ndTab(\'cards\')">All done for today ✓</button>';
   var h = '<div class="nx">' + top
     + '<div class="nx-hero"><div class="nx-hero-row"><div class="nx-hero-txt"><div class="nx-hero-k">' + (cuD ? 'Catch-up · day ' + Math.min(day - 100, ND_GRAD.cuDays) + ' / ' + ND_GRAD.cuDays : 'Day ' + d0 + ' / ' + n) + ' · ' + ndEsc(ndWeekLabel(d0)) + '</div>'
-    + '<div class="nx-hero-t">' + ndEsc((cuD ? day > ndLastDay() : day > n) ? (_nd.fac.graduation ? 'Programme complete · ' + (ND_GRAD_RES[_nd.fac.graduation.result] || {}).t : 'Programme complete') : nxTheme(d0)) + '</div>'
+    + '<div class="nx-hero-t">' + ndEsc((cuD ? day > ndLastDay() : day > n) ? (_nd.fac.graduation ? 'Programme complete · ' + (ND_GRAD_RES[_nd.fac.graduation.result] || {}).t : 'Programme complete') : nxTheme(d0)) + '</div></div>'
+    + '<div class="nx-ring">' + nxRing(F.overall === null ? 0 : F.overall, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + (F.overall === null ? '–' : F.overall + '%') + '</b><small>facility</small></span></div></div>'
+    + oneStrip(cuD ? 4 : onePhaseIdx(day, S))
     + '<div class="nx-hero-n"><div><b>' + (R.overall === null ? '–' : R.overall + '%') + '</b><small>' + (_nd.view || !nxFillIds().length ? 'Facility readiness' : 'My readiness') + '</small></div><i></i>'
-    + (gain !== null ? '<div><b class="acc">' + (gain >= 0 ? '+' : '') + gain + '</b><small>since baseline</small></div>' : '<div><b>' + R.n + '</b><small>of ' + R.of + ' assessed</small></div>') + '</div></div>'
-    + '<div class="nx-ring">' + nxRing(my, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + my + '%</b><small>Facility ' + (F.overall === null ? '–' : F.overall + '%') + '</small></span></div></div>' + cta + '</div>';
+    + (gain !== null ? '<div><b class="acc">' + (gain >= 0 ? '+' : '') + gain + '</b><small>since baseline</small></div>' : '<div><b>' + R.n + '</b><small>of ' + R.of + ' checked</small></div>')
+    + (total ? '<i></i><div><b>' + scored + ' / ' + total + '</b><small>checked today</small></div>' : '') + '</div>' + cta + '</div>';
   // Step 3: programme end (readiness week, graduation result, catch-up); HealSol / District: the programme block
   if (_nd.view) h += ndGradAdminHTML();
   h += ndGradTodayHTML();
   if (day <= n && day < ndShape().e1) h += '<div class="nx-ban o"><b>Graduation on Day ' + n + ' · ' + ndEsc(nxLongDate(nxDateOf(n))) + '</b><span>Finish any missing cards and comparisons as you go — the end-line starts on Day ' + ndShape().e1 + '.</span></div>';
   if (!_nd.view && nxFillIds().length) {
     var ts = nxTeamOnTime(), late = t.late.length, chips = [];
-    if (ts !== null) chips.push('<span class="nx-chip ' + (ts >= 80 ? 'g' : ts >= 60 ? 'a' : 'r') + '">Team: ' + (ts >= 80 ? 'On track' : ts >= 60 ? 'Slightly behind' : 'Behind') + ' · ' + ts + '% cards in</span>');
+    if (ts !== null) chips.push('<span class="nx-chip ' + (ts >= 80 ? 'g' : ts >= 60 ? 'a' : 'r') + '">Team: ' + (ts >= 80 ? 'On track' : ts >= 60 ? 'Slipping' : 'Behind') + ' · ' + ts + '% on time</span>');
     if (late) chips.push('<span class="nx-chip r">You are ' + late + ' card' + (late > 1 ? 's' : '') + ' behind — catch up today</span>');
     if (chips.length) h += '<div class="nx-chips">' + chips.join('') + '</div>';
   }
@@ -22985,7 +22997,7 @@ function ndRemindHTML() {
 function nxCardsHead() {
   var today = Math.min(ndDay(), ndLastDay()), cv = _nd.cv || 'day';
   return '<div class="nx-ph"><div class="nx-ph-in"><div class="nx-ph-r"><h1>Cards</h1><span class="nd-qb" id="nd-q" hidden></span>'
-    + ndLangSeg() + '<span class="nx-chip t">' + ndEsc(nxPkgLabel()) + '</span><span class="nx-chip o">' + (today > 100 ? 'Catch-up · day ' + (today - 100) : 'Day ' + Math.max(today, 0)) + '</span></div>'
+    + '<span class="nx-chip o">' + (today > 100 ? 'Catch-up · day ' + (today - 100) : ndEsc(ndWeekLabel(Math.max(today, 1))) + ' · Day ' + Math.max(today, 0) + ' / ' + _nd.cfg.days) + '</span></div>'
     + '<div class="nx-ul"><button type="button" class="' + (cv === 'day' ? 'on' : '') + '" onclick="ndCv(\'day\')">Daily Cards</button><button type="button" class="' + (cv === 'timeline' ? 'on' : '') + '" onclick="ndCv(\'timeline\')">Timeline</button></div></div></div>';
 }
 function ndCardsHTML() {
@@ -22999,7 +23011,7 @@ function ndCardsHTML() {
   h += '<div class="nx-strip" id="nd-ds">';
   for (var d = d1; d <= dN; d++) {
     var st = _nd.view ? nxFacSt(d) : ndDaySt(d), can = d <= today;
-    h += '<button type="button" class="nx-d ds-day ' + st + (d === day ? ' sel' : '') + '" title="' + (d > 100 ? 'Catch-up day ' + (d - 100) : 'Day ' + d) + ' · ' + ndEsc(nxLongDate(nxDateOf(d))) + ' · ' + ndEsc(ND_ST[st].t) + '"' + (can ? ' onclick="ndOpenDay(' + d + ')"' : ' disabled') + '><small>' + ndEsc(nxWd(d)) + '</small><b>' + (d > 100 ? d - 100 : d) + '</b></button>';
+    h += '<button type="button" class="nx-d ds-day ' + st + (d === day ? ' sel' : '') + '" title="' + (d > 100 ? 'Catch-up day ' + (d - 100) : 'Day ' + d) + ' · ' + ndEsc(nxLongDate(nxDateOf(d))) + ' · ' + ndEsc(ND_ST[st].t) + '"' + (can ? ' onclick="ndOpenDay(' + d + ')"' : ' disabled') + '><small>' + ndEsc(nxWd(d)) + '</small><b>' + (d > 100 ? d - 100 : d) + '</b><small>' + ndEsc(String(nxLongDate(nxDateOf(d))).replace(/ \d{4}$/, '')) + '</small></button>';
   }
   h += '</div><div class="nx-leg"><span><i class="g">●</i> Checked</span><span><i class="a">●</i> Waiting for the check</span><span><i class="r">●</i> Missed — still open</span></div>';
   var depts = ndCardDepts(day);
@@ -23126,27 +23138,18 @@ function ndWeek(w) { _ndWkOpen[w] = !_ndWkOpen[w]; ndKeepScroll(); }
 // ═══ PROGRESS ═══
 function ndReadyHTML() {
   var me = ndMob(), day = Math.min(ndDay(), _nd.cfg.days), mine = nxMineIds(), mineOnly = !!nxFillIds().length, pass = (_nd.cfg.passMark || {}).overall || 70;
-  var S = ndShape(), R = nxReady(mine), B = nxReady(mine, S.bN), I = day > S.bN ? nxReady(mine, S.iN, S.i1) : null, E = day >= S.e1 ? nxReady(mine, 999, S.e1) : null;
-  var pct = R.overall === null ? 0 : R.overall, fmt = function (x) { return x && x.overall !== null ? x.overall + '%' : '–'; };
+  var S = ndShape(), R = nxReady(mine), B = nxReady(mine, S.bN), I = day > S.bN ? nxReady(mine, S.iN, S.i1) : null, E = day >= S.e1 ? nxReady(mine, 999, S.e1) : null, F = nxReady(ndDeptDefs().map(function (d) { return d.id; }));
+  var v = function (x) { return x && x.overall !== null ? x.overall : null; };
   var h = '<div class="nx"><div class="nx-ph-r"><h1 style="margin:0;font-size:21px;font-weight:700;flex:1">' + (mineOnly ? 'My progress' : 'Facility progress') + '</h1><span class="nx-chip o">Day ' + Math.max(day, 0) + ' / ' + _nd.cfg.days + '</span></div>'
-    + '<div class="nx-card nx-pring"><div class="nx-ring">' + nxRing(pct, 104, 11, '#1E6B5E', '#E6F2EF') + '<span><b>' + pct + '%</b><small>readiness</small></span></div><div class="nx-kv">'
-    + '<div><span>Baseline</span><b>' + fmt(B) + '</b></div><div><span>Implementation</span><b style="color:#135A55">' + (I ? fmt(I) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.i1 + '</span>') + '</b></div>'
-    + '<div><span>End-line</span><b>' + (E ? fmt(E) : '<span style="color:#94A3B8;font-weight:600">from Day ' + S.e1 + '</span>') + '</b></div><div class="nx-dim">Target to pass: ' + pass + '% · ' + R.n + ' of ' + R.of + ' assessed</div></div></div>';
-  if (!_nd.view && mineOnly) {
-    var I2 = nxImpact();
-    h += '<div class="nx-stat c3"><div><b style="color:#9A5A12">' + ndStreak() + '</b><small>days on time in a row</small></div><div><b style="color:#135A55">' + I2.checked + '</b><small>checkpoints checked</small></div><div><b style="color:#166534">' + I2.fixed + '</b><small>gaps you fixed</small></div></div>';
-  }
+    + oneRingCard({ pct: v(R), label: mineOnly ? 'my readiness' : 'readiness', base: v(B), impl: v(I), implFrom: 'from Day ' + S.i1, end: v(E), endFrom: 'from Day ' + S.e1,
+      foot: (mineOnly && F.overall !== null ? 'Facility ' + F.overall + '% · ' : '') + 'target ' + pass + '% · ' + R.n + ' of ' + R.of + ' checked' });
+  if (!_nd.view && mineOnly) { var I2 = nxImpact(); h += oneCounters([[ndStreak(), 'days on time in a row', 'o'], [I2.checked, 'checkpoints checked'], [I2.fixed, 'gaps you fixed', 'g']]); }
   var tab = _nd.ptab || 'dept';
-  h += '<div class="nx-seg"><button type="button" class="' + (tab === 'aoc' ? 'on' : '') + '" onclick="_nd.ptab=\'aoc\';ndKeepScroll()">Areas of Concern</button><button type="button" class="' + (tab === 'dept' ? 'on' : '') + '" onclick="_nd.ptab=\'dept\';ndKeepScroll()">' + (mineOnly ? 'My departments' : 'Departments') + '</button></div>';
-  var bar = function (name, cur, base) {
-    if (cur === null || cur === undefined) return '<div class="nx-hb"><div><b>' + ndEsc(name) + '</b><span class="nx-dim">not assessed</span></div><p></p></div>';
-    var b = base === null || base === undefined ? cur : Math.min(base, cur);
-    return '<div class="nx-hb"><div><b>' + ndEsc(name) + '</b><span>' + cur + '%</span></div><p><span class="b" style="width:' + b + '%"></span>' + (cur > b ? '<span class="i" style="width:' + (cur - b) + '%"></span>' : '') + '</p></div>';
-  };
-  h += '<div class="nx-card"><div class="nx-leg"><span><i style="color:#CBD5E1">■</i> Baseline</span><span><i style="color:#1E6B5E">■</i> Gain since baseline</span></div>';
-  if (tab === 'aoc') Object.keys(_nd.cl.aocs).forEach(function (a) { if (!R.byAoc[a]) return; h += bar(a + ' · ' + String(_nd.cl.aocs[a]).replace(/^[:\s]+/, ''), R.byAoc[a].pct, (B.byAoc[a] || {}).pct); });
-  else mine.forEach(function (id) { if (!R.byDept[id]) return; h += bar(ndDeptDef(id).name, R.byDept[id].pct, (B.byDept[id] || {}).pct); });
-  h += '<span class="nx-dim">' + (mineOnly ? 'Only the departments you are part of. Your department lead sees the whole team.' : 'Latest checked score of each checkpoint, % of the maximum.') + '</span></div>';
+  h += oneSeg([['aoc', 'Areas of Concern'], ['dept', mineOnly ? 'My departments' : 'Departments']], tab, function (k) { return "_nd.ptab='" + k + "';ndKeepScroll()"; });
+  var rows = [];
+  if (tab === 'aoc') Object.keys(_nd.cl.aocs).forEach(function (a) { if (!R.byAoc[a]) return; rows.push({ label: a + ' · ' + String(_nd.cl.aocs[a]).replace(/^[:\s]+/, ''), now: R.byAoc[a].pct, base: (B.byAoc[a] || {}).pct }); });
+  else mine.forEach(function (id) { if (!R.byDept[id]) return; rows.push({ label: ndDeptDef(id).name, now: R.byDept[id].pct, base: (B.byDept[id] || {}).pct, sub: R.byDept[id].n + ' of ' + R.byDept[id].of + ' checked' }); });
+  h += oneDumbRows(rows, pass) + '<p class="one-dim" style="margin:6px 2px 0">' + (mineOnly ? 'Only the departments you are part of. Your department lead sees the whole team.' : 'Whole checklist — not yet checked counts as 0.') + '</p>';
   if (_nd.view) h += '<details class="nx-card"><summary style="cursor:pointer;font-weight:700;font-size:14px">Department × Area of Concern grid</summary>' + nxGridHTML() + '</details>';
   if (!_nd.view && mineOnly) {
     var BD = nxBadges();
@@ -23190,15 +23193,12 @@ function nxBadges() {
 // ═══ ME ═══
 function ndMeHTML() {
   var me = ndMob(), st = ndStaff()[me] || {}, nm = st.name || me, day = Math.min(ndDay(), _nd.cfg.days), I = nxImpact(), fillIds = nxFillIds();
-  var h = '<div class="nx"><div class="nx-card nx-prof"><div class="nx-av">' + ndEsc(String(nm).charAt(0).toUpperCase()) + '</div><div><b>' + ndEsc(nm) + '</b><small>' + ndEsc(nxRoleOf(me) + ' · ' + (_nd.fac.name || _nd.code) + (_nd.fac.district ? ', ' + _nd.fac.district : '')) + '</small>'
-    + '<div class="nx-chips"><span class="nx-chip t" style="font-size:10.5px;padding:2px 8px">' + ndEsc(nxPkgLabel()) + '</span>' + (_nd.fac.startDate && day >= 1 ? '<span class="nx-chip o" style="font-size:10.5px;padding:2px 8px">Day ' + day + '</span>' : '') + '</div></div></div>';
+  var type = (NF_LEVELS[nfTypeOf(_nd.fac)] || {}).short || _nd.cfg.short || '';
+  var h = '<div class="nx"><div class="nx-ph-r"><h1 style="margin:0;font-size:21px;font-weight:700;flex:1">Me</h1></div>'
+    + oneProfile({ name: nm, sub: nxRoleOf(me) + ' · ' + (_nd.fac.name || _nd.code) + (_nd.fac.district ? ', ' + _nd.fac.district : ''), chips: [[ndEsc(type)]].concat(_nd.fac.startDate && day >= 1 ? [['Day ' + day + ' / ' + _nd.cfg.days, 'o'], [ndStreak() + ' on time', 'o']] : []) });
   var depts = ndMyDepts().filter(function (d) { return ndFills(d.id, me) || ndCanCheck(d.id, me); });
-  h += '<div class="nx-card"><b>My departments</b><div class="nx-chips">' + (depts.length ? depts.map(function (d) {
-    var lab = d.name + (ndLead(d.id) === me ? ' · you lead' : ndChecker(d.id) === me ? ' · you compare' : ndFills(d.id, me) && ndChecker(d.id) ? ' · checker: ' + nxRoleOf(ndChecker(d.id)) + ' ' + nxFirst(ndChecker(d.id)) : '');
-    return '<span class="nx-chip' + (ndFills(d.id, me) ? ' t' : '') + '">' + ndEsc(lab) + '</span>'; }).join('') : '<span class="nx-dim">None yet — the ' + ndEsc(_nd.cfg.inChargeLabel) + ' adds you in Set-up.</span>') + '</div></div>';
-  if (fillIds.length) {
-    h += '<div class="nx-card"><b>My impact</b><div class="nx-stat c3" style="gap:4px"><div style="border:0;padding:4px"><b style="color:#135A55">' + I.checked + '</b><small>checked</small></div><div style="border:0;padding:4px"><b style="color:#166534">' + I.fixed + '</b><small>gaps fixed</small></div><div style="border:0;padding:4px"><b style="color:#9A5A12">' + (I.onTime === null ? '–' : I.onTime + '%') + '</b><small>days on time</small></div></div></div>';
-  }
+  h += onePkgCard('My departments', depts.map(function (d) { return d.name + (ndLead(d.id) === me ? ' · you lead' : ndChecker(d.id) === me ? ' · you compare' : ndFills(d.id, me) && ndChecker(d.id) ? ' · checked by ' + nxRoleOf(ndChecker(d.id)) + ' ' + nxFirst(ndChecker(d.id)) : ''); }), depts.length ? '' : 'None yet — the ' + _nd.cfg.inChargeLabel + ' adds you in Set-up.');
+  if (fillIds.length) h += oneImpact({ title: 'My work so far', nums: [[I.checked, 'checked'], [I.fixed, 'gaps fixed'], [I.onTime === null ? '–' : I.onTime + '%', 'days on time']], line: 'Updated as you finish cards.' });
   h += ndCertCardHTML();   // Step 3: the real certificate (issueCertificate)
   var help = ''; try { if (typeof nfSupportOn === 'function' && nfSupportOn()) help = '<button type="button" class="nx-btn sm" style="background:#16A34A" onclick="nfOpenSupport(\'me\')">Chat</button>'; } catch (e) {}
   h += '<div class="nx-card" style="flex-direction:row;align-items:center;gap:12px"><i class="ti ti-message" style="width:40px;height:40px;border-radius:12px;background:#DCFCE7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none"></i><span style="flex:1;display:flex;flex-direction:column"><b style="font-size:13.5px">Need help?</b><small class="nx-dim">' + (help ? 'WhatsApp HealSol support' : 'Ask your ' + ndEsc(_nd.cfg.inChargeLabel) + ' or HealSol Academy') + '</small></span>' + help + '</div>';
@@ -23512,20 +23512,26 @@ function nxFaHomeHTML() {
   var day = ndDay(), n = _nd.cfg.days, all = ndDeptDefs().map(function (d) { return d.id; });
   var S = ndShape(), R = nxReady(all), B = nxReady(all, S.bN), cur = R.overall, gain = day > S.bN && B.overall !== null && cur !== null ? cur - B.overall : null;
   var ph = !_nd.fac.startDate ? 'Not started' : day < 1 ? 'Starts ' + nxLongDate(_nd.fac.startDate) : day > n ? 'Programme complete' : ndWeekLabel(day);
-  var nq = R.n === 0 ? 'Readiness appears once staff mark day cards as done.' : R.meets ? '<b>✓ Meets NQAS criteria</b> — overall ' + cur + '%' : '<b>Not yet at NQAS criteria</b> — overall ' + (cur === null ? '–' : cur + '%') + ' (needs ' + ((_nd.cfg.passMark || {}).overall || 70) + '% overall, in each department and each Area of Concern)';
+  var gs = null, rr = null; try { gs = ndGradScores(); rr = ndGradRule(gs, true); } catch (e) {}
+  var why = []; if (rr) { var C = rr.crit; if (cur !== null && cur < C.overall) why.push('overall ' + cur + '% (needs ' + C.overall + '%)'); if (rr.deptFails.length) why.push(rr.deptFails.length === 1 ? ndDeptDef(rr.deptFails[0]).name + ' ' + gs.byDept[rr.deptFails[0]] + '% (needs ' + C.dept + '%)' : rr.deptFails.length + ' departments below ' + C.dept + '%'); if (rr.aocFails.length) why.push('Area' + (rr.aocFails.length === 1 ? ' ' : 's ') + rr.aocFails.join(', ') + ' below ' + C.aoc + '%'); if (rr.stdFails.length) why.push(rr.stdFails.length + ' Standard' + (rr.stdFails.length === 1 ? '' : 's') + ' below minimum'); }
+  var nq = R.n === 0 ? 'Readiness appears once staff mark day cards as done.' : rr && rr.result === 'ready' ? '<b>✓ Meets NQAS criteria</b> — overall ' + cur + '%' : '<b>Not yet at NQAS</b> — ' + ndEsc(why.join(' · ') || 'not every checkpoint checked yet');
   var h = '<div class="nx-hero"><div class="nx-hero-row"><div class="nx-hero-txt"><div class="nx-hero-k">Facility readiness</div><div class="nx-hero-t" style="font-size:18px">' + ndEsc(ph) + '</div>'
     + '<div class="nx-hero-k">' + (_nd.fac.startDate && day >= 1 ? 'Day ' + Math.min(day, n) + ' of ' + n : _nd.fac.startDate ? '' : 'Start date not set') + '</div></div>'
     + '<div class="nx-ring">' + nxRing(cur || 0, 88, 9, '#fff', 'rgba(255,255,255,.2)') + '<span><b>' + (cur === null ? '–' : cur + '%') + '</b><small>readiness</small></span></div></div>'
-    + '<div class="nx-hero-n"><div><b class="acc">' + (B.overall === null ? '–' : B.overall + '%') + '</b><small>Baseline</small></div><i></i><div><b>' + (gain === null ? '–' : (gain >= 0 ? '+' : '') + gain) + '</b><small>Growth</small></div><i></i><div><b>' + R.n + '<small style="font-size:13px;opacity:.8">/' + R.of + '</small></b><small>Checkpoints</small></div></div>'
+    + '<div class="nx-hero-n"><div><b class="acc">' + (B.overall === null ? '–' : B.overall + '%') + '</b><small>Baseline</small></div><i></i><div><b>' + (gain === null ? '–' : (gain >= 0 ? '+' : '') + gain) + '</b><small>Growth</small></div><i></i><div><b>' + R.n + '<small style="font-size:13px;opacity:.8">/' + R.of + '</small></b><small>checked' + (R.of ? ' · ' + Math.round(100 * R.n / R.of) + '%' : '') + '</small></div></div>'
     + '<div class="nx-fa-nq">' + nq + '</div>'
     + (_nd.fac.startDate ? '<button type="button" class="nx-cta" onclick="ndFaTab(\'ready\')">Open readiness</button>' : '<div class="nx-card" style="color:#0F172A"><b>Set the programme start date</b><span class="nx-dim">All departments start the baseline together on this date (Day 1).</span>' + ndStartForm() + '</div>') + '</div>';
-  h += ndGradTodayHTML();   // Step 3: readiness week / graduation result / catch-up
+  var rw = _nd.fac.startDate && day >= S.r1 && day <= S.rN && !_nd.fac.graduation;
+  if (_nd.fac.startDate && !rw) { var nxt = day < 1 ? 'Day 1 · ' + nfDateTxt(_nd.fac.startDate, true) : day <= S.bN ? 'Implementation starts on Day ' + (S.bN + 1) + ' · ' + nfDateTxt(nxDateOf(S.bN + 1), true) : day <= S.iN ? 'End-line starts on Day ' + (S.iN + 1) + ' · ' + nfDateTxt(nxDateOf(S.iN + 1), true) : day <= S.eN ? 'Readiness week starts on Day ' + (S.eN + 1) + ' · ' + nfDateTxt(nxDateOf(S.eN + 1), true) : '';
+    h += oneProgCard({ S: S, day: day, gradDate: nxDateOf(n), next: nxt ? 'Next: ' + nxt : '' }); }
+  h += ndGradTodayHTML();   // Step 3: readiness week (phase strip, end-line checks, If we graduated today) / graduation result / catch-up
+  if (!rw && !_nd.fac.graduation && R.n > 0 && rr) { var RR = nfResult({ assessed: R.n, cov: R.of ? Math.round(100 * R.n / R.of) : null, meets: rr.result === 'ready', pct: cur, mark: rr.crit.overall, deptFails: rr.deptFails.map(function (x) { return ndDeptDef(x).name; }), aocFails: rr.aocFails, stdFails: rr.stdFails });
+    h += oneIfGrad({ pct: cur, word: RR.word, cls: RR.cls, why: RR.cls === 'green' ? '' : RR.txt }); }
   var items = nxFaItems();
   h += '<div class="nx-sec"><b>Needs your attention</b>' + (items.length ? '<span class="nx-dim">' + items.length + '</span>' : '') + '</div>';
   h += items.length ? '<div class="nx-card p0 nx-list">' + items.map(function (x) { return nxLi(x.ic, x.cls === 'v' ? 'b' : x.cls, x.t, x.s, x.go); }).join('') + '</div>'
     : '<div class="nx-card"><div class="nx-empty"><i class="ti ti-circle-check"></i><b>All clear</b><br>Nothing needs your attention right now.</div></div>';
-  h += '<div class="nx-sec"><b>Quick actions</b></div><div class="nx-fa-qa"><button type="button" onclick="ndFaTab(\'staff\');setTimeout(function(){var d=document.getElementById(\'nd-add\');if(d){d.open=true;d.scrollIntoView({block:\'center\'});}},80)"><i class="ti ti-user-plus"></i>Add staff</button>'
-    + '<button type="button" onclick="ndLeadOpen(\'plan\')"><i class="ti ti-checklist"></i>Action plan</button><button type="button" onclick="ndFaTab(\'more\')"><i class="ti ti-send"></i>Reminders</button></div>';
+  h += '<div class="nx-sec"><b>Quick actions</b></div>' + oneQuick([['ti-user-plus', 'Add staff', "ndFaTab('staff');setTimeout(function(){var d=document.getElementById('nd-add');if(d){d.open=true;d.scrollIntoView({block:'center'});}},80)"], ['ti-checklist', 'Action plan', "ndLeadOpen('plan')", 'o'], ['ti-download', 'Download', "ndFaTab('more')", 'g']].concat(typeof scOpenLiveSessions === 'function' ? [['ti-broadcast', 'Live session', 'scOpenLiveSessions()']] : []));
   if (_nd.fac.startDate && day >= 1) h += nxDeptListHTML();
   return h;
 }
@@ -23534,10 +23540,10 @@ function nxFaStaffHTML() {
   var mobs = Object.keys(staff).sort(function (a, b) { var ra = roles.indexOf(ndRole(a)), rb = roles.indexOf(ndRole(b)); return (ra - rb) || String(staff[a].name || '').localeCompare(String(staff[b].name || '')); });
   var have = {}; mobs.forEach(function (m) { have[ndRole(m)] = 1; });
   var miss = (_nd.cfg.roles || []).filter(function (r) { return !have[r.id] && r.id !== 'MO'; }).map(function (r) { return r.label; });
-  var h = '<div class="nx-sec"><b>Staff</b><span class="nx-dim">' + mobs.length + ' ' + (mobs.length === 1 ? 'person' : 'people') + '</span></div>' + (miss.length ? '<div class="nx-dim">Not added yet: ' + ndEsc(miss.join(' · ')) + '</div>' : '');
+  var h = '<div class="nx-sec"><b>Staff</b><span class="nx-dim">' + mobs.length + ' ' + (mobs.length === 1 ? 'person' : 'people') + ' · cards in on time</span></div>';
   h += '<div class="nx-card p0">' + mobs.map(function (m) {
     var st = staff[m], due = 0, done = 0, lead = [], fill = [];
-    ndDeptDefs().forEach(function (d) { if (ndLead(d.id) === m) lead.push(d.id); else if (ndChecker(d.id) === m) lead.push(d.id + ' (compares)'); if (!ndFills(d.id, m)) return; fill.push(d.id);
+    ndDeptDefs().forEach(function (d) { var dn = ndDeptDef(d.id).name; if (ndLead(d.id) === m) lead.push(dn); else if (ndChecker(d.id) === m) lead.push(dn + ' (compares)'); if (!ndFills(d.id, m)) return; fill.push(dn);
       for (var k = 1; k <= day; k++) { if (!ndDayInfo(d.id, k).ids.length) continue; due++; var c = ndPc(d.id, k)[m] || {}; if (c.done || c.absent) done++; } });
     var pct = due ? Math.round(100 * done / due) : null, ic = ndIsInCharge(m), you = m === me;
     return '<details class="nx-fa-p"><summary><span class="nx-av" style="width:42px;height:42px;font-size:16px">' + ndEsc(String(st.name || m).charAt(0).toUpperCase()) + '</span><span class="nx-fa-pb"><b>' + ndEsc(st.name || m) + '</b>'
@@ -23547,6 +23553,7 @@ function nxFaStaffHTML() {
       + (ic || you ? '<div class="nx-dim" style="padding:0 0 10px 54px">The ' + ndEsc(_nd.cfg.inChargeLabel) + '\'s own login is managed by HealSol.</div>' : '<div class="nx-two" style="padding:0 0 12px 54px"><button type="button" class="nx-btn sm ghost" onclick="ndResetStaff(\'' + m + '\')"><i class="ti ti-key"></i> Reset password</button><button type="button" class="nx-btn sm ghost" style="color:#B91C1C;border-color:#FCA5A5" onclick="ndRemoveStaff(\'' + m + '\')"><i class="ti ti-trash"></i> Remove</button></div>')
       + '</details>';
   }).join('') + '</div>';
+  if (miss.length) h += '<details class="nx-dim one-miss"><summary>Not added yet: ' + ndEsc(miss.slice(0, 5).join(' · ')) + (miss.length > 5 ? ' + ' + (miss.length - 5) + ' more' : '') + '</summary>' + (miss.length > 5 ? ndEsc(miss.slice(5).join(' · ')) : '') + '</details>';
   h += '<details class="nx-card" id="nd-add"' + (mobs.length < 3 ? ' open' : '') + '><summary style="cursor:pointer;font-weight:700;font-size:14px;color:#135A55;display:flex;gap:8px;align-items:center"><i class="ti ti-user-plus"></i> Add staff</summary>'
     + '<label class="nx-lbl">Role<select class="nx-in" id="nd-add-role">' + ndStaffRoles().map(function (r) { return '<option value="' + ndEsc(r.id) + '">' + ndEsc(r.label) + '</option>'; }).join('') + '</select></label>'
     + '<label class="nx-lbl">Full name<input class="nx-in" id="nd-add-name" maxlength="60" autocomplete="off"></label>'
@@ -25228,7 +25235,7 @@ function ndGradTodayHTML() {
   if (day < S.r1 || day > S.rN) return h;
   // readiness week
   var E = ndEndStat();
-  h += '<div class="ng-rw"><small>READINESS WEEK · DAYS ' + S.r1 + '–' + S.rN + '</small><b>' + ndEsc(day >= S.rN ? 'Graduation day' : day === S.rN - 1 ? 'Final team review' : 'End-line verification') + '</b>' + ndGradPhaseStrip() + '</div>';
+  if (_nd.view || ndFaOn()) h += '<div class="ng-rw"><small>READINESS WEEK · DAYS ' + S.r1 + '–' + S.rN + '</small><b>' + ndEsc(day >= S.rN ? 'Graduation day' : day === S.rN - 1 ? 'Final team review' : 'End-line verification') + '</b>' + ndGradPhaseStrip() + '</div>';
   var mine = E.list.filter(function (e) { return e.tot && (e.checker === me || e.lead === me); });
   if (!_nd.view && mine.length && !ndFaOn()) h += '<div class="nx-card p0 nx-list">' + mine.map(function (e) { return nxLi(e.ok ? 'ti-circle-check' : 'ti-list-check', e.ok ? 'g' : 'a', 'End-line check · ' + e.name, e.chk + ' of ' + e.tot + ' days checked' + (e.ok ? ' — done' : ' · finish by Day ' + (S.rN - 2)), "ndGradOpen('end','" + e.id + "')"); }).join('') + '</div>';
   if (over) {
@@ -26220,6 +26227,122 @@ body.nf-viewas #sc-cho-app.vis{position:fixed;inset:0;z-index:10000;overflow-y:a
 @container (max-width:720px){ .fp-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;} .fp-tabs button{white-space:nowrap;flex:0 0 auto;} }
 .nf-oldrule{display:block;font-size:10.5px;color:#8A6D1F;font-weight:500;margin-top:2px;}
 </style>
+<style id="nf-one-ui-css">/* one design — staff app + Facility dashboard (one-ui.js) */
+.one-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:10px 0 2px;}
+.one-strip i{height:6px;border-radius:3px;background:rgba(255,255,255,.22);}
+.one-strip i.d{background:#8FD1B5;} .one-strip i.c{background:#fff;}
+.one-card{background:#fff;border:1px solid #DCE4E1;border-radius:16px;padding:14px;margin:10px 0 0;font-family:'Poppins',sans-serif;color:#1F2D29;box-sizing:border-box;}
+.one-dim{color:#4F5E59;font-size:12px;margin:0;}
+.one-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.one-row b{font-size:14px;} .one-row small{font-size:12px;color:#4F5E59;}
+.one-cnt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;}
+.one-cnt > div{background:#fff;border:1px solid #DCE4E1;border-radius:14px;padding:10px 6px;text-align:center;}
+.one-cnt b{display:block;font-size:20px;font-weight:700;color:#1F2D29;} .one-cnt b.o{color:#9A5B12;} .one-cnt b.g{color:#1F7A4A;}
+.one-cnt small{font-size:11px;color:#4F5E59;line-height:1.25;display:block;}
+.one-seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;background:#E6ECEA;border-radius:12px;padding:4px;margin:16px 0 0;}
+.one-seg button{border:0;border-radius:9px;background:transparent;font:inherit;font-size:13px;color:#4F5E59;padding:9px;cursor:pointer;min-height:40px;}
+.one-seg button.on{background:#fff;color:#134A41;font-weight:600;}
+.one-rows{padding:4px 12px;} .one-rows .fpr-row{padding:9px 2px;}
+.one-ring{display:flex;gap:16px;align-items:center;}
+.one-ring-c{position:relative;width:104px;height:104px;flex:0 0 104px;}
+.one-ring-c span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.one-ring-c b{font-size:22px;font-weight:700;} .one-ring-c small{font-size:10px;color:#4F5E59;}
+.one-ring-l{flex:1;display:flex;flex-direction:column;gap:6px;font-size:13px;min-width:0;}
+.one-ring-l > div{display:flex;justify-content:space-between;gap:6px;} .one-ring-l b.r{color:#B3402A;} .one-ring-l small{color:#6B7A75;font-weight:400;font-size:12px;}
+.one-ring-l p{margin:2px 0 0;padding-top:6px;border-top:1px solid #EEF2F1;font-size:12px;color:#4F5E59;}
+.one-prof{display:flex;gap:14px;align-items:center;}
+.one-av{width:58px;height:58px;flex:0 0 58px;border-radius:50%;background:#134A41;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;}
+.one-prof b{font-size:17px;display:block;} .one-prof small{font-size:12px;color:#4F5E59;display:block;margin-top:2px;}
+.one-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.one-chips span{background:#E3ECE9;color:#134A41;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:600;} .one-chips span.o{background:#FDEBD3;color:#7A4508;}
+.one-pkg{display:flex;flex-direction:column;gap:6px;} .one-pkg b{font-size:14px;}
+.one-pkg span{background:#EAF5EF;color:#1F5F3E;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;} .one-pkg small{font-size:11px;color:#4F5E59;}
+.one-imp{background:#134A41;color:#fff;border-radius:16px;padding:16px;margin:10px 0 0;display:flex;flex-direction:column;gap:10px;font-family:'Poppins',sans-serif;}
+.one-imp > small{font-size:11px;letter-spacing:.06em;color:#CFE5DF;font-weight:600;} .one-imp > b{font-size:15px;font-weight:600;}
+.one-imp-n{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;text-align:center;}
+.one-imp-n > div{background:#1E5A4F;border-radius:10px;padding:8px 4px;} .one-imp-n b{font-size:17px;display:block;} .one-imp-n small{font-size:10px;color:#CFE5DF;}
+.one-imp p{margin:0;font-size:13px;color:#E3F1ED;line-height:1.45;}
+.one-imp button{border:0;border-radius:10px;background:#fff;color:#134A41;font:inherit;font-size:13px;font-weight:600;padding:10px;cursor:pointer;min-height:44px;}
+.one-cert{display:flex;flex-direction:column;gap:6px;} .one-cert > b{font-size:14px;} .one-cert > small{font-size:12px;color:#4F5E59;}
+.one-cert-g{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:start;font-size:13px;margin-top:4px;}
+.one-cert-g i{font-style:normal;color:#6B7A75;} .one-cert-g i.ok{color:#1F7A4A;} .one-cert-g i.todo{color:#9A5B12;}
+.one-cert-g small{display:block;font-size:11px;color:#4F5E59;} .one-cert p{margin:4px 0 0;font-size:11px;color:#4F5E59;}
+.one-cert button{border:0;border-radius:10px;background:#134A41;color:#fff;font:inherit;font-weight:600;padding:11px;margin-top:6px;cursor:pointer;}
+.one-prog{display:flex;flex-direction:column;gap:10px;}
+.one-prog-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;text-align:center;}
+.one-prog-g > div{background:#EEF2F1;color:#4F5E59;border-radius:8px;padding:6px 2px;font-size:10px;} .one-prog-g b{display:block;font-size:11px;}
+.one-prog-g .d{background:#EAF5EF;color:#1F5F3E;} .one-prog-g .c{background:#134A41;color:#fff;}
+.one-ifg{display:flex;gap:14px;align-items:center;position:relative;}
+.one-ifg svg{flex:0 0 64px;} .one-ifg-p{position:absolute;left:14px;top:calc(50% - 10px);width:64px;text-align:center;font-weight:700;font-size:14px;}
+.one-ifg > div{display:flex;flex-direction:column;gap:4px;} .one-ifg b{font-size:14px;} .one-ifg small{font-size:12px;color:#4F5E59;}
+.one-tag{align-self:flex-start;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;background:#EEF2F1;color:#3E4E49;}
+.one-tag.green{background:#E3F2EA;color:#1F5F3E;} .one-tag.amber{background:#FDEBD3;color:#7A4508;} .one-tag.red{background:#FCE5E1;color:#8A2F1F;}
+.one-qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;}
+.one-qa button{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DCE4E1;border-radius:14px;padding:12px;font:inherit;font-size:14px;font-weight:600;color:#1F2D29;cursor:pointer;min-height:56px;text-align:left;}
+.one-qa span{width:34px;height:34px;border-radius:10px;background:#E3ECE9;color:#134A41;display:flex;align-items:center;justify-content:center;flex:0 0 34px;}
+.one-qa span.o{background:#FDEBD3;color:#9A5B12;} .one-qa span.g{background:#E3F2EA;color:#1F7A4A;}
+.one-sec{display:flex;justify-content:space-between;align-items:baseline;margin:18px 0 0;} .one-sec b{font-size:16px;} .one-sec span{font-size:12px;color:#4F5E59;}
+/* day strips: weekday · number · date on both apps */
+.ds-day.scb2-d{height:60px;min-width:50px;}
+.ds-day .dd-w{font-size:9.5px;font-weight:600;color:var(--t3,#6B7A75);line-height:1;}
+.ds-day.active .dd-w{color:var(--teal,#1E6B5E);}
+#nf-dept-app .nx-d{height:64px;width:52px;}
+#nf-dept-app .nx-d small{font-size:9.5px;line-height:1.1;}
+#nf-progress .one-ph{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+#nf-progress .one-ph h1{margin:0;}
+.one-miss{margin:10px 2px 0;font-size:12px;color:#4F5E59;} .one-miss summary{cursor:pointer;list-style:none;} .one-miss summary::-webkit-details-marker{display:none;}
+.one-prog-g b{font-size:10.5px;overflow-wrap:anywhere;hyphens:auto;}
+#nf-me .one-prof{display:flex;flex-direction:row;align-items:center;text-align:left;gap:14px;}
+#nf-me .one-prof > div{flex:1;min-width:0;} #nf-me .one-prof .one-chips{justify-content:flex-start;}
+.one-cc summary{cursor:pointer;font-size:14px;} .one-cc .one-card{border:0;padding:0;}
+.one-prog-g{grid-template-columns:repeat(2,minmax(0,1fr));} .one-prog-g b{overflow-wrap:normal;}
+</style>
+<script id="nf-one-ui">// ══════════════════════════════════════════════════════════════
+// ONE DESIGN for the staff app and the Facility dashboard, every facility type (canvas "Staff app & Facility dashboard —
+// one design", agreed 22 Oct 2026). Small shared pieces used by the Sub-Centre app (sc/…) and UPHC · PHC · CHC (dept/…).
+// ══════════════════════════════════════════════════════════════
+function oneE(s) { return scEsc(s == null ? '' : String(s)); }
+// the four programme phases as a slim strip inside the hero; idx 0–3 (−1 before Day 1, 4 after the last day)
+function oneStrip(idx) { var h = '<div class="one-strip" aria-hidden="true">'; for (var i = 0; i < 4; i++) h += '<i class="' + (i < idx ? 'd' : i === idx ? 'c' : '') + '"></i>'; return h + '</div>'; }
+function onePhaseIdx(day, S) { return !day || day < 1 ? -1 : day <= S.bN ? 0 : day <= S.iN ? 1 : day <= S.eN ? 2 : day <= S.days ? 3 : 4; }
+// counters row: [[value, label, cls]]
+function oneCounters(list) { return '<div class="one-cnt">' + list.map(function (x) { return '<div><b class="' + (x[2] || '') + '">' + oneE(x[0]) + '</b><small>' + oneE(x[1]) + '</small></div>'; }).join('') + '</div>'; }
+// segmented tabs: [[key, label]], on, js(key) → onclick string
+function oneSeg(list, on, js) { return '<div class="one-seg" role="tablist">' + list.map(function (x) { return '<button type="button" role="tab" aria-selected="' + (x[0] === on) + '" class="' + (x[0] === on ? 'on' : '') + '" onclick="' + js(x[0]) + '">' + oneE(x[1]) + '</button>'; }).join('') + '</div>'; }
+// baseline ○ → now ● rows (the Readiness tab's design), in a phone box
+function oneDumbRows(rows, mark, more) {
+  if (!rows.length) return '<div class="one-card"><p class="one-dim">' + oneE(_appLang === 'hi' ? 'अभी कोई स्कोर नहीं' : 'No scores yet') + '</p></div>';
+  return '<div class="one-card fpr-phone one-rows">' + rows.map(function (r) { return fprDumb(r.now, r.base, mark, r.label, r.sub || ''); }).join('')
+    + '<div class="fpr-legend"><span><i class="b"></i> ' + oneE(_appLang === 'hi' ? 'बेसलाइन' : 'baseline') + '</span><span><i class="g"></i> ' + oneE(_appLang === 'hi' ? 'अभी' : 'now') + '</span><span><i class="mk"></i> ' + mark + '%</span>' + (more ? '<span>' + oneE(more) + '</span>' : '') + '</div></div>';
+}
+// the readiness ring card of Progress: my readiness + baseline / implementation / end-line + facility line
+function oneRingCard(o) {
+  var hi = _appLang === 'hi', row = function (l, v, cls) { return '<div><span>' + oneE(l) + '</span><b class="' + (cls || '') + '">' + v + '</b></div>'; };
+  return '<div class="one-card one-ring"><div class="one-ring-c">' + nfRing(o.pct || 0, null, 104, 11, 'var(--teal,#1E6B5E)', '#E3ECE9') + '<span><b>' + (o.pct == null ? '—' : o.pct + '%') + '</b><small>' + oneE(o.label || (hi ? 'मेरी तैयारी' : 'my readiness')) + '</small></span></div>'
+    + '<div class="one-ring-l">' + row(hi ? 'बेसलाइन' : 'Baseline', o.base == null ? '—' : o.base + '%')
+    + row(hi ? 'क्रियान्वयन' : 'Implementation', o.impl == null ? '<small>' + oneE(o.implFrom || '') + '</small>' : o.impl + '%' + (o.base != null ? ' · ' + (o.impl - o.base >= 0 ? '+' : '') + (o.impl - o.base) : ''), o.impl != null && o.base != null && o.impl < o.base ? 'r' : '')
+    + row(hi ? 'एंड-लाइन' : 'End-line', o.end == null ? '<small>' + oneE(o.endFrom || '') + '</small>' : o.end + '%')
+    + '<p>' + oneE(o.foot || '') + '</p></div></div>';
+}
+// profile card of Me
+function oneProfile(o) { return '<div class="one-card one-prof"><span class="one-av">' + oneE(String(o.name || '?').charAt(0).toUpperCase()) + '</span><div><b>' + oneE(o.name) + '</b><small>' + oneE(o.sub) + '</small><div class="one-chips">' + (o.chips || []).map(function (c) { return '<span class="' + (c[1] || '') + '">' + c[0] + '</span>'; }).join('') + '</div></div></div>'; }
+// "My package" / "My departments" card
+function onePkgCard(title, items, note) { return '<div class="one-card one-pkg"><b>' + oneE(title) + '</b>' + items.map(function (x) { return '<span>' + oneE(x) + '</span>'; }).join('') + (note ? '<small>' + oneE(note) + '</small>' : '') + '</div>'; }
+// impact card: {title, nums:[[v,l]], btn:{l,js}}
+function oneImpact(o) { return '<div class="one-imp"><small>' + oneE(_appLang === 'hi' ? 'मेरा प्रभाव' : 'MY IMPACT') + '</small><b>' + o.title + '</b>' + (o.nums && o.nums.length ? '<div class="one-imp-n">' + o.nums.map(function (n) { return '<div><b>' + oneE(n[0]) + '</b><small>' + oneE(n[1]) + '</small></div>'; }).join('') + '</div>' : '') + (o.line ? '<p>' + o.line + '</p>' : '') + (o.btn ? '<button type="button" onclick="' + o.btn.js + '">' + oneE(o.btn.l) + '</button>' : '') + '</div>'; }
+// certificate checklist: {title, sub, rows:[[state 'ok'|'todo'|'wait', label, sub, value]], note, btn}
+function oneCert(o) { return '<div class="one-card one-cert" id="' + (o.id || '') + '"><b>' + oneE(o.title) + '</b><small>' + oneE(o.sub) + '</small><div class="one-cert-g">' + o.rows.map(function (r) { return '<i class="' + r[0] + '">' + (r[0] === 'ok' ? '✓' : '○') + '</i><span>' + oneE(r[1]) + (r[2] ? '<small>' + oneE(r[2]) + '</small>' : '') + '</span><b>' + oneE(r[3]) + '</b>'; }).join('') + '</div>' + (o.note ? '<p>' + oneE(o.note) + '</p>' : '') + (o.btn || '') + '</div>'; }
+// Facility dashboard: programme card (four phases, next date) and "If we graduated today"
+function oneProgCard(o) {   // {S, day, gradDate (iso), next}
+  var S = o.S, idx = onePhaseIdx(o.day, S), hi = _appLang === 'hi', ph = [[hi ? 'बेसलाइन' : 'Baseline', 1, S.bN], [hi ? 'क्रियान्वयन' : 'Implementation', S.bN + 1, S.iN], [hi ? 'एंड-लाइन' : 'End-line', S.iN + 1, S.eN], [hi ? 'तैयारी सप्ताह' : 'Readiness week', S.eN + 1, S.days]];
+  return '<div class="one-card one-prog"><div class="one-row"><b>' + oneE(hi ? 'कार्यक्रम' : 'Programme') + '</b><small>' + oneE(o.gradDate ? (hi ? 'ग्रेजुएशन ' : 'graduation ') + nfDateTxt(o.gradDate, true) : '') + '</small></div><div class="one-prog-g">'
+    + ph.map(function (p, i) { return '<div class="' + (i < idx ? 'd' : i === idx ? 'c' : '') + '"><b>' + oneE(p[0]) + '</b><small>' + (hi ? 'दिन ' : 'Days ') + p[1] + '–' + p[2] + '</small></div>'; }).join('') + '</div>' + (o.next ? '<small class="one-dim">' + oneE(o.next) + '</small>' : '') + '</div>';
+}
+function oneIfGrad(o) {   // {pct, word, cls, why}
+  return '<div class="one-card one-ifg">' + nfRing(o.pct || 0, null, 64, 7, 'var(--teal,#1E6B5E)', '#E3ECE9').replace('<svg', '<svg aria-hidden="true"') + '<span class="one-ifg-p">' + (o.pct == null ? '—' : o.pct + '%') + '</span><div><b>' + oneE(_appLang === 'hi' ? 'अगर आज ग्रेजुएशन हो' : 'If we graduated today') + '</b><span class="one-tag ' + (o.cls || '') + '">' + oneE(o.word) + '</span><small>' + oneE(o.why || '') + '</small></div></div>';
+}
+function oneQuick(list) { return '<div class="one-qa">' + list.map(function (x) { return '<button type="button" onclick="' + x[2] + '"><span class="' + (x[3] || '') + '"><i class="ti ' + x[0] + '"></i></span>' + oneE(x[1]) + '</button>'; }).join('') + '</div>'; }
+</script>
 <script id="nf-vocab">// ══════════════════════════════════════════════════════════════
 // ONE WORDING FOR EVERY SCREEN (consistency review, agreed 21 Oct 2026)
 //   Result: NQAS Ready · Almost ready · Not yet ready · Too early — and one result label for lists, chips and reports.

@@ -353,7 +353,7 @@ function ndDayTitle(day) {
 // ═══ Cards tab in the SC design (17 Oct): Cards head · Day / Timeline switch · facility bar · day strip · the day card ═══
 function ndCur() { return _nd.card || { dept: _nd.cdept, day: _nd.cday }; }
 function ndAocColor(a) { try { if (typeof getAoCDef === 'function') { var c = (getAoCDef(a) || {}).color; if (c) return c; } } catch (e) {} return '#1E6B5E'; }
-function ndWeekLabel(day) { var S = ndShape(); if (day > 100) return day - 100 > ND_GRAD.cuWork ? 'Catch-up re-check' : 'Catch-up week ' + Math.ceil((day - 100) / 7); return day <= S.bN ? 'Baseline audit' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
+function ndWeekLabel(day) { var S = ndShape(); if (day > 100) return day - 100 > ND_GRAD.cuWork ? 'Catch-up re-check' : 'Catch-up week ' + Math.ceil((day - 100) / 7); return day <= S.bN ? 'Baseline' : day <= S.iN ? 'Week ' + (Math.floor((day - S.i1) / 7) + 1 + Math.ceil(S.base / 7)) : day <= S.eN ? 'End-line' : 'Readiness week'; }
 function ndCardDepts(day) {   // my departments with a card on this day: the ones I fill first, then the ones I check
   var me = ndMob();
   return ndMyDepts().filter(function (d) { return ndDayIds(d.id, day).length && (_nd.view || (ndFills(d.id, me) && ndMyIds(d.id, day, me).length) || ndCanCheck(d.id, me)); })

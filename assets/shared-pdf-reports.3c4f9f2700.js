@@ -105,7 +105,7 @@ function nfRptActions(code){
 function nfFacilityReportHTML(code,preview){
   var f=(scMasterFacilities||{})[code]||{}, pr=(scMasterProgress||{})[code]||{}, pid=f.progId||'nqas_12A';
   var A=scFacilityReadiness(pid,pr,f.staff||{}), B=A.baseline||{}, hasB=!!B.assessed, n=A.nqas||scNqasCheckV2(A), day=nfDayOf(f);
-  var ph=day==null?'—':day<1?'Starts '+scFmtDate(f.startDate):day<=7?'Baseline audit':day<=49?'Implementation':day<=56?'Revision':'Readiness week';
+  var ph=day==null?'—':day<1?'Starts '+scFmtDate(f.startDate):day<=7?'Baseline':day<=49?'Implementation':day<=56?'End-line':'Readiness week';
   var cho=Object.keys(f.staff||{}).map(function(m){ return f.staff[m]; }).find(function(s){ return s&&(s.role||'CHO')==='CHO'; });
   var acts=nfRptActions(code), today=scTodayStr(), od=acts.filter(function(x){ return x.dueDate&&x.dueDate<today; }).length;
   var k=function(v,l,c){ return '<div><b style="color:'+(c||'#13201F')+'">'+v+'</b><small>'+l+'</small></div>'; };

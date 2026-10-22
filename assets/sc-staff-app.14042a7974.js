@@ -68,7 +68,7 @@ var NF_BADGES=[
   {id:'ver50',icon:'ti-shield-check',c:'t',en:'50 verified',hi:'50 सत्यापित'},
   {id:'actions',icon:'ti-checklist',c:'o',en:'All actions done',hi:'सभी कार्य पूरे'},
   {id:'standards',icon:'ti-target',c:'q',en:'All my Standards OK',hi:'मेरे सभी मानक ठीक'},
-  {id:'revision',icon:'ti-refresh',c:'t',en:'Revision done',hi:'पुनरीक्षण पूरा'},
+  {id:'revision',icon:'ti-refresh',c:'t',en:'End-line done',hi:'एंड-लाइन पूरा'},
   {id:'nqas',icon:'ti-award',c:'q',en:'Facility NQAS-ready',hi:'स्वास्थ्य केंद्र NQAS-तैयार'}];
 function nfBadgeState(R,fac){
   var st=nfStreaks(), today=scb1TodayIdx(), earned={};
@@ -133,7 +133,7 @@ function nfMissionHTML(m){
     +'<span class="nf-ms-n">'+(m.pct?m.done+'%':m.done+'/'+m.target)+'</span></div>';
 }
 // ── helpers ────────────────────────────────────────────────────
-function nfPhase(di){ return di<7?t('Baseline audit'):di<49?t('Implementation'):di<56?t('Revision'):t('Readiness week'); }
+function nfPhase(di){ return di<7?t('Baseline'):di<49?t('Implementation'):di<56?(_appLang==='hi'?'एंड-लाइन':'End-line'):t('Readiness week'); }
 function nfRing(pct,base,size,stroke,col,track){
   var r=(size-stroke)/2, c=2*Math.PI*r, a=Math.max(0,Math.min(100,pct))/100*c;
   var b=base!=null?'<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" stroke="var(--org)" stroke-width="'+stroke+'" fill="none" stroke-dasharray="3 '+c+'" stroke-dashoffset="'+(-(base/100*c)+1.5)+'" transform="rotate(-90 '+size/2+' '+size/2+')"/>':'';
@@ -161,11 +161,13 @@ function nfRenderToday(){
     html+='<div class="nf-hero"><div class="nf-hero-k">'+scEsc(t('Programme starts'))+' · '+scEsc(scFmtDate(choState.startDate))+'</div><div class="nf-hero-t">'+days+' '+scEsc(t('days to go'))+'</div><div class="nf-hero-s">'+scEsc(hi?'दिन 1 पर बेसलाइन ऑडिट शुरू होगा।':'Day 1 starts the 7-day baseline audit.')+'</div></div>';
   } else {
     var fp=fac&&fac.agg?fac.agg.pct:null, gain=B.assessed?R.pct-B.pct:null;
-    html+='<div class="nf-hero"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">'+scEsc(t('Day'))+' '+(today+1)+' / 60 · '+scEsc(nfPhase(today))+'</div>'
-      +'<div class="nf-hero-t">'+scEsc(wk+theme)+'</div>'
-      +'<div class="nf-hero-nums"><div><b>'+R.pct+'%</b><small>'+scEsc(t('My readiness'))+'</small></div>'+(gain!==null?'<i></i><div><b class="acc">'+(gain>=0?'+':'')+gain+'</b><small>'+scEsc(t('since baseline'))+'</small></div>':'')+'</div></div>'
-      +'<div class="nf-hero-ring">'+nfRing(R.pct,B.assessed?B.pct:null,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+R.pct+'%</b>'+(fp!==null?'<small>'+scEsc(t('Facility'))+' '+fp+'%</small>':'')+'</span></div></div>'
-      +'<button type="button" class="nf-cta" onclick="nfOpenToday()">'+(focus.length&&answered===focus.length||c.taskDone?'✓ '+scEsc(c.taskDone?t('All done for today'):t('Continue today\'s card')):scEsc(t('Continue today\'s card'))+(focus.length?' · '+answered+' '+scEsc(t('of'))+' '+focus.length+' '+scEsc(t('done')):''))+' <i class="ti ti-chevron-right"></i></button></div>';
+    var phIdx=today<7?0:today<49?1:today<56?2:3;
+    html+='<div class="nf-hero"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">'+scEsc(t('Day'))+' '+(today+1)+' / 60 · '+scEsc(nfPhase(today))+(wk?' · '+scEsc(wk.replace(/ · $/,'')):'')+'</div>'
+      +'<div class="nf-hero-t">'+scEsc(theme)+'</div></div>'
+      +'<div class="nf-hero-ring">'+nfRing(R.pct,B.assessed?B.pct:null,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+(fp!==null?fp:R.pct)+'%</b><small>'+scEsc(fp!==null?t('Facility'):t('My readiness'))+'</small></span></div></div>'
+      +oneStrip(phIdx)
+      +'<div class="nf-hero-nums"><div><b>'+R.pct+'%</b><small>'+scEsc(t('My readiness'))+'</small></div>'+(gain!==null?'<i></i><div><b class="acc">'+(gain>=0?'+':'')+gain+'</b><small>'+scEsc(t('since baseline'))+'</small></div>':'')+(focus.length?'<i></i><div><b>'+answered+' / '+focus.length+'</b><small>'+scEsc(hi?'आज जाँचे':'checked today')+'</small></div>':'')+'</div>'
+      +'<button type="button" class="nf-cta" onclick="nfOpenToday()">'+(c.taskDone?'✓ '+scEsc(t('All done for today')):scEsc(hi?'आज का कार्ड खोलें':'Open today\'s card')+(focus.length?' · '+answered+' '+scEsc(t('of'))+' '+focus.length+' '+scEsc(t('done')):''))+' <i class="ti ti-chevron-right"></i></button></div>';
     html+='<div class="nf-sec"><b>'+scEsc(t('To do today'))+'</b><span>'+scEsc(t('Day'))+' '+(today+1)+'</span></div><div class="nf-card nf-list">';
     if(!focus.length) html+='<div class="nf-empty">'+scEsc(c.taskDone?t('All done for today'):t('Nothing to do today'))+'</div>';
     focus.slice(0,5).forEach(function(ci){ var cp=d.cps[ci], s=scNormScore((c.cpScores||[])[ci]), n=(cp.items||[]).length;
@@ -188,26 +190,32 @@ function nfOpenToday(ci){
 
 // ── PROGRESS ───────────────────────────────────────────────────
 function nfPage(id){ var p=document.getElementById(id); if(!p){ p=document.createElement('div'); p.id=id; p.className='nf-page'; p.style.display='none'; document.body.appendChild(p); } return p; }
+var _nfPrTab='aoc';
 async function nfRenderProgress(){
   var p=nfPage('nf-progress'); var draw=function(){
-    var R=scReadiness(choState.progId,choState.cards,choState.roleId||'CHO'), B=R.baseline||{}, fac=_nfFac.code===choState.facilityCode?_nfFac:null, hi=_appLang==='hi';
-    var bs=nfBadgeState(R,fac), fp=fac&&fac.agg?fac.agg.pct:null;
-    var h='<div class="nf-ph"><h1>'+scEsc(t('My progress'))+'</h1></div>'
-      +'<div class="nf-card nf-rings"><div class="nf-rr">'+nfRing(R.pct,null,112,12,'var(--qi)','var(--qi-lt)')+'<div class="nf-rr-in">'+(fp!==null?nfRing(fp,null,76,9,'var(--teal)','var(--teal-lt)'):'')+'</div><b>'+R.pct+'%</b></div>'
-      +'<div class="nf-rl"><div><i style="background:var(--qi)"></i>'+scEsc(t('My readiness'))+'<b>'+R.pct+'%</b></div>'
-      +(fp!==null?'<div><i style="background:var(--teal)"></i>'+scEsc(t('Facility'))+'<b>'+fp+'%</b></div>':'')
-      +'<div class="mut"><i style="background:#D5DDDB"></i>'+scEsc(t('Baseline'))+'<b>'+(B.assessed?B.pct+'%':'—')+'</b></div>'
-      +(B.assessed?'<span class="nf-gain'+(R.pct-B.pct<0?' neg':'')+'"><i class="ti ti-trending-up"></i> '+(R.pct-B.pct>=0?'+':'')+(R.pct-B.pct)+' '+scEsc(t('since baseline'))+'</span>':'')+'</div></div>'
-      +'<div class="nf-two"><div class="nf-card"><div class="nf-big"><i class="ti ti-flame" style="color:var(--org)"></i>'+bs.streak.current+'</div><small>'+scEsc(t('days on time in a row'))+'</small></div>'
-      +'<div class="nf-card"><div class="nf-big"><i class="ti ti-shield-check" style="color:var(--green-dk)"></i>'+bs.verified+'</div><small>'+scEsc(t('checkpoints verified'))+'</small></div></div>'
-      +'<div class="nf-sec"><b>'+scEsc(t('By Area of Concern'))+'</b><span>'+Object.keys(R.byAoc).length+'</span></div><div class="nf-card nf-aoc">'
-      +Object.keys(SC_CPM_AOC).filter(function(k){ return R.byAoc[k]&&R.byAoc[k].n; }).map(function(k){ var b=R.byAoc[k];
-        return '<div><span>'+k+' · '+scEsc(SC_CPM_AOC[k])+'</span><div class="nf-bar"><i style="width:'+b.pct+'%;background:'+scPctColor(b.pct)+'"></i></div><b>'+b.pct+'%</b></div>'; }).join('')+'</div>'
+    var hi=_appLang==='hi', today=scb1TodayIdx(), fac=_nfFac.code===choState.facilityCode?_nfFac:null;
+    var SP=typeof nfStaffPhases==='function'?nfStaffPhases():{R:scReadiness(choState.progId,choState.cards,choState.roleId||'CHO')}, R=SP.R, B=SP.B||R.baseline||{};
+    var v=function(b){ return b&&b.assessed?b.pct:null; }, bs=nfBadgeState(R,fac), fa=fac&&fac.agg?fac.agg:null;
+    var checked=0; Object.keys(choState.cards||{}).forEach(function(k){ var c=choState.cards[k]; if(c&&c.taskDone) (c.cpScores||[]).forEach(function(x){ if(scNormScore(x)!==null) checked++; }); });
+    var fixed=Object.keys(R.latest||{}).filter(function(id){ var x=R.latest[id]; return x.base!=null&&x.base<2&&x.score===2; }).length;
+    var h='<div class="nf-ph one-ph"><h1>'+scEsc(t('My progress'))+'</h1><span class="nf-chip o">'+scEsc(t('Day'))+' '+Math.max(0,today+1)+' / 60</span></div>'
+      +oneRingCard({pct:R.pct,base:v(B),impl:v(SP.I),implFrom:hi?'दिन 8 से':'from Day 8',end:v(SP.E),endFrom:hi?'दिन 50 से':'from Day 50',
+        foot:(fa?(hi?'स्वास्थ्य केंद्र ':'Facility ')+fa.pct+'% · ':'')+(hi?'लक्ष्य 70%':'target 70%')+(fa&&fa.coverage?' · '+fa.coverage.assessed+(hi?' / ':' of ')+fa.coverage.total+(hi?' जाँचे':' checked'):'')})
+      +oneCounters([[bs.streak.current,t('days on time in a row'),'o'],[checked,hi?'चेकपॉइंट जाँचे':'checkpoints checked'],[fixed,hi?'कमियाँ ठीक कीं':'gaps you fixed','g']])
+      +oneSeg([['aoc',t('Areas of Concern')],['svc',hi?'सेवा पैकेज':'Service packages']],_nfPrTab,function(k){ return "_nfPrTab='"+k+"';nfRenderProgress()"; });
+    var rows=[];
+    if(_nfPrTab==='svc'){ var order=SC_SVC_GROUPS.service; Object.keys(R.byService||{}).filter(function(k){ return order.indexOf(k)>=0&&R.byService[k].n; }).sort(function(a,b){ return order.indexOf(a)-order.indexOf(b); })
+      .forEach(function(k){ var x=R.byService[k]; rows.push({label:k,now:x.pct,base:v((B.byService||{})[k]),sub:x.assessed+(hi?' / ':' of ')+x.n+(hi?' जाँचे':' checked')}); }); }
+    else Object.keys(SC_CPM_AOC).forEach(function(k){ var x=R.byAoc[k]; if(!x||!x.n) return; rows.push({label:k+' · '+SC_CPM_AOC[k],now:x.pct,base:v((B.byAoc||{})[k])}); });
+    var ccRows=[]; if(_nfPrTab==='svc') Object.keys(R.byService||{}).filter(function(k){ return scSvcGroup(k)!=='service'&&R.byService[k].n; }).sort().forEach(function(k){ var x=R.byService[k]; ccRows.push({label:k,now:x.pct,base:v((B.byService||{})[k])}); });
+    h+=(rows.length||_nfPrTab!=='svc'?oneDumbRows(rows,70):'<div class="one-card"><p class="one-dim">'+scEsc(hi?'आपके कोई सेवा पैकेज चेकपॉइंट नहीं हैं।':'None of your checkpoints belong to a service package.')+'</p></div>')
+      +(ccRows.length?'<details class="one-card one-cc"><summary><b>'+scEsc(hi?'क्रॉस-कटिंग क्षेत्र':'Cross-cutting areas')+' ('+ccRows.length+')</b></summary>'+oneDumbRows(ccRows,70)+'</details>':'')
+      +'<p class="one-dim" style="margin:6px 2px 0">'+scEsc(hi?'केवल आपके चेकपॉइंट · जो अभी जाँचे नहीं गए वे 0 गिने जाते हैं':'Only your own checkpoints · not yet checked counts as 0')+'</p>'
       +'<div class="nf-sec"><b>'+scEsc(t('Badges'))+'</b><span>'+Object.keys(bs.earned).length+' / '+NF_BADGES.length+'</span></div><div class="nf-badges">'
       +NF_BADGES.map(function(b){ var on=!!bs.earned[b.id]; return '<div class="nf-bd'+(on?' '+b.c:' lock')+'"><span><i class="ti '+(on?b.icon:'ti-lock')+'"></i></span>'+scEsc(hi?b.hi:b.en)+'</div>'; }).join('')+'</div>';
     var ms=nfMissions(fac);
     if(ms.length) h+='<div class="nf-sec"><b>'+scEsc(t('Team missions'))+'</b><span>'+ms.filter(function(m){ return m.done>=m.target; }).length+' / '+ms.length+'</span></div><div class="nf-card nf-q">'+ms.map(nfMissionHTML).join('')+'</div>';
-    p.innerHTML=h; nfCelebrate(bs.earned);
+    p.innerHTML='<div class="one-wrap">'+h+'</div>'; nfCelebrate(bs.earned);
   };
   draw(); await nfLoadFacility(); if(p.style.display!=='none') draw();
 }
@@ -217,18 +225,18 @@ function nfRenderMe(){
   var p=nfPage('nf-me'), today=scb1TodayIdx(), st=nfStreaks(), hi=_appLang==='hi', role=choState.roleId||'CHO';
   var fname=((choState.facility||{}).name||''), cert=today>=59;
   var row=function(icon,label,onclick,right,cls){ return '<button type="button" class="nf-row'+(cls?' '+cls:'')+'" onclick="'+onclick+'"><i class="ti '+icon+'"></i><span>'+scEsc(label)+'</span>'+(right||'<i class="ti ti-chevron-right nf-row-chev"></i>')+'</button>'; };
+  var f=choState.facility||{}, pk=typeof scPkgLabel==='function'?scPkgLabel(choState.progId):scPkgCode(choState.progId);
   p.innerHTML='<div class="nf-ph"><h1>'+scEsc(t('Me'))+'</h1></div>'
-    +'<div class="nf-card nf-prof"><div class="nf-av">'+scEsc((choState.staffName||'?').charAt(0).toUpperCase())+'</div><b>'+scEsc(choState.staffName||'')+'</b>'
-    +'<small>'+scEsc(role)+' · '+scEsc(fname)+' · '+scEsc(scPkgCode(choState.progId))+'</small><div class="nf-chips">'+nfProBadge(choState.facility,'lg')+'<span class="t">'+scEsc(t('Day'))+' '+(today+1)+' / 60</span><span class="o">🔥 '+st.current+' '+scEsc(t('On time'))+'</span></div></div>'
-    +'<div class="nf-cert'+(cert?' on':'')+'"><span><i class="ti ti-certificate"></i></span><div><b>'+scEsc(t('Participation certificate'))+'</b><small>'+(cert?scEsc(hi?'आपका प्रमाणपत्र तैयार है':'Your certificate is ready'):scEsc(t('Unlocks on Day 60'))+' · '+(59-today)+' '+scEsc(t('days to go')))+'</small>'
-    +(cert?'<button type="button" onclick="nfCertificate()">'+scEsc(t('Download certificate'))+'</button>':'<div class="nf-bar lt"><i style="width:'+Math.round((today+1)/60*100)+'%"></i></div>')+'</div></div>'
+    +oneProfile({name:choState.staffName||'',sub:role+' · '+fname+(f.district?', '+f.district:''),chips:[[scEsc(hi?'उप-स्वास्थ्य केंद्र':'Sub-Centre')],[scEsc(t('Day'))+' '+(today+1)+' / 60','o'],[st.current+' '+scEsc(t('On time')),'o']]}).replace('class="one-card one-prof"','class="one-card one-prof nf-prof"')
+    +onePkgCard(hi?'मेरा पैकेज':'My package',[pk+(hi?' · आपके सुपरवाइज़र द्वारा जाँचा जाता है':' · checked by your Supervisor')])
+    +'<div class="nf-cert"></div>'
     +'<div class="nf-card nf-rows">'
     +'<div class="nf-row"><i class="ti ti-language"></i><span>'+scEsc(t('Language'))+'</span><span class="nf-lang"><button type="button" class="'+(hi?'':'on')+'" onclick="setLang(\'en\')">EN</button><button type="button" class="'+(hi?'on':'')+'" onclick="setLang(\'hi\')">हिं</button></span></div>'
     +(role==='CHO'&&_scDual?row('ti-building-hospital',t('Facility dashboard'),"scb1ShowTab('dash')"):'')
     +(scIsVerifier()?row('ti-shield-check',t('Staff cards to verify'),'scOpenVerifyQueue()'):'')
     +row('ti-broadcast',t('Live sessions'),'scOpenLiveSessions()')
     +row('ti-refresh',t('Refresh'),'scStaffRefresh(this)')
-    +row('ti-help-circle',t('Help'),'nfHelp()')
+    +row('ti-help-circle',_appLang==='hi'?'ऐप कैसे इस्तेमाल करें':'How to use the app','nfHelp()')
     +row('ti-logout',t('Log out'),'logoutCHO()','','danger')
     +'</div><div class="nf-byline">NQAS<i>|</i>FAST · by <img src="'+SC_BRAND.logoHealsol+'" alt="HealSol Academy"></div>';
 }
@@ -296,8 +304,8 @@ function nfTab(tab){
 function nfCardsHead(){
   var nav=document.getElementById('cho-nav'); if(!nav) return;
   var h=document.getElementById('nf-cards-head'); if(!h){ h=document.createElement('div'); h.id='nf-cards-head'; nav.insertBefore(h,nav.firstChild); }
-  var today=scb1TodayIdx(), wk=today<7?t('Baseline audit'):today<49?t('Week')+' '+(Math.floor((today-7)/7)+2):today<56?t('Revision'):t('Readiness week');
-  h.innerHTML='<h1>'+scEsc(t('Cards'))+'</h1><span class="nf-chip"><i class="ti ti-calendar"></i>'+scEsc(wk)+'</span><span class="nf-chip o">'+scEsc(t('Day'))+' '+(today+1)+' / 60</span>';
+  var today=scb1TodayIdx(), wk=today<7?t('Baseline'):today<49?t('Week')+' '+(Math.floor((today-7)/7)+2):today<56?(_appLang==='hi'?'एंड-लाइन':'End-line'):t('Readiness week');
+  h.innerHTML='<h1>'+scEsc(t('Cards'))+'</h1><span class="nf-chip o">'+scEsc(wk)+' · '+scEsc(t('Day'))+' '+(today+1)+' / 60</span>';
 }
 (function(){
   var oWel=showWelcomeScreen; showWelcomeScreen=function(){ var r=oWel.apply(this,arguments); try{ if(nfIsStaff()){ _nfTab='today'; nfRenderToday(); nfLoadFacility().then(function(){ if(_nfTab==='today') nfRenderToday(); }); } nfSync(); }catch(e){ console.warn(e); } return r; };

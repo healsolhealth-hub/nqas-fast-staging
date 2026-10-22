@@ -44,16 +44,16 @@ function nfCertCardHTML(){
   if(rec) return '<div class="nf-cert nfc won on"><span><i class="ti ti-certificate"></i></span><div><b>'+scEsc(title)+'</b>'
     +'<small>'+scEsc(hi?'आपने यह अर्जित किया है':'You earned it')+' · '+scEsc(rec.certId)+'</small><div><span class="nfc-grade">'+scEsc(rec.grade.toUpperCase())+' · '+rec.facPct+'%</span></div>'
     +'<div class="nfc-acts"><button type="button" onclick="nfShowCert(_nfCert.rec)">'+scEsc(hi?'प्रमाणपत्र देखें':'View certificate')+'</button><button type="button" onclick="nfCertDownload(_nfCert.rec,this)">'+scEsc(hi?'PDF डाउनलोड':'Download PDF')+'</button></div></div></div>';
-  if(!nfProTier(choState.facility)) return '<div class="nf-cert nfc"><span><i class="ti ti-lock"></i></span><div><b>'+scEsc(title)+'</b><small>'+scEsc(hi?'पूर्ण प्रोग्राम (PRO) में उपलब्ध':'Available with the full programme (PRO).')+'</small></div></div>';
-  var li=function(ok,label,val){ return '<li class="'+(ok?'ok':'no')+'"><i class="ti '+(ok?'ti-circle-check':'ti-hourglass')+'"></i>'+scEsc(label)+'<em>'+val+'</em></li>'; };
-  var req='<ul class="nfc-req">'+li(E.okBase,hi?'बेसलाइन (7 दिन)':'Baseline days done',E.base+' / '+NF_CERT.baseline)+li(E.okDone,hi?'दैनिक कार्ड पूरे':'Daily cards done',E.done+' / '+NF_CERT.minDone)
-    +li(E.okVer,hi?'सत्यापित कार्ड (आधे)':'Cards verified (half of done)',E.ver+' / '+E.need)+'</ul>';
-  var status, btn='';
-  if(!E.dayOk) status=(hi?'दिन 60 पर खुलेगा':'Unlocks on Day 60')+' · '+(NF_CERT.days-1-E.day)+' '+(hi?'दिन बाकी':'days to go')+' · '+(hi?'इसे अर्जित करें:':'earn it:');
-  else if(!E.ok) status=hi?'अभी अर्जित नहीं — जो बाकी है उसे पूरा करें':'Not earned yet — complete what is still open';
-  else { status=hi?'बधाई! आपने सभी शर्तें पूरी कीं':'Well done — all conditions met'; btn='<button type="button" onclick="nfClaimCert(this)">'+scEsc(hi?'मेरा प्रमाणपत्र लें':'Get my certificate')+'</button>'; }
-  return '<div class="nf-cert nfc'+(E.ok&&E.dayOk?' on':'')+'"><span><i class="ti ti-certificate"></i></span><div><b>'+scEsc(title)+'</b><small>'+scEsc(status)+'</small>'+req+btn
-    +(!E.dayOk?'<div class="nf-bar lt"><i style="width:'+Math.round((E.day+1)/NF_CERT.days*100)+'%"></i></div>':'')+'</div></div>';
+  var title2=hi?'मेरा NQAS | FAST प्रमाणपत्र':'My NQAS | FAST certificate';
+  if(!nfProTier(choState.facility)) return oneCert({title:title2,sub:hi?'पूर्ण प्रोग्राम (PRO) में उपलब्ध':'Available with the full programme (PRO).',rows:[]}).replace('class="one-card one-cert"','class="one-card one-cert nf-cert nfc"');
+  var gd=choState.startDate?nfDateTxt(nfDayISO(NF_CERT.days-1),true):'';
+  var rows=[[E.okBase?'ok':'todo',hi?'बेसलाइन दिन पूरे':'Baseline days done',hi?'सभी 7 बेसलाइन दिन':'all 7 baseline days',E.base+' / '+NF_CERT.baseline],
+    [E.okDone?'ok':'todo',hi?'दैनिक कार्ड पूरे':'Day cards done',(hi?'60 में से कम से कम ':'at least ')+NF_CERT.minDone+(hi?'':' of 60'),E.done+' / '+NF_CERT.minDone],
+    [E.okVer?'ok':'todo',hi?'सुपरवाइज़र या CHO द्वारा जाँचे':'Checked by your Supervisor or CHO',hi?'पूरे कार्डों में से कम से कम आधे':'at least half of your done cards',E.ver+' / '+E.need],
+    [E.dayOk?'ok':'wait',hi?'स्वास्थ्य केंद्र का ग्रेजुएशन':'Facility graduates',(hi?'दिन 60':'Day 60')+(gd?' · '+gd:''),E.dayOk?'✓':'—']];
+  var sub=!E.dayOk?(hi?'दिन 60 पर खुलेगा — जो अभी बाकी है:':'Unlocks on Day 60 — what is still needed:'):!E.ok?(hi?'अभी अर्जित नहीं — जो बाकी है उसे पूरा करें':'Not earned yet — complete what is still open'):(hi?'बधाई! आपने सभी शर्तें पूरी कीं':'Well done — all conditions met');
+  var btn=E.ok&&E.dayOk?'<button type="button" onclick="nfClaimCert(this)">'+scEsc(hi?'मेरा प्रमाणपत्र लें':'Get my certificate')+'</button>':'';
+  return oneCert({title:title2,sub:sub,rows:rows,note:hi?'ग्रेड स्वास्थ्य केंद्र के स्कोर से: डिस्टिंक्शन 80%+, मेरिट 70–79%।':'Grade from the facility score: Distinction 80%+, Merit 70–79%.',btn:btn}).replace('class="one-card one-cert"','class="one-card one-cert nf-cert nfc'+(E.ok&&E.dayOk?' on':'')+'"');
 }
 function nfCertPaintMe(){ var p=document.getElementById('nf-me'); if(!p) return; var old=p.querySelector('.nf-cert'); if(!old) return; var w=document.createElement('div'); w.innerHTML=nfCertCardHTML(); old.replaceWith(w.firstChild); }
 async function nfCertScores(){

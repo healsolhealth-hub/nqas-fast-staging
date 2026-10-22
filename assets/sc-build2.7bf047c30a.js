@@ -160,6 +160,7 @@ function scb2BuildModel(){
 // ══════════════════════════════════════════════════════════════
 // DAY STRIP (Daily Cards) — replaces buildDaySelector
 // ══════════════════════════════════════════════════════════════
+function scb2Wd(di){ try{ var iso=nfDayISO(di); if(!iso) return ''; var w=new Date(iso+'T00:00:00').getDay(); return (_appLang==='hi'?['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि']:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'])[w]; }catch(e){ return ''; } }
 buildDaySelector=function(){
   var scroll=document.getElementById('ds-scroll'); if(!scroll) return;
   var M=scb2BuildModel(); scroll.innerHTML='';
@@ -173,7 +174,7 @@ buildDaySelector=function(){
     var mid=m.date||('AoC '+(m.isBoss?'★':''));
     var low=m.status==='trial'?'<i class="ti ti-lock"></i>':(!M.fac?(m.mine?'<i class="ti ti-user"></i>'+m.mine:'—'):'');
     div.innerHTML=(m.markers.length?'<i class="ti ti-broadcast scb2-mk"></i>':'')+(m.gaps?'<span class="scb2-dot"></span>':'')
-      +'<div class="dd-n">'+String(m.day).padStart(2,'0')+'</div><div class="dd-z">'+scEsc(mid)+'</div>'
+      +'<div class="dd-w">'+scEsc(scb2Wd(m.di))+'</div><div class="dd-n">'+String(m.day).padStart(2,'0')+'</div><div class="dd-z">'+scEsc(mid)+'</div>'
       +(low?'<div class="scb2-dm">'+low+'</div>':'');
     div.title='Day '+m.day+': '+m.title+' · '+scb2L(SC_ST_LABEL[m.status]||m.status)+(M.fac?'':' · '+(m.mine?m.mine+' checkpoints for you':'No checkpoints for your role'));
     div.onclick=function(){ scb2DayTap(m.di,'strip'); };

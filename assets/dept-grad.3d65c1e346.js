@@ -186,7 +186,7 @@ function ndGradTodayHTML() {
   if (day < S.r1 || day > S.rN) return h;
   // readiness week
   var E = ndEndStat();
-  h += '<div class="ng-rw"><small>READINESS WEEK · DAYS ' + S.r1 + '–' + S.rN + '</small><b>' + ndEsc(day >= S.rN ? 'Graduation day' : day === S.rN - 1 ? 'Final team review' : 'End-line verification') + '</b>' + ndGradPhaseStrip() + '</div>';
+  if (_nd.view || ndFaOn()) h += '<div class="ng-rw"><small>READINESS WEEK · DAYS ' + S.r1 + '–' + S.rN + '</small><b>' + ndEsc(day >= S.rN ? 'Graduation day' : day === S.rN - 1 ? 'Final team review' : 'End-line verification') + '</b>' + ndGradPhaseStrip() + '</div>';
   var mine = E.list.filter(function (e) { return e.tot && (e.checker === me || e.lead === me); });
   if (!_nd.view && mine.length && !ndFaOn()) h += '<div class="nx-card p0 nx-list">' + mine.map(function (e) { return nxLi(e.ok ? 'ti-circle-check' : 'ti-list-check', e.ok ? 'g' : 'a', 'End-line check · ' + e.name, e.chk + ' of ' + e.tot + ' days checked' + (e.ok ? ' — done' : ' · finish by Day ' + (S.rN - 2)), "ndGradOpen('end','" + e.id + "')"); }).join('') + '</div>';
   if (over) {
