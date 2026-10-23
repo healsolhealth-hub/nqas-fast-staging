@@ -35,11 +35,11 @@ async function nmOpen(T) {
 function nmRender() {
   var box = nmBox(); if (!box || !_nm.base[_nm.ui.type]) return;
   var s = _nm.ui.screen;
-  box.innerHTML = s === 'edit' ? nmEditHTML() : s === 'tocheck' ? nmToCheckHTML() : s === 'excel' ? nmExcelHTML() : s === 'plan' ? nmPlanHTML() : s === 'publish' ? nmPubHTML() : nmListHTML();
+  box.innerHTML = s === 'edit' ? nmEditHTML() : s === 'stds' ? nmStdsHTML() : s === 'tocheck' ? nmToCheckHTML() : s === 'excel' ? nmExcelHTML() : s === 'plan' ? nmPlanHTML() : s === 'publish' ? nmPubHTML() : nmListHTML();
 }
 function nmGo(screen) { _nm.ui.screen = screen; nmRender(); try { window.scrollTo(0, 0); } catch (e) {} }
-function nmUi(k, v) { _nm.ui[k] = v; if (k !== 'limit') _nm.ui.limit = 60; if (k === 'dept' || k === 'aoc') _nm.ui.std = ''; nmRender(); }
-function nmQ(v) { _nm.ui.q = v; clearTimeout(window._nmT); window._nmT = setTimeout(function () { _nm.ui.limit = 60; nmRender(); var i = document.getElementById('nm-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); }
+function nmUi(k, v) { _nm.ui[k] = v; if (k !== 'limit') _nm.ui.limit = 400; if (k === 'dept' || k === 'aoc') _nm.ui.std = ''; nmRender(); }
+function nmQ(v) { _nm.ui.q = v; clearTimeout(window._nmT); window._nmT = setTimeout(function () { _nm.ui.limit = 400; nmRender(); var i = document.getElementById('nm-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); }
 
 // ── small pieces ──
 function nmChip(m, off) { return '<span class="nm-m ' + (off ? 'off' : m.toLowerCase()) + '">' + nmE(m) + '</span>'; }
@@ -62,15 +62,19 @@ function nmTypeTabs() {
   }).join('') + '</div>';
 }
 
-// ── list ──
-function nmFiltered() {
+// ── list (Content → Checkpoints, 23 Oct 2026: tiles are the filters, panel only when a row is picked) ──
+function nmAttn(c) { return !c.retired && !c.method.length; }
+function nmFiltered(noShow) {
   var u = _nm.ui, T = u.type, q = u.q.trim().toLowerCase();
   return nmAll(T).filter(function (c) {
     if (u.dept && c.dept !== u.dept) return false;
-    var st = nmStatus(T, c.id);
-    if (u.show === 'active' && c.retired) return false;
-    if (u.show === 'retired' && !c.retired) return false;
-    if (u.show === 'changed' && !st) return false;
+    if (!noShow) {
+      var st = nmStatus(T, c.id);
+      if (u.show === 'active' && c.retired) return false;
+      if (u.show === 'retired' && !c.retired) return false;
+      if (u.show === 'changed' && !st) return false;
+      if (u.show === 'attn' && !nmAttn(c)) return false;
+    }
     if (u.aoc && c.aoc !== u.aoc) return false;
     if (u.std && c.std !== u.std) return false;
     if (u.method === 'none' ? c.method.length : (u.method && c.method.indexOf(u.method) < 0)) return false;
@@ -78,47 +82,66 @@ function nmFiltered() {
     return true;
   });
 }
+function nmShowHi() { return typeof _ce !== 'undefined' && !!_ce.hi; }
+function nmTilesHTML() {
+  var u = _nm.ui, T = u.type, L = nmFiltered(true), n = { active: 0, attn: 0, changed: 0, retired: 0 };
+  L.forEach(function (c) { if (c.retired) n.retired++; else n.active++; if (nmAttn(c)) n.attn++; if (nmStatus(T, c.id)) n.changed++; });
+  var t = function (k, l, sub, cls) { return '<button type="button" class="ce-tile' + (cls ? ' ' + cls : '') + (u.show === k ? ' on' : '') + '" aria-pressed="' + (u.show === k) + '" onclick="nmUi(\'show\',\'' + k + '\')"><span>' + l + '</span><b>' + n[k].toLocaleString('en-IN') + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</button>'; };
+  return '<div class="ce-tiles">' + t('active', 'All active', '') + t('attn', 'Needs attention', 'no assessment method', n.attn ? 'warn' : '') + t('changed', 'Changed in draft', '') + t('retired', 'Retired', '') + '</div>';
+}
+function nmDayTxt2(T, c) { var d = nmDays(T)[c.id]; return c.retired || !d ? '—' : 'Base ' + d.b + (d.i ? ' · Impl ' + d.i : ''); }
 function nmListHTML() {
-  var u = _nm.ui, T = u.type, B = _nm.base[T], data = B.data, all = nmAll(T), list = nmFiltered(), sel = u.sel ? nmGet(T, u.sel) : null;
-  var cnt = {}; all.forEach(function (c) { if (!c.retired) cnt[c.dept] = (cnt[c.dept] || 0) + 1; });
-  var tc = nmToCheck(T).length, cfg = nmCfg(T), D = _nm.draft[T];
-  var stds = {}; all.forEach(function (c) { if ((!u.dept || c.dept === u.dept) && (!u.aoc || c.aoc === u.aoc)) stds[c.std] = 1; });
-  var stdList = Object.keys(stds).sort(function (a, b) { return a.localeCompare(b, 'en', { numeric: true }); });
-  var h = nmTopHTML('Checkpoints', 'UPHC · PHC · CHC — HealSol only · changes stay in the draft until you publish them')
-    + '<div class="nm-bar">' + nmTypeTabs()
-    + '<div class="nm-live">' + nmLiveTxt(T) + '</div>'
-    + '<div class="nm-acts"><button type="button" class="nm-btn" onclick="nmPlanOpen()">' + NM_I.cal + 'Day plans</button><button type="button" class="nm-btn" onclick="nmGo(\'excel\')">' + NM_I.down + 'Excel</button>'
-    + '<button type="button" class="nm-btn pri" onclick="nmEditOpen(null)">' + NM_I.plus + 'New checkpoint</button></div></div>'
-    + '<div class="nm-body">'
+  var u = _nm.ui, T = u.type, B = _nm.base[T], data = B.data, all = nmAll(T), list = nmFiltered(), sel = u.sel ? nmGet(T, u.sel) : null, hi = nmShowHi();
+  var cnt = {}, att = {}; all.forEach(function (c) { if (!c.retired) cnt[c.dept] = (cnt[c.dept] || 0) + 1; if (nmAttn(c)) att[c.dept] = (att[c.dept] || 0) + 1; });
+  var h = nmTilesHTML()
+    + '<div class="nm-body' + (sel ? ' has-sel' : '') + '">'
     + '<aside class="nm-depts" aria-label="Departments"><div class="nm-cap">Departments</div><div class="nm-dl">'
-    + B.depts.map(function (d) { return '<button type="button" class="' + (u.dept === d.id ? 'on' : '') + '" onclick="nmUi(\'dept\',\'' + nmJ(d.id) + '\')"><span>' + nmE(d.name) + '</span><em>' + (cnt[d.id] || 0) + '</em></button>'; }).join('')
-    + '</div><div class="nm-tcl"><button type="button" onclick="nmGo(\'tocheck\')">To check <em class="' + (tc ? '' : 'z') + '">' + tc + '</em></button></div></aside>'
+    + B.depts.map(function (d) { return '<button type="button" class="' + (u.dept === d.id ? 'on' : '') + '" onclick="nmUi(\'dept\',\'' + nmJ(d.id) + '\')"><span>' + nmE(d.name) + '</span><em>' + (att[d.id] ? '<i class="ce-dot" title="' + att[d.id] + ' need attention"></i>' : '') + (cnt[d.id] || 0) + '</em></button>'; }).join('')
+    + '</div></aside>'
     + '<section class="nm-tbl" aria-label="Checkpoints">'
     + '<div class="nm-filt"><label class="nm-search">' + NM_I.search + '<span class="nm-sr">Search checkpoints</span><input id="nm-q" type="search" placeholder="Search ID, ME or text" value="' + nmE(u.q) + '" oninput="nmQ(this.value)"></label>'
     + '<label>Area<select onchange="nmUi(\'aoc\',this.value)">' + nmOpt('', 'All', u.aoc) + Object.keys(data.aocs || {}).map(function (a) { return nmOpt(a, a + ' · ' + String(data.aocs[a]).replace(/^[:\s]+/, ''), u.aoc); }).join('') + '</select></label>'
-    + '<label>Standard<select onchange="nmUi(\'std\',this.value)">' + nmOpt('', 'All', u.std) + stdList.map(function (s) { return nmOpt(s, s, u.std); }).join('') + '</select></label>'
-    + '<label>Method<select onchange="nmUi(\'method\',this.value)">' + nmOpt('', 'Any', u.method) + NM_METHODS.map(function (m) { return nmOpt(m, m + ' · ' + NM_MLABEL[m], u.method); }).join('') + nmOpt('none', 'None (to check)', u.method) + '</select></label>'
-    + '<label>Show<select onchange="nmUi(\'show\',this.value)">' + nmOpt('active', 'Active', u.show) + nmOpt('changed', 'Changed in draft', u.show) + nmOpt('retired', 'Retired', u.show) + nmOpt('all', 'All', u.show) + '</select></label></div>'
-    + '<div class="nm-sum"><span>' + (u.std && data.stds && data.stds[u.std] ? '<b>' + nmE(u.std) + ' · ' + nmE(data.stds[u.std]) + '</b> — ' : '') + '<b>' + list.length + '</b> of ' + (cnt[u.dept] || 0) + ' shown</span>'
-    + (list.length ? '<button type="button" class="nm-lnk" onclick="nmBulkRoles()">Set “best filled by” for these ' + list.length + '</button>' : '') + '</div>'
-    + '<div class="nm-scroll"><table><thead><tr><th scope="col">ID</th><th scope="col">ME</th><th scope="col">Checkpoint</th><th scope="col">Method</th><th scope="col">Day</th><th scope="col"><span class="nm-sr">Status</span></th></tr></thead><tbody>'
+    + '<label>Method<select onchange="nmUi(\'method\',this.value)">' + nmOpt('', 'Any', u.method) + NM_METHODS.map(function (m) { return nmOpt(m, NM_MLABEL[m], u.method); }).join('') + nmOpt('none', 'None set', u.method) + '</select></label>'
+    + '<label class="ce-sw"><input type="checkbox" ' + (hi ? 'checked ' : '') + 'onchange="ceSetHi(this.checked)"> Show Hindi</label></div>'
+    + (u.std ? '<div class="ce-chips"><button type="button" class="ce-chip" onclick="nmUi(\'std\',\'\')" aria-label="Clear the Standard filter">Standard ' + nmE(u.std) + (data.stds && data.stds[u.std] ? ' · ' + nmE(String(data.stds[u.std]).slice(0, 60)) : '') + ' <span aria-hidden="true">×</span></button></div>' : '')
+    + '<div class="nm-sum"><span><b>' + list.length + '</b> of ' + (cnt[u.dept] || 0) + ' in ' + nmE(nmDeptName(T, u.dept)) + '</span>'
+    + (u.show === 'attn' && list.length ? '<button type="button" class="nm-lnk" onclick="nmGo(\'tocheck\')">Set methods quickly</button>' : '')
+    + (list.length ? '<button type="button" class="nm-lnk ce-edit" onclick="nmBulkRoles()">Set “best filled by” for these ' + list.length + '</button>' : '') + '</div>'
+    + '<div class="nm-scroll"><table><thead><tr><th scope="col">ID</th><th scope="col">Checkpoint</th><th scope="col">How it is checked</th><th scope="col">Day</th></tr></thead><tbody>'
     + list.slice(0, u.limit).map(function (c) {
       var st = nmStatus(T, c.id);
-      return '<tr class="' + (u.sel === c.id ? 'on ' : '') + (c.retired ? 'ret' : '') + '" onclick="nmPick(\'' + nmJ(c.id) + '\')"><td class="id">' + nmE(c.id) + '</td><td>' + nmE(c.me) + '</td>'
-        + '<td class="t"><button type="button" class="nm-rowbtn" onclick="event.stopPropagation();nmPick(\'' + nmJ(c.id) + '\')">' + nmE(c.t) + '</button></td>'
-        + '<td>' + (c.method.length ? c.method.map(function (m) { return nmChip(m, c.retired); }).join(' ') : '<span class="nm-tag tc">None</span>') + '</td>'
-        + '<td class="d">' + (c.retired ? '—' : nmDayTxt(T, c.id)) + '</td><td>' + nmTag(st) + '</td></tr>';
+      return '<tr class="' + (u.sel === c.id ? 'on ' : '') + (c.retired ? 'ret' : '') + '" onclick="nmPick(\'' + nmJ(c.id) + '\')"><td class="id">' + nmE(c.id) + '</td>'
+        + '<td class="t"><button type="button" class="nm-rowbtn" onclick="event.stopPropagation();nmPick(\'' + nmJ(c.id) + '\')">' + nmE(c.t) + '</button>'
+        + (hi ? '<div class="ce-hi' + (c.hi ? '' : ' miss') + '">' + (c.hi ? nmE(c.hi) : 'No Hindi yet') + '</div>' : '') + '<div class="ce-sub">' + nmE(c.me) + ' · Area ' + nmE(c.aoc) + (nmAttn(c) ? ' <span class="nm-tag tc">Needs attention</span>' : '') + (st ? ' ' + nmTag(st) : '') + '</div></td>'
+        + '<td class="m">' + (c.method.length ? c.method.map(function (m) { return '<span class="nm-m ' + (c.retired ? 'off' : m.toLowerCase()) + '">' + nmE(NM_MLABEL[m] || m) + '</span>'; }).join(' ') : '<span class="nm-tag tc">None set</span>') + '</td>'
+        + '<td class="d">' + nmDayTxt2(T, c) + '</td></tr>';
     }).join('') + '</tbody></table>'
-    + (list.length ? '' : '<div class="nm-empty sm">No checkpoints match these filters.</div>') + '</div>'
-    + '<div class="nm-foot"><span>B = baseline day, I = implementation day</span>' + (list.length > u.limit ? '<button type="button" class="nm-lnk" onclick="nmUi(\'limit\',' + (u.limit + 100) + ')">Show ' + Math.min(100, list.length - u.limit) + ' more</button>' : '') + '</div></section>'
-    + '<aside class="nm-side" aria-label="Selected checkpoint">' + (sel ? nmSideHTML(T, sel) : '<div class="nm-empty sm">Choose a checkpoint to see it here.</div>') + '</aside></div>';
+    + (list.length ? '' : '<div class="nm-empty sm">No checkpoints match.</div>') + '</div>'
+    + '<div class="nm-foot"><span>Base = baseline day · Impl = implementation day · the end-line repeats the baseline checkpoints</span>' + (list.length > u.limit ? '<button type="button" class="nm-lnk" onclick="nmUi(\'limit\',' + (u.limit + 200) + ')">Show ' + Math.min(200, list.length - u.limit) + ' more</button>' : '') + '</div></section>'
+    + (sel ? '<aside class="nm-side" aria-label="Selected checkpoint">' + nmSideHTML(T, sel) + '</aside>' : '') + '</div>';
   return h;
 }
-function nmPick(id) { _nm.ui.sel = id; nmRender(); }
+// ── Standards: Area of Concern → Standard → ME for one department, with counts; "View" opens the list filtered ──
+function nmStdsHTML() {
+  var u = _nm.ui, T = u.type, B = _nm.base[T], data = B.data, all = nmAll(T).filter(function (c) { return !c.retired && c.dept === u.dept; });
+  var A = {}; all.forEach(function (c) { var a = A[c.aoc] = A[c.aoc] || { n: 0, std: {} }; a.n++; var s = a.std[c.std] = a.std[c.std] || { n: 0, me: {} }; s.n++; s.me[c.me] = (s.me[c.me] || 0) + 1; });
+  var cmp = function (x, y) { return String(x).localeCompare(String(y), 'en', { numeric: true }); };
+  return '<div class="ce-stdhd"><label>Department<select onchange="_nm.ui.dept=this.value;nmRender()">' + B.depts.map(function (d) { return nmOpt(d.id, d.name, u.dept); }).join('') + '</select></label>'
+    + '<span>' + Object.keys(A).length + ' Areas of Concern · ' + Object.keys(A).reduce(function (n, a) { return n + Object.keys(A[a].std).length; }, 0) + ' Standards · ' + all.length + ' checkpoints</span></div>'
+    + Object.keys(A).sort(cmp).map(function (a) {
+      return '<section class="nm-card ce-aoc"><b class="nm-h">Area ' + nmE(a) + ' · ' + nmE(String((data.aocs || {})[a] || '').replace(/^[:\s]+/, '')) + ' <em>' + A[a].n + ' checkpoints</em></b>'
+        + Object.keys(A[a].std).sort(cmp).map(function (s) { var S = A[a].std[s];
+          return '<div class="ce-std"><div class="ce-stdr"><b>' + nmE(s) + '</b><span>' + nmE((data.stds || {})[s] || '') + '</span><em>' + S.n + '</em>'
+            + '<button type="button" class="nm-btn" onclick="_nm.ui.aoc=\'' + nmJ(a) + '\';_nm.ui.std=\'' + nmJ(s) + '\';_nm.ui.show=\'active\';nmGo(\'list\');ceHeadPaint()">View</button></div>'
+            + '<ul class="ce-mes">' + Object.keys(S.me).sort(cmp).map(function (m) { return '<li><b>' + nmE(m) + '</b> ' + nmE((data.mes || {})[u.dept + '|' + m] || '') + ' <em>' + S.me[m] + '</em></li>'; }).join('') + '</ul></div>';
+        }).join('') + '</section>';
+    }).join('') + (all.length ? '' : '<div class="nm-empty sm">No checkpoints in this department.</div>');
+}
+function nmPick(id) { _nm.ui.sel = _nm.ui.sel === id ? null : id; nmRender(); if (_nm.ui.sel && window.innerWidth < 1180) { var sd = document.querySelector('#nf-dm .nm-side'); if (sd && sd.scrollIntoView) sd.scrollIntoView({ block: 'start' }); } }
 function nmSideHTML(T, c) {
   var st = nmStatus(T, c.id), d = nmDays(T)[c.id], data = _nm.base[T].data, base = _nm.base[T].byId[c.id];
   var fixN = Object.keys(c.fix || {}).filter(function (k) { return c.fix[k] && c.fix[k].f; }).length;
-  return '<div class="nm-sh"><span>' + nmE(c.id) + ' · ' + nmE(c.me) + '</span>' + nmTag(st) + '</div>'
+  return '<div class="nm-sh"><span>' + nmE(c.id) + ' · ' + nmE(nmDeptName(T, c.dept)) + '</span>' + nmTag(st) + '<button type="button" class="ce-x" aria-label="Close" onclick="_nm.ui.sel=null;nmRender()">' + NM_I.x + '</button></div>'
     + '<div class="nm-st">' + nmE(c.t) + '</div>' + (c.hi ? '<div class="nm-hi">' + nmE(c.hi) + '</div>' : '')
     + '<div class="nm-me">' + nmE((data.mes || {})[c.dept + '|' + c.me] || (data.stds || {})[c.std] || '') + '</div>'
     + (c.items.length ? '<div class="nm-box"><b>MoV · ' + c.items.length + ' item' + (c.items.length === 1 ? '' : 's') + '</b><ol>' + c.items.map(function (x) { return '<li>' + nmE(x.t) + '</li>'; }).join('') + '</ol>'
@@ -129,7 +152,7 @@ function nmSideHTML(T, c) {
     + '<dt>Days</dt><dd>' + (c.retired || !d ? '—' : 'Baseline ' + d.b + (d.i ? ' · Implementation ' + d.i : '') + ' · End-line ' + d.e) + '</dd>'
     + '<dt>Content</dt><dd>' + [c.hi ? 'Hindi' : '', fixN ? 'How to fix ' + fixN : '', c.video || c.videoHi ? 'Video' : ''].filter(Boolean).join(' · ') + ([c.hi, fixN, c.video || c.videoHi].some(Boolean) ? '' : 'Not added yet') + '</dd>'
     + '<dt>In use at</dt><dd>' + nmFacs(T).length + ' ' + nmE(nmCfg(T).short || T) + (nmFacs(T).length === 1 ? '' : 's') + '</dd></dl>'
-    + '<div class="nm-sbtn"><button type="button" class="nm-btn pri" onclick="nmEditOpen(\'' + nmJ(c.id) + '\')">Edit</button>'
+    + '<div class="nm-sbtn ce-edit"><button type="button" class="nm-btn pri" onclick="nmEditOpen(\'' + nmJ(c.id) + '\')">Edit</button><button type="button" class="nm-btn" onclick="nmPlanOpen(\'' + nmJ(c.dept) + '\',\'' + nmJ(c.id) + '\')">Move day</button>'
     + (st ? '<button type="button" class="nm-btn" onclick="nmUndoAsk(\'' + nmJ(c.id) + '\')">' + (st === 'new' ? 'Remove' : 'Undo change') + '</button>' : '') + '</div>';
 }
 function nmRoleLabel(T, id) { var r = (nmCfg(T).roles || []).find(function (x) { return x.id === id; }); return r ? r.label : id; }
@@ -460,7 +483,7 @@ async function nmImportApply() {
 }
 function nmExcelHTML() {
   var u = _nm.ui, T = u.type, I = u.imp, cfg = nmCfg(T), s = nmContentStats(T), add = I ? I.n.changed + I.n.new + (I.retireMissing ? I.n.missing : 0) : 0;
-  return '<div class="nm-ehd"><button type="button" class="nm-ib" aria-label="Back" onclick="nmGo(\'list\')">' + NM_I.back + '</button><div class="nm-et"><b>Excel · ' + nmE(cfg.short || T) + ' checkpoints</b><small>Download, edit offline, upload back into the draft</small></div></div>'
+  return '<p class="ce-lead"><b>Excel · ' + nmE(cfg.short || T) + ' checkpoints</b> — download, edit offline, upload back into the draft</p>'
     + '<div class="nm-xsplit"><div class="nm-ecol">'
     + '<section class="nm-card"><b class="nm-h">Download as Excel</b><small class="nm-hint">One sheet per department with the checklist columns plus Hindi, MoV items, Best filled by, videos and days; a How to fix sheet; a Roles sheet.</small>'
     + '<div class="nm-acts"><button type="button" class="nm-btn pri" onclick="nmExport()">' + NM_I.down + 'Draft (.xlsx)</button></div></section>'
@@ -550,10 +573,7 @@ function nmPlanHTML() {
   var opts = function (kind) { var o = ''; if (kind === 'b') { for (var d = 1; d <= S.base; d++) o += nmOpt(d, 'Baseline day ' + d + ' (' + (nmPlan(T, u.pdept)[d - 1] || []).length + ')', sd && sd.b); }
     else { var plan = nmPlan(T, u.pdept); for (var e = S.i1; e <= S.iN; e++) o += nmOpt(e, 'Day ' + e + ' · week ' + (Math.floor((e - S.i1) / 7) + 1) + ' (' + nfDeptDay(plan, e, S).ids.length + ')', sd && sd.i); } return o; };
   var kind = u.pphase === 'baseline' ? 'b' : 'i';
-  return '<div class="nm-ehd"><button type="button" class="nm-ib" aria-label="Back to checkpoint list" onclick="nmGo(\'list\')">' + NM_I.back + '</button>'
-    + '<div class="nm-et"><b>Day plans · ' + nmE(cfg.short || T) + ' · ' + S.days + ' days</b><small>Moves are saved in the draft and reach facilities when you publish</small></div>'
-    + '<span class="nm-draft' + (nmChangeCount(T) ? '' : ' none') + '">' + (nmChangeCount(T) ? 'Draft · ' + nmChangeCount(T) + ' change' + (nmChangeCount(T) === 1 ? '' : 's') : 'Nothing to publish') + '</span>'
-    + '<button type="button" class="nm-btn pri" onclick="nmPubOpen()">Review &amp; publish</button></div>'
+  return '<p class="ce-lead"><b>Day plans · ' + nmE(cfg.short || T) + ' · ' + S.days + ' days</b> — moves are saved in the draft and reach facilities when you publish</p>'
     + '<div class="nm-bar"><label class="nm-lbl">Department<select onchange="_nm.ui.psel=null;nmPlanUi(\'pdept\',this.value)">' + B.depts.map(function (d) { return nmOpt(d.id, d.name, u.pdept); }).join('') + '</select></label>'
     + '<span class="nm-live">' + all + ' checkpoints' + (moved ? ' · ' + moved + ' moved on this board' : '') + '</span>'
     + '<div class="nm-acts"><button type="button" class="nm-btn"' + (moved ? '' : ' disabled') + ' onclick="nmPlanRespread()">Re-spread evenly</button></div></div>'

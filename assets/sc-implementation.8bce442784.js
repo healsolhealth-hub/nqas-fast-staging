@@ -178,8 +178,8 @@ function scFocusFor(di,ci){
       var progId=scCpmEditorLetterToProg(adminActiveProg||'C'), d=scImplDay(progId,di)||scRevisionDay(progId,di); adminEditorDay=null;
       var p=document.getElementById('ae-editor-panel');
       scAeGenNote(p,'<b>Day '+(di+1)+' · '+scEsc(d.title)+'</b><br>'+d.cps.length+' checkpoints. '
-        +(d.isImpl?'Implementation days are built from the Checkpoint Master: each theme week\'s checkpoints are split into 7 fixed days, and each staff member works only on their own gaps and assigned actions.':'Revision days re-score every checkpoint in the baseline groupings.')
-        +' Edit checkpoints in the <a href="#" onclick="scCpmTab(\'master\');return false;">Checkpoint Master</a>.');
+        +(d.isImpl?'Implementation days are built from the Checkpoint Master: each theme week\'s checkpoints are split into 7 fixed days, and each staff member works only on their own gaps and assigned actions.':'End-line days re-score every checkpoint in the baseline groupings.')
+        +' Edit checkpoints in <a href="#" onclick="scCpmTab(\'master\');return false;">Content → Checkpoints</a>.');
       return;
     }
     return oOpen.apply(this,arguments);

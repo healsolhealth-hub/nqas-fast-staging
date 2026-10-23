@@ -150,7 +150,7 @@ tr.on .nm-rowbtn{font-weight:600;}
   .nm-bar .nm-acts{margin-left:0;} .nm-filt select{max-width:none;}
 }
 @media (max-width:600px){ .nm-g3,.nm-g2{grid-template-columns:1fr;} .nm-fixst,.nm-fix{grid-column:1 / -1;}
-  .nm-scroll table{min-width:0;} .nm-scroll th:nth-child(2),.nm-scroll td:nth-child(2),.nm-scroll th:nth-child(5),.nm-scroll td:nth-child(5){display:none;}
+  .nm-scroll table{min-width:0;} .nm-scroll th:nth-child(3),.nm-scroll td:nth-child(3){display:none;}
   .nm-tc li{grid-template-columns:1fr;} .nm-types{width:100%;} .nm-types button{flex:1;padding:0 8px;} }
 .nm-card label > input,.nm-card label > select,.nm-card label > textarea{width:100%;min-width:0;max-width:100%;}
 .nm-card .nm-inl > input{width:160px;} .nm-card .nm-chk > input{width:18px;}
@@ -183,7 +183,6 @@ tr.on .nm-rowbtn{font-weight:600;}
 .nm-checks > div{display:flex;gap:10px;align-items:flex-start;font-size:14px;} .nm-checks .ok svg{color:#0F7A45;flex:0 0 auto;} .nm-checks .w svg{color:#B45309;flex:0 0 auto;}
 .nm-bul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.5;}
 .nm-ul.vers li{font-size:13px;align-items:flex-start;} .nm-ul.vers small{display:block;color:var(--nm-mut2);}
-@media (max-width:1500px){ .nm-scroll th:nth-child(2),.nm-scroll td:nth-child(2){display:none;} }
 @media (max-width:900px){ .nm-psplit{grid-template-columns:1fr;} .nm-phases{flex-wrap:wrap;} .nm-phases button{flex:1 1 45%!important;border-radius:8px!important;} .nm-chl li{grid-template-columns:1fr auto;} .nm-chl li > .nm-tag{grid-column:1 / -1;} }
 
 /* Step 2e — Overview facility-type filter (admin app) */

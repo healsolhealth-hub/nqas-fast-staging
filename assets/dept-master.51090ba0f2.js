@@ -23,7 +23,7 @@ var NM_CPX = ['method', 'items', 'fix', 'roles'];
 var NM_FIELDS = ['dept', 'aoc', 'std', 'me', 't', 'hi', 'method', 'items', 'video', 'videoHi', 'fix', 'roles', 'pk', 'retired'];
 var NM_DAY_WARN = 40;   // publishing warns when a day holds more checkpoints than this (Step 2c)
 var _nm = { base: {}, draft: {}, live: {}, loadedAt: {}, cache: {}, days: {}, chg: {},
-  ui: { type: 'chc', dept: '', q: '', aoc: '', std: '', method: '', show: 'active', limit: 60, sel: null, screen: 'list',
+  ui: { type: 'chc', dept: '', q: '', aoc: '', std: '', method: '', show: 'active', limit: 400, sel: null, screen: 'list',
         etab: 'details', form: null, fixAt: 1, prevHi: false, tcDept: '', tcLimit: 10, imp: null, busy: false } };
 
 function nmCanEdit() { return typeof appMode !== 'undefined' && appMode === 'sc-admin'; }

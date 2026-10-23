@@ -13110,8 +13110,8 @@ function scFocusFor(di,ci){
       var progId=scCpmEditorLetterToProg(adminActiveProg||'C'), d=scImplDay(progId,di)||scRevisionDay(progId,di); adminEditorDay=null;
       var p=document.getElementById('ae-editor-panel');
       scAeGenNote(p,'<b>Day '+(di+1)+' · '+scEsc(d.title)+'</b><br>'+d.cps.length+' checkpoints. '
-        +(d.isImpl?'Implementation days are built from the Checkpoint Master: each theme week\'s checkpoints are split into 7 fixed days, and each staff member works only on their own gaps and assigned actions.':'Revision days re-score every checkpoint in the baseline groupings.')
-        +' Edit checkpoints in the <a href="#" onclick="scCpmTab(\'master\');return false;">Checkpoint Master</a>.');
+        +(d.isImpl?'Implementation days are built from the Checkpoint Master: each theme week\'s checkpoints are split into 7 fixed days, and each staff member works only on their own gaps and assigned actions.':'End-line days re-score every checkpoint in the baseline groupings.')
+        +' Edit checkpoints in <a href="#" onclick="scCpmTab(\'master\');return false;">Content → Checkpoints</a>.');
       return;
     }
     return oOpen.apply(this,arguments);
@@ -13202,7 +13202,7 @@ async function scCpMoveDay(id){
   var implOpts=[{value:'',label:'Automatic (by theme week)'}];
   for(var e=8;e<=49;e++) implOpts.push({value:String(e),label:scDpDayLabel(e)});
   var v=await scDialog({title:'Move '+id+' to another day',icon:'📅',wide:true,okLabel:'Move',
-    message:c.t+'\n\nNow on: Baseline Day '+cur.bl+' · Implementation Day '+cur.impl+' · Revision Day '+cur.rev+'. The revision day always follows the baseline day.',
+    message:c.t+'\n\nNow on: Baseline Day '+cur.bl+' · Implementation Day '+cur.impl+' · End-line Day '+cur.rev+'. The end-line day always follows the baseline day.',
     fields:[{key:'bl',label:'Baseline day (1–7)',type:'select',value:c.blDay?String(c.blDay):'',options:blOpts},
             {key:'impl',label:'Implementation day (8–49)',type:'select',value:c.implDay?String(c.implDay):'',options:implOpts}]});
   if(!v) return;
@@ -13221,7 +13221,7 @@ async function scCpMoveDay(id){
   if(notes.length&&!(await showConfirm(notes.join('\n\n'),'⚠️','Please confirm the move','Move','var(--teal)'))) return;
   if(!await scCpmSave(id,{blDay:newBl,implDay:newImpl})){ showToast('Could not save — check connection.','err'); return; }
   var now=scCpDays(pk,id);
-  showToast(id+' now on Baseline Day '+now.bl+' · Implementation Day '+now.impl+' · Revision Day '+now.rev+'.','ok');
+  showToast(id+' now on Baseline Day '+now.bl+' · Implementation Day '+now.impl+' · End-line Day '+now.rev+'.','ok');
   try{ scCpmRender(); }catch(e){}
   try{ if(_scCpmUi.tab==='days'){ buildAeDayStrip(); if(_scDpOpenDay!=null) aeOpenDay(_scDpOpenDay); } }catch(e){}
 }
@@ -13234,7 +13234,7 @@ _scCpmUi.phase=''; _scCpmUi.day='';
     var h=oRow.apply(this,arguments); if(c.kind!=='nqas') return h;
     var pk=_scCpmUi.pkg==='12A'?'nqas_12A':'nqas_12B'; if(c.pk.indexOf(scPkgCode(pk))<0) pk=c.pk.indexOf('12B')>=0?'nqas_12B':'nqas_12A';
     var d=scCpDays(pk,c.id); if(!d) return h;
-    var chip='<span class="dy" title="'+scEsc(scPkgCode(pk))+' day cards — click to move" onclick="event.stopPropagation();scCpMoveDay(\''+scJs(c.id)+'\')">📅 Baseline D'+d.bl+(d.blMoved?'✎':'')+' · Implementation D'+d.impl+(d.implMoved?'✎':'')+' · Revision D'+d.rev+'</span>';
+    var chip='<span class="dy" title="'+scEsc(scPkgCode(pk))+' day cards — click to move" onclick="event.stopPropagation();scCpMoveDay(\''+scJs(c.id)+'\')">📅 Baseline D'+d.bl+(d.blMoved?'✎':'')+' · Implementation D'+d.impl+(d.implMoved?'✎':'')+' · End-line D'+d.rev+'</span>';
     return h.replace('<span class="pk">',chip+'<span class="pk">');
   };
   var oFil=scCpmFiltered;
@@ -13251,12 +13251,12 @@ _scCpmUi.phase=''; _scCpmUi.day='';
       var u=_scCpmUi; if(u.view&&u.view!=='cps') return r;
       var f=document.querySelector('#scm-panel .scm-filters'); if(!f||f.querySelector('.scdp-phase')) return r;
       var ph=document.createElement('select'); ph.className='scdp-phase';
-      ph.innerHTML=[['','All days'],['bl','Baseline (Days 1–7)'],['impl','Implementation (Days 8–49)'],['rev','Revision (Days 50–56)']].map(function(o){ return '<option value="'+o[0]+'"'+(u.phase===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('');
+      ph.innerHTML=[['','All days'],['bl','Baseline (Days 1–7)'],['impl','Implementation (Days 8–49)'],['rev','End-line (Days 50–56)']].map(function(o){ return '<option value="'+o[0]+'"'+(u.phase===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('');
       ph.setAttribute('onchange',"_scCpmUi.phase=this.value;_scCpmUi.day='';scCpmRender()");
       var dy=document.createElement('select'); dy.className='scdp-day'; dy.disabled=!u.phase;
       var rng=u.phase==='bl'?[1,7]:u.phase==='impl'?[8,49]:u.phase==='rev'?[50,56]:null, pk=u.pkg==='12A'?'nqas_12A':'nqas_12B';
       var opts='<option value="">'+(u.phase?'— choose a day —':'Day (choose a phase)')+'</option>';
-      if(rng) for(var d=rng[0];d<=rng[1];d++){ var n=(scDayDef(pk,d-1).cps||[]).length; opts+='<option value="'+d+'"'+(String(u.day)===String(d)?' selected':'')+'>'+scEsc(d<=49?scDpDayLabel(d):'Day '+d+' · Revision · '+SC_BASELINE[d-50].title)+' ('+n+')</option>'; }
+      if(rng) for(var d=rng[0];d<=rng[1];d++){ var n=(scDayDef(pk,d-1).cps||[]).length; opts+='<option value="'+d+'"'+(String(u.day)===String(d)?' selected':'')+'>'+scEsc(d<=49?scDpDayLabel(d):'Day '+d+' · End-line · '+SC_BASELINE[d-50].title)+' ('+n+')</option>'; }
       dy.innerHTML=opts; dy.setAttribute('onchange',"_scCpmUi.day=this.value;scCpmRender()");
       f.appendChild(ph); f.appendChild(dy);
       if(u.phase&&u.day){ var bar=document.querySelector('#scm-panel .scm-bar span'); if(bar) bar.insertAdjacentHTML('beforeend',' · in day-card order'); }
@@ -24059,7 +24059,7 @@ tr.on .nm-rowbtn{font-weight:600;}
   .nm-bar .nm-acts{margin-left:0;} .nm-filt select{max-width:none;}
 }
 @media (max-width:600px){ .nm-g3,.nm-g2{grid-template-columns:1fr;} .nm-fixst,.nm-fix{grid-column:1 / -1;}
-  .nm-scroll table{min-width:0;} .nm-scroll th:nth-child(2),.nm-scroll td:nth-child(2),.nm-scroll th:nth-child(5),.nm-scroll td:nth-child(5){display:none;}
+  .nm-scroll table{min-width:0;} .nm-scroll th:nth-child(3),.nm-scroll td:nth-child(3){display:none;}
   .nm-tc li{grid-template-columns:1fr;} .nm-types{width:100%;} .nm-types button{flex:1;padding:0 8px;} }
 .nm-card label > input,.nm-card label > select,.nm-card label > textarea{width:100%;min-width:0;max-width:100%;}
 .nm-card .nm-inl > input{width:160px;} .nm-card .nm-chk > input{width:18px;}
@@ -24092,7 +24092,6 @@ tr.on .nm-rowbtn{font-weight:600;}
 .nm-checks > div{display:flex;gap:10px;align-items:flex-start;font-size:14px;} .nm-checks .ok svg{color:#0F7A45;flex:0 0 auto;} .nm-checks .w svg{color:#B45309;flex:0 0 auto;}
 .nm-bul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.5;}
 .nm-ul.vers li{font-size:13px;align-items:flex-start;} .nm-ul.vers small{display:block;color:var(--nm-mut2);}
-@media (max-width:1500px){ .nm-scroll th:nth-child(2),.nm-scroll td:nth-child(2){display:none;} }
 @media (max-width:900px){ .nm-psplit{grid-template-columns:1fr;} .nm-phases{flex-wrap:wrap;} .nm-phases button{flex:1 1 45%!important;border-radius:8px!important;} .nm-chl li{grid-template-columns:1fr auto;} .nm-chl li > .nm-tag{grid-column:1 / -1;} }
 
 /* Step 2e — Overview facility-type filter (admin app) */
@@ -24126,7 +24125,7 @@ var NM_CPX = ['method', 'items', 'fix', 'roles'];
 var NM_FIELDS = ['dept', 'aoc', 'std', 'me', 't', 'hi', 'method', 'items', 'video', 'videoHi', 'fix', 'roles', 'pk', 'retired'];
 var NM_DAY_WARN = 40;   // publishing warns when a day holds more checkpoints than this (Step 2c)
 var _nm = { base: {}, draft: {}, live: {}, loadedAt: {}, cache: {}, days: {}, chg: {},
-  ui: { type: 'chc', dept: '', q: '', aoc: '', std: '', method: '', show: 'active', limit: 60, sel: null, screen: 'list',
+  ui: { type: 'chc', dept: '', q: '', aoc: '', std: '', method: '', show: 'active', limit: 400, sel: null, screen: 'list',
         etab: 'details', form: null, fixAt: 1, prevHi: false, tcDept: '', tcLimit: 10, imp: null, busy: false } };
 
 function nmCanEdit() { return typeof appMode !== 'undefined' && appMode === 'sc-admin'; }
@@ -24436,11 +24435,11 @@ async function nmOpen(T) {
 function nmRender() {
   var box = nmBox(); if (!box || !_nm.base[_nm.ui.type]) return;
   var s = _nm.ui.screen;
-  box.innerHTML = s === 'edit' ? nmEditHTML() : s === 'tocheck' ? nmToCheckHTML() : s === 'excel' ? nmExcelHTML() : s === 'plan' ? nmPlanHTML() : s === 'publish' ? nmPubHTML() : nmListHTML();
+  box.innerHTML = s === 'edit' ? nmEditHTML() : s === 'stds' ? nmStdsHTML() : s === 'tocheck' ? nmToCheckHTML() : s === 'excel' ? nmExcelHTML() : s === 'plan' ? nmPlanHTML() : s === 'publish' ? nmPubHTML() : nmListHTML();
 }
 function nmGo(screen) { _nm.ui.screen = screen; nmRender(); try { window.scrollTo(0, 0); } catch (e) {} }
-function nmUi(k, v) { _nm.ui[k] = v; if (k !== 'limit') _nm.ui.limit = 60; if (k === 'dept' || k === 'aoc') _nm.ui.std = ''; nmRender(); }
-function nmQ(v) { _nm.ui.q = v; clearTimeout(window._nmT); window._nmT = setTimeout(function () { _nm.ui.limit = 60; nmRender(); var i = document.getElementById('nm-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); }
+function nmUi(k, v) { _nm.ui[k] = v; if (k !== 'limit') _nm.ui.limit = 400; if (k === 'dept' || k === 'aoc') _nm.ui.std = ''; nmRender(); }
+function nmQ(v) { _nm.ui.q = v; clearTimeout(window._nmT); window._nmT = setTimeout(function () { _nm.ui.limit = 400; nmRender(); var i = document.getElementById('nm-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); }
 
 // ── small pieces ──
 function nmChip(m, off) { return '<span class="nm-m ' + (off ? 'off' : m.toLowerCase()) + '">' + nmE(m) + '</span>'; }
@@ -24463,15 +24462,19 @@ function nmTypeTabs() {
   }).join('') + '</div>';
 }
 
-// ── list ──
-function nmFiltered() {
+// ── list (Content → Checkpoints, 23 Oct 2026: tiles are the filters, panel only when a row is picked) ──
+function nmAttn(c) { return !c.retired && !c.method.length; }
+function nmFiltered(noShow) {
   var u = _nm.ui, T = u.type, q = u.q.trim().toLowerCase();
   return nmAll(T).filter(function (c) {
     if (u.dept && c.dept !== u.dept) return false;
-    var st = nmStatus(T, c.id);
-    if (u.show === 'active' && c.retired) return false;
-    if (u.show === 'retired' && !c.retired) return false;
-    if (u.show === 'changed' && !st) return false;
+    if (!noShow) {
+      var st = nmStatus(T, c.id);
+      if (u.show === 'active' && c.retired) return false;
+      if (u.show === 'retired' && !c.retired) return false;
+      if (u.show === 'changed' && !st) return false;
+      if (u.show === 'attn' && !nmAttn(c)) return false;
+    }
     if (u.aoc && c.aoc !== u.aoc) return false;
     if (u.std && c.std !== u.std) return false;
     if (u.method === 'none' ? c.method.length : (u.method && c.method.indexOf(u.method) < 0)) return false;
@@ -24479,47 +24482,66 @@ function nmFiltered() {
     return true;
   });
 }
+function nmShowHi() { return typeof _ce !== 'undefined' && !!_ce.hi; }
+function nmTilesHTML() {
+  var u = _nm.ui, T = u.type, L = nmFiltered(true), n = { active: 0, attn: 0, changed: 0, retired: 0 };
+  L.forEach(function (c) { if (c.retired) n.retired++; else n.active++; if (nmAttn(c)) n.attn++; if (nmStatus(T, c.id)) n.changed++; });
+  var t = function (k, l, sub, cls) { return '<button type="button" class="ce-tile' + (cls ? ' ' + cls : '') + (u.show === k ? ' on' : '') + '" aria-pressed="' + (u.show === k) + '" onclick="nmUi(\'show\',\'' + k + '\')"><span>' + l + '</span><b>' + n[k].toLocaleString('en-IN') + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</button>'; };
+  return '<div class="ce-tiles">' + t('active', 'All active', '') + t('attn', 'Needs attention', 'no assessment method', n.attn ? 'warn' : '') + t('changed', 'Changed in draft', '') + t('retired', 'Retired', '') + '</div>';
+}
+function nmDayTxt2(T, c) { var d = nmDays(T)[c.id]; return c.retired || !d ? '—' : 'Base ' + d.b + (d.i ? ' · Impl ' + d.i : ''); }
 function nmListHTML() {
-  var u = _nm.ui, T = u.type, B = _nm.base[T], data = B.data, all = nmAll(T), list = nmFiltered(), sel = u.sel ? nmGet(T, u.sel) : null;
-  var cnt = {}; all.forEach(function (c) { if (!c.retired) cnt[c.dept] = (cnt[c.dept] || 0) + 1; });
-  var tc = nmToCheck(T).length, cfg = nmCfg(T), D = _nm.draft[T];
-  var stds = {}; all.forEach(function (c) { if ((!u.dept || c.dept === u.dept) && (!u.aoc || c.aoc === u.aoc)) stds[c.std] = 1; });
-  var stdList = Object.keys(stds).sort(function (a, b) { return a.localeCompare(b, 'en', { numeric: true }); });
-  var h = nmTopHTML('Checkpoints', 'UPHC · PHC · CHC — HealSol only · changes stay in the draft until you publish them')
-    + '<div class="nm-bar">' + nmTypeTabs()
-    + '<div class="nm-live">' + nmLiveTxt(T) + '</div>'
-    + '<div class="nm-acts"><button type="button" class="nm-btn" onclick="nmPlanOpen()">' + NM_I.cal + 'Day plans</button><button type="button" class="nm-btn" onclick="nmGo(\'excel\')">' + NM_I.down + 'Excel</button>'
-    + '<button type="button" class="nm-btn pri" onclick="nmEditOpen(null)">' + NM_I.plus + 'New checkpoint</button></div></div>'
-    + '<div class="nm-body">'
+  var u = _nm.ui, T = u.type, B = _nm.base[T], data = B.data, all = nmAll(T), list = nmFiltered(), sel = u.sel ? nmGet(T, u.sel) : null, hi = nmShowHi();
+  var cnt = {}, att = {}; all.forEach(function (c) { if (!c.retired) cnt[c.dept] = (cnt[c.dept] || 0) + 1; if (nmAttn(c)) att[c.dept] = (att[c.dept] || 0) + 1; });
+  var h = nmTilesHTML()
+    + '<div class="nm-body' + (sel ? ' has-sel' : '') + '">'
     + '<aside class="nm-depts" aria-label="Departments"><div class="nm-cap">Departments</div><div class="nm-dl">'
-    + B.depts.map(function (d) { return '<button type="button" class="' + (u.dept === d.id ? 'on' : '') + '" onclick="nmUi(\'dept\',\'' + nmJ(d.id) + '\')"><span>' + nmE(d.name) + '</span><em>' + (cnt[d.id] || 0) + '</em></button>'; }).join('')
-    + '</div><div class="nm-tcl"><button type="button" onclick="nmGo(\'tocheck\')">To check <em class="' + (tc ? '' : 'z') + '">' + tc + '</em></button></div></aside>'
+    + B.depts.map(function (d) { return '<button type="button" class="' + (u.dept === d.id ? 'on' : '') + '" onclick="nmUi(\'dept\',\'' + nmJ(d.id) + '\')"><span>' + nmE(d.name) + '</span><em>' + (att[d.id] ? '<i class="ce-dot" title="' + att[d.id] + ' need attention"></i>' : '') + (cnt[d.id] || 0) + '</em></button>'; }).join('')
+    + '</div></aside>'
     + '<section class="nm-tbl" aria-label="Checkpoints">'
     + '<div class="nm-filt"><label class="nm-search">' + NM_I.search + '<span class="nm-sr">Search checkpoints</span><input id="nm-q" type="search" placeholder="Search ID, ME or text" value="' + nmE(u.q) + '" oninput="nmQ(this.value)"></label>'
     + '<label>Area<select onchange="nmUi(\'aoc\',this.value)">' + nmOpt('', 'All', u.aoc) + Object.keys(data.aocs || {}).map(function (a) { return nmOpt(a, a + ' · ' + String(data.aocs[a]).replace(/^[:\s]+/, ''), u.aoc); }).join('') + '</select></label>'
-    + '<label>Standard<select onchange="nmUi(\'std\',this.value)">' + nmOpt('', 'All', u.std) + stdList.map(function (s) { return nmOpt(s, s, u.std); }).join('') + '</select></label>'
-    + '<label>Method<select onchange="nmUi(\'method\',this.value)">' + nmOpt('', 'Any', u.method) + NM_METHODS.map(function (m) { return nmOpt(m, m + ' · ' + NM_MLABEL[m], u.method); }).join('') + nmOpt('none', 'None (to check)', u.method) + '</select></label>'
-    + '<label>Show<select onchange="nmUi(\'show\',this.value)">' + nmOpt('active', 'Active', u.show) + nmOpt('changed', 'Changed in draft', u.show) + nmOpt('retired', 'Retired', u.show) + nmOpt('all', 'All', u.show) + '</select></label></div>'
-    + '<div class="nm-sum"><span>' + (u.std && data.stds && data.stds[u.std] ? '<b>' + nmE(u.std) + ' · ' + nmE(data.stds[u.std]) + '</b> — ' : '') + '<b>' + list.length + '</b> of ' + (cnt[u.dept] || 0) + ' shown</span>'
-    + (list.length ? '<button type="button" class="nm-lnk" onclick="nmBulkRoles()">Set “best filled by” for these ' + list.length + '</button>' : '') + '</div>'
-    + '<div class="nm-scroll"><table><thead><tr><th scope="col">ID</th><th scope="col">ME</th><th scope="col">Checkpoint</th><th scope="col">Method</th><th scope="col">Day</th><th scope="col"><span class="nm-sr">Status</span></th></tr></thead><tbody>'
+    + '<label>Method<select onchange="nmUi(\'method\',this.value)">' + nmOpt('', 'Any', u.method) + NM_METHODS.map(function (m) { return nmOpt(m, NM_MLABEL[m], u.method); }).join('') + nmOpt('none', 'None set', u.method) + '</select></label>'
+    + '<label class="ce-sw"><input type="checkbox" ' + (hi ? 'checked ' : '') + 'onchange="ceSetHi(this.checked)"> Show Hindi</label></div>'
+    + (u.std ? '<div class="ce-chips"><button type="button" class="ce-chip" onclick="nmUi(\'std\',\'\')" aria-label="Clear the Standard filter">Standard ' + nmE(u.std) + (data.stds && data.stds[u.std] ? ' · ' + nmE(String(data.stds[u.std]).slice(0, 60)) : '') + ' <span aria-hidden="true">×</span></button></div>' : '')
+    + '<div class="nm-sum"><span><b>' + list.length + '</b> of ' + (cnt[u.dept] || 0) + ' in ' + nmE(nmDeptName(T, u.dept)) + '</span>'
+    + (u.show === 'attn' && list.length ? '<button type="button" class="nm-lnk" onclick="nmGo(\'tocheck\')">Set methods quickly</button>' : '')
+    + (list.length ? '<button type="button" class="nm-lnk ce-edit" onclick="nmBulkRoles()">Set “best filled by” for these ' + list.length + '</button>' : '') + '</div>'
+    + '<div class="nm-scroll"><table><thead><tr><th scope="col">ID</th><th scope="col">Checkpoint</th><th scope="col">How it is checked</th><th scope="col">Day</th></tr></thead><tbody>'
     + list.slice(0, u.limit).map(function (c) {
       var st = nmStatus(T, c.id);
-      return '<tr class="' + (u.sel === c.id ? 'on ' : '') + (c.retired ? 'ret' : '') + '" onclick="nmPick(\'' + nmJ(c.id) + '\')"><td class="id">' + nmE(c.id) + '</td><td>' + nmE(c.me) + '</td>'
-        + '<td class="t"><button type="button" class="nm-rowbtn" onclick="event.stopPropagation();nmPick(\'' + nmJ(c.id) + '\')">' + nmE(c.t) + '</button></td>'
-        + '<td>' + (c.method.length ? c.method.map(function (m) { return nmChip(m, c.retired); }).join(' ') : '<span class="nm-tag tc">None</span>') + '</td>'
-        + '<td class="d">' + (c.retired ? '—' : nmDayTxt(T, c.id)) + '</td><td>' + nmTag(st) + '</td></tr>';
+      return '<tr class="' + (u.sel === c.id ? 'on ' : '') + (c.retired ? 'ret' : '') + '" onclick="nmPick(\'' + nmJ(c.id) + '\')"><td class="id">' + nmE(c.id) + '</td>'
+        + '<td class="t"><button type="button" class="nm-rowbtn" onclick="event.stopPropagation();nmPick(\'' + nmJ(c.id) + '\')">' + nmE(c.t) + '</button>'
+        + (hi ? '<div class="ce-hi' + (c.hi ? '' : ' miss') + '">' + (c.hi ? nmE(c.hi) : 'No Hindi yet') + '</div>' : '') + '<div class="ce-sub">' + nmE(c.me) + ' · Area ' + nmE(c.aoc) + (nmAttn(c) ? ' <span class="nm-tag tc">Needs attention</span>' : '') + (st ? ' ' + nmTag(st) : '') + '</div></td>'
+        + '<td class="m">' + (c.method.length ? c.method.map(function (m) { return '<span class="nm-m ' + (c.retired ? 'off' : m.toLowerCase()) + '">' + nmE(NM_MLABEL[m] || m) + '</span>'; }).join(' ') : '<span class="nm-tag tc">None set</span>') + '</td>'
+        + '<td class="d">' + nmDayTxt2(T, c) + '</td></tr>';
     }).join('') + '</tbody></table>'
-    + (list.length ? '' : '<div class="nm-empty sm">No checkpoints match these filters.</div>') + '</div>'
-    + '<div class="nm-foot"><span>B = baseline day, I = implementation day</span>' + (list.length > u.limit ? '<button type="button" class="nm-lnk" onclick="nmUi(\'limit\',' + (u.limit + 100) + ')">Show ' + Math.min(100, list.length - u.limit) + ' more</button>' : '') + '</div></section>'
-    + '<aside class="nm-side" aria-label="Selected checkpoint">' + (sel ? nmSideHTML(T, sel) : '<div class="nm-empty sm">Choose a checkpoint to see it here.</div>') + '</aside></div>';
+    + (list.length ? '' : '<div class="nm-empty sm">No checkpoints match.</div>') + '</div>'
+    + '<div class="nm-foot"><span>Base = baseline day · Impl = implementation day · the end-line repeats the baseline checkpoints</span>' + (list.length > u.limit ? '<button type="button" class="nm-lnk" onclick="nmUi(\'limit\',' + (u.limit + 200) + ')">Show ' + Math.min(200, list.length - u.limit) + ' more</button>' : '') + '</div></section>'
+    + (sel ? '<aside class="nm-side" aria-label="Selected checkpoint">' + nmSideHTML(T, sel) + '</aside>' : '') + '</div>';
   return h;
 }
-function nmPick(id) { _nm.ui.sel = id; nmRender(); }
+// ── Standards: Area of Concern → Standard → ME for one department, with counts; "View" opens the list filtered ──
+function nmStdsHTML() {
+  var u = _nm.ui, T = u.type, B = _nm.base[T], data = B.data, all = nmAll(T).filter(function (c) { return !c.retired && c.dept === u.dept; });
+  var A = {}; all.forEach(function (c) { var a = A[c.aoc] = A[c.aoc] || { n: 0, std: {} }; a.n++; var s = a.std[c.std] = a.std[c.std] || { n: 0, me: {} }; s.n++; s.me[c.me] = (s.me[c.me] || 0) + 1; });
+  var cmp = function (x, y) { return String(x).localeCompare(String(y), 'en', { numeric: true }); };
+  return '<div class="ce-stdhd"><label>Department<select onchange="_nm.ui.dept=this.value;nmRender()">' + B.depts.map(function (d) { return nmOpt(d.id, d.name, u.dept); }).join('') + '</select></label>'
+    + '<span>' + Object.keys(A).length + ' Areas of Concern · ' + Object.keys(A).reduce(function (n, a) { return n + Object.keys(A[a].std).length; }, 0) + ' Standards · ' + all.length + ' checkpoints</span></div>'
+    + Object.keys(A).sort(cmp).map(function (a) {
+      return '<section class="nm-card ce-aoc"><b class="nm-h">Area ' + nmE(a) + ' · ' + nmE(String((data.aocs || {})[a] || '').replace(/^[:\s]+/, '')) + ' <em>' + A[a].n + ' checkpoints</em></b>'
+        + Object.keys(A[a].std).sort(cmp).map(function (s) { var S = A[a].std[s];
+          return '<div class="ce-std"><div class="ce-stdr"><b>' + nmE(s) + '</b><span>' + nmE((data.stds || {})[s] || '') + '</span><em>' + S.n + '</em>'
+            + '<button type="button" class="nm-btn" onclick="_nm.ui.aoc=\'' + nmJ(a) + '\';_nm.ui.std=\'' + nmJ(s) + '\';_nm.ui.show=\'active\';nmGo(\'list\');ceHeadPaint()">View</button></div>'
+            + '<ul class="ce-mes">' + Object.keys(S.me).sort(cmp).map(function (m) { return '<li><b>' + nmE(m) + '</b> ' + nmE((data.mes || {})[u.dept + '|' + m] || '') + ' <em>' + S.me[m] + '</em></li>'; }).join('') + '</ul></div>';
+        }).join('') + '</section>';
+    }).join('') + (all.length ? '' : '<div class="nm-empty sm">No checkpoints in this department.</div>');
+}
+function nmPick(id) { _nm.ui.sel = _nm.ui.sel === id ? null : id; nmRender(); if (_nm.ui.sel && window.innerWidth < 1180) { var sd = document.querySelector('#nf-dm .nm-side'); if (sd && sd.scrollIntoView) sd.scrollIntoView({ block: 'start' }); } }
 function nmSideHTML(T, c) {
   var st = nmStatus(T, c.id), d = nmDays(T)[c.id], data = _nm.base[T].data, base = _nm.base[T].byId[c.id];
   var fixN = Object.keys(c.fix || {}).filter(function (k) { return c.fix[k] && c.fix[k].f; }).length;
-  return '<div class="nm-sh"><span>' + nmE(c.id) + ' · ' + nmE(c.me) + '</span>' + nmTag(st) + '</div>'
+  return '<div class="nm-sh"><span>' + nmE(c.id) + ' · ' + nmE(nmDeptName(T, c.dept)) + '</span>' + nmTag(st) + '<button type="button" class="ce-x" aria-label="Close" onclick="_nm.ui.sel=null;nmRender()">' + NM_I.x + '</button></div>'
     + '<div class="nm-st">' + nmE(c.t) + '</div>' + (c.hi ? '<div class="nm-hi">' + nmE(c.hi) + '</div>' : '')
     + '<div class="nm-me">' + nmE((data.mes || {})[c.dept + '|' + c.me] || (data.stds || {})[c.std] || '') + '</div>'
     + (c.items.length ? '<div class="nm-box"><b>MoV · ' + c.items.length + ' item' + (c.items.length === 1 ? '' : 's') + '</b><ol>' + c.items.map(function (x) { return '<li>' + nmE(x.t) + '</li>'; }).join('') + '</ol>'
@@ -24530,7 +24552,7 @@ function nmSideHTML(T, c) {
     + '<dt>Days</dt><dd>' + (c.retired || !d ? '—' : 'Baseline ' + d.b + (d.i ? ' · Implementation ' + d.i : '') + ' · End-line ' + d.e) + '</dd>'
     + '<dt>Content</dt><dd>' + [c.hi ? 'Hindi' : '', fixN ? 'How to fix ' + fixN : '', c.video || c.videoHi ? 'Video' : ''].filter(Boolean).join(' · ') + ([c.hi, fixN, c.video || c.videoHi].some(Boolean) ? '' : 'Not added yet') + '</dd>'
     + '<dt>In use at</dt><dd>' + nmFacs(T).length + ' ' + nmE(nmCfg(T).short || T) + (nmFacs(T).length === 1 ? '' : 's') + '</dd></dl>'
-    + '<div class="nm-sbtn"><button type="button" class="nm-btn pri" onclick="nmEditOpen(\'' + nmJ(c.id) + '\')">Edit</button>'
+    + '<div class="nm-sbtn ce-edit"><button type="button" class="nm-btn pri" onclick="nmEditOpen(\'' + nmJ(c.id) + '\')">Edit</button><button type="button" class="nm-btn" onclick="nmPlanOpen(\'' + nmJ(c.dept) + '\',\'' + nmJ(c.id) + '\')">Move day</button>'
     + (st ? '<button type="button" class="nm-btn" onclick="nmUndoAsk(\'' + nmJ(c.id) + '\')">' + (st === 'new' ? 'Remove' : 'Undo change') + '</button>' : '') + '</div>';
 }
 function nmRoleLabel(T, id) { var r = (nmCfg(T).roles || []).find(function (x) { return x.id === id; }); return r ? r.label : id; }
@@ -24861,7 +24883,7 @@ async function nmImportApply() {
 }
 function nmExcelHTML() {
   var u = _nm.ui, T = u.type, I = u.imp, cfg = nmCfg(T), s = nmContentStats(T), add = I ? I.n.changed + I.n.new + (I.retireMissing ? I.n.missing : 0) : 0;
-  return '<div class="nm-ehd"><button type="button" class="nm-ib" aria-label="Back" onclick="nmGo(\'list\')">' + NM_I.back + '</button><div class="nm-et"><b>Excel · ' + nmE(cfg.short || T) + ' checkpoints</b><small>Download, edit offline, upload back into the draft</small></div></div>'
+  return '<p class="ce-lead"><b>Excel · ' + nmE(cfg.short || T) + ' checkpoints</b> — download, edit offline, upload back into the draft</p>'
     + '<div class="nm-xsplit"><div class="nm-ecol">'
     + '<section class="nm-card"><b class="nm-h">Download as Excel</b><small class="nm-hint">One sheet per department with the checklist columns plus Hindi, MoV items, Best filled by, videos and days; a How to fix sheet; a Roles sheet.</small>'
     + '<div class="nm-acts"><button type="button" class="nm-btn pri" onclick="nmExport()">' + NM_I.down + 'Draft (.xlsx)</button></div></section>'
@@ -24951,10 +24973,7 @@ function nmPlanHTML() {
   var opts = function (kind) { var o = ''; if (kind === 'b') { for (var d = 1; d <= S.base; d++) o += nmOpt(d, 'Baseline day ' + d + ' (' + (nmPlan(T, u.pdept)[d - 1] || []).length + ')', sd && sd.b); }
     else { var plan = nmPlan(T, u.pdept); for (var e = S.i1; e <= S.iN; e++) o += nmOpt(e, 'Day ' + e + ' · week ' + (Math.floor((e - S.i1) / 7) + 1) + ' (' + nfDeptDay(plan, e, S).ids.length + ')', sd && sd.i); } return o; };
   var kind = u.pphase === 'baseline' ? 'b' : 'i';
-  return '<div class="nm-ehd"><button type="button" class="nm-ib" aria-label="Back to checkpoint list" onclick="nmGo(\'list\')">' + NM_I.back + '</button>'
-    + '<div class="nm-et"><b>Day plans · ' + nmE(cfg.short || T) + ' · ' + S.days + ' days</b><small>Moves are saved in the draft and reach facilities when you publish</small></div>'
-    + '<span class="nm-draft' + (nmChangeCount(T) ? '' : ' none') + '">' + (nmChangeCount(T) ? 'Draft · ' + nmChangeCount(T) + ' change' + (nmChangeCount(T) === 1 ? '' : 's') : 'Nothing to publish') + '</span>'
-    + '<button type="button" class="nm-btn pri" onclick="nmPubOpen()">Review &amp; publish</button></div>'
+  return '<p class="ce-lead"><b>Day plans · ' + nmE(cfg.short || T) + ' · ' + S.days + ' days</b> — moves are saved in the draft and reach facilities when you publish</p>'
     + '<div class="nm-bar"><label class="nm-lbl">Department<select onchange="_nm.ui.psel=null;nmPlanUi(\'pdept\',this.value)">' + B.depts.map(function (d) { return nmOpt(d.id, d.name, u.pdept); }).join('') + '</select></label>'
     + '<span class="nm-live">' + all + ' checkpoints' + (moved ? ' · ' + moved + ' moved on this board' : '') + '</span>'
     + '<div class="nm-acts"><button type="button" class="nm-btn"' + (moved ? '' : ' disabled') + ' onclick="nmPlanRespread()">Re-spread evenly</button></div></div>'
@@ -27982,6 +28001,296 @@ function scdTabsPaint() {
   var t = document.getElementById('scm-tabs'); if (t && !t.dataset.scd) { t.dataset.scd = '1'; var a = t.querySelector('[data-t="days"]'), m = t.querySelector('[data-t="master"]');
     if (a && m) { m.innerHTML = '<i class="ti ti-list-details"></i> Checkpoints'; a.innerHTML = '<i class="ti ti-cards"></i> Day cards (titles &amp; tasks)'; t.insertBefore(m, a); } }
 }
+</script>
+<style id="nf-content-shell-css">/* Content — one editor for every facility type (23 Oct 2026) */
+body.hs-admin.nfv-editor .admin-main > #hs-ctabs,body.hs-admin.nfv-dm .admin-main > #hs-ctabs{display:block!important;}
+#hs-ctabs.hs-tabs{border-bottom:0;margin-bottom:10px;font-family:'Poppins',sans-serif;}
+#hs-ctabs .ce-hd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+#hs-ctabs .ce-ttl h1{width:auto;margin:0;font-size:24px;} #hs-ctabs .ce-ttl small{display:block;font-size:12.5px;color:#4F5E59;margin-top:2px;}
+#hs-ctabs .ce-types{display:flex;gap:4px;background:#E3ECE9;border-radius:12px;padding:4px;}
+#hs-ctabs .ce-types button{border:0;border-radius:9px;background:transparent;font:inherit;font-size:13.5px;color:#33433E;padding:0 14px;min-height:40px;cursor:pointer;}
+#hs-ctabs .ce-types button em{font-style:normal;font-size:12px;color:#5D6D68;} #hs-ctabs .ce-types button.on{background:#134A41;color:#fff;font-weight:600;border:0;} #hs-ctabs .ce-types button.on em{color:#CFE5DF;}
+#hs-ctabs .ce-secs{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;border-bottom:1px solid #DCE4E1;margin-bottom:10px;}
+#hs-ctabs .ce-secl{display:flex;gap:4px;overflow-x:auto;}
+#hs-ctabs .ce-secl button{border:0;border-bottom:3px solid transparent;background:transparent;font:inherit;font-size:14px;color:#4F5E59;padding:10px 14px;min-height:44px;cursor:pointer;white-space:nowrap;}
+#hs-ctabs .ce-secl button.on{color:#134A41;font-weight:600;border-bottom-color:#134A41;}
+#hs-ctabs .ce-sacts{display:flex;gap:8px;align-items:center;padding-bottom:6px;flex-wrap:wrap;}
+#hs-ctabs .ce-pkg{display:flex;gap:4px;}
+#hs-ctabs .ce-pkg button{border:1px solid #DCE4E1;border-radius:999px;background:#fff;font:inherit;font-size:13px;padding:0 14px;min-height:36px;color:#1F2D29;cursor:pointer;}
+#hs-ctabs .ce-pkg button.on{background:#134A41;border-color:#134A41;color:#fff;font-weight:600;}
+.ce-b{border:1px solid #DCE4E1;border-radius:10px;background:#fff;color:#1F2D29;font:inherit;font-size:13.5px;font-weight:600;padding:0 14px;min-height:40px;cursor:pointer;}
+.ce-b.p{border-color:#134A41;background:#134A41;color:#fff;} .ce-b:hover{border-color:#134A41;}
+#hs-ctabs .ce-b{padding:0 14px;border:1px solid #DCE4E1;color:#1F2D29;} #hs-ctabs .ce-b.p{border-color:#134A41;color:#fff;}
+#hs-ctabs .ce-pub{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #DCE4E1;border-radius:12px;padding:10px 14px;}
+#hs-ctabs .ce-pub.warn{background:#FFF6E8;border-color:#F1D4A6;}
+#hs-ctabs .ce-pubt{flex:1;min-width:240px;font-size:13px;color:#33433E;line-height:1.45;} #hs-ctabs .ce-pubt b{color:#1F2D29;}
+#hs-ctabs .ce-puba{display:flex;gap:8px;flex-wrap:wrap;}
+#hs-ctabs .ce-note{font-size:13px;color:#4F5E59;background:#fff;border:1px dashed #B9C8C3;border-radius:12px;padding:12px 14px;}
+/* the old headers give way to the one above */
+body.hs-admin #scd-bar{display:none!important;}
+body.hs-admin #scm-tabs,body.hs-admin #scm-panel .scm-views,body.hs-admin #scm-panel .scm-stats{display:none!important;}
+body.hs-admin #admin-editor-section[data-scdtab="master"] > :first-child{display:none!important;}
+body.hs-admin #admin-editor-section{border-radius:14px;}
+/* tiles = filters */
+.ce-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 12px;}
+.ce-tile{text-align:left;border:1px solid #DCE4E1;border-radius:14px;background:#fff;font:inherit;padding:10px 14px;color:#1F2D29;cursor:pointer;min-height:64px;display:flex;flex-direction:column;}
+.ce-tile span{font-size:12.5px;color:#4F5E59;} .ce-tile b{font-size:22px;line-height:1.2;} .ce-tile small{font-size:11.5px;color:#4F5E59;}
+.ce-tile.warn{border-color:#F2C9BF;} .ce-tile.warn b{color:#B3402A;} .ce-tile.on{border:2px solid #134A41;padding:9px 13px;background:#F7FBFA;}
+.ce-sw{display:flex!important;align-items:center;gap:6px;font-size:13px;color:#1F2D29!important;cursor:pointer;white-space:nowrap;} .ce-sw input,#scm-panel .ce-sw input{width:18px!important;height:18px;flex:0 0 18px!important;min-width:0!important;accent-color:#134A41;margin:0;}
+.ce-chips{padding:8px 14px 0;} .ce-chip{border:1px solid #134A41;background:#F2F8F6;color:#134A41;border-radius:999px;font:inherit;font-size:12.5px;font-weight:600;padding:5px 12px;cursor:pointer;}
+.ce-hi{font-size:13px;color:#33433E;margin-top:2px;} .ce-hi.miss{color:#8A2F1F;font-size:12px;} .ce-sub{font-size:12px;color:#5D6D68;margin-top:2px;}
+.ce-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#C2410C;margin-right:6px;vertical-align:middle;}
+.ce-x{border:0;background:#EEF2F1;width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin-left:auto;color:#33433E;}
+#nf-dm .nm-sh{gap:8px;}
+/* UPHC / PHC / CHC: the side panel opens only when a row is picked */
+@media (min-width:901px){ #nf-dm .nm-body:not(.has-sel){grid-template-columns:200px minmax(0,1fr);} }
+#nf-dm .nm-scroll td.t{min-width:260px;}
+/* Sub-Centre list: fewer filters, key line */
+#scm-panel .ce-more{display:none;} #scm-panel .ce-more.open{display:flex;}
+#scm-panel .ce-moreb{min-height:38px;font-size:13px;}
+body:not(.ce-hi) #scm-panel .scm-hi{display:none;}
+.ce-key{font-size:12px;color:#4F5E59;margin:10px 2px 2px;line-height:1.5;}
+#scm-panel .scm-row .scx-btn{white-space:nowrap;}
+/* Standards (UPHC / PHC / CHC) */
+.ce-stdhd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:13px;color:#4F5E59;} .ce-stdhd label{display:flex;gap:8px;align-items:center;font-size:13px;color:#33433E;}
+.ce-aoc{padding:14px 16px;margin-bottom:12px;} .ce-aoc .nm-h em{font-style:normal;font-weight:400;font-size:12.5px;color:#5D6D68;margin-left:6px;}
+.ce-std{border-top:1px solid #EEF2F1;padding:10px 0;} .ce-stdr{display:flex;gap:10px;align-items:center;} .ce-stdr b{min-width:44px;} .ce-stdr span{flex:1;font-size:13.5px;} .ce-stdr em{font-style:normal;font-size:12.5px;color:#5D6D68;}
+.ce-mes{margin:6px 0 0 54px;padding:0;list-style:none;font-size:12.5px;color:#33433E;display:flex;flex-direction:column;gap:3px;} .ce-mes em{font-style:normal;color:#5D6D68;}
+/* Import / export (Sub-Centre) */
+.ce-imp{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+.ce-card{background:#fff;border:1px solid #DCE4E1;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+.ce-card b{font-size:15px;} .ce-card p{margin:0;font-size:13px;color:#4F5E59;line-height:1.5;flex:1;}
+/* phone: view only */
+body.ce-ro #scm-panel .scm-row button,body.ce-ro #scm-panel .scm-row input[type=checkbox],body.ce-ro #scm-panel .scm-bar > span:last-child,
+body.ce-ro #nf-dm .ce-edit,body.ce-ro #nf-dm .nm-sbtn,body.ce-ro [onclick^="scRegEdit"],body.ce-ro [onclick^="scCpmEdit"],body.ce-ro [onclick^="scRegImport"],
+body.ce-ro [onclick^="nmEditOpen"],body.ce-ro [onclick^="nmBulkRoles"],body.ce-ro [onclick^="nmGo('tocheck')"],body.ce-ro .scm-active-check button{display:none!important;}
+body.ce-ro #scm-panel .scm-row .dy{pointer-events:none;}
+body.ce-ro[data-cesec="plans"] #nf-dm,body.ce-ro[data-cesec="plans"] #admin-editor-section{display:none!important;}
+@media (max-width:900px){ .ce-tiles{grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:700px){
+  #hs-ctabs .ce-types{width:100%;} #hs-ctabs .ce-types button{flex:1;padding:0 6px;}
+  #hs-ctabs .ce-secs{border-bottom:1px solid #DCE4E1;} #hs-ctabs .ce-secl button{padding:10px 10px;}
+  .ce-tile{min-height:56px;padding:8px 12px;} .ce-tile b{font-size:19px;} .ce-tile small{display:none;}
+  #nf-dm .nm-scroll td.t{min-width:0;}
+}
+#nf-dm .nm-scroll td.m{min-width:120px;} #nf-dm .nm-scroll td.m .nm-m{display:block;width:max-content;margin:0 0 4px;white-space:nowrap;}
+#nf-dm .ce-sub .nm-tag{font-size:11px;padding:1px 6px;margin-left:4px;}
+.ce-lead{font-size:13.5px;color:#4F5E59;margin:0 0 12px;} .ce-lead b{color:#1F2D29;}
+</style>
+<script id="nf-content-shell">// ══════════════════════════════════════════════════════════════
+// CONTENT — one editor for Sub-Centre, UPHC, PHC and CHC (23 Oct 2026, review items C1–C13).
+//   One header: type tabs · one section row (Checkpoints · Day plans · Standards · Import / export) · one publish bar.
+//   Two engines underneath: the Sub-Centre Checkpoint Master (sc/cp-master.js + extensions, draft in shared/sc-draft.js)
+//   and the UPHC / PHC / CHC master (dept/master*.js). This file only arranges them; no data changes.
+//   Phone (< 700 px wide): view only — the list, Standards and a checkpoint's details; no editing, import or publishing.
+//   Approved design: canvas "Content editor — merged" (23 Oct 2026).
+// ══════════════════════════════════════════════════════════════
+var _ce = { hi: false, sec: 'cps', more: false };
+try { _ce.hi = localStorage.getItem('nf-ce-hi') === '1'; } catch (e) {}
+var CE_TYPES = [['sc', 'Sub-Centre'], ['uphc', 'UPHC'], ['phc', 'PHC'], ['chc', 'CHC']];
+var CE_SECS = [['cps', 'Checkpoints'], ['plans', 'Day plans'], ['stds', 'Standards'], ['imp', 'Import / export']];
+function ceE(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function ceOn() { return typeof appMode !== 'undefined' && appMode === 'sc-admin' && typeof _nfOv !== 'undefined' && (_nfOv.view === 'editor' || _nfOv.view === 'dm'); }
+function ceType() { return _nfOv.view === 'editor' ? 'sc' : ((typeof _nm !== 'undefined' && _nm.ui && _nm.ui.type) || 'uphc'); }
+function ceRO() { return (window.innerWidth || 1280) < 700; }
+function ceSec() {
+  if (ceType() === 'sc') { var u = typeof _scCpmUi !== 'undefined' ? _scCpmUi : {}; if (u.tab === 'days') return 'plans'; if (u.view === 'tree') return 'stds'; if (u.view === 'imp') return 'imp'; return 'cps'; }
+  var s = _nm.ui.screen; return s === 'plan' ? 'plans' : s === 'stds' ? 'stds' : s === 'excel' ? 'imp' : 'cps';
+}
+function ceTypeLabel(T) { var x = CE_TYPES.find(function (t) { return t[0] === T; }); return x ? x[1] : String(T).toUpperCase(); }
+function ceDate(iso) { try { return typeof fpShortDate === 'function' ? fpShortDate(String(iso).slice(0, 10)) : String(iso).slice(0, 10); } catch (e) { return String(iso || '').slice(0, 10); } }
+
+// ── header ──
+function cePubHTML() {
+  var T = ceType(), n = 0, v = 0, at = '', by = '', vers = '', disc = '', pub = '';
+  if (T === 'sc') {
+    n = (typeof SCD !== 'undefined' && SCD.on) ? scdCount() : 0; var m = (typeof SCD !== 'undefined' && SCD.meta) || {}; v = m.v || 1; at = m.at || ''; by = m.by || '';
+    vers = "scdOpenPub('vers')"; disc = 'scdDiscard()'; pub = "scdOpenPub('pub')";
+  } else {
+    if (!_nm.base[T] || !_nm.draft[T]) return '<div class="ce-pub"><span>Loading the ' + ceE(ceTypeLabel(T)) + ' draft…</span></div>';
+    n = nmChangeCount(T); var L = _nm.live[T] || {}; v = L.v || 0; at = L.from || L.at || ''; by = L.by || '';
+    vers = 'nmPubOpen()'; disc = 'nmDiscardAsk()'; pub = 'nmPubOpen()';
+  }
+  var seen = v ? 'version ' + v + (at ? ' (published ' + ceE(ceDate(at)) + (by ? ' by ' + ceE(by) : '') + ')' : '') : 'the checklist as it is — not published yet';
+  return '<div class="ce-pub' + (n ? ' warn' : '') + '" role="status"><span class="ce-pubt">' + (n
+      ? '<b>' + n + ' change' + (n === 1 ? '' : 's') + ' in the ' + ceE(ceTypeLabel(T)) + ' draft</b> — facilities still see ' + seen + '. Nothing changes for them until you publish.'
+      : '<b>No changes in the ' + ceE(ceTypeLabel(T)) + ' draft</b> — facilities see ' + seen + '.') + '</span>'
+    + '<span class="ce-puba"><button type="button" class="ce-b" onclick="' + vers + '">Versions</button>'
+    + (n ? '<button type="button" class="ce-b" onclick="' + disc + '">Discard</button>' : '')
+    + '<button type="button" class="ce-b p" onclick="' + pub + '">Review &amp; publish</button></span></div>';
+}
+function ceHeadHTML() {
+  var T = ceType(), sec = ceSec(), ro = ceRO();
+  ceFlags();
+  var types = CE_TYPES.map(function (t) {
+    var n = '';
+    try { if (t[0] !== 'sc' && _nm.base[t[0]]) n = nmAll(t[0]).filter(function (c) { return !c.retired; }).length.toLocaleString('en-IN'); } catch (e) {}
+    return '<button type="button" role="tab" aria-selected="' + (T === t[0]) + '" class="' + (T === t[0] ? 'on' : '') + '" onclick="ceGoType(\'' + t[0] + '\')">' + (ro && t[0] === 'sc' ? 'SC' : t[1]) + (n && !ro ? ' <em>' + n + '</em>' : '') + '</button>';
+  }).join('');
+  var secs = CE_SECS.filter(function (s) { return !(ro && s[0] === 'imp'); }).map(function (s) {
+    return '<button type="button" role="tab" aria-selected="' + (sec === s[0]) + '" class="' + (sec === s[0] ? 'on' : '') + '" onclick="ceGoSec(\'' + s[0] + '\')">' + s[1] + '</button>';
+  }).join('');
+  var pk = '';
+  if (T === 'sc' && sec !== 'plans' && typeof _scCpmUi !== 'undefined') pk = '<span class="ce-pkg" role="group" aria-label="Package">' + [['12A', '12A'], ['12B', '12B'], ['all', 'Both']].map(function (p) {
+    return '<button type="button" aria-pressed="' + (_scCpmUi.pkg === p[0]) + '" class="' + (_scCpmUi.pkg === p[0] ? 'on' : '') + '" onclick="ceSetPkg(\'' + p[0] + '\')">' + p[1] + '</button>'; }).join('') + '</span>';
+  return '<div class="ce-hd"><div class="ce-ttl"><h1 class="hs-h1">Content</h1><small>' + (ro ? 'View only on a phone — open on a laptop to edit or publish' : 'Checkpoints, day plans and standards for every facility type · HealSol only') + '</small></div>'
+    + '<div class="ce-types" role="tablist" aria-label="Facility type">' + types + '</div></div>'
+    + '<div class="ce-secs"><div class="ce-secl" role="tablist" aria-label="Content section">' + secs + '</div>'
+    + '<div class="ce-sacts">' + pk + (ro || sec === 'imp' || sec === 'plans' ? '' : '<button type="button" class="ce-b p ce-new" onclick="ceNew()">+ New checkpoint</button>') + '</div></div>'
+    + (ro ? '' : cePubHTML())
+    + (ro && sec === 'plans' ? '<div class="ce-note">Day plans are shown and changed on a laptop.</div>' : '');
+}
+function ceFlags() {
+  var b = document.body; if (!b) return;
+  b.classList.toggle('ce-ro', ceRO()); b.classList.toggle('ce-hi', !!_ce.hi);
+  b.setAttribute('data-cesec', ceSec()); b.setAttribute('data-cetype', ceType());
+}
+function ceHeadPaint() {
+  if (!ceOn()) return;
+  var ct = document.getElementById('hs-ctabs'); if (!ct) return;
+  ct.innerHTML = ceHeadHTML(); ct.removeAttribute('role');
+}
+// the old header painters now draw the Content header
+scdTypeTabs = ceHeadHTML;
+
+// ── navigation ──
+async function ceGoType(T) {
+  if (T === ceType() && ceOn()) return;
+  if (typeof nmLeaveEdit === 'function' && _nfOv.view === 'dm' && !await nmLeaveEdit()) return;
+  var sec = _ce.sec || 'cps';
+  if (T === 'sc') { nfAdminView('editor'); setTimeout(function () { ceGoSec(sec); }, 0); return; }
+  if (_nfOv.view !== 'dm') nfAdminView('dm');
+  await nmOpen(T);
+  if (sec !== 'cps') ceGoSec(sec); else ceHeadPaint();
+}
+async function ceGoSec(k) {
+  if (ceRO() && k === 'imp') k = 'cps';
+  _ce.sec = k;
+  if (ceType() === 'sc') {
+    if (typeof scCpmTab !== 'function') return;
+    if (k === 'plans') scCpmTab('days');
+    else { _scCpmUi.view = k === 'stds' ? 'tree' : k === 'imp' ? 'imp' : 'cps'; _scCpmUi.check = ''; scCpmTab('master'); }
+  } else {
+    if (typeof nmLeaveEdit === 'function' && !await nmLeaveEdit()) return;
+    _nm.ui.dirty = false;
+    if (k === 'plans') { await nmPlanOpen(_nm.ui.dept); } else nmGo(k === 'stds' ? 'stds' : k === 'imp' ? 'excel' : 'list');
+  }
+  ceHeadPaint();
+}
+function ceNew() { if (ceRO()) return; if (ceType() === 'sc') scCpmEdit(null); else nmEditOpen(null); }
+function ceSetPkg(p) { _scCpmUi.pkg = p; _scCpmUi.limit = 60; scCpmRender(); ceHeadPaint(); }
+function ceSetHi(on) {
+  _ce.hi = !!on; try { localStorage.setItem('nf-ce-hi', on ? '1' : '0'); } catch (e) {}
+  ceFlags(); if (ceType() !== 'sc' && _nm.ui.screen === 'list') nmRender();
+}
+
+// ── Sub-Centre list: tiles as filters, fewer filters, labelled buttons, key line, Import / export ──
+function ceScChanged() {
+  var ids = {}; try { if (typeof SCD !== 'undefined' && SCD.on) scdItems().forEach(function (it) { if (it.key.indexOf('cp:') === 0) ids[it.key.slice(3)] = 1; }); } catch (e) {}
+  return ids;
+}
+function ceScTilesHTML() {
+  var u = _scCpmUi, all = scCpmAll({ pkg: u.pkg === 'all' ? null : 'nqas_' + u.pkg, includeRetired: true }), ch = ceScChanged(), iss = 0;
+  try { iss = scCpmChecks(u.pkg).filter(function (c) { return c.level === 'error' || c.level === 'warn'; }).length; } catch (e) {}
+  var n = { active: all.filter(function (c) { return !c.retired && c.kind === 'nqas'; }).length, attn: iss, changed: all.filter(function (c) { return ch[c.id]; }).length, retired: all.filter(function (c) { return c.retired; }).length };
+  var cur = u.view === 'checks' ? 'attn' : u.ceChanged ? 'changed' : u.kind === 'retired' ? 'retired' : u.kind === 'nqas' ? 'active' : '';
+  var t = function (k, l, sub, cls) { return '<button type="button" class="ce-tile' + (cls ? ' ' + cls : '') + (cur === k ? ' on' : '') + '" aria-pressed="' + (cur === k) + '" onclick="ceScTile(\'' + k + '\')"><span>' + l + '</span><b>' + n[k].toLocaleString('en-IN') + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</button>'; };
+  return '<div class="ce-tiles">' + t('active', 'All active · ' + (u.pkg === 'all' ? 'both packages' : u.pkg), 'NQAS checkpoints') + t('attn', 'Needs attention', 'checks to review', n.attn ? 'warn' : '')
+    + t('changed', 'Changed in draft', '') + t('retired', 'Retired', '') + '</div>';
+}
+function ceScTile(k) {
+  var u = _scCpmUi; u.check = ''; u.limit = 60;
+  if (k === 'attn') { u.view = 'checks'; }
+  else { u.view = 'cps'; u.ceChanged = k === 'changed'; u.kind = k === 'retired' ? 'retired' : k === 'changed' ? '' : 'nqas'; }
+  scCpmRender(); ceHeadPaint();
+}
+function ceScImpHTML() {
+  return '<div class="scm-wrap ce-imp">'
+    + '<section class="ce-card"><b>Import a revised checklist</b><p>Upload the revised NQAS Sub-Centre checklist (Excel). You see every new, changed and missing checkpoint before anything goes into the draft.</p>'
+    + '<button type="button" class="ce-b p" onclick="scImpPick()">Choose Excel file</button></section>'
+    + '<section class="ce-card"><b>Standard and ME titles</b><p>Paste titles for Standards and Measurable Elements, or add new codes.</p>'
+    + '<button type="button" class="ce-b" onclick="scRegImport()">Paste titles / add codes</button></section>'
+    + '<section class="ce-card"><b>Linked checks</b><p>Answers that must agree between checkpoints — import the reviewed sheet or download the current one.</p>'
+    + '<button type="button" class="ce-b" onclick="nfLxOpen(null)">Open linked checks</button></section>'
+    + '<section class="ce-card"><b>Download</b><p>All Sub-Centre checkpoints in the current package as a CSV file.</p>'
+    + '<button type="button" class="ce-b" onclick="scCpmExport()">Download CSV</button></section>'
+    + (typeof scCritEdit === 'function' ? '<section class="ce-card"><b>NQAS criteria</b><p>Overall, Area of Concern and Standard minimums used for Sub-Centre graduation.</p><button type="button" class="ce-b" onclick="scCritEdit()">Edit criteria</button></section>' : '')
+    + '</div>';
+}
+var CE_KEEP_RX = /_scCpmUi\.(aoc|svc|role)=/;
+function ceScTidy(p) {
+  var wrap = p.querySelector('.scm-wrap'); if (!wrap) return;
+  if (_scCpmUi.view === 'tree') return;
+  if (!wrap.querySelector('.ce-tiles')) wrap.insertAdjacentHTML('afterbegin', ceScTilesHTML());
+  if (_scCpmUi.view === 'checks') return;
+  var f = wrap.querySelector('.scm-filters');
+  if (f && !f.dataset.ce) {
+    f.dataset.ce = '1';
+    var more = document.createElement('div'); more.className = 'scm-filters ce-more' + (_ce.more ? ' open' : ''); more.id = 'ce-more';
+    var act = 0;
+    [].slice.call(f.children).forEach(function (el) {
+      if (el.matches('input.scx-in')) return;
+      if (el.tagName === 'SELECT' && CE_KEEP_RX.test(el.getAttribute('onchange') || '')) return;
+      if (el.tagName === 'SELECT' && el.options[0] && el.options[0].text === 'All service packages') return;
+      var oc = el.getAttribute && (el.getAttribute('onchange') || '');
+      if (el.tagName === 'SELECT' && /_scCpmUi\.kind=/.test(oc)) { el.remove(); return; }
+      if (el.tagName === 'SELECT' && el.value && !el.disabled) act++;
+      var cb = el.querySelector && el.querySelector('input[type=checkbox]'); if (cb && cb.checked) act++;
+      more.appendChild(el);
+    });
+    var hi = document.createElement('label'); hi.className = 'ce-sw'; hi.innerHTML = '<input type="checkbox" ' + (_ce.hi ? 'checked ' : '') + 'onchange="ceSetHi(this.checked)"> Show Hindi'; f.appendChild(hi);
+    var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'ce-b ce-moreb'; mb.setAttribute('aria-expanded', String(!!_ce.more)); mb.setAttribute('aria-controls', 'ce-more');
+    mb.textContent = (_ce.more ? 'Fewer filters' : 'More filters') + (act ? ' (' + act + ' on)' : ''); mb.onclick = function () { _ce.more = !_ce.more; scCpmRender(); }; f.appendChild(mb);
+    f.parentNode.insertBefore(more, f.nextSibling);
+  }
+  // one "New checkpoint" (in the header) — drop the duplicate in the list bar
+  [].forEach.call(wrap.querySelectorAll('.scm-bar button'), function (b) { if (/scCpmEdit\(null\)/.test(b.getAttribute('onclick') || '')) b.remove(); });
+  var list = wrap.querySelector('.scm-list');
+  if (list && !wrap.querySelector('.ce-key')) list.insertAdjacentHTML('afterend', '<div class="ce-key"><b>How it is checked:</b> SI staff interview · RR record review · OB observation · CI client interview &nbsp;·&nbsp; <b>Days:</b> baseline, implementation and end-line day — tap the day to move it</div>');
+}
+(function () {
+  if (typeof scCpmRender !== 'function') return;
+  var oRow = scCpmRowHTML;
+  scCpmRowHTML = function (c) {
+    var h = oRow.apply(this, arguments);
+    h = h.replace(/(<button class="scx-btn sm ghost nflx-cnt"[^>]*>)🔗( \d+)?(<\/button>)/, function (m, a, n, b) { return a + 'Linked' + (n || '') + b; })
+      .replace(/(<button[^>]*title="How to fix"[^>]*>)🔧(✎)?(<\/button>)/, function (m, a, e, b) { return a + '<i class="ti ti-tools"></i> How to fix' + (e ? ' ✎' : '') + b; })
+      .replace('>📅 Baseline', '><i class="ti ti-calendar"></i> Baseline');
+    return h;
+  };
+  var oF = scCpmFiltered;
+  scCpmFiltered = function () { var L = oF.apply(this, arguments); if (!_scCpmUi.ceChanged) return L; var ch = ceScChanged(); return L.filter(function (c) { return ch[c.id]; }); };
+  var oR = scCpmRender;
+  scCpmRender = function () {
+    var p = document.getElementById('scm-panel');
+    if (_scCpmUi.tab === 'master' && _scCpmUi.view === 'imp') { p = scCpmEnsurePanel(); if (p) p.innerHTML = ceScImpHTML(); ceHeadPaint(); return; }
+    var r = oR.apply(this, arguments);
+    try { p = document.getElementById('scm-panel'); if (p && _scCpmUi.tab === 'master') ceScTidy(p); ceHeadPaint(); } catch (e) { console.warn('[CE] sc', e); }
+    return r;
+  };
+  if (typeof scCpmTab === 'function') { var oT = scCpmTab; scCpmTab = function () { var r = oT.apply(this, arguments); try { ceHeadPaint(); } catch (e) {} return r; }; }
+})();
+// default: the list shows every active NQAS checkpoint, not the old "Day cards" tab
+if (typeof _scCpmUi !== 'undefined') { _scCpmUi.tab = 'master'; _scCpmUi.view = _scCpmUi.view || 'cps'; }
+
+// ── keep the header in step ──
+(function () {
+  if (typeof nmRender === 'function') { var oN = nmRender; nmRender = function () { var r = oN.apply(this, arguments); try { if (_nfOv.view === 'dm') ceHeadPaint(); } catch (e) {} return r; }; }
+  if (typeof scdBar === 'function') { var oB = scdBar; scdBar = function () { var r = oB.apply(this, arguments); try { ceHeadPaint(); } catch (e) {} return r; }; }
+  if (typeof scdBadge === 'function') { var oG = scdBadge; scdBadge = function () { var r = oG.apply(this, arguments); try { ceHeadPaint(); } catch (e) {} return r; }; }
+  if (typeof nfAdminView === 'function') {
+    var oV = nfAdminView;
+    nfAdminView = function (v) {
+      var was = _nfOv.view, r = oV.apply(this, arguments);
+      try {
+        if (v === 'editor' && was !== 'editor' && typeof scCpmTab === 'function') { if (_scCpmUi.tab !== 'days') setTimeout(function () { if (_nfOv.view === 'editor') scCpmTab('master'); }, 0); }
+        ceHeadPaint();
+      } catch (e) { console.warn('[CE] view', e); }
+      return r;
+    };
+  }
+  var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { if (!ceOn()) return; var was = document.body.classList.contains('ce-ro'); ceHeadPaint(); if (was !== ceRO() && ceRO() && ceSec() === 'imp') ceGoSec('cps'); }, 200); });
+})();
 </script>
 <script id="nf-day-score">// ══════════════════════════════════════════════════════════════
 // Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".

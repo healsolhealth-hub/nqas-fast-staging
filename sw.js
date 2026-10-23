@@ -6,7 +6,7 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "0924d0c89bce";
+const BUILD = "c38a13c4f15a";
 const ASSETS = [
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.0eb3c1d272.js",
@@ -17,9 +17,9 @@ const ASSETS = [
  "assets/dept-core.81b441613b.js",
  "assets/dept-grad.3d65c1e346.js",
  "assets/dept-grad.c07401b26c.css",
- "assets/dept-master-ui.9f5ad479fd.js",
- "assets/dept-master.0c48018e85.js",
- "assets/dept-master.d737b49cc8.css",
+ "assets/dept-master-ui.46abe08c31.js",
+ "assets/dept-master.51090ba0f2.js",
+ "assets/dept-master.ab2a010ceb.css",
  "assets/dept-plan.e35a7f99c9.js",
  "assets/dept-review.4d1f634f05.js",
  "assets/dept-screens.62ce4fab0e.js",
@@ -39,7 +39,7 @@ const ASSETS = [
  "assets/sc-cp-master.c533185d48.js",
  "assets/sc-cp-progress.02e5f35df1.js",
  "assets/sc-cross-cutting.74584f8128.js",
- "assets/sc-day-placement.b469e958c3.js",
+ "assets/sc-day-placement.9f84827e93.js",
  "assets/sc-district.d83509bdc1.js",
  "assets/sc-fadm.1fb01e6ce7.css",
  "assets/sc-fadm.7c6992e5f7.js",
@@ -48,7 +48,7 @@ const ASSETS = [
  "assets/sc-healsol-view.fdd1503355.js",
  "assets/sc-hierarchy.4d51074fef.js",
  "assets/sc-how-to-fix.7dbba620cc.js",
- "assets/sc-implementation.27485be94c.js",
+ "assets/sc-implementation.8bce442784.js",
  "assets/sc-laptop.3b958233dd.css",
  "assets/sc-laptop.f633cb1c90.js",
  "assets/sc-linked-checks.047edf7bec.js",
@@ -78,6 +78,8 @@ const ASSETS = [
  "assets/shared-business-ind.d97663522b.css",
  "assets/shared-cert.50af794399.css",
  "assets/shared-cert.5960091762.js",
+ "assets/shared-content-shell.361ace8d5c.css",
+ "assets/shared-content-shell.3cf580048a.js",
  "assets/shared-dashboards.6389b2bdbd.js",
  "assets/shared-dashboards.9030b996af.css",
  "assets/shared-fac-page.7d7df7d9b9.css",

@@ -65,7 +65,7 @@ async function scCpMoveDay(id){
   var implOpts=[{value:'',label:'Automatic (by theme week)'}];
   for(var e=8;e<=49;e++) implOpts.push({value:String(e),label:scDpDayLabel(e)});
   var v=await scDialog({title:'Move '+id+' to another day',icon:'📅',wide:true,okLabel:'Move',
-    message:c.t+'\n\nNow on: Baseline Day '+cur.bl+' · Implementation Day '+cur.impl+' · Revision Day '+cur.rev+'. The revision day always follows the baseline day.',
+    message:c.t+'\n\nNow on: Baseline Day '+cur.bl+' · Implementation Day '+cur.impl+' · End-line Day '+cur.rev+'. The end-line day always follows the baseline day.',
     fields:[{key:'bl',label:'Baseline day (1–7)',type:'select',value:c.blDay?String(c.blDay):'',options:blOpts},
             {key:'impl',label:'Implementation day (8–49)',type:'select',value:c.implDay?String(c.implDay):'',options:implOpts}]});
   if(!v) return;
@@ -84,7 +84,7 @@ async function scCpMoveDay(id){
   if(notes.length&&!(await showConfirm(notes.join('\n\n'),'⚠️','Please confirm the move','Move','var(--teal)'))) return;
   if(!await scCpmSave(id,{blDay:newBl,implDay:newImpl})){ showToast('Could not save — check connection.','err'); return; }
   var now=scCpDays(pk,id);
-  showToast(id+' now on Baseline Day '+now.bl+' · Implementation Day '+now.impl+' · Revision Day '+now.rev+'.','ok');
+  showToast(id+' now on Baseline Day '+now.bl+' · Implementation Day '+now.impl+' · End-line Day '+now.rev+'.','ok');
   try{ scCpmRender(); }catch(e){}
   try{ if(_scCpmUi.tab==='days'){ buildAeDayStrip(); if(_scDpOpenDay!=null) aeOpenDay(_scDpOpenDay); } }catch(e){}
 }
@@ -97,7 +97,7 @@ _scCpmUi.phase=''; _scCpmUi.day='';
     var h=oRow.apply(this,arguments); if(c.kind!=='nqas') return h;
     var pk=_scCpmUi.pkg==='12A'?'nqas_12A':'nqas_12B'; if(c.pk.indexOf(scPkgCode(pk))<0) pk=c.pk.indexOf('12B')>=0?'nqas_12B':'nqas_12A';
     var d=scCpDays(pk,c.id); if(!d) return h;
-    var chip='<span class="dy" title="'+scEsc(scPkgCode(pk))+' day cards — click to move" onclick="event.stopPropagation();scCpMoveDay(\''+scJs(c.id)+'\')">📅 Baseline D'+d.bl+(d.blMoved?'✎':'')+' · Implementation D'+d.impl+(d.implMoved?'✎':'')+' · Revision D'+d.rev+'</span>';
+    var chip='<span class="dy" title="'+scEsc(scPkgCode(pk))+' day cards — click to move" onclick="event.stopPropagation();scCpMoveDay(\''+scJs(c.id)+'\')">📅 Baseline D'+d.bl+(d.blMoved?'✎':'')+' · Implementation D'+d.impl+(d.implMoved?'✎':'')+' · End-line D'+d.rev+'</span>';
     return h.replace('<span class="pk">',chip+'<span class="pk">');
   };
   var oFil=scCpmFiltered;
@@ -114,12 +114,12 @@ _scCpmUi.phase=''; _scCpmUi.day='';
       var u=_scCpmUi; if(u.view&&u.view!=='cps') return r;
       var f=document.querySelector('#scm-panel .scm-filters'); if(!f||f.querySelector('.scdp-phase')) return r;
       var ph=document.createElement('select'); ph.className='scdp-phase';
-      ph.innerHTML=[['','All days'],['bl','Baseline (Days 1–7)'],['impl','Implementation (Days 8–49)'],['rev','Revision (Days 50–56)']].map(function(o){ return '<option value="'+o[0]+'"'+(u.phase===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('');
+      ph.innerHTML=[['','All days'],['bl','Baseline (Days 1–7)'],['impl','Implementation (Days 8–49)'],['rev','End-line (Days 50–56)']].map(function(o){ return '<option value="'+o[0]+'"'+(u.phase===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('');
       ph.setAttribute('onchange',"_scCpmUi.phase=this.value;_scCpmUi.day='';scCpmRender()");
       var dy=document.createElement('select'); dy.className='scdp-day'; dy.disabled=!u.phase;
       var rng=u.phase==='bl'?[1,7]:u.phase==='impl'?[8,49]:u.phase==='rev'?[50,56]:null, pk=u.pkg==='12A'?'nqas_12A':'nqas_12B';
       var opts='<option value="">'+(u.phase?'— choose a day —':'Day (choose a phase)')+'</option>';
-      if(rng) for(var d=rng[0];d<=rng[1];d++){ var n=(scDayDef(pk,d-1).cps||[]).length; opts+='<option value="'+d+'"'+(String(u.day)===String(d)?' selected':'')+'>'+scEsc(d<=49?scDpDayLabel(d):'Day '+d+' · Revision · '+SC_BASELINE[d-50].title)+' ('+n+')</option>'; }
+      if(rng) for(var d=rng[0];d<=rng[1];d++){ var n=(scDayDef(pk,d-1).cps||[]).length; opts+='<option value="'+d+'"'+(String(u.day)===String(d)?' selected':'')+'>'+scEsc(d<=49?scDpDayLabel(d):'Day '+d+' · End-line · '+SC_BASELINE[d-50].title)+' ('+n+')</option>'; }
       dy.innerHTML=opts; dy.setAttribute('onchange',"_scCpmUi.day=this.value;scCpmRender()");
       f.appendChild(ph); f.appendChild(dy);
       if(u.phase&&u.day){ var bar=document.querySelector('#scm-panel .scm-bar span'); if(bar) bar.insertAdjacentHTML('beforeend',' · in day-card order'); }
