@@ -61,7 +61,7 @@ body.ce-ro #scm-panel .scm-row button,body.ce-ro #scm-panel .scm-row input[type=
 body.ce-ro #nf-dm .ce-edit,body.ce-ro #nf-dm .nm-sbtn,body.ce-ro [onclick^="scRegEdit"],body.ce-ro [onclick^="scCpmEdit"],body.ce-ro [onclick^="scRegImport"],
 body.ce-ro [onclick^="nmEditOpen"],body.ce-ro [onclick^="nmBulkRoles"],body.ce-ro [onclick^="nmGo('tocheck')"],body.ce-ro .scm-active-check button{display:none!important;}
 body.ce-ro #scm-panel .scm-row .dy{pointer-events:none;}
-body.ce-ro[data-cesec="plans"] #nf-dm,body.ce-ro[data-cesec="plans"] #admin-editor-section{display:none!important;}
+body.ce-ro[data-cesec="plans"] #nf-dm{display:none!important;}
 @media (max-width:900px){ .ce-tiles{grid-template-columns:repeat(2,minmax(0,1fr));} }
 @media (max-width:700px){
   #hs-ctabs .ce-types{width:100%;} #hs-ctabs .ce-types button{flex:1;padding:0 6px;}

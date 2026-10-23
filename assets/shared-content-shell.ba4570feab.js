@@ -15,7 +15,7 @@ function ceOn() { return typeof appMode !== 'undefined' && appMode === 'sc-admin
 function ceType() { return _nfOv.view === 'editor' ? 'sc' : ((typeof _nm !== 'undefined' && _nm.ui && _nm.ui.type) || 'uphc'); }
 function ceRO() { return (window.innerWidth || 1280) < 700; }
 function ceSec() {
-  if (ceType() === 'sc') { var u = typeof _scCpmUi !== 'undefined' ? _scCpmUi : {}; if (u.tab === 'days') return 'plans'; if (u.view === 'tree') return 'stds'; if (u.view === 'imp') return 'imp'; return 'cps'; }
+  if (ceType() === 'sc') { var u = typeof _scCpmUi !== 'undefined' ? _scCpmUi : {}; if (u.tab === 'days' || u.view === 'plans') return 'plans'; if (u.view === 'tree') return 'stds'; if (u.view === 'imp') return 'imp'; return 'cps'; }
   var s = _nm.ui.screen; return s === 'plan' ? 'plans' : s === 'stds' ? 'stds' : s === 'excel' ? 'imp' : 'cps';
 }
 function ceTypeLabel(T) { var x = CE_TYPES.find(function (t) { return t[0] === T; }); return x ? x[1] : String(T).toUpperCase(); }
@@ -45,21 +45,21 @@ function ceHeadHTML() {
   ceFlags();
   var types = CE_TYPES.map(function (t) {
     var n = '';
-    try { if (t[0] !== 'sc' && _nm.base[t[0]]) n = nmAll(t[0]).filter(function (c) { return !c.retired; }).length.toLocaleString('en-IN'); } catch (e) {}
+    try { if (t[0] === 'sc' && typeof scCpmAll === 'function' && typeof _scCpmUi !== 'undefined') n = scCpmAll({ pkg: _scCpmUi.pkg === 'all' ? null : 'nqas_' + _scCpmUi.pkg }).filter(function (c) { return c.kind === 'nqas'; }).length.toLocaleString('en-IN'); else if (t[0] !== 'sc' && _nm.base[t[0]]) n = nmAll(t[0]).filter(function (c) { return !c.retired; }).length.toLocaleString('en-IN'); } catch (e) {}
     return '<button type="button" role="tab" aria-selected="' + (T === t[0]) + '" class="' + (T === t[0] ? 'on' : '') + '" onclick="ceGoType(\'' + t[0] + '\')">' + (ro && t[0] === 'sc' ? 'SC' : t[1]) + (n && !ro ? ' <em>' + n + '</em>' : '') + '</button>';
   }).join('');
   var secs = CE_SECS.filter(function (s) { return !(ro && s[0] === 'imp'); }).map(function (s) {
     return '<button type="button" role="tab" aria-selected="' + (sec === s[0]) + '" class="' + (sec === s[0] ? 'on' : '') + '" onclick="ceGoSec(\'' + s[0] + '\')">' + s[1] + '</button>';
   }).join('');
   var pk = '';
-  if (T === 'sc' && sec !== 'plans' && typeof _scCpmUi !== 'undefined') pk = '<span class="ce-pkg" role="group" aria-label="Package">' + [['12A', '12A'], ['12B', '12B'], ['all', 'Both']].map(function (p) {
+  if (T === 'sc' && typeof _scCpmUi !== 'undefined' && !(sec === 'plans' && _scCpmUi.tab === 'days')) pk = '<span class="ce-pkg" role="group" aria-label="Package">' + (sec === 'plans' ? [['12A', '12A'], ['12B', '12B']] : [['12A', '12A'], ['12B', '12B'], ['all', 'Both']]).map(function (p) {
     return '<button type="button" aria-pressed="' + (_scCpmUi.pkg === p[0]) + '" class="' + (_scCpmUi.pkg === p[0] ? 'on' : '') + '" onclick="ceSetPkg(\'' + p[0] + '\')">' + p[1] + '</button>'; }).join('') + '</span>';
   return '<div class="ce-hd"><div class="ce-ttl"><h1 class="hs-h1">Content</h1><small>' + (ro ? 'View only on a phone — open on a laptop to edit or publish' : 'Checkpoints, day plans and standards for every facility type · HealSol only') + '</small></div>'
     + '<div class="ce-types" role="tablist" aria-label="Facility type">' + types + '</div></div>'
     + '<div class="ce-secs"><div class="ce-secl" role="tablist" aria-label="Content section">' + secs + '</div>'
     + '<div class="ce-sacts">' + pk + (ro || sec === 'imp' || sec === 'plans' ? '' : '<button type="button" class="ce-b p ce-new" onclick="ceNew()">+ New checkpoint</button>') + '</div></div>'
     + (ro ? '' : cePubHTML())
-    + (ro && sec === 'plans' ? '<div class="ce-note">Day plans are shown and changed on a laptop.</div>' : '');
+    + (ro && sec === 'plans' && T !== 'sc' ? '<div class="ce-note">Day plans are shown and changed on a laptop.</div>' : '');
 }
 function ceFlags() {
   var b = document.body; if (!b) return;
@@ -89,7 +89,7 @@ async function ceGoSec(k) {
   _ce.sec = k;
   if (ceType() === 'sc') {
     if (typeof scCpmTab !== 'function') return;
-    if (k === 'plans') scCpmTab('days');
+    if (k === 'plans') { if (_scCpmUi.pkg === 'all') _scCpmUi.pkg = '12B'; _scCpmUi.view = 'plans'; scCpmTab('master'); }
     else { _scCpmUi.view = k === 'stds' ? 'tree' : k === 'imp' ? 'imp' : 'cps'; _scCpmUi.check = ''; scCpmTab('master'); }
   } else {
     if (typeof nmLeaveEdit === 'function' && !await nmLeaveEdit()) return;
@@ -99,7 +99,7 @@ async function ceGoSec(k) {
   ceHeadPaint();
 }
 function ceNew() { if (ceRO()) return; if (ceType() === 'sc') scCpmEdit(null); else nmEditOpen(null); }
-function ceSetPkg(p) { _scCpmUi.pkg = p; _scCpmUi.limit = 60; scCpmRender(); ceHeadPaint(); }
+function ceSetPkg(p) { _scCpmUi.pkg = p; _scCpmUi.limit = 600; scCpmRender(); ceHeadPaint(); }
 function ceSetHi(on) {
   _ce.hi = !!on; try { localStorage.setItem('nf-ce-hi', on ? '1' : '0'); } catch (e) {}
   ceFlags(); if (ceType() !== 'sc' && _nm.ui.screen === 'list') nmRender();
@@ -120,7 +120,7 @@ function ceScTilesHTML() {
     + t('changed', 'Changed in draft', '') + t('retired', 'Retired', '') + '</div>';
 }
 function ceScTile(k) {
-  var u = _scCpmUi; u.check = ''; u.limit = 60;
+  var u = _scCpmUi; u.check = ''; u.limit = 600;
   if (k === 'attn') { u.view = 'checks'; }
   else { u.view = 'cps'; u.ceChanged = k === 'changed'; u.kind = k === 'retired' ? 'retired' : k === 'changed' ? '' : 'nqas'; }
   scCpmRender(); ceHeadPaint();
