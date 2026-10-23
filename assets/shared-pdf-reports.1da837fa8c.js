@@ -74,7 +74,7 @@ function nfRptDoc(o){
     +'<span>Generated: <b>'+scEsc(when)+'</b></span>'+(a&&a.name?'<span>By: <b>'+scEsc(a.name)+(a.role?' ('+scEsc(a.role)+')':'')+'</b></span>':'')+'</div>'
     +o.body
     +'<div class="ft"><span><b>NQAS<i>|</i>FAST</b> · by HealSol Academy · '+scEsc(o.title)+'</span><span>Confidential — for facility improvement · '+scEsc(when)+'</span></div></div>'
-    +(o.preview?'<div class="bar"><button onclick="window.print()">🖨 Print / Save as PDF</button><button class="g" onclick="window.close()">Close</button></div>':'')
+    +(o.preview?'<div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="g" onclick="window.close()">Close</button></div>':'')
     +(o.preview?'':'<script>setTimeout(function(){window.print();},700)<\/script>')+'</body></html>';
 }
 function nfRptOpen(html){
@@ -83,7 +83,7 @@ function nfRptOpen(html){
     var t=(/<title>([^<]*)<\/title>/.exec(html)||[])[1]||'NQAS FAST report';
     t=t.replace(/&amp;/g,'&').replace(/&[a-z#0-9]+;/gi,'').replace(/\s*—\s*NQAS \| FAST\s*$/,'').replace(/[^A-Za-z0-9._ -]+/g,'-').replace(/-+/g,'-').replace(/^[-\s]+|[-\s]+$/g,'').slice(0,90)||'report';
     html=html.replace(/<script>setTimeout\(function\(\)\{window\.print\(\);\},700\)<\/script>/,'');
-    if(html.indexOf('class="bar"')<0) html=html.replace('</body>','<div class="bar"><button onclick="window.print()">🖨 Print / Save as PDF</button></div></body>');
+    if(html.indexOf('class="bar"')<0) html=html.replace('</body>','<div class="bar"><button onclick="window.print()">Print / Save as PDF</button></div></body>');
     showToast('Preparing the report…','ok');
     nfSaveBlob(new Blob([html],{type:'text/html'}),t+'.html').catch(function(e){ showToast('Could not prepare the report — check connection.','err'); });
     return null;
