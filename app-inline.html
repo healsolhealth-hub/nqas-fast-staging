@@ -16985,10 +16985,10 @@ function nfSupportApply(){
 }
 // ── HealSol: one-tap messages ──
 function nfWaPayInfo(){ var c=_nfSup.cfg||{}, a=[]; if(c.upi) a.push('UPI: '+c.upi); if(c.payLink) a.push('Payment link: '+c.payLink); return a.join('\n'); }
-function nfChoOf(f){ var st=(f&&f.staff)||{}, m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||'CHO')==='CHO'; }); return m?{mob:m,name:st[m].name||''}:{mob:(f&&f.contactMobile)||'',name:(f&&f.choName)||''}; }
+function nfChoOf(f){ var st=(f&&f.staff)||{}, ic='CHO'; try{ ic=(NF_LEVELS[nfTypeOf(f||{})]||{}).inCharge||'CHO'; }catch(e){} var m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||ic)===ic; }); return m?{mob:m,name:st[m].name||''}:{mob:(f&&f.contactMobile)||'',name:(f&&f.choName)||''}; }
 function nfWaMsg(kind,code,extra){
   var f=(scMasterFacilities||{})[code]||{}, cho=nfChoOf(f), nm=f.name||code, first=String(cho.name||'').split(' ')[0];
-  var price=null; try{ price=nfPriceFor(f.progId); }catch(e){}
+  var price=null; try{ price=typeof nfFacPrice==='function'?nfFacPrice(f):nfPriceFor(f.progId); }catch(e){}
   if(kind==='due') return {mob:cho.mob,text:'Namaste'+(first?' '+first:'')+' ji,\nThe free 7-day Baseline for '+nm+' ('+code+') has ended. To continue the 60-day NQAS | FAST programme, please complete the payment'+(price?' of '+nfMoney(price*1.18)+' ('+nfMoney(price)+' + 18% GST)':'')+' — open the app and tap "Pay & Unlock".'+(nfWaPayInfo()?'\nYou can also pay here:\n'+nfWaPayInfo()+'\nand reply with the payment reference.':'')+'\n\nNeed help? Just reply here.\n— HealSol Academy'};
   if(kind==='paid'){ var lp=extra||f.lastPayment||{}; return {mob:cho.mob,text:'Namaste'+(first?' '+first:'')+' ji,\nWe have received your payment'+(lp.amount||lp.total?' of '+nfMoney(lp.amount||lp.total):'')+' for '+nm+' ('+code+')'+(lp.receiptNo?'. Receipt: '+lp.receiptNo:'')+'.\nYour NQAS | FAST programme is unlocked — open the app to continue. The receipt is in the app under Me → Payment receipts.\n\nThank you!\n— HealSol Academy'}; }
   if(kind==='idle'){ var d=null; try{ d=nfDayOf(f); }catch(e){} return {mob:cho.mob,text:'Namaste'+(first?' '+first:'')+' ji,\nWe noticed no cards have been saved at '+nm+' ('+code+') for '+((extra&&extra.idle)||'some')+' days.'+(d?' Today is Day '+d+' of 60.':'')+' Please open NQAS | FAST and continue today\'s card with your team.\n\nNeed help? Just reply here.\n— HealSol Academy'}; }
@@ -17102,6 +17102,63 @@ body.nf-admin:not(.nfv-business) .admin-main > [data-nfv="business"]{display:non
 .nf-bizpv-f .p{background:var(--teal,#0F5C52);color:#fff;} .nf-bizpv-f .s{background:#F1F5F4;color:var(--t1,#0F172A);} .nf-bizpv-f button:disabled{opacity:.6;cursor:default;}
 @media(max-width:900px){ .nfbd-charts{grid-template-columns:1fr;} .nfbd-dates{margin-left:0;width:100%;} .nfbd-q{margin-left:0;width:100%;} .nfbd-q input{width:100%;} }
 @media(max-width:560px){ .nfbd-dl{width:100%;justify-content:center;} #nf-biz .nfo-top{flex-wrap:wrap;} .nfbd-chip{font-size:12px;padding:6px 10px;} .nf-bizpv-f button{flex:1;justify-content:center;} }
+/* ── redesign 23 Oct 2026: business only, type tabs ── */
+#nf-biz{font-family:'Poppins',sans-serif;color:#1F2D29;}
+.bz-bar{background:#fff;border:1px solid #DCE4E1;border-radius:16px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.bz-types{display:flex;gap:4px;background:#EEF2F1;border-radius:12px;padding:4px;flex-wrap:wrap;}
+.bz-types button{border:0;border-radius:9px;background:transparent;color:#33433E;font:inherit;font-size:13px;padding:8px 13px;cursor:pointer;min-height:38px;}
+.bz-types button em{font-style:normal;color:#6B7A75;font-size:12px;margin-left:2px;}
+.bz-types button.on{background:#134A41;color:#fff;font-weight:600;} .bz-types button.on em{color:#CFE5DF;}
+.bz-range{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.bz-chip{border:1px solid #DCE4E1;border-radius:999px;background:#fff;font:inherit;font-size:13px;padding:7px 12px;color:#1F2D29;cursor:pointer;min-height:36px;}
+.bz-chip.on{background:#E3ECE9;border-color:#E3ECE9;color:#134A41;font-weight:600;}
+.bz-range label{font-size:12px;color:#4F5E59;display:flex;gap:6px;align-items:center;}
+.bz-range input{width:100px;border:1px solid #DCE4E1;border-radius:10px;padding:7px 8px;font:inherit;font-size:13px;min-height:36px;box-sizing:border-box;}
+.bz-sec{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:4px;} .bz-sec b{font-size:15px;} .bz-sec span{font-size:12px;color:#4F5E59;}
+.bz-kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+.bz-k{background:#fff;border:1px solid #DCE4E1;border-radius:18px;padding:16px 18px;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;gap:2px;}
+button.bz-k{cursor:pointer;} button.bz-k:hover{border-color:#9DB7AF;}
+.bz-k small{font-size:12px;color:#4F5E59;} .bz-k b{font-size:28px;font-weight:700;line-height:1.2;} .bz-k span{font-size:12px;color:#4F5E59;line-height:1.45;}
+.bz-k em{font-style:normal;font-weight:600;} .bz-k em.up{color:#1F7A4A;} .bz-k em.down{color:#B3402A;}
+.bz-k.hero{background:#134A41;border-color:#134A41;color:#fff;} .bz-k.hero small,.bz-k.hero span{color:#CFE5DF;} .bz-k.hero b{font-size:30px;} .bz-k.hero em.up{color:#FFC98A;} .bz-k.hero em.down{color:#FFB4A6;} .bz-k.hero em{color:#FFC98A;}
+.bz-k.r{border-color:#F2C9BF;} .bz-k.r b{color:#B3402A;}
+.bz-ch{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;} .bz-ch b{font-size:15px;} .bz-ch > span{font-size:12px;color:#4F5E59;}
+.bz-cbar{display:flex;height:32px;border-radius:8px;overflow:hidden;background:#EEF2F1;}
+.bz-cbar button{border:0;padding:0 0 0 10px;color:#fff;font:inherit;font-size:12px;font-weight:600;text-align:left;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap;}
+.bz-cbar .paid,.bz-leg i.paid{background:#1E6B5E;} .bz-cbar .contract,.bz-leg i.contract{background:#3D6FA8;} .bz-cbar .trial,.bz-leg i.trial{background:#C27D1A;} .bz-cbar .ended,.bz-leg i.ended{background:#B3402A;}
+.bz-leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#33433E;margin-top:10px;} .bz-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;}
+.bz-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;}
+.bz-seg{display:flex;gap:4px;background:#EEF2F1;border-radius:10px;padding:3px;} .bz-seg button{border:0;border-radius:8px;background:transparent;font:inherit;font-size:12px;padding:7px 12px;color:#33433E;cursor:pointer;min-height:34px;} .bz-seg button.on{background:#fff;color:#134A41;font-weight:600;}
+.bz-t th.n,.bz-t td.n{text-align:right;} .bz-t td.r{color:#B3402A;font-weight:600;} .bz-t tr.tot td{font-weight:700;border-top:2px solid #DCE4E1;}
+.bz-note{font-size:12px;color:#4F5E59;margin:8px 2px 0;}
+.bz-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.bz-ty{display:inline-block;background:#E3ECE9;color:#134A41;border-radius:999px;padding:1px 7px;font-size:10.5px;font-weight:600;vertical-align:1px;} .bz-ty.o{background:#FDEBD3;color:#7A4508;}
+.bz-lt tr.hot{background:#FFF8F6;} .bz-lt span.r{color:#8A2F1F;} .bz-lt span.a{color:#7A4508;}
+.nfbd-tag.r{background:#FCE5E1;color:#8A2F1F;}
+.bz-msg{border:1px solid #DCE4E1;border-radius:10px;background:#fff;color:#134A41;font:inherit;font-size:13px;font-weight:600;padding:8px 12px;cursor:pointer;min-height:38px;white-space:nowrap;}
+.bz-msgbox{max-width:520px;width:100%;display:flex;flex-direction:column;gap:8px;font-family:'Poppins',sans-serif;} .bz-msgbox > b{font-size:16px;} .bz-msgbox > small{font-size:12px;color:#4F5E59;}
+.bz-msgbox textarea{width:100%;box-sizing:border-box;border:1px solid #DCE4E1;border-radius:12px;padding:10px;font:inherit;font-size:13px;line-height:1.5;resize:vertical;}
+.bz-msgf{display:flex;justify-content:flex-end;gap:8px;} .bz-msgf button{border-radius:10px;font:inherit;font-size:14px;font-weight:600;padding:10px 16px;cursor:pointer;min-height:44px;}
+.bz-msgf .s{border:1px solid #DCE4E1;background:#fff;color:#1F2D29;} .bz-msgf .p{border:0;background:#134A41;color:#fff;}
+.bz-tick{display:flex;gap:8px;align-items:center;font-size:13px;color:#33433E;margin:8px 2px;}
+@media (max-width:700px){
+  .bz-bar{padding:8px;} .bz-types{width:100%;flex-wrap:nowrap;overflow-x:auto;} .bz-types button{white-space:nowrap;}
+  .bz-range{width:100%;} .bz-range label{flex:1;} .bz-range input{width:100%;}
+  .bz-kg{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;} .bz-k{padding:12px;} .bz-k b{font-size:20px;} .bz-k.hero{grid-column:1 / -1;} .bz-k.hero b{font-size:28px;}
+  .bz-charts{grid-template-columns:1fr;}
+  #nf-biz .nfo-tw{overflow:visible;} #nf-biz .bz-lt thead,#nf-biz .bz-t thead{display:none;}
+  #nf-biz .bz-lt tr,#nf-biz .bz-t tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;padding:12px 4px;border-bottom:1px solid #EEF2F1;}
+  #nf-biz .bz-lt td,#nf-biz .bz-t td{border:0!important;padding:0!important;text-align:left!important;font-size:12.5px;}
+  #nf-biz .bz-lt td:first-child,#nf-biz .bz-t td:first-child{grid-column:1 / -1;font-size:14px;}
+  #nf-biz .bz-lt td[data-l]:not([data-l=""])::before,#nf-biz .bz-t td[data-l]:not([data-l=""])::before{content:attr(data-l);display:block;font-size:10.5px;color:#6B7A75;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  #nf-biz .bz-lt td:last-child:empty{display:none;}
+  #nf-biz .nfo-top{flex-wrap:wrap;} #nf-biz .nfbd-dl{width:100%;justify-content:center;}
+}
+.bz-none{margin:0;font-size:13px;color:#4F5E59;padding:4px 2px;}
+@media (max-width:700px){
+  .bz-range label{flex:1 1 40%;} .bz-range input{min-width:0;}
+  #nf-biz .bz-t tr{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
 </style>
 <script id="nf-pdf">
 // ══════════════════════════════════════════════════════════════
@@ -17218,14 +17275,16 @@ async function nfDownloadReceiptPdf(r,btn){
   finally{ if(btn){ btn.disabled=false; btn.innerHTML=old; } }
 }
 </script>
-<script id="nf-biz-dash">
+<script id="nf-biz-dash">// ══════════════════════════════════════════════════════════════
+// BUSINESS TAB + REPORT (HealSol only) — business numbers only (redesign agreed 23 Oct 2026, canvas "Business — business-only redesign")
+//  Money (revenue vs the previous period, to collect, pipeline, average per paying facility) · Customers today
+//  (Paid · Contract · On trial · Trial ended) · Growth (new facilities, trial → paid, enquiries, catch-ups sold) · charts ·
+//  breakdown by type / district / package · lists (money to collect, payments, registrations, enquiries).
+//  Facility-type tabs (All · SC · UPHC · PHC · CHC) and the dates filter everything; the Excel / PDF report follows them.
+//  Cards saved and "not moving" live on Today (no repetition). One data model feeds the page, the preview, Excel and PDF.
 // ══════════════════════════════════════════════════════════════
-// BUSINESS TAB + REPORT (HealSol Admin only)
-//  Dates From–To (or This month / Last month / This financial year / All time) filter the EVENTS in the period:
-//  registrations, payments, enquiries and saved cards. Status lists (follow-up, payment due, not moving, districts)
-//  always show today's position. One data model feeds the dashboard, the preview, the Excel file and the PDF.
-// ══════════════════════════════════════════════════════════════
-var _nfBd={preset:'fy',from:'',to:'',tab:'follow',q:'',pays:null,paysAt:0,pvSheet:0};
+var _nfBd={preset:'fy',from:'',to:'',type:'',tab:'collect',brk:'type',q:'',pays:null,paysAt:0,pvSheet:0,contacts:false};
+var NF_BIZ_TYPES=['sc','uphc','phc','chc'];
 async function nfBizLoad(force){
   if(appMode!=='sc-admin') return;
   if(force||!_nfBiz.at||Date.now()-_nfBiz.at>60000){ try{ _nfBiz.leads=await fbGet('shared/sc_leads')||{}; _nfBiz.pricing=await fbGet('shared/sc_pricing_config')||null; _nfBiz.at=Date.now(); }catch(e){} }
@@ -17233,6 +17292,10 @@ async function nfBizLoad(force){
 }
 function nfIsoLocal(iso){ if(!iso) return ''; iso=String(iso); if(iso.length<=10) return iso.slice(0,10); var d=new Date(iso); if(isNaN(d)) return iso.slice(0,10);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function nfBizAddDays(iso,n){ var p=String(iso).split('-'), d=new Date(+p[0],+p[1]-1,+p[2]+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function nfBizDayDiff(a,b){ var pa=String(a).split('-'), pb=String(b).split('-'); return Math.round((new Date(+pb[0],+pb[1]-1,+pb[2])-new Date(+pa[0],+pa[1]-1,+pa[2]))/864e5); }
+function nfBizDmy(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); return m?m[3]+'/'+m[2]+'/'+m[1]:''; }
+function nfBizFromDmy(s){ var m=/^\s*(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})\s*$/.exec(String(s||'')); if(!m) return ''; var d=+m[1], mo=+m[2], y=+m[3]; if(mo<1||mo>12||d<1||d>31) return ''; return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
 function nfBizRange(){
   var t=scTodayStr(), y=+t.slice(0,4), m=+t.slice(5,7), p=_nfBd.preset, pad=function(n){ return String(n).padStart(2,'0'); }, rg;
   if(p==='month') rg={from:y+'-'+pad(m)+'-01',to:t,label:'This month'};
@@ -17240,86 +17303,129 @@ function nfBizRange(){
   else if(p==='fy'){ var fy=m>=4?y:y-1; rg={from:fy+'-04-01',to:t,label:'Financial year '+fy+'-'+pad((fy+1)%100)}; }
   else if(p==='all') rg={from:'',to:'',label:'All time'};
   else { var f=_nfBd.from||'', to=_nfBd.to||''; if(f&&to&&f>to){ var x=f; f=to; to=x; } rg={from:f,to:to,label:'Selected dates'}; }
-  rg.text=rg.from||rg.to?(rg.from?scFmtDate(rg.from):'Start')+' – '+(rg.to?scFmtDate(rg.to):scFmtDate(t)):'everything so far';
+  rg.text=rg.from||rg.to?(rg.from?nfDateTxt(rg.from):'Start')+' – '+nfDateTxt(rg.to||t):'everything so far';
   return rg;
 }
 function nfR2(n){ return Math.round((Number(n)||0)*100)/100; }
+// the price of a facility, before GST (Settings → Pricing): Sub-Centre / UPHC / PHC by package; CHC = base (FRU / Non-FRU) + each optional department it has
+function nfBizPriceMap(){ var P={}; (((_nfBiz.pricing||{}).items)||[]).forEach(function(it){ if(it&&it.id&&it.price!=null&&it.price!=='') P[it.id]=Number(it.price); }); return P; }
+function nfFacPrice(f,P){
+  P=P||nfBizPriceMap(); f=f||{}; var t=typeof nfTypeOf==='function'?nfTypeOf(f):'sc';
+  if(t==='chc'){ var base=P['nqas_chc_'+(f.chcKind==='nonfru'?'nonfru':'fru')]; if(base==null) return null; var add=0, C=NF_LEVELS.chc||{};
+    (C.departments||[]).filter(function(d){ return d.optional&&!(((f.depts||{})[d.id]||{}).off); }).forEach(function(d){ var v=P['chc_dept_'+d.id]; if(v!=null) add+=v; });
+    return base+add; }
+  var v=P[f.progId]; return v==null?null:v;
+}
+function nfBizWithGst(n){ return n==null?null:Math.round(n*(1+(typeof NF_GST!=='undefined'?NF_GST:0.18))); }
+function nfBizTypeOf(f){ return typeof nfTypeOf==='function'?nfTypeOf(f||{}):'sc'; }
+function nfBizTypeLbl(t){ return t==='sc'?'Sub-Centre':((NF_LEVELS[t]||{}).short||String(t||'').toUpperCase()); }
+function nfBizTypeShort(t){ return t==='sc'?'SC':((NF_LEVELS[t]||{}).short||String(t||'').toUpperCase()); }
+function nfBizPkgName(f){ var t=nfBizTypeOf(f); if(t==='chc') return 'CHC '+(f.chcKind==='nonfru'?'(Non-FRU)':'(FRU)'); var p=null; try{ p=getProg(f.progId); }catch(e){}
+  if(t==='sc') return 'Package '+(String(f.progId||'').indexOf('12B')>=0?'12B':'12A'); return (p&&p.name)||((NF_LEVELS[t]||{}).short||t.toUpperCase()); }
+function nfBizInCharge(f){ var t=nfBizTypeOf(f), LV=NF_LEVELS[t]||{}, ic=LV.inCharge||'CHO', st=f.staff||{}, m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||ic)===ic; });
+  return {label:LV.inChargeLabel||ic,mob:m||f.contactMobile||'',name:m?(st[m].name||''):(f.choName||'')}; }
 function nfBizData(){
-  var rg=nfBizRange(), today=scTodayStr();
+  var rg=nfBizRange(), today=scTodayStr(), F=scMasterFacilities||{}, L=_nfBiz.leads||{}, P=nfBizPriceMap(), T=_nfBd.type||'';
   var inR=function(iso,allowEmpty){ var d=nfIsoLocal(iso); if(!d) return !!allowEmpty&&!rg.from&&!rg.to; return (!rg.from||d>=rg.from)&&(!rg.to||d<=rg.to); };
-  var S=nfBizStats(), R=nfFacilityRows(), F=scMasterFacilities||{}, L=_nfBiz.leads||{};
+  // every facility (business view), then the chosen type
+  var all=Object.keys(F).filter(function(c){ return F[c]&&!F[c].migratedTo; }).sort().map(function(c){ var f=F[c], st=f.subscriptionStatus||'contract', t=nfBizTypeOf(f), ti=nfTrialInfo(f), price=nfFacPrice(f,P), ic=nfBizInCharge(f);
+    var status=st==='paid'?'paid':st==='trial'?(ti&&ti.ended?'ended':'trial'):'contract';
+    return {code:c,f:f,name:f.name||c,type:t,district:(f.district||'').trim()||'—',state:f.state||'',pkg:nfBizPkgName(f),status:status,self:!!(f.isDemo||f.convertedFromDemoCode),
+      enrolled:nfIsoLocal(f.enrolledAt||f.trialStartDate||''),trialStart:nfIsoLocal(f.trialStartDate||((f.isDemo||f.convertedFromDemoCode||st==='trial')?f.startDate:'')||''),trialEnds:ti?ti.endISO:'',trialOver:ti?ti.daysOver:null,
+      price:price,priceGst:nfBizWithGst(price),icLabel:ic.label,icName:ic.name,icMob:ic.mob}; });
+  var R=T?all.filter(function(r){ return r.type===T; }):all, byCode={}; all.forEach(function(r){ byCode[r.code]=r; });
   // payments: receipts, plus payments recorded before receipts existed
-  var all=[], withR={}, PS=_nfBd.pays||{};
-  Object.keys(PS).forEach(function(c){ Object.values(PS[c]||{}).forEach(function(x){ if(!x) return; var code=x.code||c; withR[code]=1;
-    all.push({receiptNo:x.receiptNo||'',date:nfIsoLocal(x.paidAt),code:code,name:x.facilityName||(F[code]||{}).name||code,district:x.district||(F[code]||{}).district||'',pkg:x.packageLabel||x.package||'',
-      base:x.base!=null?Number(x.base):'',gst:x.gst!=null?Number(x.gst):'',total:Number(x.total)||0,method:x.method||'',ref:x.paymentId||x.reference||'',how:x.source==='razorpay'?'In-app (Razorpay)':'Recorded by HealSol'}); }); });
-  R.forEach(function(r){ if(r.paidAmount!==''&&!withR[r.code]) all.push({receiptNo:'(before receipts)',date:r.paidOn,code:r.code,name:r.name,district:r.district,pkg:r.package,base:'',gst:'',total:Number(r.paidAmount)||0,method:'',ref:r.paidRef,how:''}); });
-  all.sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); });
-  var P=all.filter(function(p){ return inR(p.date,true); });
-  var regs=R.filter(function(r){ return inR(r.enrolled,true); }), selfR=regs.filter(function(r){ return r.demo==='Yes'; }), selfPaid=selfR.filter(function(r){ return r.status==='Paid'; });
-  var enq=Object.keys(L).map(function(k){ return Object.assign({_k:k},L[k]||{}); }).filter(function(x){ return inR(x.submittedAt,true); })
-    .sort(function(a,b){ return String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')); });
-  var cards=0, active={}, Pg=scMasterProgress||{};
-  Object.keys(Pg).forEach(function(c){ if(!F[c]||F[c].migratedTo) return; var P1=Pg[c]||{};
-    Object.keys(P1).forEach(function(m){ var ds=P1[m]||{}; Object.keys(ds).forEach(function(k){ var d=ds[k]||{}; if(d.updatedAt&&inR(d.updatedAt)){ cards++; active[c]=1; } }); }); });
+  var pays=[], withR={}, PS=_nfBd.pays||{};
+  Object.keys(PS).forEach(function(c){ Object.values(PS[c]||{}).forEach(function(x){ if(!x) return; var code=x.code||c; withR[code]=1; var r=byCode[code];
+    pays.push({receiptNo:x.receiptNo||'',date:nfIsoLocal(x.paidAt),code:code,name:x.facilityName||(r&&r.name)||code,district:x.district||(r&&r.district)||'',type:r?r.type:nfBizTypeOf(F[code]),
+      pkg:x.packageLabel||x.package||'',catchup:/catch/i.test(String(x.package||'')+' '+String(x.packageLabel||'')),base:x.base!=null?Number(x.base):'',gst:x.gst!=null?Number(x.gst):'',total:Number(x.total)||0,method:x.method||'',ref:x.paymentId||x.reference||'',how:x.source==='razorpay'?'In-app (Razorpay)':'Recorded by HealSol'}); }); });
+  all.forEach(function(r){ var lp=r.f.lastPayment; if(lp&&lp.amount&&!withR[r.code]) pays.push({receiptNo:'(before receipts)',date:nfIsoLocal(lp.at),code:r.code,name:r.name,district:r.district,type:r.type,pkg:r.pkg,catchup:false,base:'',gst:'',total:Number(lp.amount)||0,method:'',ref:lp.id||(lp.confirmedBy?'Confirmed by HealSol':''),how:''}); });
+  pays.sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); });
+  var payT=T?pays.filter(function(p){ return p.type===T; }):pays, PP=payT.filter(function(p){ return inR(p.date,true); });
+  var sum=function(a,k){ return nfR2(a.reduce(function(s,x){ return s+(Number(x[k])||0); },0)); };
+  // previous period of the same length (not for "All time")
+  var prev=null; if(rg.from){ var len=nfBizDayDiff(rg.from,rg.to||today)+1, pTo=nfBizAddDays(rg.from,-1), pFrom=nfBizAddDays(rg.from,-len);
+    var pp=payT.filter(function(p){ return p.date&&p.date>=pFrom&&p.date<=pTo; }); prev={from:pFrom,to:pTo,days:len,sum:sum(pp,'total')}; }
+  var paySum=sum(PP,'total'), payers={}; PP.forEach(function(p){ if(!p.catchup) payers[p.code]=1; });
+  // customers today
+  var cust={paid:0,contract:0,trial:0,ended:0}; R.forEach(function(r){ cust[r.status]++; });
+  var ended=R.filter(function(r){ return r.status==='ended'; }), running=R.filter(function(r){ return r.status==='trial'; });
+  var val=function(a){ var s=0, miss=0; a.forEach(function(r){ if(r.priceGst==null) miss++; else s+=r.priceGst; }); return {sum:s,miss:miss,n:a.length}; };
+  var collect=val(ended), pipe=val(running);
+  var leads=Object.keys(L).map(function(k){ return Object.assign({_k:k},L[k]||{}); });
+  var open=leads.filter(function(x){ return x.status!=='closed'; }), openFac=open.reduce(function(s,x){ return s+(parseInt(x.facilityCount,10)||0); },0);
+  // growth
+  var regs=R.filter(function(r){ return inR(r.enrolled,true); }), selfR=regs.filter(function(r){ return r.self; });
+  R.forEach(function(r){ r.trialEndAny=r.trialStart?nfBizAddDays(r.trialStart,7):''; });
+  var trialsEnded=R.filter(function(r){ return r.trialEndAny&&r.trialEndAny<=today&&inR(r.trialEndAny)&&r.status!=='trial'&&r.status!=='contract'; });
+  var converted=trialsEnded.filter(function(r){ return r.status==='paid'; }), dtp=[];
+  converted.forEach(function(r){ var fp=pays.filter(function(p){ return p.code===r.code&&!p.catchup&&p.date; })[0]; if(fp&&r.trialStart){ var d=nfBizDayDiff(r.trialStart,fp.date); if(d>=0) dtp.push(d); } });
+  var enq=leads.filter(function(x){ return inR(x.submittedAt,true); }).sort(function(a,b){ return String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')); });
+  var cu=PP.filter(function(p){ return p.catchup; });
   // months across the period (max 24)
   var mFrom=rg.from, mTo=rg.to||today;
-  if(!mFrom) mFrom=[].concat(regs.map(function(r){ return r.enrolled; }),P.map(function(p){ return p.date; })).filter(Boolean).sort()[0]||today;
+  if(!mFrom) mFrom=[].concat(regs.map(function(r){ return r.enrolled; }),PP.map(function(p){ return p.date; })).filter(Boolean).sort()[0]||today;
   var months=[], d0=new Date(+mFrom.slice(0,4),+mFrom.slice(5,7)-1,1), end=new Date(+mTo.slice(0,4),+mTo.slice(5,7)-1,1);
-  while(d0<=end&&months.length<120){ months.push({k:d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0'),l:d0.toLocaleDateString('en-IN',{month:'short',year:'2-digit'}),regH:0,regS:0,payN:0,amt:0}); d0.setMonth(d0.getMonth()+1); }
+  while(d0<=end&&months.length<120){ months.push({k:d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0'),l:NF_MON[d0.getMonth()]+' '+String(d0.getFullYear()).slice(2),regH:0,regS:0,payN:0,amt:0}); d0.setMonth(d0.getMonth()+1); }
   if(months.length>24) months=months.slice(-24);
   var mi={}; months.forEach(function(m){ mi[m.k]=m; });
-  regs.forEach(function(r){ var M=mi[String(r.enrolled).slice(0,7)]; if(M) M[r.demo==='Yes'?'regS':'regH']++; });
-  P.forEach(function(p){ var M=mi[String(p.date).slice(0,7)]; if(M){ M.payN++; M.amt=nfR2(M.amt+p.total); } });
-  var dkey=function(s){ return (s||'').trim()||'—'; };
-  var dist=Object.keys(S.districts).sort().map(function(k){ var D=S.districts[k];
-    return {name:k,n:D.n,a:D.a,b:D.b,paid:D.paid,trial:D.trial,contract:D.contract,avg:D.pctN?Math.round(D.pctSum/D.pctN):'',
-      newN:regs.filter(function(r){ return dkey(r.district)===k; }).length,amt:nfR2(P.filter(function(p){ return dkey(p.district)===k; }).reduce(function(s,p){ return s+p.total; },0))}; });
-  var sum=function(a,k){ return nfR2(a.reduce(function(s,x){ return s+(Number(x[k])||0); },0)); };
-  return {rg:rg,today:today,S:S,R:R,pays:P,payAll:all,paySum:sum(P,'total'),payBase:sum(P,'base'),payGst:sum(P,'gst'),payAllSum:sum(all,'total'),
-    regs:regs,selfR:selfR,selfPaid:selfPaid,enq:enq,cards:cards,active:Object.keys(active).length,months:months,dist:dist,
-    follow:R.filter(function(r){ return r.followUp; }),idle:R.filter(function(r){ return r._idle; })};
+  regs.forEach(function(r){ var M=mi[String(r.enrolled).slice(0,7)]; if(M) M[r.self?'regS':'regH']++; });
+  PP.forEach(function(p){ var M=mi[String(p.date).slice(0,7)]; if(M){ M.payN++; M.amt=nfR2(M.amt+p.total); } });
+  // breakdown rows
+  var brk=function(rows,keyOf,payKey){ var G={}, order=[]; rows.forEach(function(r){ var k=keyOf(r); if(!G[k]){ G[k]={name:k,n:0,paid:0,contract:0,trial:0,ended:0,rev:0,collect:0}; order.push(k); } var g=G[k]; g.n++; g[r.status]++; if(r.status==='ended'&&r.priceGst!=null) g.collect+=r.priceGst; });
+    PP.forEach(function(p){ var r=byCode[p.code], k=r?keyOf(r):null; if(k!=null&&G[k]) G[k].rev=nfR2(G[k].rev+p.total); });
+    return order.map(function(k){ return G[k]; }); };
+  var byType=brk(all,function(r){ return nfBizTypeLbl(r.type); });
+  byType=NF_BIZ_TYPES.map(function(t){ return byType.find(function(x){ return x.name===nfBizTypeLbl(t); }); }).filter(Boolean);
+  if(T){ var PPall=pays.filter(function(p){ return inR(p.date,true); }); byType.forEach(function(g){ g.rev=0; }); PPall.forEach(function(p){ var r=byCode[p.code]; if(!r) return; var g=byType.find(function(x){ return x.name===nfBizTypeLbl(r.type); }); if(g) g.rev=nfR2(g.rev+p.total); }); }
+  var byDist=brk(R,function(r){ return r.district; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+  var byPkg=brk(R,function(r){ return r.pkg; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+  // lists
+  var collectList=R.filter(function(r){ return r.status==='ended'||(r.status==='trial'&&r.trialOver!=null&&r.trialOver>=-7); })
+    .sort(function(a,b){ return (b.trialOver||0)-(a.trialOver||0); });
+  var types={}; all.forEach(function(r){ types[r.type]=(types[r.type]||0)+1; });
+  return {rg:rg,today:today,type:T,types:types,all:all,R:R,pays:PP,payAll:payT,paySum:paySum,payBase:sum(PP,'base'),payGst:sum(PP,'gst'),prev:prev,
+    change:prev&&prev.sum?Math.round((paySum-prev.sum)/prev.sum*100):null,avg:Object.keys(payers).length?Math.round(sum(PP.filter(function(p){ return !p.catchup; }),'total')/Object.keys(payers).length):null,payers:Object.keys(payers).length,
+    cust:cust,collect:collect,pipe:pipe,open:open,openFac:openFac,regs:regs,selfR:selfR,trialsEnded:trialsEnded,converted:converted,conv:trialsEnded.length?Math.round(converted.length/trialsEnded.length*100):null,
+    daysToPay:dtp.length?Math.round(dtp.reduce(function(s,x){ return s+x; },0)/dtp.length):null,enq:enq,enqOpen:enq.filter(function(x){ return x.status!=='closed'; }).length,enqFac:enq.reduce(function(s,x){ return s+(parseInt(x.facilityCount,10)||0); },0),
+    cu:cu,cuSum:sum(cu,'total'),months:months,byType:byType,byDist:byDist,byPkg:byPkg,collectList:collectList};
 }
-// ── the report's sheets (Excel = all; PDF = Summary, Monthly, Follow-up, Payments, Districts) ──
+// ── the report's sheets (Excel = all; PDF = Summary, Monthly, Money to collect, Payments, By type, By district) ──
+function nfBizStatusTxt(s){ return {paid:'Paid',contract:'Contract',trial:'On trial',ended:'Trial ended (not paid)'}[s]||s; }
+function nfBizWhy(r){ if(r.status==='ended') return 'Trial ended '+(r.trialOver===0?'today':r.trialOver+' day'+(r.trialOver===1?'':'s')+' ago')+' — not paid'; if(r.status==='trial') return r.trialOver>=0?'Trial ends today':'Trial ends in '+(-r.trialOver)+' day'+(r.trialOver===-1?'':'s'); return ''; }
 function nfBizSheets(D){
-  var S=D.S, conv=S.demos?Math.round(S.converted/S.demos*100):0, nd=Object.keys(S.districts).filter(function(d){ return d!=='—'; }).length, out=[];
-  var add=function(name,rows,widths){ out.push({name:name,rows:rows,widths:widths}); };
+  var out=[], C=!!_nfBd.contacts, add=function(name,rows,widths){ out.push({name:name,rows:rows,widths:widths}); };
+  var tl=D.type?nfBizTypeLbl(D.type)+'s only':'All facility types';
   add('Summary',[
-    ['NQAS | FAST — HealSol business report'],['Period',D.rg.label+' ('+D.rg.text+')'],['As of',scFmtDate(D.today)],[],
-    ['In the period','Value','Detail'],
-    ['New registrations',D.regs.length,'enrolled by HealSol '+(D.regs.length-D.selfR.length)+' · self-registered '+D.selfR.length],
-    ['Self-registrations (new)',D.selfR.length,D.selfPaid.length+' of them paid'],
-    ['Payments received (₹)',D.paySum,D.pays.length+' payment(s)'+(D.payBase?' · price '+nfMoney(D.payBase)+' + GST '+nfMoney(D.payGst):'')],
-    ['Enquiries received',D.enq.length,''],
-    ['Cards saved',D.cards,'by '+D.active+' facilit'+(D.active===1?'y':'ies')],
-    [],
-    ['Position today','Value','Detail'],
-    ['Registered facilities',S.total,nfBizTypeLine()],
-    ['Paid',S.paid,''],['Contract (government / district)',S.contract,''],['On trial',S.trial,S.due.length+' trial(s) ended, not paid'],
-    ['Self-registrations (all)',S.demos,S.converted+' paid ('+conv+'%)'],
-    ['Payments received to date (₹)',D.payAllSum,D.payAll.length+' payment(s)'],
-    ['Payment due',S.due.length,S.dueValue?nfMoney(S.dueValue)+' expected':''],
-    ['Need follow-up',D.follow.length,'see Follow-up sheet'],
-    ['Not moving',D.idle.length,'programme running, no card saved for '+NF_IDLE_DAYS+'+ days'],
-    ['Programme in progress',S.started,''],['Programme completed',S.completed,''],['Not started',S.notStarted,''],
-    ['Districts',nd,Object.keys(S.states).length+' state(s)'],
-    ['Active staff accounts',S.staff,''],['Open enquiries',S.leadsOpen.length,S.leadsFac?'~'+S.leadsFac+' facilities requested':'']
-  ],[34,16,50]);
+    ['NQAS | FAST — HealSol business report'],['Period',D.rg.label+' ('+D.rg.text+')'],['Facilities',tl],['As of',nfDateTxt(D.today)],[],
+    ['Money','Value','Detail'],
+    ['Revenue received (₹)',D.paySum,D.pays.length+' payment(s)'+(D.payBase?' · price '+nfMoney(D.payBase)+' + GST '+nfMoney(D.payGst):'')+(D.change!=null?' · '+(D.change>=0?'+':'')+D.change+'% vs previous period':'')],
+    ['To collect (₹)',D.collect.sum,D.collect.n+' trial(s) ended, not paid'+(D.collect.miss?' · '+D.collect.miss+' without a price':'')],
+    ['Pipeline (₹)',D.pipe.sum,D.pipe.n+' on trial · '+D.open.length+' open enquiries ('+D.openFac+' facilities)'],
+    ['Average per paying facility (₹)',D.avg==null?'':D.avg,D.payers+' facilities paid in the period'],
+    [],['Customers today','Value',''],
+    ['Paid',D.cust.paid,''],['Contract (government / district)',D.cust.contract,''],['On trial',D.cust.trial,''],['Trial ended, not paid',D.cust.ended,''],
+    [],['Growth','Value','Detail'],
+    ['New facilities',D.regs.length,'HealSol '+(D.regs.length-D.selfR.length)+' · self-registered '+D.selfR.length],
+    ['Trial → paid (%)',D.conv==null?'':D.conv,D.converted.length+' of '+D.trialsEnded.length+' trials that ended in the period'+(D.daysToPay!=null?' · '+D.daysToPay+' days to pay on average':'')],
+    ['Enquiries',D.enq.length,D.enqOpen+' still open · '+D.enqFac+' facilities asked about'],
+    ['Catch-ups sold',D.cu.length,D.cuSum?nfMoney(D.cuSum):'']
+  ],[34,16,60]);
   var tot=D.months.reduce(function(t,m){ t.h+=m.regH; t.s+=m.regS; t.n+=m.payN; t.a=nfR2(t.a+m.amt); return t; },{h:0,s:0,n:0,a:0});
   add('Monthly',[['Month','New (HealSol)','New (self-registered)','New total','Payments','Received ₹']]
     .concat(D.months.map(function(m){ return [m.l,m.regH,m.regS,m.regH+m.regS,m.payN,m.amt]; })).concat([['Total',tot.h,tot.s,tot.h+tot.s,tot.n,tot.a]]),[10,13,18,10,10,12]);
-  var head=['Facility ID','Name','District','State','Package','Type','Status','Self-registered','Enrolled','Start date','Programme day','Phase','Readiness %','Staff','CHO','CHO mobile','Last activity','Days since activity','Trial ends','Expected ₹','Last payment ₹','Paid on','Payment ref','Follow-up'];
-  add('Facilities',[head].concat(D.R.map(function(r){ return [r.code,r.name,r.district,r.state,r.package,r.type,r.status,r.demo,r.enrolled,r.start,r.day,r.phase,r.readiness,r.staff,r.choName,r.choMobile,r.lastActivity,r.idleDays,r.trialEnds,r.expected,r.paidAmount,r.paidOn,r.paidRef,r.followUp]; })),
-    [14,24,14,12,26,6,9,6,11,11,12,12,11,6,20,13,12,10,11,10,12,11,22,44]);
-  add('Follow-up',[['Facility ID','Name','District','Status','CHO','CHO mobile','Follow-up','Expected ₹','Last activity']].concat(D.follow.map(function(r){ return [r.code,r.name,r.district,r.status,r.choName,r.choMobile,r.followUp,r.expected,r.lastActivity]; })),[14,24,14,9,20,13,52,10,12]);
-  add('Self-registrations',[['Facility ID','Name','District','Registered','Free days end','Status','Paid','CHO','CHO mobile','Readiness %']].concat(D.selfR.map(function(r){ return [r.code,r.name,r.district,r.enrolled,r.trialEnds,r.status,r.converted||'No',r.choName,r.choMobile,r.readiness]; })),[14,24,14,11,11,9,10,20,13,11]);
-  add('Payments',[['Receipt no','Paid on','Facility ID','Name','District','Package','Price ₹','GST ₹','Total ₹','Paid by','Payment ID / reference','How']].concat(D.pays.map(function(x){ return [x.receiptNo,x.date,x.code,x.name,x.district,x.pkg,x.base,x.gst,x.total,x.method,x.ref,x.how]; })),[18,11,14,24,14,26,10,9,10,13,24,18]);
-  add('Not moving',[['Facility ID','Name','District','Programme day','Last activity','Days since activity','CHO','CHO mobile','Readiness %']].concat(D.idle.map(function(r){ return [r.code,r.name,r.district,r.day,r.lastActivity||'Never',r.idleDays,r.choName,r.choMobile,r.readiness]; })),[14,24,14,12,12,10,20,13,11]);
-  add('Districts',[['District','Facilities','Type A','Type B','Paid','Trial','Contract','Avg readiness %','New in period','Received in period ₹']].concat(D.dist.map(function(x){ return [x.name,x.n,x.a,x.b,x.paid,x.trial,x.contract,x.avg,x.newN,x.amt]; })),[18,10,8,8,8,8,9,14,12,16]);
-  add('Enquiries',[['Submitted','Organisation','Contact','Designation','Mobile','Email','District','State','Facilities','Packages','Status','Message']].concat(D.enq.map(function(x){ return [String(x.submittedAt||'').slice(0,10),x.orgName||'',x.contactName||'',x.designation||'',x.mobile||'',x.email||'',x.district||'',x.state||'',x.facilityCount||'',x.packages||'',x.status||'',x.message||'']; })),[11,24,18,16,13,22,14,12,9,16,9,40]);
+  add('Money to collect',[['Facility ID','Name','Type','District','Package','Why','Amount ₹ (incl. GST)','In-charge'].concat(C?['Mobile']:[])].concat(D.collectList.map(function(r){ return [r.code,r.name,nfBizTypeShort(r.type),r.district,r.pkg,nfBizWhy(r),r.priceGst==null?'no price set':r.priceGst,r.icName].concat(C?[r.icMob]:[]); })),[14,24,6,14,18,34,16,20,13]);
+  add('Payments',[['Receipt no','Paid on','Facility ID','Name','Type','District','Package','Price ₹','GST ₹','Total ₹','Paid by','Payment ID / reference','How']].concat(D.pays.map(function(x){ return [x.receiptNo,x.date,x.code,x.name,nfBizTypeShort(x.type),x.district,x.pkg,x.base,x.gst,x.total,x.method,x.ref,x.how]; })),[18,11,14,24,6,14,22,10,9,10,13,24,18]);
+  add('Registrations',[['Facility ID','Name','Type','District','State','Registered','How','Status','Package','Price ₹ (incl. GST)','In-charge'].concat(C?['Mobile']:[])].concat(D.regs.map(function(r){ return [r.code,r.name,nfBizTypeShort(r.type),r.district,r.state,r.enrolled,r.self?'Self-registered':'HealSol',nfBizStatusTxt(r.status),r.pkg,r.priceGst==null?'':r.priceGst,r.icName].concat(C?[r.icMob]:[]); })),[14,24,6,14,12,11,14,18,18,14,20,13]);
+  add('Enquiries',[['Submitted','Organisation','Contact','Designation','District','State','Facilities','Packages','Status'].concat(C?['Mobile','Email']:[]).concat(['Message'])].concat(D.enq.map(function(x){ return [String(x.submittedAt||'').slice(0,10),x.orgName||'',x.contactName||'',x.designation||'',x.district||'',x.state||'',x.facilityCount||'',x.packages||'',x.status||'new'].concat(C?[x.mobile||'',x.email||'']:[]).concat([x.message||'']); })),[11,24,18,16,14,12,9,16,9,13,22,40]);
+  var bh=function(l){ return [[l,'Facilities','Paid','Contract','On trial','Trial ended','Revenue in period ₹','To collect ₹']]; }, br=function(g){ return [g.name,g.n,g.paid,g.contract,g.trial,g.ended,g.rev,g.collect]; };
+  add('By type',bh('Type').concat(D.byType.map(br)),[14,10,8,9,9,11,18,14]);
+  add('By district',bh('District').concat(D.byDist.map(br)),[18,10,8,9,9,11,18,14]);
+  add('By package',bh('Package').concat(D.byPkg.map(br)),[22,10,8,9,9,11,18,14]);
+  add('Facilities',[['Facility ID','Name','Type','District','State','Package','Status','Self-registered','Registered','Trial ends','Price ₹ (before GST)','In-charge'].concat(C?['Mobile']:[])].concat(D.R.map(function(r){ return [r.code,r.name,nfBizTypeShort(r.type),r.district,r.state,r.pkg,nfBizStatusTxt(r.status),r.self?'Yes':'No',r.enrolled,r.trialEnds,r.price==null?'':r.price,r.icName].concat(C?[r.icMob]:[]); })),[14,24,6,14,12,18,18,8,11,11,14,20,13]);
   return out;
 }
-function nfBizFileName(D,ext){ return 'NQAS-FAST-business-report-'+(D.rg.from||D.rg.to?(D.rg.from||'start')+'-to-'+(D.rg.to||D.today):'all-time-'+D.today)+'.'+ext; }
+function nfBizFileName(D,ext){ return 'NQAS-FAST-business-report-'+(D.type?D.type+'-':'')+(D.rg.from||D.rg.to?(D.rg.from||'start')+'-to-'+(D.rg.to||D.today):'all-time-'+D.today)+'.'+ext; }
 async function nfBizExcel(D){
   var X=await nfLoadXlsx(), wb=X.utils.book_new();
   nfBizSheets(D).forEach(function(s){ var ws=X.utils.aoa_to_sheet(s.rows); ws['!cols']=s.widths.map(function(w){ return {wch:w}; }); X.utils.book_append_sheet(wb,ws,s.name); });
@@ -17327,8 +17433,8 @@ async function nfBizExcel(D){
 }
 // ── PDF: landscape A4, logos and page numbers on every page ──
 async function nfBizPdf(D){
-  var J=await nfLoadPdf(), doc=nfPdfNew(J,'l'), F=doc._nfFont, M=function(n){ return nfPdfMoney(doc,n); }, T=function(s){ return nfPdfTxt(doc,s); };
-  var W=297, H=210, L=12, R=W-12, TEAL=[19,90,85], GREY=[100,116,139], INK=[19,32,31], LINE=[227,234,232], S=D.S, y=31;
+  var J=await nfLoadPdf(), doc=nfPdfNew(J,'l'), F=doc._nfFont, M=function(n){ return nfPdfMoney(doc,n); }, T=function(s){ return nfPdfTxt(doc,s); }, C=!!_nfBd.contacts;
+  var W=297, H=210, L=12, R=W-12, TEAL=[19,74,65], GREY=[79,94,89], INK=[31,45,41], LINE=[220,228,225], RED=[179,64,42], y=31;
   var title=function(t,sub){ if(y>H-34){ doc.addPage(); y=31; } doc.setFont(F,'bold'); doc.setFontSize(12); doc.setTextColor.apply(doc,TEAL); doc.text(t,L,y);
     if(sub){ var tw=doc.getTextWidth(t); doc.setFont(F,'normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc,GREY); doc.text(T(sub),L+tw+3,y); } y+=3; };
   var tile=function(x,yy,w,h,label,val,sub,col){ doc.setDrawColor.apply(doc,LINE); doc.setLineWidth(0.3); doc.roundedRect(x,yy,w,h,2,2,'S');
@@ -17342,34 +17448,33 @@ async function nfBizPdf(D){
       headStyles:{font:F,fontStyle:'bold',fillColor:TEAL,textColor:255,fontSize:7.5},alternateRowStyles:{fillColor:[248,250,249]},columnStyles:colStyles||{},
       didParseCell:function(h){ var cs=(colStyles||{})[h.column.index]; if(h.section==='head'&&cs&&cs.halign) h.cell.styles.halign=cs.halign; }});
     y=doc.lastAutoTable.finalY+9; };
-  // title block
   doc.setFont(F,'bold'); doc.setFontSize(18); doc.setTextColor.apply(doc,INK); doc.text('Business report',L,y+2);
   doc.setFont(F,'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc,GREY);
-  doc.text(T('Period: '+D.rg.label+' ('+D.rg.text+')  ·  Position as of '+scFmtDate(D.today)),L,y+8); y+=15;
-  title('In the period',D.rg.text);
-  row([['New registrations',D.regs.length,'HealSol '+(D.regs.length-D.selfR.length)+' · self '+D.selfR.length,TEAL],['Self-registrations',D.selfR.length,D.selfPaid.length+' paid',[29,78,216]],
-    ['Payments received',M(D.paySum),D.pays.length+' payment'+(D.pays.length===1?'':'s'),[21,128,61]],['Enquiries',D.enq.length,'district / bulk',[109,40,217]],['Cards saved',D.cards,'by '+D.active+' facilit'+(D.active===1?'y':'ies'),[146,64,14]]]);
-  title('Position today');
-  row([['Registered',S.total,nfBizTypeLine(),TEAL],['Paid',S.paid,'contract '+S.contract,[21,128,61]],['On trial',S.trial,S.due.length+' ended, not paid',[146,64,14]],
-    ['Payment due',S.due.length,S.dueValue?M(S.dueValue)+' expected':'nothing due',[185,28,28]],['Need follow-up',D.follow.length,'not moving '+D.idle.length,[185,28,28]],['Received to date',M(D.payAllSum),D.payAll.length+' payments',[21,128,61]]]);
-  // money by month chart
+  doc.text(T('Period: '+D.rg.label+' ('+D.rg.text+')  ·  '+(D.type?nfBizTypeLbl(D.type)+'s only':'All facility types')+'  ·  Customers as of '+nfDateTxt(D.today)),L,y+8); y+=15;
+  title('Money',D.rg.text);
+  row([['Revenue received',M(D.paySum),(D.change!=null?(D.change>=0?'+':'')+D.change+'% vs previous period · ':'')+D.pays.length+' payments',TEAL],['To collect',M(D.collect.sum),D.collect.n+' trial(s) ended, not paid',RED],
+    ['Pipeline',M(D.pipe.sum),D.pipe.n+' on trial · '+D.open.length+' open enquiries'],['Average per paying facility',D.avg==null?'—':M(D.avg),D.payers+' paid in the period']]);
+  title('Customers today');
+  row([['Paid',D.cust.paid,''],['Contract',D.cust.contract,'government / district'],['On trial',D.cust.trial,''],['Trial ended, not paid',D.cust.ended,'',RED]]);
+  title('Growth',D.rg.text);
+  row([['New facilities',D.regs.length,'HealSol '+(D.regs.length-D.selfR.length)+' · self '+D.selfR.length],['Trial → paid',D.conv==null?'—':D.conv+'%',D.converted.length+' of '+D.trialsEnded.length+(D.daysToPay!=null?' · '+D.daysToPay+' days to pay':'')],
+    ['Enquiries',D.enq.length,D.enqOpen+' open · '+D.enqFac+' facilities'],['Catch-ups sold',D.cu.length,D.cuSum?M(D.cuSum):'']]);
   var ms=D.months.slice(-12);
-  if(ms.length){ title('Money received by month',ms.length<D.months.length?'last 12 months of the period':'');
+  if(ms.length&&D.paySum){ title('Revenue by month',ms.length<D.months.length?'last 12 months of the period':'');
     var ch=34, cy=y+3, mx=Math.max(1,Math.max.apply(null,ms.map(function(m){ return m.amt; }))), gw=(R-L)/ms.length, bw=Math.min(16,gw*0.6);
     if(cy+ch+12>H-14){ doc.addPage(); y=31; cy=y+3; }
     doc.setDrawColor.apply(doc,LINE); doc.line(L,cy+ch,R,cy+ch);
-    ms.forEach(function(m,i){ var h=m.amt/mx*ch, x=L+i*gw+(gw-bw)/2; if(h>0){ doc.setFillColor(21,128,61); doc.roundedRect(x,cy+ch-h,bw,h,1,1,'F'); }
+    ms.forEach(function(m,i){ var h=m.amt/mx*ch, x=L+i*gw+(gw-bw)/2; if(h>0){ doc.setFillColor(30,107,94); doc.roundedRect(x,cy+ch-h,bw,h,1,1,'F'); }
       doc.setFont(F,'normal'); doc.setFontSize(6.5); doc.setTextColor.apply(doc,GREY); doc.text(m.l,x+bw/2,cy+ch+4,{align:'center'});
       if(m.amt){ doc.setTextColor.apply(doc,INK); doc.text(M(m.amt),x+bw/2,cy+ch-h-1.5,{align:'center'}); } });
     y=cy+ch+11; }
-  title('Monthly'); table(['Month','New (HealSol)','New (self-registered)','New total','Payments','Received'],D.months.map(function(m){ return [m.l,m.regH,m.regS,m.regH+m.regS,m.payN,M(m.amt)]; }),{5:{halign:'right'}});
-  title('Follow-up','position today · '+D.follow.length);
-  table(['Facility','District','Status','CHO','Follow-up','Expected'],D.follow.map(function(r){ return [r.name+'\n'+r.code,r.district,r.status,[r.choName,r.choMobile].filter(Boolean).join('\n'),r.followUp,r.expected!==''?M(r.expected):'']; }),{0:{cellWidth:48},4:{cellWidth:88},5:{halign:'right'}});
+  title('Money to collect','today · '+D.collectList.length);
+  table(['Facility','Type','District','Why','Amount (incl. GST)','In-charge'],D.collectList.map(function(r){ return [r.name+'\n'+r.code,nfBizTypeShort(r.type),r.district,nfBizWhy(r),r.priceGst==null?'no price set':M(r.priceGst),r.icName+(C&&r.icMob?'\n'+r.icMob:'')]; }),{0:{cellWidth:56},4:{halign:'right'}});
   title('Payments','in the period · '+D.pays.length);
-  table(['Receipt','Paid on','Facility','Package','Price','GST','Total','Paid by','Reference'],D.pays.map(function(x){ return [x.receiptNo,x.date?scFmtDate(x.date):'',x.name+'\n'+x.code,x.pkg,x.base!==''?M(x.base):'',x.gst!==''?M(x.gst):'',M(x.total),x.method||x.how,x.ref]; }),{4:{halign:'right'},5:{halign:'right'},6:{halign:'right',fontStyle:'bold'}});
-  title('Districts','position today, with new registrations and money in the period');
-  table(['District','Facilities','A / B','Paid','Trial','Contract','Avg readiness','New in period','Received in period'],D.dist.map(function(x){ return [x.name,x.n,x.a+' / '+x.b,x.paid,x.trial,x.contract,x.avg!==''?x.avg+'%':'—',x.newN,M(x.amt)]; }),{8:{halign:'right'}});
-  // header + footer on every page
+  table(['Receipt','Paid on','Facility','Package','Price','GST','Total','Paid by','Reference'],D.pays.map(function(x){ return [x.receiptNo,x.date?nfDateTxt(x.date):'',x.name+'\n'+x.code,x.pkg,x.base!==''?M(x.base):'',x.gst!==''?M(x.gst):'',M(x.total),x.method||x.how,x.ref]; }),{4:{halign:'right'},5:{halign:'right'},6:{halign:'right',fontStyle:'bold'}});
+  var bt=function(g){ return [g.name,g.n,g.paid,g.contract,g.trial,g.ended,M(g.rev),M(g.collect)]; }, bhd=function(l){ return [l,'Facilities','Paid','Contract','On trial','Trial ended','Revenue in period','To collect']; };
+  title('By type'); table(bhd('Type'),D.byType.map(bt),{6:{halign:'right'},7:{halign:'right'}});
+  title('By district'); table(bhd('District'),D.byDist.map(bt),{6:{halign:'right'},7:{halign:'right'}});
   var n=doc.getNumberOfPages(), when=new Date().toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   for(var i=1;i<=n;i++){ doc.setPage(i);
     nfPdfImg(doc,SC_BRAND.logoNqas,L,8,12);
@@ -17382,100 +17487,144 @@ async function nfBizPdf(D){
     doc.text('Page '+i+' of '+n,R,H-6,{align:'right'}); }
   return nfSaveDoc(doc,nfBizFileName(D,'pdf'));
 }
-// ── date range bar (dashboard and preview share one range) ──
+// ── filters: facility type tabs, period chips, Indian-order dates (page and preview share them) ──
+function nfBizTypeTabsHTML(D,ctx){ var T=D.type||'', n=D.all.length;
+  return '<div class="bz-types" role="tablist" aria-label="Facility type">'+[['','All',n]].concat(NF_BIZ_TYPES.filter(function(t){ return D.types[t]; }).map(function(t){ return [t,nfBizTypeLbl(t),D.types[t]]; }))
+    .map(function(x){ return '<button type="button" role="tab" aria-selected="'+(T===x[0])+'" class="'+(T===x[0]?'on':'')+'" onclick="nfBizSetType(\''+x[0]+'\',\''+ctx+'\')">'+scEsc(x[1])+' <em>'+x[2]+'</em></button>'; }).join('')+'</div>'; }
 function nfBizRangeHTML(ctx){
-  var rg=nfBizRange(), p=_nfBd.preset, t=scTodayStr();
-  var chip=function(v,l){ return '<button type="button" class="nfbd-chip'+(p===v?' on':'')+'" onclick="nfBizSetPreset(\''+v+'\',\''+ctx+'\')">'+l+'</button>'; };
-  return '<div class="nfbd-range">'+chip('month','This month')+chip('lastmonth','Last month')+chip('fy','This financial year')+chip('all','All time')
-    +'<span class="nfbd-dates"><label>From <input type="date" id="nfbd-from-'+ctx+'" value="'+(rg.from||'')+'" max="'+t+'" onchange="nfBizSetDate(\'from\',this.value,\''+ctx+'\')"></label>'
-    +'<label>To <input type="date" id="nfbd-to-'+ctx+'" value="'+(rg.to||'')+'" max="'+t+'" onchange="nfBizSetDate(\'to\',this.value,\''+ctx+'\')"></label></span></div>';
+  var rg=nfBizRange(), p=_nfBd.preset;
+  var chip=function(v,l){ return '<button type="button" class="bz-chip'+(p===v?' on':'')+'" onclick="nfBizSetPreset(\''+v+'\',\''+ctx+'\')">'+l+'</button>'; };
+  return '<div class="bz-range">'+chip('month','This month')+chip('lastmonth','Last month')+chip('fy','This financial year')+chip('all','All time')
+    +'<label>From <input type="text" inputmode="numeric" placeholder="dd/mm/yyyy" id="nfbd-from-'+ctx+'" value="'+nfBizDmy(rg.from)+'" onchange="nfBizSetDate(\'from\',this.value,\''+ctx+'\')"></label>'
+    +'<label>To <input type="text" inputmode="numeric" placeholder="dd/mm/yyyy" id="nfbd-to-'+ctx+'" value="'+nfBizDmy(rg.to||(rg.from?scTodayStr():''))+'" onchange="nfBizSetDate(\'to\',this.value,\''+ctx+'\')"></label></div>';
 }
+function nfBizSetType(t,ctx){ _nfBd.type=t||''; nfBizRerender(ctx); }
 function nfBizSetPreset(p,ctx){ _nfBd.preset=p; nfBizRerender(ctx); }
-function nfBizSetDate(k,v,ctx){ var rg=nfBizRange(); _nfBd.from=rg.from; _nfBd.to=rg.to; _nfBd[k]=v||''; _nfBd.preset='custom'; nfBizRerender(ctx); }
+function nfBizSetDate(k,v,ctx){ var iso=nfBizFromDmy(v); if(v&&!iso){ showToast('Type the date as dd/mm/yyyy, e.g. 01/04/2026.','err'); return; } var rg=nfBizRange(); _nfBd.from=rg.from; _nfBd.to=rg.to; _nfBd[k]=iso||''; _nfBd.preset='custom'; nfBizRerender(ctx); }
 function nfBizRerender(ctx){ if(document.getElementById('nf-bizpv')) nfBizPvRender(); if(_nfOv.view==='business') nfRenderBizDash(); }
-// ── dashboard ──
+// ── the page ──
 function nfRupeeShort(n){ n=Number(n)||0; if(n>=1e7) return '₹'+(n/1e7).toFixed(n>=1e8?0:1).replace(/\.0$/,'')+' Cr'; if(n>=1e5) return '₹'+(n/1e5).toFixed(1).replace(/\.0$/,'')+' L'; if(n>=1e3) return '₹'+(n/1e3).toFixed(1).replace(/\.0$/,'')+'k'; return '₹'+Math.round(n); }
-function nfBizCard(icon,cls,label,val,sub,tab){ return '<div class="nfb-card '+cls+(tab?' click':'')+'"'+(tab?' onclick="nfBizTab(\''+tab+'\',true)"':'')+'><span class="nfb-i"><i class="ti '+icon+'"></i></span><div><small>'+scEsc(label)+'</small><b>'+val+'</b><em>'+sub+'</em></div></div>'; }
+function nfBizKpi(label,val,sub,cls,go){ return '<'+(go?'button type="button" onclick="'+go+'"':'div')+' class="bz-k '+(cls||'')+'"><small>'+scEsc(label)+'</small><b>'+val+'</b><span>'+sub+'</span></'+(go?'button':'div')+'>'; }
 async function nfRenderBizDash(load){
   if(appMode!=='sc-admin') return;
   var main=document.querySelector('#admin-app .admin-main'); if(!main) return;
   var box=document.getElementById('nf-biz'); if(!box){ box=document.createElement('div'); box.id='nf-biz'; box.dataset.nfv='business'; main.insertBefore(box,main.firstChild); }
   if(load||!_nfBd.pays){ if(!box.innerHTML) box.innerHTML='<div class="nfbd-empty">Loading…</div>'; await nfBizLoad(load==='force'); }
-  var D=nfBizData(), S=D.S; _nfBd._D=D;
-  var conv=D.selfR.length?Math.round(D.selfPaid.length/D.selfR.length*100):0;
-  var h='<div class="nfo-top"><div><h1>Business</h1><small>HealSol only · '+scEsc(D.rg.label)+' · '+scEsc(D.rg.text)+'</small></div>'
-    +'<button type="button" class="nfo-ic" title="Refresh" onclick="nfRenderBizDash(\'force\')"><i class="ti ti-refresh"></i></button>'
-    +'<button type="button" class="nfbd-dl" onclick="nfBizPreview()"><i class="ti ti-download"></i> Preview &amp; download</button></div>'
-    +nfBizRangeHTML('dash')
-    +'<div class="nfbd-sec"><b><i class="ti ti-calendar"></i> In this period</b><span>'+scEsc(D.rg.text)+'</span></div><div class="nfb-grid">'
-    +nfBizCard('ti-building-plus','t','New registrations',D.regs.length,'HealSol '+(D.regs.length-D.selfR.length)+' · self-registered '+D.selfR.length,'regs')
-    +nfBizCard('ti-rocket','b','Self-registrations',D.selfR.length,D.selfPaid.length+' paid'+(D.selfR.length?' ('+conv+'%)':''),'regs')
-    +nfBizCard('ti-currency-rupee','g','Payments received',nfRupee(D.paySum),D.pays.length+' payment'+(D.pays.length===1?'':'s')+(D.payGst?' · GST '+nfRupee(D.payGst):''),'pays')
-    +nfBizCard('ti-mail-opened','v','Enquiries received',D.enq.length,'district / bulk enrolment','enq')
-    +nfBizCard('ti-cards','a','Cards saved',D.cards,'by '+D.active+' facilit'+(D.active===1?'y':'ies'),'')
-    +'</div><div class="nfbd-sec"><b><i class="ti ti-layout-dashboard"></i> Position today</b><span>'+scEsc(scFmtDate(D.today))+'</span></div><div class="nfb-grid">'
-    +nfBizCard('ti-building-hospital','t','Registered facilities',S.total,nfBizTypeLine(),'dist')
-    +nfBizCard('ti-circle-check','g','Paid',S.paid,'contract '+S.contract+' · received to date '+nfRupee(D.payAllSum),'')
-    +nfBizCard('ti-hourglass','a','On trial',S.trial,S.due.length?'<span class="r">'+S.due.length+' ended, not paid</span>':'none ended yet','due')
-    +nfBizCard('ti-alert-circle','r','Payment due',S.due.length,S.due.length?(S.dueValue?nfRupee(S.dueValue)+' expected':'trial ended, not paid'):'nothing due','due')
-    +nfBizCard('ti-list-check','r','Need follow-up',D.follow.length,'not moving '+D.idle.length+' · tap to see why','follow')
-    +'</div><div class="nfbd-charts">'+nfBizChartsHTML(D)+'</div>'
+  var D=nfBizData(); _nfBd._D=D;
+  var cu=D.cust, tot=Math.max(1,cu.paid+cu.contract+cu.trial+cu.ended), pct=function(n){ return (100*n/tot).toFixed(2)+'%'; };
+  var seg=function(k,l,n){ return n?'<button type="button" class="'+k+'" style="width:'+pct(n)+'" onclick="nfBizCust(\''+k+'\')" title="'+scEsc(l+': '+n)+'"><span>'+scEsc(l)+' '+n+'</span></button>':''; };
+  var h='<div class="nfo-top"><div><h1>Business</h1><small>HealSol only · money, customers and growth · '+scEsc(D.rg.label)+' · '+scEsc(D.rg.text)+'</small></div>'
+    +'<button type="button" class="nfo-ic" title="Refresh" aria-label="Refresh" onclick="nfRenderBizDash(\'force\')"><i class="ti ti-refresh"></i></button>'
+    +'<button type="button" class="nfbd-dl" onclick="nfBizPreview()"><i class="ti ti-download"></i> Download (Excel / PDF)</button></div>'
+    +'<div class="bz-bar">'+nfBizTypeTabsHTML(D,'dash')+nfBizRangeHTML('dash')+'</div>'
+    +'<div class="bz-sec"><b>Money</b><span>in the period'+(D.prev?' · compared with the previous '+D.prev.days+' days':'')+'</span></div><div class="bz-kg">'
+    +nfBizKpi('Revenue received',nfRupee(D.paySum),(D.change!=null?'<em class="'+(D.change>=0?'up':'down')+'">'+(D.change>=0?'+':'')+D.change+'% vs previous period</em><br>':(D.prev?'<em>nothing in the previous period</em><br>':''))+(D.payBase?nfRupee(D.payBase)+' + GST '+nfRupee(D.payGst)+' · ':'')+D.pays.length+' payment'+(D.pays.length===1?'':'s'),'hero',"nfBizTab('pays',true)")
+    +nfBizKpi('To collect',D.collect.n&&D.collect.miss===D.collect.n?'—':nfRupee(D.collect.sum),D.collect.n?D.collect.n+' trial'+(D.collect.n===1?'':'s')+' ended, not paid'+(D.collect.miss?' · '+D.collect.miss+' without a price':''):'nothing to collect',D.collect.n?'r':'',"nfBizTab('collect',true)")
+    +nfBizKpi('Pipeline',nfRupee(D.pipe.sum),D.pipe.n+' on trial · '+D.open.length+' open enquir'+(D.open.length===1?'y':'ies')+(D.openFac?' ('+D.openFac+' facilities)':''),'',"nfBizTab('collect',true)")
+    +nfBizKpi('Average per paying facility',D.avg==null?'—':nfRupee(D.avg),D.payers+' facilit'+(D.payers===1?'y':'ies')+' paid in the period','')+'</div>'
+    +'<div class="nfo-card bz-cust"><div class="bz-ch"><b>Customers today</b><span>'+(cu.paid+cu.contract+cu.trial+cu.ended)+' facilities · tap a part to see the list</span></div>'
+    +'<div class="bz-cbar">'+seg('paid','Paid',cu.paid)+seg('contract','Contract',cu.contract)+seg('trial','On trial',cu.trial)+seg('ended','Trial ended',cu.ended)+'</div>'
+    +'<div class="bz-leg"><span><i class="paid"></i>Paid <b>'+cu.paid+'</b></span><span><i class="contract"></i>Contract <b>'+cu.contract+'</b></span><span><i class="trial"></i>On trial <b>'+cu.trial+'</b></span><span><i class="ended"></i>Trial ended, not paid <b>'+cu.ended+'</b></span></div></div>'
+    +'<div class="bz-sec"><b>Growth</b><span>in the period</span></div><div class="bz-kg">'
+    +nfBizKpi('New facilities',D.regs.length,'HealSol enrolled '+(D.regs.length-D.selfR.length)+' · self-registered '+D.selfR.length,'',"nfBizTab('regs',true)")
+    +nfBizKpi('Trial → paid',D.conv==null?'—':D.conv+'%',D.trialsEnded.length?D.converted.length+' of '+D.trialsEnded.length+' ended trials paid'+(D.daysToPay!=null?' · '+D.daysToPay+' days to pay on average':''):'no trial ended in the period','')
+    +nfBizKpi('Enquiries',D.enq.length,D.enqOpen+' still open · '+D.enqFac+' facilities asked about','',"nfBizTab('enq',true)")
+    +nfBizKpi('Catch-ups sold',D.cu.length,D.cuSum?nfRupee(D.cuSum):'none in the period','')+'</div>'
+    +'<div class="bz-charts">'+nfBizChartsHTML(D)+'</div>'
+    +'<div class="nfo-card"><div class="bz-ch"><b>Breakdown</b><div class="bz-seg" role="tablist" aria-label="Breakdown">'+[['type','By type'],['dist','By district'],['pkg','By package']].map(function(x){ return '<button type="button" role="tab" aria-selected="'+(_nfBd.brk===x[0])+'" class="'+(_nfBd.brk===x[0]?'on':'')+'" onclick="_nfBd.brk=\''+x[0]+'\';nfBizBrk()">'+x[1]+'</button>'; }).join('')+'</div></div><div id="bz-brk"></div></div>'
     +'<div class="nfo-card"><div class="nfbd-tabs" id="nfbd-tabs"></div><div id="nfbd-list"></div></div>';
-  box.innerHTML=h; nfBizList();
+  box.innerHTML=h; nfBizBrk(); nfBizList();
   try{ nfAdminApply(); }catch(e){}
 }
+function nfBizCust(k){ _nfBd.tab=k==='paid'||k==='contract'?'cust_'+k:'collect'; nfBizList(); var el=document.getElementById('nfbd-tabs'); try{ el&&el.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){} }
 function nfBizChartsHTML(D){
   var ms=D.months.slice(-12), mxA=Math.max(1,Math.max.apply(null,ms.map(function(m){ return m.amt; }).concat([0]))), mxR=Math.max(1,Math.max.apply(null,ms.map(function(m){ return m.regH+m.regS; }).concat([0])));
   var sub=ms.length<D.months.length?'last 12 months of the period':'by month';
+  var anyA=ms.some(function(m){ return m.amt; }), anyR=ms.some(function(m){ return m.regH+m.regS; });
   var a=ms.map(function(m){ return '<div class="nfb-bar"><b>'+(m.amt?nfRupeeShort(m.amt):'')+'</b><i class="amt" style="height:'+Math.round(m.amt/mxA*120)+'px" title="'+scEsc(m.l+': '+nfRupee(m.amt)+' · '+m.payN+' payment(s)')+'"></i><small>'+scEsc(m.l)+'</small></div>'; }).join('');
   var r=ms.map(function(m){ var t=m.regH+m.regS; return '<div class="nfb-bar"><b>'+(t||'')+'</b><div class="nfb-stack" style="height:'+Math.round(t/mxR*120)+'px"><i class="dm" style="flex:'+m.regS+'"></i><i class="dr" style="flex:'+m.regH+'"></i></div><small>'+scEsc(m.l)+'</small></div>'; }).join('');
-  return '<div class="nfo-card"><div class="nfo-ch"><b>Money received</b><span>'+sub+' · total '+nfRupee(D.paySum)+'</span></div><div class="nfbd-chart">'+(a||'<div class="nfbd-empty">No payments in this period.</div>')+'</div></div>'
-    +'<div class="nfo-card"><div class="nfo-ch"><b>New registrations</b><span><i class="nfb-k dr"></i> HealSol <i class="nfb-k dm"></i> self-registered</span></div><div class="nfbd-chart">'+(r||'<div class="nfbd-empty">No registrations in this period.</div>')+'</div></div>';
+  return '<div class="nfo-card"><div class="bz-ch"><b>Revenue by month</b><span>'+sub+' · total '+nfRupee(D.paySum)+'</span></div>'+(anyA?'<div class="nfbd-chart">'+a+'</div>':'<p class="bz-none">No payments in this period.</p>')+'</div>'
+    +'<div class="nfo-card"><div class="bz-ch"><b>New facilities by month</b><span><i class="nfb-k dr"></i> HealSol <i class="nfb-k dm"></i> self-registered</span></div>'+(anyR?'<div class="nfbd-chart">'+r+'</div>':'<p class="bz-none">No new facilities in this period.</p>')+'</div>';
+}
+function nfBizBrk(){
+  var D=_nfBd._D, box=document.getElementById('bz-brk'); if(!D||!box) return;
+  var k=_nfBd.brk||'type', rows=k==='dist'?D.byDist:k==='pkg'?D.byPkg:D.byType, lab=k==='dist'?'District':k==='pkg'?'Package':'Type';
+  if(!rows.length){ box.innerHTML='<div class="nfbd-empty">No facilities.</div>'; document.querySelectorAll('#nf-biz .bz-seg button').forEach(function(b){ b.classList.toggle('on',b.getAttribute('onclick').indexOf("'"+k+"'")>0); }); return; }
+  var t={n:0,paid:0,contract:0,trial:0,ended:0,rev:0,collect:0}; rows.forEach(function(g){ Object.keys(t).forEach(function(x){ t[x]+=g[x]||0; }); });
+  var r=function(g,tot){ return '<tr'+(tot?' class="tot"':'')+'><td data-l=""><b>'+scEsc(g.name)+'</b></td><td data-l="Facilities" class="n">'+g.n+'</td><td data-l="Paid" class="n">'+g.paid+'</td><td data-l="Contract" class="n">'+g.contract+'</td><td data-l="On trial" class="n">'+g.trial+'</td><td data-l="Trial ended" class="n">'+g.ended+'</td><td data-l="Revenue in period" class="n">'+(g.rev?nfRupee(g.rev):'—')+'</td><td data-l="To collect" class="n'+(g.collect?' r':'')+'">'+(g.collect?nfRupee(g.collect):'—')+'</td></tr>'; };
+  box.innerHTML='<div class="nfo-tw"><table class="nfo-t bz-t"><thead><tr><th>'+lab+'</th><th class="n">Facilities</th><th class="n">Paid</th><th class="n">Contract</th><th class="n">On trial</th><th class="n">Trial ended</th><th class="n">Revenue in period</th><th class="n">To collect</th></tr></thead><tbody>'
+    +rows.map(function(g){ return r(g); }).join('')+(rows.length>1?r(Object.assign({name:k==='type'&&D.type?'All types':'Total'},t),true):'')+'</tbody></table></div>'
+    +(k==='type'&&D.type?'<p class="bz-note">By type always shows every type; the other numbers on this page are for '+scEsc(nfBizTypeLbl(D.type))+'s only.</p>':'');
+  document.querySelectorAll('#nf-biz .bz-seg button').forEach(function(b){ var on=b.getAttribute('onclick').indexOf("'"+k+"'")>0; b.classList.toggle('on',on); b.setAttribute('aria-selected',String(on)); });
 }
 function nfBizTab(t,scroll){ _nfBd.tab=t; _nfBd.q=''; nfBizList(); if(scroll){ var el=document.getElementById('nfbd-tabs'); try{ el&&el.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){} } }
-function nfBizStatusTag(s){ return '<span class="nfbd-tag '+(s==='Paid'?'g':s==='Trial'?'a':'v')+'">'+scEsc(s)+'</span>'; }
+function nfBizStatusTag(s){ return '<span class="nfbd-tag '+({paid:'g',contract:'v',trial:'a',ended:'r'}[s]||'v')+'">'+scEsc(nfBizStatusTxt(s))+'</span>'; }
+function nfBizListDefs(D){
+  var fac=function(r){ return '<b>'+scEsc(r.name)+'</b> <span class="bz-ty">'+scEsc(nfBizTypeShort(r.type))+'</span><small>'+scEsc(r.code+' · '+r.pkg)+'</small>'; };
+  var who=function(n,m,l){ return scEsc(n||'—')+(l?'<small>'+scEsc(l)+'</small>':'')+(m?'<small>'+scEsc(m)+'</small>':''); };
+  var msg=function(code,kind){ return '<button type="button" class="bz-msg" onclick="event.stopPropagation();nfBizMsg(\''+kind+'\',\''+scJs(code)+'\')">Message</button>'; };
+  var custRows=function(st){ return D.R.filter(function(r){ return r.status===st; }); };
+  return {
+    collect:{l:'Money to collect',rows:D.collectList,head:['Facility','District','Why','Amount (incl. GST)','In-charge',''],go:1,cls:function(r){ return r.status==='ended'?'hot':''; },
+      cell:function(r){ return [fac(r),scEsc(r.district),'<span class="'+(r.status==='ended'?'r':'a')+'">'+scEsc(nfBizWhy(r))+'</span>',r.priceGst==null?'<button type="button" class="hs-link" onclick="event.stopPropagation();nfAdminView(\'settings\')">Set price</button>':'<b>'+nfRupee(r.priceGst)+'</b>',who(r.icName,r.icMob,r.icLabel),r.icMob?msg(r.code,r.status==='ended'?'due':'trial'):'']; },
+      txt:function(r){ return [r.name,r.code,r.district,r.icName,r.icMob].join(' '); },lab:['','District','Why','Amount','In-charge','']},
+    pays:{l:'Payments',rows:D.pays.slice().reverse(),head:['Receipt','Paid on','Facility','Package','Total','Paid by','Reference'],go:1,cell:function(x){ return [scEsc(x.receiptNo),x.date?scEsc(nfDateTxt(x.date)):'','<b>'+scEsc(x.name)+'</b> <span class="bz-ty">'+scEsc(nfBizTypeShort(x.type))+'</span><small>'+scEsc(x.code)+'</small>',scEsc(x.pkg)+(x.catchup?' <span class="bz-ty o">catch-up</span>':''),'<b>'+nfMoney(x.total)+'</b>'+(x.gst!==''?'<small>incl. GST '+nfMoney(x.gst)+'</small>':''),scEsc(x.method||x.how),'<small>'+scEsc(x.ref)+'</small>']; },
+      txt:function(x){ return [x.receiptNo,x.name,x.code,x.pkg,x.method,x.ref,x.district].join(' '); },lab:['Receipt','Paid on','','Package','Total','Paid by','Reference']},
+    regs:{l:'Registrations',rows:D.regs.slice().sort(function(a,b){ return String(b.enrolled).localeCompare(String(a.enrolled)); }),head:['Facility','District','Registered','How','Status','In-charge'],go:1,cell:function(r){ return [fac(r),scEsc(r.district),r.enrolled?scEsc(nfDateTxt(r.enrolled)):'—',r.self?'Self-registered':'HealSol',nfBizStatusTag(r.status),who(r.icName,r.icMob,r.icLabel)]; },
+      txt:function(r){ return [r.name,r.code,r.district,r.icName,r.icMob].join(' '); },lab:['','District','Registered','How','Status','In-charge']},
+    enq:{l:'Enquiries',rows:D.enq,head:['Submitted','Organisation','Contact','District','Facilities','Status',''],cell:function(x){ return [x.submittedAt?scEsc(nfDateTxt(x.submittedAt)):'','<b>'+scEsc(x.orgName||'')+'</b>'+(x.message?'<small>'+scEsc(String(x.message).slice(0,90))+'</small>':''),who(x.contactName,[x.mobile,x.email].filter(Boolean).join(' · ')),scEsc([x.district,x.state].filter(Boolean).join(', ')),scEsc(x.facilityCount||''),scEsc(x.status||'new'),x.mobile?'<button type="button" class="bz-msg" onclick="event.stopPropagation();nfBizMsg(\'lead\',\''+scJs(x._k)+'\')">Message</button>':'']; },
+      txt:function(x){ return [x.orgName,x.contactName,x.mobile,x.email,x.district,x.state].join(' '); },lab:['Submitted','','Contact','District','Facilities','Status','']},
+    cust_paid:{l:'Paid',hide:1,rows:custRows('paid'),head:['Facility','District','Package','In-charge'],go:1,cell:function(r){ return [fac(r),scEsc(r.district),scEsc(r.pkg),who(r.icName,r.icMob,r.icLabel)]; },txt:function(r){ return [r.name,r.code,r.district].join(' '); },lab:['','District','Package','In-charge']},
+    cust_contract:{l:'Contract',hide:1,rows:custRows('contract'),head:['Facility','District','Package','In-charge'],go:1,cell:function(r){ return [fac(r),scEsc(r.district),scEsc(r.pkg),who(r.icName,r.icMob,r.icLabel)]; },txt:function(r){ return [r.name,r.code,r.district].join(' '); },lab:['','District','Package','In-charge']}
+  };
+}
 function nfBizList(){
   var D=_nfBd._D, tabs=document.getElementById('nfbd-tabs'), box=document.getElementById('nfbd-list'); if(!D||!tabs||!box) return;
-  var S=D.S, J=function(x){ return scJs(x); };
-  var fac=function(name,code){ return '<b>'+scEsc(name)+'</b>'+nfProBadge((scMasterFacilities||{})[code])+'<small>'+scEsc(code)+'</small>'; };
-  var who=function(n,m){ return scEsc(n||'—')+(m?'<small>'+scEsc(m)+'</small>':''); };
-  var T={
-    follow:{l:'Follow-up',rows:D.follow,head:['Facility','District','Status','CHO','Why','Expected',''],go:1,cell:function(r){ return [fac(r.name,r.code),scEsc(r.district),nfBizStatusTag(r.status),who(r.choName,r.choMobile),scEsc(r.followUp),r.expected!==''?nfRupee(r.expected):'',r.choMobile?nfWaBtn('nfWaSend(\''+(r._ti&&r._ti.ended?'due':r._idle?'idle':'hello')+'\',\''+scJs(r.code)+'\','+(r._idle?'{idle:'+(Number(r.idleDays)||0)+'}':'null')+')','','sm ic'):'']; },txt:function(r){ return [r.name,r.code,r.district,r.choName,r.choMobile,r.followUp].join(' '); }},
-    due:{l:'Payment due',rows:S.due,head:['Facility','District','Trial ended','Expected','Contact',''],go:1,cell:function(x){ return [fac(x.name,x.code),scEsc(x.district),x.days===0?'today':x.days+' day'+(x.days===1?'':'s')+' ago',x.price?nfRupee(x.price):'—',scEsc(x.contact||''),nfWaBtn('nfWaSend(\'due\',\''+scJs(x.code)+'\')',' Remind','sm')]; },txt:function(x){ return [x.name,x.code,x.district,x.contact].join(' '); }},
-    pays:{l:'Payments',rows:D.pays.slice().reverse(),head:['Receipt','Paid on','Facility','Package','Total','Paid by','Reference'],go:1,cell:function(x){ return [scEsc(x.receiptNo),x.date?scEsc(scFmtDate(x.date)):'',fac(x.name,x.code),scEsc(x.pkg),'<b>'+nfMoney(x.total)+'</b>'+(x.gst!==''?'<small>incl. GST '+nfMoney(x.gst)+'</small>':''),scEsc(x.method||x.how),'<small>'+scEsc(x.ref)+'</small>']; },txt:function(x){ return [x.receiptNo,x.name,x.code,x.pkg,x.method,x.ref,x.district].join(' '); }},
-    regs:{l:'Registrations',rows:D.regs.slice().sort(function(a,b){ return String(b.enrolled).localeCompare(String(a.enrolled)); }),head:['Facility','District','Registered','How','Status','CHO'],go:1,cell:function(r){ return [fac(r.name,r.code),scEsc(r.district),r.enrolled?scEsc(scFmtDate(r.enrolled)):'—',r.demo==='Yes'?'Self-registered':'HealSol',nfBizStatusTag(r.status),who(r.choName,r.choMobile)]; },txt:function(r){ return [r.name,r.code,r.district,r.choName,r.choMobile].join(' '); }},
-    idle:{l:'Not moving',rows:D.idle,head:['Facility','District','Programme day','Last activity','Days idle','CHO',''],go:1,cell:function(r){ return [fac(r.name,r.code),scEsc(r.district),scEsc(String(r.day)),r.lastActivity?scEsc(scFmtDate(r.lastActivity)):'Never',r.idleDays===''?'—':r.idleDays,who(r.choName,r.choMobile),r.choMobile?nfWaBtn('nfWaSend(\'idle\',\''+scJs(r.code)+'\',{idle:'+(Number(r.idleDays)||0)+'})',' Nudge','sm'):'']; },txt:function(r){ return [r.name,r.code,r.district,r.choName,r.choMobile].join(' '); }},
-    dist:{l:'Districts',rows:D.dist,head:['District','SCs','A / B','Paid','Trial','Contract','Avg readiness','New in period','Received in period'],cell:function(x){ return ['<b>'+scEsc(x.name)+'</b>',x.n,x.a+' / '+x.b,x.paid,x.trial,x.contract,x.avg!==''?'<b style="color:'+scPctText(x.avg)+'">'+x.avg+'%</b>':'—',x.newN,x.amt?nfRupee(x.amt):'—']; },txt:function(x){ return x.name; }},
-    enq:{l:'Enquiries',rows:D.enq,head:['Submitted','Organisation','Contact','District','Facilities','Status',''],cell:function(x){ return [x.submittedAt?scEsc(scFmtDate(x.submittedAt)):'',scEsc(x.orgName||'')+(x.message?'<small>'+scEsc(String(x.message).slice(0,90))+'</small>':''),who(x.contactName,[x.mobile,x.email].filter(Boolean).join(' · ')),scEsc([x.district,x.state].filter(Boolean).join(', ')),scEsc(x.facilityCount||''),scEsc(x.status||'new'),x.mobile?nfWaBtn('nfWaLead(\''+scJs(x._k)+'\')',' Reply','sm'):'']; },txt:function(x){ return [x.orgName,x.contactName,x.mobile,x.email,x.district,x.state,x.message].join(' '); }}
-  };
-  var t=T[_nfBd.tab]?_nfBd.tab:'follow', C=T[t], q=String(_nfBd.q||'').toLowerCase().trim();
-  tabs.innerHTML=Object.keys(T).map(function(k){ return '<button type="button" class="nfbd-tab'+(k===t?' on':'')+'" onclick="nfBizTab(\''+k+'\')">'+T[k].l+'<em>'+T[k].rows.length+'</em></button>'; }).join('')
-    +'<label class="nfbd-q"><i class="ti ti-search"></i><input id="nfbd-q" placeholder="Search this list…" value="'+scEsc(_nfBd.q||'')+'" oninput="_nfBd.q=this.value;nfBizListBody()"></label>';
+  var T=nfBizListDefs(D), t=T[_nfBd.tab]?_nfBd.tab:'collect';
+  tabs.innerHTML='<div class="bz-tabs" role="tablist" aria-label="Lists">'+Object.keys(T).filter(function(k){ return !T[k].hide||k===t; }).map(function(k){ return '<button type="button" role="tab" aria-selected="'+(k===t)+'" class="nfbd-tab'+(k===t?' on':'')+'" onclick="nfBizTab(\''+k+'\')">'+T[k].l+'<em>'+T[k].rows.length+'</em></button>'; }).join('')+'</div>'
+    +'<label class="nfbd-q"><i class="ti ti-search"></i><input id="nfbd-q" aria-label="Search this list" placeholder="Search this list…" value="'+scEsc(_nfBd.q||'')+'" oninput="_nfBd.q=this.value;nfBizListBody()"></label>';
   nfBizListBody(T);
 }
 function nfBizListBody(T0){
   if(!T0){ var pos=null, el=document.getElementById('nfbd-q'); if(el) pos=el.selectionStart; nfBizList(); el=document.getElementById('nfbd-q'); if(el){ el.focus(); try{ el.setSelectionRange(pos,pos); }catch(e){} } return; }
-  var box=document.getElementById('nfbd-list'), C=T0[_nfBd.tab]||T0.follow, q=String(_nfBd.q||'').toLowerCase().trim();
+  var box=document.getElementById('nfbd-list'), C=T0[_nfBd.tab]||T0.collect, q=String(_nfBd.q||'').toLowerCase().trim();
   var rows=q?C.rows.filter(function(r){ return C.txt(r).toLowerCase().indexOf(q)>=0; }):C.rows, LIM=100;
-  if(!rows.length){ box.innerHTML='<div class="nfbd-empty">'+(q?'Nothing matches “'+scEsc(_nfBd.q)+'”.':'Nothing here for this period.')+'</div>'; return; }
-  box.innerHTML='<div class="nfo-tw"><table class="nfo-t"><thead><tr>'+C.head.map(function(x){ return '<th>'+scEsc(x)+'</th>'; }).join('')+'</tr></thead><tbody>'
-    +rows.slice(0,LIM).map(function(r){ var code=r.code; return '<tr'+(C.go&&code&&(scMasterFacilities||{})[code]?' class="go" onclick="scDrillIn(\''+scJs(code)+'\')"':'')+'>'+C.cell(r).map(function(v){ return '<td>'+v+'</td>'; }).join('')+'</tr>'; }).join('')
+  if(!rows.length){ box.innerHTML='<div class="nfbd-empty">'+(q?'Nothing matches “'+scEsc(_nfBd.q)+'”.':_nfBd.tab==='collect'?'Nothing to collect — no trial has ended unpaid or ends in the next 7 days.':'Nothing here for this period.')+'</div>'; return; }
+  box.innerHTML='<div class="nfo-tw"><table class="nfo-t bz-lt"><thead><tr>'+C.head.map(function(x){ return '<th>'+scEsc(x)+'</th>'; }).join('')+'</tr></thead><tbody>'
+    +rows.slice(0,LIM).map(function(r){ var code=r.code, cls=C.cls?C.cls(r):''; return '<tr class="'+cls+(C.go&&code&&(scMasterFacilities||{})[code]?' go" onclick="scDrillIn(\''+scJs(code)+'\')"':'"')+'>'+C.cell(r).map(function(v,i){ return '<td data-l="'+scEsc((C.lab||[])[i]||'')+'">'+v+'</td>'; }).join('')+'</tr>'; }).join('')
     +'</tbody></table></div>'+(rows.length>LIM?'<div class="nfbd-more">Showing '+LIM+' of '+rows.length+' — download the report for the full list.</div>':'');
 }
-// ── preview before download ──
-async function nfBizPreview(){
-  await nfBizLoad(); _nfBd.pvSheet=_nfBd.pvSheet||0; nfBizPvRender();
+// ── Message: shows the WhatsApp text first, then opens WhatsApp ──
+function nfBizMsgText(kind,id){
+  if(kind==='lead'){ var x=((_nfBiz&&_nfBiz.leads)||{})[id]||{}, first=String(x.contactName||'').replace(/^(dr\.?|mr\.?|ms\.?|mrs\.?)\s+/i,'').split(' ')[0];
+    return {mob:x.mobile,to:(x.contactName||'')+(x.orgName?' · '+x.orgName:''),text:'Namaste'+(first?' '+first:'')+' ji,\nThank you for your enquiry about NQAS | FAST'+(x.orgName?' for '+x.orgName:'')+(x.facilityCount?' (~'+x.facilityCount+' facilities)':'')+'. I am from HealSol Academy.\nWhen would be a good time to talk about the programme and the next steps?\n\n— HealSol Academy'}; }
+  var f=(scMasterFacilities||{})[id]||{}, ic=nfBizInCharge(f), first=String(ic.name||'').split(' ')[0], price=nfFacPrice(f), ti=nfTrialInfo(f), pay=typeof nfWaPayInfo==='function'?nfWaPayInfo():'';
+  var amt=price!=null?' of '+nfMoney(nfBizWithGst(price))+' ('+nfMoney(price)+' + 18% GST)':'';
+  if(kind==='due') return {mob:ic.mob,to:ic.name+' · '+(f.name||id),text:'Namaste'+(first?' '+first:'')+' ji,\nThe free 7-day Baseline for '+(f.name||id)+' ('+id+') has ended. To continue the NQAS | FAST programme, please complete the payment'+amt+' — open the app and tap "Pay & Unlock".'+(pay?'\nYou can also pay here:\n'+pay+'\nand reply with the payment reference.':'')+'\n\n— HealSol Academy'};
+  return {mob:ic.mob,to:ic.name+' · '+(f.name||id),text:'Namaste'+(first?' '+first:'')+' ji,\nYour free 7-day Baseline for '+(f.name||id)+' ('+id+') ends '+(ti&&ti.daysOver===0?'today':ti&&ti.daysOver<0?'in '+(-ti.daysOver)+' day'+(ti.daysOver===-1?'':'s'):'soon')+'. To continue without a break, please complete the payment'+amt+' in the app ("Pay & Unlock").\n\n— HealSol Academy'};
 }
+function nfBizMsg(kind,id){
+  var m=nfBizMsgText(kind,id); if(!nfWaNum(m.mob)){ showToast('No mobile number to message.','err'); return; }
+  var old=document.getElementById('bz-msg-ov'); if(old) old.remove();
+  var ov=document.createElement('div'); ov.id='bz-msg-ov'; ov.className='scx-ov open'; ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  ov.innerHTML='<div class="scx-box bz-msgbox" role="dialog" aria-modal="true" aria-labelledby="bz-msg-h"><b id="bz-msg-h">WhatsApp message</b><small>To '+scEsc(m.to)+' · '+scEsc(m.mob)+' — you can change the text before sending.</small>'
+    +'<textarea id="bz-msg-t" rows="9" aria-label="Message text">'+scEsc(m.text)+'</textarea>'
+    +'<div class="bz-msgf"><button type="button" class="s" onclick="document.getElementById(\'bz-msg-ov\').remove()">Cancel</button><button type="button" class="p" id="bz-msg-go" onclick="nfBizMsgSend(\''+scJs(m.mob)+'\')">Open WhatsApp</button></div></div>';
+  document.body.appendChild(ov); try{ document.getElementById('bz-msg-t').focus(); }catch(e){}
+}
+function nfBizMsgSend(mob){ var t=(document.getElementById('bz-msg-t')||{}).value||''; var ov=document.getElementById('bz-msg-ov'); if(ov) ov.remove(); nfWaOpen(mob,t); }
+// ── preview before download ──
+async function nfBizPreview(){ await nfBizLoad(); _nfBd.pvSheet=_nfBd.pvSheet||0; nfBizPvRender(); }
 function nfBizPvRender(){
   var ov=document.getElementById('nf-bizpv');
   if(!ov){ ov=document.createElement('div'); ov.className='scx-ov open'; ov.id='nf-bizpv'; ov.onclick=function(e){ if(e.target===ov) nfBizPvClose(); }; document.body.appendChild(ov); }
   var D=nfBizData(), SH=nfBizSheets(D), i=Math.min(_nfBd.pvSheet||0,SH.length-1), s=SH[i]; _nfBd._pvD=D;
-  var pdfSheets={'Summary':1,'Monthly':1,'Follow-up':1,'Payments':1,'Districts':1};
+  var pdfSheets={'Summary':1,'Monthly':1,'Money to collect':1,'Payments':1,'By type':1,'By district':1};
   var tabs=SH.map(function(x,k){ var n=x.name==='Summary'?'':(x.rows.length-1); return '<button type="button" class="nfbd-tab'+(k===i?' on':'')+'" onclick="_nfBd.pvSheet='+k+';nfBizPvRender()">'+scEsc(x.name)+(n!==''?'<em>'+n+'</em>':'')+'</button>'; }).join('');
   var LIM=12, tbl;
   if(s.name==='Summary'){
-    tbl='<table class="nf-bizpv-t"><tbody>'+s.rows.slice(4).map(function(r){ if(!r.length) return ''; if(r[1]==='Value') return '<tr><td class="sec" colspan="3">'+scEsc(r[0])+'</td></tr>';
-      return '<tr><td>'+scEsc(r[0])+'</td><td><b>'+scEsc(/\(₹\)$/.test(r[0])?nfMoney(r[1]):r[1])+'</b></td><td>'+scEsc(r[2]||'')+'</td></tr>'; }).join('')+'</tbody></table>';
+    tbl='<table class="nf-bizpv-t"><tbody>'+s.rows.slice(5).map(function(r){ if(!r.length) return ''; if(r[1]==='Value') return '<tr><td class="sec" colspan="3">'+scEsc(r[0])+'</td></tr>';
+      return '<tr><td>'+scEsc(r[0])+'</td><td><b>'+scEsc(/\(₹\)$/.test(r[0])&&r[1]!==''?nfMoney(r[1]):r[1])+'</b></td><td>'+scEsc(r[2]||'')+'</td></tr>'; }).join('')+'</tbody></table>';
   } else {
     var body=s.rows.slice(1);
     tbl=body.length?'<table class="nf-bizpv-t"><thead><tr>'+s.rows[0].map(function(x){ return '<th>'+scEsc(x)+'</th>'; }).join('')+'</tr></thead><tbody>'
@@ -17484,10 +17633,12 @@ function nfBizPvRender(){
     if(body.length>LIM) tbl+='<div class="nfbd-more" style="padding:8px 10px;">Preview shows the first '+LIM+' of '+body.length+' rows — the file has them all.</div>';
   }
   ov.innerHTML='<div class="scx-box nf-bizpv-box" role="dialog" aria-label="Business report preview">'
-    +'<div class="nf-bizpv-h"><b>Preview — business report<small>'+scEsc(D.rg.label)+' · '+scEsc(D.rg.text)+' · position as of '+scEsc(scFmtDate(D.today))+'</small></b><button type="button" class="nf-bizpv-x" onclick="nfBizPvClose()" aria-label="Close"><i class="ti ti-x"></i></button></div>'
-    +'<div class="nf-bizpv-b">'+nfBizRangeHTML('pv')+'<div class="nfbd-tabs">'+tabs+'</div><div class="nf-bizpv-tw">'+tbl+'</div>'
+    +'<div class="nf-bizpv-h"><b>Preview — business report<small>'+scEsc(D.rg.label)+' · '+scEsc(D.rg.text)+' · '+scEsc(D.type?nfBizTypeLbl(D.type)+'s only':'all facility types')+' · customers as of '+scEsc(nfDateTxt(D.today))+'</small></b><button type="button" class="nf-bizpv-x" onclick="nfBizPvClose()" aria-label="Close"><i class="ti ti-x"></i></button></div>'
+    +'<div class="nf-bizpv-b"><div class="bz-bar">'+nfBizTypeTabsHTML(D,'pv')+nfBizRangeHTML('pv')+'</div>'
+    +'<label class="bz-tick"><input type="checkbox" id="bz-contacts"'+(_nfBd.contacts?' checked':'')+' onchange="_nfBd.contacts=this.checked;nfBizPvRender()"> Include mobile numbers and e-mails</label>'
+    +'<div class="nfbd-tabs">'+tabs+'</div><div class="nf-bizpv-tw">'+tbl+'</div>'
     +'<div class="nfbd-more">'+(pdfSheets[s.name]?'This sheet is in both the Excel file and the PDF.':'This sheet is in the Excel file only.')+'</div></div>'
-    +'<div class="nf-bizpv-f"><small>Excel: all '+SH.length+' sheets. PDF: Summary, Monthly, Follow-up, Payments and Districts — for meetings.</small>'
+    +'<div class="nf-bizpv-f"><small>Excel: all '+SH.length+' sheets. PDF: Summary, revenue by month, Money to collect, Payments, By type and By district — for meetings.</small>'
     +'<button type="button" class="s" onclick="nfBizPvClose()">Cancel</button>'
     +'<button type="button" class="p" id="nf-bizpv-pdf" onclick="nfBizDownload(\'pdf\',this)"><i class="ti ti-file-text"></i> Download PDF</button>'
     +'<button type="button" class="p" id="nf-bizpv-xlsx" onclick="nfBizDownload(\'xlsx\',this)"><i class="ti ti-download"></i> Download Excel</button></div></div>';
@@ -17507,7 +17658,7 @@ function nfEnsureBizReportCard(){
   var main=document.querySelector('#admin-app .admin-main'); if(!main||document.getElementById('nf-bizrep')) return;
   var c=document.createElement('div'); c.id='nf-bizrep'; c.dataset.nfv='reports'; c.className='nf-bizrep';
   c.innerHTML='<div class="nf-bizrep-h"><i class="ti ti-briefcase"></i> Business report <span>HealSol only</span></div>'
-    +'<div class="nf-bizrep-p">Choose the dates, preview, then download as Excel (all sheets: Summary, Monthly, Facilities, Follow-up, Self-registrations, Payments, Not moving, Districts, Enquiries) or as a PDF for meetings. The same figures are on the Business tab.</div>'
+    +'<div class="nf-bizrep-p">Choose the facility type and the dates, preview, then download as Excel (Summary, Monthly, Money to collect, Payments, Registrations, Enquiries, By type, By district, By package, Facilities) or as a PDF for meetings. The same figures are on the Business tab.</div>'
     +'<button type="button" class="nf-bizrep-btn" id="nf-bizrep-btn" onclick="nfBusinessReport()"><i class="ti ti-eye"></i> Preview &amp; download</button> '
     +'<button type="button" class="nf-bizrep-btn" style="background:#F1F5F4;color:var(--t1,#0F172A);" onclick="nfAdminView(\'business\')"><i class="ti ti-briefcase"></i> Open Business tab</button>';
   var bar=main.querySelector('.sc-report-bar'); if(bar&&bar.parentNode===main) main.insertBefore(c,bar); else main.appendChild(c);
@@ -24916,10 +25067,14 @@ function nfDeptSumFacility(st) {   // synchronous; st = {code, fac, cl (checklis
     if (day && day > 1) ndDeptDefs().forEach(function (d) { for (var n = 1; n <= Math.min(day - 1, S.days); n++) { due++; var c = ndPc(d.id, n), any = Object.keys(c).some(function (m) { return c[m] && c[m].done; });
       if (any) cin++; else { oldMiss = Math.max(oldMiss, day - n); if (n <= S.bN) blOpen++; } } });
     var staff = Object.keys(f.staff || {}).filter(function (m) { return f.staff[m] && !f.staff[m].disabled; }).length;
+    // activity (Today, 23 Oct 2026): personal cards saved in the last 7 days and the latest card time
+    var wk = new Date(Date.parse(today + 'T00:00:00') - 6 * 864e5).toISOString(), cards7 = 0, lastAt = '', PC = st.pcards || {};
+    Object.keys(PC).forEach(function (d) { Object.keys(PC[d] || {}).forEach(function (dk) { var day = PC[d][dk] || {}; Object.keys(day).forEach(function (m) { var c = day[m] || {}, t = String((c.done && c.done.at) || c.at || '');
+      if (t > lastAt) lastAt = t; if (t && t >= wk) cards7++; }); }); });
     return JSON.parse(JSON.stringify({ v: ND_SUM_VER, type: T, code: st.code, name: f.name || st.code, state: f.state || '', district: f.district || '', block: f.block || '',
       staff: staff, startDate: f.startDate || null, day: day, days: S.days, phase: !day || day < 1 ? 'notstarted' : f.catchup && f.catchup.on && !f.catchup.done ? 'catchup' : f.graduation || day > S.days ? 'complete' : 'running',
       pct: R.overall, base: B.n ? B.overall : null, assessed: R.n || 0, total: R.of || 0, meets: !!R.meets, byAoc: byAoc, byStd: byStd, byDept: byDept,
-      noAct: noAct, acts: acts, checksDue: checksDue, tl: due ? { due: due, cin: cin, pct: Math.round(100 * cin / due), oldMiss: oldMiss, blDone: day > S.bN && !blOpen } : null, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
+      noAct: noAct, acts: acts, cards7: cards7, lastAt: lastAt || null, checksDue: checksDue, tl: due ? { due: due, cin: cin, pct: Math.round(100 * cin / due), oldMiss: oldMiss, blDone: day > S.bN && !blOpen } : null, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
       // Step 3: graduation, catch-up, certification records (roll-ups count graduated / ready / almost / notyet / catch-up / certified)
       grad: f.graduation ? { result: f.graduation.result, overall: f.graduation.overall, base: f.graduation.base, round: f.graduation.round || 0, at: f.graduation.at || null, deptFails: f.graduation.deptFails || [] } : null,
       catchup: f.catchup && f.catchup.on ? { round: f.catchup.round || 1, start: f.catchup.start || null, end: f.catchup.end || null, done: !!f.catchup.done, depts: f.catchup.depts || [] } : null,
@@ -25742,6 +25897,11 @@ function hsInfo(code, f0, agg0, prog0) {   // f0 / agg0 / prog0: the Champion's 
     var acts = scRvList((_scRvAll || {})[code] || {}); o.overdue = acts.filter(function (x) { return x.status !== 'draft' && x.status !== 'closed' && x.dueDate && x.dueDate < today; }).length;
     try { var c = nfgCompFor(code, f, prog0 || (scMasterProgress || {})[code] || {}, (_scRvAll || {})[code] || null); o.comp = c; } catch (e) {}
   }
+  // activity (Today): last card and cards saved this week
+  if (dept) { o.lastAt = o.s && o.s.lastAt ? String(o.s.lastAt).slice(0, 10) : null; o.cards7 = o.s ? (o.s.cards7 || 0) : 0; }
+  else { var la = typeof nfLastActivity === 'function' ? nfLastActivity(code) : ''; o.lastAt = la ? nfIsoLocal(la) : null; var wk = hsAddDays(today, -6), n7 = 0, P7 = prog0 || (scMasterProgress || {})[code] || {};
+    Object.keys(P7).forEach(function (m) { Object.keys(P7[m] || {}).forEach(function (k) { var x = P7[m][k] || {}; if (x.updatedAt && nfIsoLocal(x.updatedAt) >= wk) n7++; }); }); o.cards7 = n7; }
+  o.idle = o.lastAt ? Math.max(0, Math.round((Date.parse(today) - Date.parse(o.lastAt)) / 864e5)) : null;
   var d = o.rawDay, S2 = o.S;
   o.day = d == null ? null : Math.min(d, o.days);
   o.phase = !f.startDate ? 'notstarted' : d < 1 ? 'notstarted' : o.cu && !o.cu.done && o.cu.start && today >= o.cu.start ? 'catchup' : o.grad ? 'graduated' : d <= S2.bN ? 'baseline' : d <= S2.iN ? 'impl' : d <= S2.eN ? 'endline' : d <= S2.days ? 'ready' : 'closing';
@@ -25783,7 +25943,11 @@ function hsTodo(list) {
   var open = function (c) { return { l: 'Open', js: "scDrillIn('" + hsJ(c) + "')" }; };
   list.forEach(function (o) {
     if (o.payDue) add({ code: o.code, key: 'pay', lvl: 'red', t: 'trial ended ' + o.trial.daysOver + ' day' + (o.trial.daysOver === 1 ? '' : 's') + ' ago, not paid', sub: (o.day ? 'Day ' + o.day + ' · ' : '') + (o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : ''),
-      btn: o.inChargeMob && typeof nfWaOpen === 'function' ? { l: 'WhatsApp', js: "hsWaPay('" + hsJ(o.code) + "')", p: 1 } : { l: 'Open Business', js: "nfAdminView('business')" } });
+      btn: o.inChargeMob && typeof nfBizMsg === 'function' ? { l: 'Message', js: "nfBizMsg('due','" + hsJ(o.code) + "')", p: 1 } : { l: 'Open Business', js: "nfAdminView('business')" } });
+    var idleN = typeof NF_IDLE_DAYS !== 'undefined' ? NF_IDLE_DAYS : 7;
+    if (o.inProg && o.phase !== 'catchup' && !o.payDue && o.rawDay > 1 && (o.idle == null || o.idle >= idleN)) add({ code: o.code, key: 'idle', lvl: o.idle != null && o.idle >= 2 * idleN ? 'red' : 'amber',
+      t: o.idle == null ? 'no card saved yet' : 'no activity for ' + o.idle + ' days', sub: 'Day ' + o.day + ' · ' + HS_PHASE[o.phase] + (o.lastAt ? ' · last card ' + hsShortDate(o.lastAt) : ''),
+      btn: o.inChargeMob && typeof nfWaSend === 'function' ? { l: 'Remind', js: "nfWaSend('idle','" + hsJ(o.code) + "',{idle:" + (o.idle || 0) + "})" } : open(o.code) });
     if (o.dept && !o.grad && o.rawDay != null && o.rawDay >= o.S.r1 && o.rawDay <= o.days + 7 && o.toCheck) add({ code: o.code, key: 'endchk', lvl: 'red', t: o.toCheck + ' department-day' + (o.toCheck > 1 ? 's' : '') + ' still to check', sub: (o.rawDay > o.days ? 'Waiting for graduation' : 'Readiness week, Day ' + o.rawDay) + ' · graduation needs every end-line day checked', btn: open(o.code) });
     if (o.grad && o.grad.result !== 'ready' && !o.cu) add({ code: o.code, key: 'cu', lvl: 'amber', t: 'graduated ' + (HS_RES[o.grad.result] || HS_RES.incomplete)[0] + ' (' + o.grad.overall + '%)', sub: 'Decide: offer a catch-up' + ((o.grad.deptFails || []).length ? ' on ' + o.grad.deptFails.map(function (d) { return ((NF_LEVELS[o.type].departments || []).find(function (x) { return x.id === d; }) || { name: d }).name; }).join(', ') : '') + '?', btn: open(o.code) });
     if (o.gradSoon) add({ code: o.code, key: 'soon', lvl: 'amber', t: 'graduation on Day ' + o.days + ' · ' + hsShortDate(o.gradDate), sub: HS_PHASE[o.phase] + ', Day ' + o.day, btn: open(o.code) });
@@ -25839,6 +26003,11 @@ function hsBizLineHTML(list) {
   return '<div class="nfo-card hs-side"><b>Business</b><div class="hs-bl">' + paid + ' paid · ' + con + ' contract · ' + tr + ' on trial<br>₹' + rec.toLocaleString('en-IN') + ' received this month · ' + due + ' payment' + (due === 1 ? '' : 's') + ' due</div>'
     + '<button type="button" class="hs-link" onclick="nfAdminView(\'business\')">Open Business</button></div>';
 }
+// "Cards saved this week" (moved from Business, 23 Oct 2026): cards saved in the last 7 days, by how many facilities; in-programme ones with none
+function hsCardsKpi(list) {
+  var n = 0, fac = 0, none = 0; list.forEach(function (o) { n += o.cards7 || 0; if (o.cards7) fac++; else if (o.inProg && o.rawDay > 1) none++; });
+  return '<button type="button" class="hs-kpi' + (none ? ' a' : '') + '" onclick="_hs.phase=\'inprog\';nfAdminView(\'hsfac\')"><small>Cards saved this week</small><b>' + n.toLocaleString('en-IN') + '</b><span>' + (fac ? 'by ' + fac + ' facilit' + (fac === 1 ? 'y' : 'ies') : 'no cards this week') + (none ? ' · ' + none + ' saved nothing' : '') + '</span></button>';
+}
 function hsRenderToday() {
   if (!hsOn()) return; var box = hsBox('hs-today', 'today'); if (!box) return;
   hsLoadSide();
@@ -25852,9 +26021,9 @@ function hsRenderToday() {
   var h = '<div class="nfo-top"><div><h1>Today</h1><small>' + hsE(new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })) + ' · ' + all.length + ' facilit' + (all.length === 1 ? 'y' : 'ies') + (Object.keys(dist).length ? ' in ' + Object.keys(dist).length + ' district' + (Object.keys(dist).length > 1 ? 's' : '') : '') + (typeof _nfLight !== 'undefined' && _nfLight ? ' · from the nightly summary' : '') + '</small></div>'
     + hsTypeTabs(_hs.type, 'hsSetType', all) + '<button type="button" class="nfo-ic" title="Refresh" onclick="scRefreshDashboard()"><i class="ti ti-refresh"></i></button></div>'
     + '<div class="hs-kpis">' + kpi('In programme', k1, 'none', '', "_hs.phase='inprog';nfAdminView('hsfac')") + kpi('Behind schedule', k2, 'none behind', k2.n ? 'r' : '', "_hs.status='behind';nfAdminView('hsfac')")
-    + kpi('Graduating in 14 days', k3, soon ? soon.name + ' · ' + hsShortDate(soon.gradDate) : 'none in 14 days', k3.n ? 't' : '', "_hs.ptab='grad';nfAdminView('hsprog')") + kpi('Payment due', k4, 'none', k4.n ? 'a' : '', "_hs.status='pay';nfAdminView('hsfac')") + '</div>'
+    + kpi('Graduating in 14 days', k3, soon ? soon.name + ' · ' + hsShortDate(soon.gradDate) : 'none in 14 days', k3.n ? 't' : '', "_hs.ptab='grad';nfAdminView('hsprog')") + hsCardsKpi(list) + '</div>'
     + '<div class="hs-two"><div class="nfo-card hs-todo"><div class="nfo-ch"><b>To do</b><span>' + items.length + ' item' + (items.length === 1 ? '' : 's') + ' · most urgent first</span></div>' + hsTodoHTML(items) + (foot ? '<div class="hs-foot">' + foot + '<button type="button" class="hs-link" onclick="nfAdminView(\'inbox\')">Review inbox</button></div>' : '') + '</div>'
-    + '<div class="hs-col">' + hsPeerCardHTML() + hsLiveCardHTML() + hsBizLineHTML(all) + '</div></div>';
+    + '<div class="hs-col">' + hsPeerCardHTML() + hsLiveCardHTML() + '</div></div>';
   box.innerHTML = h;
 }
 

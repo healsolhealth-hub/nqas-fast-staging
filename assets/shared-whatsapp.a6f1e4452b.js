@@ -54,10 +54,10 @@ function nfSupportApply(){
 }
 // ── HealSol: one-tap messages ──
 function nfWaPayInfo(){ var c=_nfSup.cfg||{}, a=[]; if(c.upi) a.push('UPI: '+c.upi); if(c.payLink) a.push('Payment link: '+c.payLink); return a.join('\n'); }
-function nfChoOf(f){ var st=(f&&f.staff)||{}, m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||'CHO')==='CHO'; }); return m?{mob:m,name:st[m].name||''}:{mob:(f&&f.contactMobile)||'',name:(f&&f.choName)||''}; }
+function nfChoOf(f){ var st=(f&&f.staff)||{}, ic='CHO'; try{ ic=(NF_LEVELS[nfTypeOf(f||{})]||{}).inCharge||'CHO'; }catch(e){} var m=Object.keys(st).find(function(k){ return st[k]&&!st[k].disabled&&(st[k].role||ic)===ic; }); return m?{mob:m,name:st[m].name||''}:{mob:(f&&f.contactMobile)||'',name:(f&&f.choName)||''}; }
 function nfWaMsg(kind,code,extra){
   var f=(scMasterFacilities||{})[code]||{}, cho=nfChoOf(f), nm=f.name||code, first=String(cho.name||'').split(' ')[0];
-  var price=null; try{ price=nfPriceFor(f.progId); }catch(e){}
+  var price=null; try{ price=typeof nfFacPrice==='function'?nfFacPrice(f):nfPriceFor(f.progId); }catch(e){}
   if(kind==='due') return {mob:cho.mob,text:'Namaste'+(first?' '+first:'')+' ji,\nThe free 7-day Baseline for '+nm+' ('+code+') has ended. To continue the 60-day NQAS | FAST programme, please complete the payment'+(price?' of '+nfMoney(price*1.18)+' ('+nfMoney(price)+' + 18% GST)':'')+' — open the app and tap "Pay & Unlock".'+(nfWaPayInfo()?'\nYou can also pay here:\n'+nfWaPayInfo()+'\nand reply with the payment reference.':'')+'\n\nNeed help? Just reply here.\n— HealSol Academy'};
   if(kind==='paid'){ var lp=extra||f.lastPayment||{}; return {mob:cho.mob,text:'Namaste'+(first?' '+first:'')+' ji,\nWe have received your payment'+(lp.amount||lp.total?' of '+nfMoney(lp.amount||lp.total):'')+' for '+nm+' ('+code+')'+(lp.receiptNo?'. Receipt: '+lp.receiptNo:'')+'.\nYour NQAS | FAST programme is unlocked — open the app to continue. The receipt is in the app under Me → Payment receipts.\n\nThank you!\n— HealSol Academy'}; }
   if(kind==='idle'){ var d=null; try{ d=nfDayOf(f); }catch(e){} return {mob:cho.mob,text:'Namaste'+(first?' '+first:'')+' ji,\nWe noticed no cards have been saved at '+nm+' ('+code+') for '+((extra&&extra.idle)||'some')+' days.'+(d?' Today is Day '+d+' of 60.':'')+' Please open NQAS | FAST and continue today\'s card with your team.\n\nNeed help? Just reply here.\n— HealSol Academy'}; }

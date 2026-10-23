@@ -48,6 +48,11 @@ function hsInfo(code, f0, agg0, prog0) {   // f0 / agg0 / prog0: the Champion's 
     var acts = scRvList((_scRvAll || {})[code] || {}); o.overdue = acts.filter(function (x) { return x.status !== 'draft' && x.status !== 'closed' && x.dueDate && x.dueDate < today; }).length;
     try { var c = nfgCompFor(code, f, prog0 || (scMasterProgress || {})[code] || {}, (_scRvAll || {})[code] || null); o.comp = c; } catch (e) {}
   }
+  // activity (Today): last card and cards saved this week
+  if (dept) { o.lastAt = o.s && o.s.lastAt ? String(o.s.lastAt).slice(0, 10) : null; o.cards7 = o.s ? (o.s.cards7 || 0) : 0; }
+  else { var la = typeof nfLastActivity === 'function' ? nfLastActivity(code) : ''; o.lastAt = la ? nfIsoLocal(la) : null; var wk = hsAddDays(today, -6), n7 = 0, P7 = prog0 || (scMasterProgress || {})[code] || {};
+    Object.keys(P7).forEach(function (m) { Object.keys(P7[m] || {}).forEach(function (k) { var x = P7[m][k] || {}; if (x.updatedAt && nfIsoLocal(x.updatedAt) >= wk) n7++; }); }); o.cards7 = n7; }
+  o.idle = o.lastAt ? Math.max(0, Math.round((Date.parse(today) - Date.parse(o.lastAt)) / 864e5)) : null;
   var d = o.rawDay, S2 = o.S;
   o.day = d == null ? null : Math.min(d, o.days);
   o.phase = !f.startDate ? 'notstarted' : d < 1 ? 'notstarted' : o.cu && !o.cu.done && o.cu.start && today >= o.cu.start ? 'catchup' : o.grad ? 'graduated' : d <= S2.bN ? 'baseline' : d <= S2.iN ? 'impl' : d <= S2.eN ? 'endline' : d <= S2.days ? 'ready' : 'closing';
@@ -89,7 +94,11 @@ function hsTodo(list) {
   var open = function (c) { return { l: 'Open', js: "scDrillIn('" + hsJ(c) + "')" }; };
   list.forEach(function (o) {
     if (o.payDue) add({ code: o.code, key: 'pay', lvl: 'red', t: 'trial ended ' + o.trial.daysOver + ' day' + (o.trial.daysOver === 1 ? '' : 's') + ' ago, not paid', sub: (o.day ? 'Day ' + o.day + ' · ' : '') + (o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : ''),
-      btn: o.inChargeMob && typeof nfWaOpen === 'function' ? { l: 'WhatsApp', js: "hsWaPay('" + hsJ(o.code) + "')", p: 1 } : { l: 'Open Business', js: "nfAdminView('business')" } });
+      btn: o.inChargeMob && typeof nfBizMsg === 'function' ? { l: 'Message', js: "nfBizMsg('due','" + hsJ(o.code) + "')", p: 1 } : { l: 'Open Business', js: "nfAdminView('business')" } });
+    var idleN = typeof NF_IDLE_DAYS !== 'undefined' ? NF_IDLE_DAYS : 7;
+    if (o.inProg && o.phase !== 'catchup' && !o.payDue && o.rawDay > 1 && (o.idle == null || o.idle >= idleN)) add({ code: o.code, key: 'idle', lvl: o.idle != null && o.idle >= 2 * idleN ? 'red' : 'amber',
+      t: o.idle == null ? 'no card saved yet' : 'no activity for ' + o.idle + ' days', sub: 'Day ' + o.day + ' · ' + HS_PHASE[o.phase] + (o.lastAt ? ' · last card ' + hsShortDate(o.lastAt) : ''),
+      btn: o.inChargeMob && typeof nfWaSend === 'function' ? { l: 'Remind', js: "nfWaSend('idle','" + hsJ(o.code) + "',{idle:" + (o.idle || 0) + "})" } : open(o.code) });
     if (o.dept && !o.grad && o.rawDay != null && o.rawDay >= o.S.r1 && o.rawDay <= o.days + 7 && o.toCheck) add({ code: o.code, key: 'endchk', lvl: 'red', t: o.toCheck + ' department-day' + (o.toCheck > 1 ? 's' : '') + ' still to check', sub: (o.rawDay > o.days ? 'Waiting for graduation' : 'Readiness week, Day ' + o.rawDay) + ' · graduation needs every end-line day checked', btn: open(o.code) });
     if (o.grad && o.grad.result !== 'ready' && !o.cu) add({ code: o.code, key: 'cu', lvl: 'amber', t: 'graduated ' + (HS_RES[o.grad.result] || HS_RES.incomplete)[0] + ' (' + o.grad.overall + '%)', sub: 'Decide: offer a catch-up' + ((o.grad.deptFails || []).length ? ' on ' + o.grad.deptFails.map(function (d) { return ((NF_LEVELS[o.type].departments || []).find(function (x) { return x.id === d; }) || { name: d }).name; }).join(', ') : '') + '?', btn: open(o.code) });
     if (o.gradSoon) add({ code: o.code, key: 'soon', lvl: 'amber', t: 'graduation on Day ' + o.days + ' · ' + hsShortDate(o.gradDate), sub: HS_PHASE[o.phase] + ', Day ' + o.day, btn: open(o.code) });
@@ -145,6 +154,11 @@ function hsBizLineHTML(list) {
   return '<div class="nfo-card hs-side"><b>Business</b><div class="hs-bl">' + paid + ' paid · ' + con + ' contract · ' + tr + ' on trial<br>₹' + rec.toLocaleString('en-IN') + ' received this month · ' + due + ' payment' + (due === 1 ? '' : 's') + ' due</div>'
     + '<button type="button" class="hs-link" onclick="nfAdminView(\'business\')">Open Business</button></div>';
 }
+// "Cards saved this week" (moved from Business, 23 Oct 2026): cards saved in the last 7 days, by how many facilities; in-programme ones with none
+function hsCardsKpi(list) {
+  var n = 0, fac = 0, none = 0; list.forEach(function (o) { n += o.cards7 || 0; if (o.cards7) fac++; else if (o.inProg && o.rawDay > 1) none++; });
+  return '<button type="button" class="hs-kpi' + (none ? ' a' : '') + '" onclick="_hs.phase=\'inprog\';nfAdminView(\'hsfac\')"><small>Cards saved this week</small><b>' + n.toLocaleString('en-IN') + '</b><span>' + (fac ? 'by ' + fac + ' facilit' + (fac === 1 ? 'y' : 'ies') : 'no cards this week') + (none ? ' · ' + none + ' saved nothing' : '') + '</span></button>';
+}
 function hsRenderToday() {
   if (!hsOn()) return; var box = hsBox('hs-today', 'today'); if (!box) return;
   hsLoadSide();
@@ -158,9 +172,9 @@ function hsRenderToday() {
   var h = '<div class="nfo-top"><div><h1>Today</h1><small>' + hsE(new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })) + ' · ' + all.length + ' facilit' + (all.length === 1 ? 'y' : 'ies') + (Object.keys(dist).length ? ' in ' + Object.keys(dist).length + ' district' + (Object.keys(dist).length > 1 ? 's' : '') : '') + (typeof _nfLight !== 'undefined' && _nfLight ? ' · from the nightly summary' : '') + '</small></div>'
     + hsTypeTabs(_hs.type, 'hsSetType', all) + '<button type="button" class="nfo-ic" title="Refresh" onclick="scRefreshDashboard()"><i class="ti ti-refresh"></i></button></div>'
     + '<div class="hs-kpis">' + kpi('In programme', k1, 'none', '', "_hs.phase='inprog';nfAdminView('hsfac')") + kpi('Behind schedule', k2, 'none behind', k2.n ? 'r' : '', "_hs.status='behind';nfAdminView('hsfac')")
-    + kpi('Graduating in 14 days', k3, soon ? soon.name + ' · ' + hsShortDate(soon.gradDate) : 'none in 14 days', k3.n ? 't' : '', "_hs.ptab='grad';nfAdminView('hsprog')") + kpi('Payment due', k4, 'none', k4.n ? 'a' : '', "_hs.status='pay';nfAdminView('hsfac')") + '</div>'
+    + kpi('Graduating in 14 days', k3, soon ? soon.name + ' · ' + hsShortDate(soon.gradDate) : 'none in 14 days', k3.n ? 't' : '', "_hs.ptab='grad';nfAdminView('hsprog')") + hsCardsKpi(list) + '</div>'
     + '<div class="hs-two"><div class="nfo-card hs-todo"><div class="nfo-ch"><b>To do</b><span>' + items.length + ' item' + (items.length === 1 ? '' : 's') + ' · most urgent first</span></div>' + hsTodoHTML(items) + (foot ? '<div class="hs-foot">' + foot + '<button type="button" class="hs-link" onclick="nfAdminView(\'inbox\')">Review inbox</button></div>' : '') + '</div>'
-    + '<div class="hs-col">' + hsPeerCardHTML() + hsLiveCardHTML() + hsBizLineHTML(all) + '</div></div>';
+    + '<div class="hs-col">' + hsPeerCardHTML() + hsLiveCardHTML() + '</div></div>';
   box.innerHTML = h;
 }
 

@@ -31,10 +31,14 @@ function nfDeptSumFacility(st) {   // synchronous; st = {code, fac, cl (checklis
     if (day && day > 1) ndDeptDefs().forEach(function (d) { for (var n = 1; n <= Math.min(day - 1, S.days); n++) { due++; var c = ndPc(d.id, n), any = Object.keys(c).some(function (m) { return c[m] && c[m].done; });
       if (any) cin++; else { oldMiss = Math.max(oldMiss, day - n); if (n <= S.bN) blOpen++; } } });
     var staff = Object.keys(f.staff || {}).filter(function (m) { return f.staff[m] && !f.staff[m].disabled; }).length;
+    // activity (Today, 23 Oct 2026): personal cards saved in the last 7 days and the latest card time
+    var wk = new Date(Date.parse(today + 'T00:00:00') - 6 * 864e5).toISOString(), cards7 = 0, lastAt = '', PC = st.pcards || {};
+    Object.keys(PC).forEach(function (d) { Object.keys(PC[d] || {}).forEach(function (dk) { var day = PC[d][dk] || {}; Object.keys(day).forEach(function (m) { var c = day[m] || {}, t = String((c.done && c.done.at) || c.at || '');
+      if (t > lastAt) lastAt = t; if (t && t >= wk) cards7++; }); }); });
     return JSON.parse(JSON.stringify({ v: ND_SUM_VER, type: T, code: st.code, name: f.name || st.code, state: f.state || '', district: f.district || '', block: f.block || '',
       staff: staff, startDate: f.startDate || null, day: day, days: S.days, phase: !day || day < 1 ? 'notstarted' : f.catchup && f.catchup.on && !f.catchup.done ? 'catchup' : f.graduation || day > S.days ? 'complete' : 'running',
       pct: R.overall, base: B.n ? B.overall : null, assessed: R.n || 0, total: R.of || 0, meets: !!R.meets, byAoc: byAoc, byStd: byStd, byDept: byDept,
-      noAct: noAct, acts: acts, checksDue: checksDue, tl: due ? { due: due, cin: cin, pct: Math.round(100 * cin / due), oldMiss: oldMiss, blDone: day > S.bN && !blOpen } : null, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
+      noAct: noAct, acts: acts, cards7: cards7, lastAt: lastAt || null, checksDue: checksDue, tl: due ? { due: due, cin: cin, pct: Math.round(100 * cin / due), oldMiss: oldMiss, blDone: day > S.bN && !blOpen } : null, master: live.v || 0, suspended: !!f.suspended, sub: f.subscriptionStatus || '', demo: !!f.isDemo, at: new Date().toISOString(),
       // Step 3: graduation, catch-up, certification records (roll-ups count graduated / ready / almost / notyet / catch-up / certified)
       grad: f.graduation ? { result: f.graduation.result, overall: f.graduation.overall, base: f.graduation.base, round: f.graduation.round || 0, at: f.graduation.at || null, deptFails: f.graduation.deptFails || [] } : null,
       catchup: f.catchup && f.catchup.on ? { round: f.catchup.round || 1, start: f.catchup.start || null, end: f.catchup.end || null, done: !!f.catchup.done, depts: f.catchup.depts || [] } : null,
