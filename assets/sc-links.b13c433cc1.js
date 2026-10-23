@@ -122,83 +122,134 @@ function nfLinkResult(f,r,n){
 }
 (function(){ if(typeof nfAdminApply==='function'){ var o=nfAdminApply; nfAdminApply=function(){ try{ nfEnsureLinks(); }catch(e){} return o.apply(this,arguments); }; } })();
 
-// ── MO: one PHC overview across their Sub-Centres ──────────────
-var _nfMoCodes=[], _nfMo={};
+// ── MO: "My facilities" — the PHC (when enrolled) and its linked Sub-Centres, in the one design (B, 22 Oct 2026) ──
+var _nfMoCodes=[], _nfMo={}, _nfMoEnt={};
 function nfMoAddEntry(list,mob){
-  var mo=list.filter(function(a){ return a.kind==='staff'&&/^MO · /.test(a.title||''); });
-  _nfMoCodes=mo.map(function(a){ return a.code; });
-  if(_nfMoCodes.length<2) return list;
-  return [{kind:'mo',key:'mo:'+mob,title:'Medical Officer · PHC overview',sub:_nfMoCodes.length+' sub-centres · verify and support each'}].concat(list);
+  var mo=list.filter(function(a){ return a.kind==='staff'&&(a.type||'sc')==='sc'&&/^MO · /.test(a.title||''); });
+  var phc=list.filter(function(a){ return a.kind==='staff'&&a.type==='phc'; });
+  _nfMoEnt={}; mo.concat(phc).forEach(function(a){ _nfMoEnt[a.code]=a; });
+  _nfMoCodes=phc.map(function(a){ return a.code; }).concat(mo.map(function(a){ return a.code; }));
+  if(!mo.length||_nfMoCodes.length<2) return list;
+  return [{kind:'mo',key:'mo:'+mob,title:'Medical Officer · My facilities',sub:(phc.length?phc.length+' PHC · ':'')+mo.length+' sub-centre'+(mo.length===1?'':'s')+' · verify and support each'}].concat(list);
 }
+function nfMoEntry(code){ var e=_nfMoEnt[code]; return e?{kind:'staff',key:e.key,code:code,type:e.type}:{kind:'staff',key:'staff:'+code,code:code}; }
 (function(){
   var oGo=nfGo;
   nfGo=async function(acc,pwd){
     if(acc&&acc.kind==='mo'){ var last=''; try{ last=localStorage.getItem('nf_mo_last')||''; }catch(e){}
-      var code=_nfMoCodes.indexOf(last)>=0?last:_nfMoCodes[0]; var ok=await oGo({kind:'staff',key:'staff:'+code,code:code},pwd); if(ok) setTimeout(nfMoOpen,300); return ok; }
+      var code=_nfMoCodes.indexOf(last)>=0?last:_nfMoCodes[0]; var ok=await oGo(nfMoEntry(code),pwd); if(ok!==false) setTimeout(nfMoOpen,300); return ok; }
     return oGo.apply(this,arguments);
   };
 })();
+function nfMoMe(){ return (typeof _nfAuth!=='undefined'&&_nfAuth&&_nfAuth.claims&&_nfAuth.claims.mob)||(typeof choState!=='undefined'&&choState.staffMobile)||''; }
+function nfMoCur(){ var dv=document.getElementById('nf-dept-app'); if(dv&&dv.offsetParent!==null&&typeof _nd!=='undefined'&&_nd&&_nd.code) return _nd.code; return (typeof choState!=='undefined'&&choState.facilityCode)||''; }
+async function nfMoLoadOne(code){
+  var f=await fbGet(scFacilityPath(code))||{}, T=nfTypeOf(f);
+  if(T!=='sc'){ var cfg=NF_LEVELS[T]||{};
+    var r=await Promise.all([nfLoadData(cfg.checklist),typeof nfDeptLive==='function'?nfDeptLive(T).catch(function(){ return null; }):null,fbGet('sc_pcards/'+code).catch(function(){ return {}; }),fbGet('sc_dcards/'+code).catch(function(){ return {}; }),fbGet('sc_dactions/'+code).catch(function(){ return {}; })]);
+    var sum=nfDeptSumFacility({code:code,fac:f,cl:r[0],live:r[1],pcards:r[2]||{},dcards:r[3]||{},actions:r[4]||{},today:ndToday()});
+    return {code:code,f:f,type:T,sum:sum}; }
+  var pr=await fbGet('sc_progress/'+code)||{}, acts={}; try{ acts=typeof nfQueryMany==='function'?await nfQueryMany('sc_corrective/'+code,'status',['open','done']):(await fbGet('sc_corrective/'+code)||{}); }catch(e){}
+  return {code:code,f:f,type:'sc',pr:pr,acts:acts};
+}
 async function nfMoLoad(){
-  var out=[];
-  for(var i=0;i<_nfMoCodes.length;i++){ var code=_nfMoCodes[i];
-    try{ var f=await fbGet(scFacilityPath(code))||{}, pr=await fbGet('sc_progress/'+code)||{}, acts={}; try{ acts=await fbGet('sc_corrective/'+code)||{}; }catch(e){}
-      out.push({code:code,f:f,pr:pr,acts:acts}); }catch(e){ out.push({code:code,f:{name:code},pr:{},acts:{},err:true}); } }
-  return out;
+  return Promise.all(_nfMoCodes.map(function(code){ return nfMoLoadOne(code).catch(function(e){ console.warn('[MO] load',code,e); return {code:code,f:{name:code},type:'sc',pr:{},acts:{},err:true}; }); }));
 }
 function nfMoStats(x,me){
-  var f=x.f, staff=f.staff||{}, pr=x.pr, today=scTodayStr(), R=null;
-  try{ R=scFacilityReadiness(f.progId||'nqas_12A',pr,staff); }catch(e){}
+  var f=x.f||{}, today=scTodayStr();
+  if(x.type&&x.type!=='sc'){ var s=x.sum||{}, LV=NF_LEVELS[x.type]||{}, R=nfResult(nfResultDept(s,f.graduation||null)), st=null;
+    if(s.tl){ var G=typeof nfgCfgFor==='function'?nfgCfgFor(x.type):{green:80,amber:60,missDays:3,blLate:10}; st=s.tl.pct<G.amber||(s.day||0)>G.blLate&&!s.tl.blDone?'r':s.tl.pct<G.green||s.tl.oldMiss>G.missDays?'a':'g'; }
+    return {dept:true,pct:s.assessed?s.pct:null,base:s.base,day:s.day,days:s.days||60,phase:s.phase,ver:s.checksDue||0,mine:0,blLeft:0,open:(s.acts||{}).open||0,od:(s.acts||{}).od||0,
+      cho:{},res:R,state:st,onTime:s.tl?s.tl.pct:null,nDept:Object.keys(s.byDept||{}).length,inLabel:LV.inChargeLabel||'MO In-charge'}; }
+  var staff=f.staff||{}, pr=x.pr||{}, A=null; try{ A=scFacilityReadiness(f.progId||'nqas_12A',pr,staff); }catch(e){}
   var ver=0, blLeft=0, mine=0, d=nfDayOf(f);
   Object.keys(pr).forEach(function(m){ var role=(staff[m]||{}).role||'CHO'; Object.keys(pr[m]||{}).forEach(function(k){ var mm=/^day_(\d+)$/.exec(k); if(!mm) return; var di=+mm[1], r=pr[m][k]||{};
     if(m===me&&r.taskDone) mine++;
     if(role==='CHO'&&m!==me&&r.taskDone&&!r.verified&&di>=SC_BASELINE_DAYS) ver++; }); });
   Object.keys(staff).forEach(function(m){ var s=staff[m]; if(!s||s.disabled) return; for(var di=0;di<SC_BASELINE_DAYS&&d!=null&&di<d;di++){ var r=((pr[m]||{})['day_'+di])||{}; if(!r.taskDone){ blLeft++; break; } } });
   var od=0, open=0; Object.keys(x.acts||{}).forEach(function(k){ var a=x.acts[k]; if(!a||['open','done'].indexOf(a.status)<0) return; open++; if(a.status==='open'&&a.dueDate&&a.dueDate<today) od++; });
-  return {pct:R?R.pct:0,day:d,ver:ver,mine:mine,blLeft:blLeft,open:open,od:od,cho:nfChoOf(f)};
+  var has=A&&A.coverage&&A.coverage.assessed, B=A&&A.baseline&&A.baseline.assessed?A.baseline.pct:null, comp=null; try{ comp=nfgCompFor(x.code,f,pr,null); }catch(e){}
+  var R=A?nfResult(nfResultSc(A,f.graduation||null)):{cls:'grey',txt:'Not assessed yet',word:'—'};
+  return {pct:has?A.pct:(A?A.pct:0),hasPct:!!has,base:B,day:d,days:60,ver:ver,mine:mine,blLeft:blLeft,open:open,od:od,cho:nfChoOf(f),res:R,state:comp?comp.state:null,onTime:comp&&comp.pct!=null?comp.pct:null};
 }
 async function nfMoOpen(){
   if(_nfMoCodes.length<2) return;
   var old=document.getElementById('nf-mo'); if(old) old.remove();
-  var ov=document.createElement('div'); ov.id='nf-mo';
-  var L=(choState.facility&&choState.facility.name)||'';
-  ov.innerHTML='<div class="nfmo-hd"><span style="font-size:22px;">🏥</span><div><b>'+scEsc(t('PHC overview'))+'</b><small id="nfmo-sub">'+_nfMoCodes.length+' sub-centres</small></div><button type="button" aria-label="Close" onclick="nfMoClose()">✕</button></div><div class="nfmo-body" id="nfmo-body"><div class="scx-empty">Loading…</div></div>';
+  var ov=document.createElement('div'); ov.id='nf-mo'; ov.className='nfmo2';
+  ov.innerHTML='<div class="nfmo-body" id="nfmo-body"><div class="nfmo-top2"><div><small id="nfmo-k">'+scEsc(t('Medical Officer'))+'</small><h1>'+scEsc(t('My facilities'))+'</h1></div>'
+    +'<button type="button" class="nfmo-ic" aria-label="Refresh" onclick="nfMoRefresh()"><i class="ti ti-refresh"></i></button><button type="button" class="nfmo-cards" onclick="nfMoClose()">'+scEsc(t('My cards'))+'</button></div>'
+    +'<div id="nfmo-in"><div class="scx-empty">'+scEsc(t('Loading…'))+'</div></div></div>';
   document.body.appendChild(ov);
   _nfMo.list=await nfMoLoad(); nfMoRender();
 }
+async function nfMoRefresh(){ var b=document.getElementById('nfmo-in'); if(b) b.style.opacity='.5'; _nfMo.list=await nfMoLoad(); nfMoRender(); }
 function nfMoClose(){ var o=document.getElementById('nf-mo'); if(o) o.remove(); }
+function nfMoTag(r){ var w=r.txt||'', m=/^Too early · (\d+)% checked$/.exec(w); if(m) w=m[1]+'% '+t('of the checklist checked');
+  return '<span class="one-tag '+(r.cls||'')+'">'+scEsc(r.word==='—'?r.txt:r.word)+'</span>'+(r.word!=='—'&&r.cls!=='green'&&w&&w!==r.word?'<small>'+scEsc(w)+'</small>':''); }
 function nfMoRender(){
-  var body=document.getElementById('nfmo-body'); if(!body) return;
-  var me=choState.staffMobile, rows=(_nfMo.list||[]).map(function(x){ return {x:x,s:nfMoStats(x,me)}; });
-  var phc=null; rows.some(function(r){ var L=r.x.f.links; if(L&&L.phc){ phc=L.phc.name; return true; } });
-  var sub=document.getElementById('nfmo-sub'); if(sub) sub.textContent=(phc?phc+' · ':'')+rows.length+' sub-centres';
-  rows.sort(function(a,b){ return (b.s.ver+b.s.od*2+b.s.blLeft)-(a.s.ver+a.s.od*2+a.s.blLeft)||a.s.pct-b.s.pct; });
-  var tot=function(k){ return rows.reduce(function(n,r){ return n+r.s[k]; },0); };
-  var h='<div class="nfmo-sum"><div><b>'+tot('ver')+'</b><span>'+scEsc(t('CHO cards to verify'))+'</span></div><div><b style="color:var(--red-dk);">'+tot('od')+'</b><span>Overdue actions</span></div><div><b>'+Math.round(rows.reduce(function(n,r){ return n+r.s.pct; },0)/(rows.length||1))+'%</b><span>Average readiness</span></div></div>'
-    +'<div class="scq-muted" style="margin:0 2px 10px;">Sub-centres needing you most are on top. Verify CHO cards and fill your own MO cards in each; corrective actions come from the HealSol mentor.</div>';
-  h+=rows.map(function(r){ var x=r.x, s=r.s, f=x.f, cur=x.code===choState.facilityCode, col=s.pct>=70?'var(--green-dk)':s.pct>=50?'var(--amber-dk)':'var(--red-dk)';
-    return '<div class="nfmo-sc'+(cur?' cur':'')+'"><div class="nfmo-top"><b>'+scEsc(f.name||x.code)+'</b>'+(cur?'<span class="nfl-st ok">open now</span>':'')+'<span class="pct" style="color:'+col+';">'+s.pct+'%</span></div>'
-      +'<div class="nfmo-meta">'+scEsc(x.code)+(s.day!=null?' · Day '+s.day+' of 60':' · not started')+(s.cho.name?' · CHO '+scEsc(s.cho.name):'')+'</div>'
-      +'<div class="nfmo-chips">'+(s.ver?'<span class="v">🛡️ '+s.ver+' CHO card'+(s.ver===1?'':'s')+' to verify</span>':'')+(s.od?'<span class="od">⏰ '+s.od+' overdue action'+(s.od===1?'':'s')+'</span>':'')
-        +(s.blLeft?'<span class="bl">'+s.blLeft+' staff behind on baseline</span>':'')+'<span>📋 Your MO cards: '+s.mine+' done</span><span>'+s.open+' open action'+(s.open===1?'':'s')+'</span></div>'
-      +'<div class="nfmo-btns"><button class="scx-btn sm" onclick="nfMoSwitch(\''+scJs(x.code)+'\')"><i class="ti ti-arrow-right"></i> '+scEsc(cur?t('Back to it'):t('Open'))+'</button>'
-        +(nfWaNum(s.cho.mob)?nfWaBtn("nfNudge('mo','"+scJs(x.code)+"')",'CHO',''):'')+'</div></div>'; }).join('');
+  var body=document.getElementById('nfmo-in'); if(!body) return; body.style.opacity='';
+  var me=nfMoMe(), cur=nfMoCur(), rows=(_nfMo.list||[]).map(function(x){ return {x:x,s:nfMoStats(x,me)}; });
+  var phcRow=rows.find(function(r){ return r.x.type==='phc'; }), phcName=phcRow?(phcRow.x.f.name||phcRow.x.code):'';
+  if(!phcName) rows.some(function(r){ var L=r.x.f.links; if(L&&L.phc){ phcName=L.phc.name; return true; } });
+  var k=document.getElementById('nfmo-k'); if(k) k.textContent=t('Medical Officer')+(phcName?' · '+phcName:'');
+  var need=function(r){ return r.s.ver+r.s.od*2+r.s.blLeft+(r.s.state==='r'?3:0); };
+  rows.sort(function(a,b){ return (b.x.type==='phc')-(a.x.type==='phc')||need(b)-need(a)||(a.s.pct||0)-(b.s.pct||0); });
+  var withPct=rows.filter(function(r){ return r.s.dept?r.s.pct!=null:r.s.hasPct; }), withB=rows.filter(function(r){ return r.s.base!=null; });
+  var avg=withPct.length?Math.round(withPct.reduce(function(n,r){ return n+r.s.pct; },0)/withPct.length):null, avgB=withB.length?Math.round(withB.reduce(function(n,r){ return n+r.s.base; },0)/withB.length):null;
+  var gain=avg!=null&&avgB!=null?avg-avgB:null, ready=rows.filter(function(r){ return r.s.res&&r.s.res.cls==='green'; }).length, nSc=rows.filter(function(r){ return !r.s.dept; }).length, nPhc=rows.length-nSc;
+  var tot=function(k){ return rows.reduce(function(n,r){ return n+(r.s[k]||0); },0); }, mine=tot('mine');
+  var h='<div class="nf-hero fa-hero nfmo-hero"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">'+scEsc(t('Average readiness'))+'</div><div class="nf-hero-t">'+rows.length+' '+scEsc(t('facilities'))+'</div>'
+      +'<div class="nf-hero-s">'+(nPhc?nPhc+' PHC · ':'')+nSc+' '+scEsc(nSc===1?t('sub-centre'):t('sub-centres'))+'</div></div>'
+      +'<div class="nf-hero-ring">'+nfRing(avg||0,avgB,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+(avg==null?'—':avg+'%')+'</b><small>'+scEsc(t('readiness'))+'</small></span></div></div>'
+    +'<div class="nf-hero-nums"><div><b class="acc">'+(avgB==null?'—':avgB+'%')+'</b><small>'+scEsc(t('Baseline'))+'</small></div><i></i><div><b>'+(gain==null?'—':(gain>=0?'+':'')+gain)+'</b><small>'+scEsc(t('Growth'))+'</small></div><i></i><div><b>'+ready+'<span style="font-size:13px;opacity:.75;">/'+rows.length+'</span></b><small>'+scEsc(t('NQAS Ready'))+'</small></div></div>'
+    +'<div class="fa-nq">'+scEsc(t('Your MO cards'))+': <b>'+mine+' '+scEsc(t('done'))+'</b>'+(nSc?' · '+scEsc(t('fill them in each sub-centre')):'')+'</div></div>';
+  h+=oneCounters([[tot('ver'),t('cards to verify'),tot('ver')?'o':''],[tot('od'),t('overdue actions'),tot('od')?'r':''],[tot('blLeft'),t('staff behind on baseline'),'']]);
+  h+='<div class="one-sec"><b>'+scEsc(t('Facilities'))+'</b><span>'+scEsc(t('needing you most on top'))+'</span></div><div class="one-card nfmo-list">';
+  h+=rows.map(function(r){ var x=r.x, s=r.s, f=x.f, isCur=x.code===cur, pct=s.dept?s.pct:(s.hasPct?s.pct:null), col=pct==null?'#B9C8C3':pct>=70?'#1E6B5E':pct>=50?'#D4912A':'#B3402A';
+    var meta=[], nd=[];
+    if(s.day==null||s.day<1) meta.push(f.startDate?t('Starts')+' '+nfDateTxt(f.startDate,true):t('Start date not set'));
+    else if(f.graduation) meta.push(t('Graduated')+(f.graduation.at?' '+nfDateTxt(String(f.graduation.at).slice(0,10),true):''));
+    else meta.push(t('Day')+' '+s.day+' '+t('of')+' '+s.days);
+    if(s.dept){ if(s.nDept) meta.push(s.nDept+' '+t('departments')); } else if(s.cho&&s.cho.name) meta.push('CHO '+s.cho.name);
+    if(s.onTime!=null&&!f.graduation&&s.day>0) meta.push(s.onTime+'% '+t('on time'));
+    if(s.state==='r'&&!f.graduation) nd.push(t('Behind'));
+    if(s.ver) nd.push(s.ver+' '+(s.dept?t('department-days to check'):t('CHO cards to verify')));
+    if(s.blLeft) nd.push(s.blLeft+' '+t('staff behind on baseline'));
+    if(s.od) nd.push(s.od+' '+t('overdue')+' '+(s.od===1?t('action'):t('actions')));
+    var hot=s.state==='r'||s.od>0;
+    return '<div class="nfmo-r'+(hot?' hot':'')+(isCur?' cur':'')+'"><div class="nfmo-r1"><div><div class="nfmo-nm"><b>'+scEsc(f.name||x.code)+'</b><span class="nfmo-ty">'+scEsc((x.type||'sc').toUpperCase())+'</span>'
+        +(x.type==='phc'?'<span class="nfmo-ty o">'+scEsc(t('Your PHC'))+'</span>':'')+(isCur?'<span class="nfmo-ty g">'+scEsc(t('open now'))+'</span>':'')+'</div><small>'+scEsc(meta.join(' · '))+'</small></div><b class="nfmo-p">'+(pct==null?'—':pct+'%')+'</b></div>'
+      +'<div class="nfmo-bar"><i style="width:'+(pct||0)+'%;background:'+col+'"></i></div>'
+      +'<div class="nfmo-res">'+nfMoTag(s.res||{})+'</div>'
+      +(nd.length?'<div class="nfmo-nd'+(hot?' w':'')+'">'+scEsc(nd.join(' · '))+'</div>':'')
+      +'<div class="nfmo-btns2"><button type="button" class="'+(nd.length||isCur?'p':'')+'" onclick="nfMoSwitch(\''+scJs(x.code)+'\')">'+scEsc(isCur?t('Back to it'):t('Open'))+'</button>'
+        +(!s.dept&&s.cho&&nfWaNum(s.cho.mob)?'<button type="button" onclick="nfNudge(\'mo\',\''+scJs(x.code)+'\')">'+scEsc(t('Message CHO'))+'</button>':'')+'</div></div>'; }).join('');
+  h+='</div><p class="one-dim" style="margin:10px 4px 30px;">'+scEsc(t('Verify cards and fill your own MO cards after you open a facility. Corrective actions come from the HealSol mentor.'))+'</p>';
   body.innerHTML=h;
 }
 async function nfMoSwitch(code){
   try{ localStorage.setItem('nf_mo_last',code); }catch(e){}
-  if(code===choState.facilityCode){ nfMoClose(); return; }
+  if(code===nfMoCur()){ nfMoClose(); return; }
   try{ clearTimeout(_scSyncTimer); await scFlushSync(); }catch(e){}
   nfMoClose();
   if(typeof nfCoverOn==='function') nfCoverOn();
-  try{ await nfGo({kind:'staff',key:'staff:'+code,code:code},'__auth__'); } finally { if(typeof nfCoverDone==='function') nfCoverDone(); }
+  try{ await nfGo(nfMoEntry(code),'__auth__'); } finally { if(typeof nfCoverDone==='function') nfCoverDone(); }
 }
+// department app (the MO at their PHC): the same way back
+(function(){ var hook=function(){ ['ndTodayHTML','nxFaHomeHTML'].forEach(function(fn){
+  var oT=window[fn]; if(typeof oT!=='function'||oT._mo) return;
+  window[fn]=function(){ var h=oT.apply(this,arguments);
+    try{ if(_nfMoCodes.length>1&&_nd&&_nfMoCodes.indexOf(_nd.code)>=0&&h.indexOf('nfmo-chip')<0) h='<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t('All my facilities'))+' <small>'+_nfMoCodes.length+' ›</small></button>'+h; }catch(e){}
+    return h; }; window[fn]._mo=1; }); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else setTimeout(hook,0);
+})();
 // staff Today: the way back to the overview
 (function(){
   if(typeof nfRenderToday!=='function') return;
   var oT=nfRenderToday;
   nfRenderToday=function(){ var r=oT.apply(this,arguments);
     try{ var host=document.getElementById('nf-today'); if(host&&_nfMoCodes.length>1&&choState.roleId==='MO'&&!document.getElementById('nfmo-chip')){
-      host.insertAdjacentHTML('afterbegin','<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t('All my sub-centres'))+' <small>'+_nfMoCodes.length+' · '+scEsc(t('PHC overview'))+' ›</small></button>'); } }catch(e){}
+      host.insertAdjacentHTML('afterbegin','<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t('All my facilities'))+' <small>'+_nfMoCodes.length+' ›</small></button>'); } }catch(e){}
     return r; };
 })();
 
@@ -214,7 +265,7 @@ function nfNudgeText(kind,f,s,me){
 }
 async function nfNudge(kind,code){
   var f, s, me;
-  if(kind==='mo'){ var x=(_nfMo.list||[]).find(function(y){ return y.code===code; }); if(!x) return; f=x.f; s=nfMoStats(x,choState.staffMobile); me={name:choState.staffName,role:'Medical Officer'}; }
+  if(kind==='mo'){ var x=(_nfMo.list||[]).find(function(y){ return y.code===code; }); if(!x) return; f=x.f; s=nfMoStats(x,nfMoMe()); me={name:(typeof choState!=='undefined'&&choState.staffName)||'',role:'Medical Officer'}; }
   else { f=(scMasterFacilities||{})[code]||{}; s=nfMoStats({f:f,pr:(scMasterProgress||{})[code]||{},acts:{}},''); s.od=0; me=scActor()||{}; }
   if(!nfWaNum(s.cho.mob)){ showToast('No mobile number for this facility\'s CHO.','err'); return; }
   nfWaOpen(s.cho.mob,nfNudgeText(kind,f,s,me));

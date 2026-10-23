@@ -14636,7 +14636,7 @@ function nfRenderOverview(){
   var name=r==='admin'?'HealSol Admin':((_scSup||{}).name||'');
   var dist={}; rows.forEach(function(x){ if(x.district) dist[x.district]=1; });
   var sub=rows.length+' facilit'+(rows.length===1?'y':'ies')+(Object.keys(dist).length?' · '+Object.keys(dist).sort().join(', '):'')+(r==='district'?' · view only':'');
-  if(r==='district'&&typeof _scSup!=='undefined'&&_scSup&&_scSup.scope==='block') sub=rows.length+' sub-centre'+(rows.length===1?'':'s')+' · '+(_scSup.block||_scSup.chcName||'')+' block · MOIC · view only';
+  if(r==='district'&&typeof _scSup!=='undefined'&&_scSup&&_scSup.scope==='block') sub=(function(){ var n={}; rows.forEach(function(x){ var t=x.dept?nfTypeOf((scMasterFacilities||{})[x.code]||{}):'sc'; n[t]=(n[t]||0)+1; }); var p=['chc','phc','uphc','sc'].filter(function(t){ return n[t]; }).map(function(t){ return n[t]+' '+(t==='sc'?(n[t]===1?'sub-centre':'sub-centres'):t.toUpperCase()); }); return p.join(' · ')||'0 facilities'; })()+' · '+(_scSup.block||_scSup.chcName||'')+' block · MOIC · view only';
   var kpis=r==='district'
     ?[{l:'Facilities assessed',v:rows.filter(function(x){ return x.agg.coverage&&x.agg.coverage.assessed; }).length,s:'baseline started',c:'var(--teal-dk)'},
       {l:'Below NQAS minimum',v:rows.filter(function(x){ return x.agg.coverage&&x.agg.coverage.assessed&&!x.agg.nqas.meets; }).length,s:'facilities',c:'var(--amber-dk)'},
@@ -15953,7 +15953,7 @@ async function nfRouteAuthed(){
   var c=_nfAuth.claims, list=[];
   if(c.hs) list.push({kind:'admin',key:'admin',pwd:'',title:'HealSol Admin',sub:'All facilities, setup and content'});
   if(c.sup){ var s=await fbGet('sc_supervisors/'+c.sup); if(s&&!s.disabled) list.push({kind:'supervisor',key:'sup:'+c.sup,id:c.sup,title:'Supervisor',sub:(s.name||c.sup)+' · '+Object.keys(s.facilities||{}).length+' facilities'}); }
-  if(c.dist){ var d=await fbGet('sc_district_admins/'+c.dist); if(d&&!d.disabled) list.push({kind:'district',key:'dist:'+c.dist,id:c.dist,title:d.scope==='block'?'MOIC · '+(d.block||d.chcName||'Block')+' block':'District Admin',sub:(d.name||c.dist)+(d.scope==='block'?' · all sub-centres of the block, view only':' · view readiness and reports')}); }
+  if(c.dist){ var d=await fbGet('sc_district_admins/'+c.dist); if(d&&!d.disabled) list.push({kind:'district',key:'dist:'+c.dist,id:c.dist,title:d.scope==='block'?'Block view · '+(d.block||d.chcName||'Block'):'District Admin',sub:(d.name||c.dist)+(d.scope==='block'?' · MOIC · every facility of the block, view only':' · view readiness and reports')}); }
   if(c.view){ var vw=await fbGet('sc_viewers/'+c.view); if(vw&&!vw.disabled) list.push({kind:'viewer',key:'view:'+c.view,id:c.view,rec:vw,title:vw.kind==='state'?'State dashboard':'Partner dashboard',sub:(vw.name||c.view)+(vw.org?' · '+vw.org:'')+' · view only'}); }
   if(c.mob){
     var idx=await fbGet('sc_staff_index/'+c.mob)||{};
@@ -18943,6 +18943,28 @@ async function nfSetLead(mob){
 .nfmo-chip{display:flex;align-items:center;gap:8px;width:100%;border:1px solid #BFE3DD;background:#F2FBF9;color:var(--teal);font:inherit;font-size:13px;font-weight:700;border-radius:14px;padding:10px 12px;margin:12px 0 0;cursor:pointer;}
 .nfmo-chip small{margin-left:auto;font-weight:600;color:var(--t3);}
 .nfl-drill{margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--t2);}
+/* MO · My facilities — one design (B, 22 Oct 2026) */
+#nf-mo.nfmo2{background:#F3F6F5;font-family:'Poppins',sans-serif;color:#1F2D29;}
+.nfmo2 .nfmo-body{padding:16px 16px 40px;max-width:560px;}
+.nfmo-top2{display:flex;align-items:center;gap:8px;margin-bottom:14px;} .nfmo-top2 > div{flex:1;min-width:0;}
+.nfmo-top2 small{font-size:12px;color:#4F5E59;display:block;} .nfmo-top2 h1{margin:2px 0 0;font-size:22px;font-weight:700;}
+.nfmo-ic{width:44px;height:44px;border-radius:50%;border:1px solid #DCE4E1;background:#fff;color:#134A41;font-size:18px;cursor:pointer;flex:0 0 44px;}
+.nfmo-cards{height:44px;border:0;border-radius:999px;background:#134A41;color:#fff;font:inherit;font-size:14px;font-weight:600;padding:0 16px;cursor:pointer;}
+.nfmo2 .one-cnt b.r{color:#B3402A;}
+.nfmo-list{padding:0;overflow:hidden;}
+.nfmo-r{padding:14px;border-top:1px solid #EEF2F1;display:flex;flex-direction:column;gap:8px;} .nfmo-r:first-child{border-top:0;}
+.nfmo-r.hot{background:#FFF8F6;} .nfmo-r.cur{box-shadow:inset 3px 0 0 #134A41;}
+.nfmo-r1{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;} .nfmo-r1 > div{min-width:0;}
+.nfmo-nm{display:flex;gap:6px;align-items:center;flex-wrap:wrap;} .nfmo-nm b{font-size:15px;}
+.nfmo-r1 small{font-size:12px;color:#4F5E59;display:block;margin-top:2px;}
+.nfmo-ty{background:#E3ECE9;color:#134A41;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;} .nfmo-ty.o{background:#FDEBD3;color:#7A4508;} .nfmo-ty.g{background:#E3F2EA;color:#1F5F3E;}
+.nfmo-p{font-size:18px;font-weight:700;}
+.nfmo-bar{height:6px;border-radius:3px;background:#E6ECEA;overflow:hidden;} .nfmo-bar i{display:block;height:6px;border-radius:3px;}
+.nfmo-res{display:flex;gap:6px;flex-wrap:wrap;align-items:center;} .nfmo-res small{font-size:12px;color:#4F5E59;} .nfmo-res .one-tag.grey{background:#EEF2F1;color:#33433E;}
+.nfmo-nd{font-size:12px;color:#4F5E59;} .nfmo-nd.w{color:#9A5B12;}
+.nfmo-btns2{display:flex;gap:8px;} .nfmo-btns2 button{flex:1;min-height:44px;border-radius:12px;border:1px solid #DCE4E1;background:#fff;color:#134A41;font:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+.nfmo-btns2 button.p{background:#134A41;border-color:#134A41;color:#fff;}
+.nfmo-hero{margin-top:0;}
 </style>
 <script id="nf-links">
 NF_ROLE_META.mo={icon:'ti-building-hospital',cls:'o'};
@@ -19068,83 +19090,134 @@ function nfLinkResult(f,r,n){
 }
 (function(){ if(typeof nfAdminApply==='function'){ var o=nfAdminApply; nfAdminApply=function(){ try{ nfEnsureLinks(); }catch(e){} return o.apply(this,arguments); }; } })();
 
-// ── MO: one PHC overview across their Sub-Centres ──────────────
-var _nfMoCodes=[], _nfMo={};
+// ── MO: "My facilities" — the PHC (when enrolled) and its linked Sub-Centres, in the one design (B, 22 Oct 2026) ──
+var _nfMoCodes=[], _nfMo={}, _nfMoEnt={};
 function nfMoAddEntry(list,mob){
-  var mo=list.filter(function(a){ return a.kind==='staff'&&/^MO · /.test(a.title||''); });
-  _nfMoCodes=mo.map(function(a){ return a.code; });
-  if(_nfMoCodes.length<2) return list;
-  return [{kind:'mo',key:'mo:'+mob,title:'Medical Officer · PHC overview',sub:_nfMoCodes.length+' sub-centres · verify and support each'}].concat(list);
+  var mo=list.filter(function(a){ return a.kind==='staff'&&(a.type||'sc')==='sc'&&/^MO · /.test(a.title||''); });
+  var phc=list.filter(function(a){ return a.kind==='staff'&&a.type==='phc'; });
+  _nfMoEnt={}; mo.concat(phc).forEach(function(a){ _nfMoEnt[a.code]=a; });
+  _nfMoCodes=phc.map(function(a){ return a.code; }).concat(mo.map(function(a){ return a.code; }));
+  if(!mo.length||_nfMoCodes.length<2) return list;
+  return [{kind:'mo',key:'mo:'+mob,title:'Medical Officer · My facilities',sub:(phc.length?phc.length+' PHC · ':'')+mo.length+' sub-centre'+(mo.length===1?'':'s')+' · verify and support each'}].concat(list);
 }
+function nfMoEntry(code){ var e=_nfMoEnt[code]; return e?{kind:'staff',key:e.key,code:code,type:e.type}:{kind:'staff',key:'staff:'+code,code:code}; }
 (function(){
   var oGo=nfGo;
   nfGo=async function(acc,pwd){
     if(acc&&acc.kind==='mo'){ var last=''; try{ last=localStorage.getItem('nf_mo_last')||''; }catch(e){}
-      var code=_nfMoCodes.indexOf(last)>=0?last:_nfMoCodes[0]; var ok=await oGo({kind:'staff',key:'staff:'+code,code:code},pwd); if(ok) setTimeout(nfMoOpen,300); return ok; }
+      var code=_nfMoCodes.indexOf(last)>=0?last:_nfMoCodes[0]; var ok=await oGo(nfMoEntry(code),pwd); if(ok!==false) setTimeout(nfMoOpen,300); return ok; }
     return oGo.apply(this,arguments);
   };
 })();
+function nfMoMe(){ return (typeof _nfAuth!=='undefined'&&_nfAuth&&_nfAuth.claims&&_nfAuth.claims.mob)||(typeof choState!=='undefined'&&choState.staffMobile)||''; }
+function nfMoCur(){ var dv=document.getElementById('nf-dept-app'); if(dv&&dv.offsetParent!==null&&typeof _nd!=='undefined'&&_nd&&_nd.code) return _nd.code; return (typeof choState!=='undefined'&&choState.facilityCode)||''; }
+async function nfMoLoadOne(code){
+  var f=await fbGet(scFacilityPath(code))||{}, T=nfTypeOf(f);
+  if(T!=='sc'){ var cfg=NF_LEVELS[T]||{};
+    var r=await Promise.all([nfLoadData(cfg.checklist),typeof nfDeptLive==='function'?nfDeptLive(T).catch(function(){ return null; }):null,fbGet('sc_pcards/'+code).catch(function(){ return {}; }),fbGet('sc_dcards/'+code).catch(function(){ return {}; }),fbGet('sc_dactions/'+code).catch(function(){ return {}; })]);
+    var sum=nfDeptSumFacility({code:code,fac:f,cl:r[0],live:r[1],pcards:r[2]||{},dcards:r[3]||{},actions:r[4]||{},today:ndToday()});
+    return {code:code,f:f,type:T,sum:sum}; }
+  var pr=await fbGet('sc_progress/'+code)||{}, acts={}; try{ acts=typeof nfQueryMany==='function'?await nfQueryMany('sc_corrective/'+code,'status',['open','done']):(await fbGet('sc_corrective/'+code)||{}); }catch(e){}
+  return {code:code,f:f,type:'sc',pr:pr,acts:acts};
+}
 async function nfMoLoad(){
-  var out=[];
-  for(var i=0;i<_nfMoCodes.length;i++){ var code=_nfMoCodes[i];
-    try{ var f=await fbGet(scFacilityPath(code))||{}, pr=await fbGet('sc_progress/'+code)||{}, acts={}; try{ acts=await fbGet('sc_corrective/'+code)||{}; }catch(e){}
-      out.push({code:code,f:f,pr:pr,acts:acts}); }catch(e){ out.push({code:code,f:{name:code},pr:{},acts:{},err:true}); } }
-  return out;
+  return Promise.all(_nfMoCodes.map(function(code){ return nfMoLoadOne(code).catch(function(e){ console.warn('[MO] load',code,e); return {code:code,f:{name:code},type:'sc',pr:{},acts:{},err:true}; }); }));
 }
 function nfMoStats(x,me){
-  var f=x.f, staff=f.staff||{}, pr=x.pr, today=scTodayStr(), R=null;
-  try{ R=scFacilityReadiness(f.progId||'nqas_12A',pr,staff); }catch(e){}
+  var f=x.f||{}, today=scTodayStr();
+  if(x.type&&x.type!=='sc'){ var s=x.sum||{}, LV=NF_LEVELS[x.type]||{}, R=nfResult(nfResultDept(s,f.graduation||null)), st=null;
+    if(s.tl){ var G=typeof nfgCfgFor==='function'?nfgCfgFor(x.type):{green:80,amber:60,missDays:3,blLate:10}; st=s.tl.pct<G.amber||(s.day||0)>G.blLate&&!s.tl.blDone?'r':s.tl.pct<G.green||s.tl.oldMiss>G.missDays?'a':'g'; }
+    return {dept:true,pct:s.assessed?s.pct:null,base:s.base,day:s.day,days:s.days||60,phase:s.phase,ver:s.checksDue||0,mine:0,blLeft:0,open:(s.acts||{}).open||0,od:(s.acts||{}).od||0,
+      cho:{},res:R,state:st,onTime:s.tl?s.tl.pct:null,nDept:Object.keys(s.byDept||{}).length,inLabel:LV.inChargeLabel||'MO In-charge'}; }
+  var staff=f.staff||{}, pr=x.pr||{}, A=null; try{ A=scFacilityReadiness(f.progId||'nqas_12A',pr,staff); }catch(e){}
   var ver=0, blLeft=0, mine=0, d=nfDayOf(f);
   Object.keys(pr).forEach(function(m){ var role=(staff[m]||{}).role||'CHO'; Object.keys(pr[m]||{}).forEach(function(k){ var mm=/^day_(\d+)$/.exec(k); if(!mm) return; var di=+mm[1], r=pr[m][k]||{};
     if(m===me&&r.taskDone) mine++;
     if(role==='CHO'&&m!==me&&r.taskDone&&!r.verified&&di>=SC_BASELINE_DAYS) ver++; }); });
   Object.keys(staff).forEach(function(m){ var s=staff[m]; if(!s||s.disabled) return; for(var di=0;di<SC_BASELINE_DAYS&&d!=null&&di<d;di++){ var r=((pr[m]||{})['day_'+di])||{}; if(!r.taskDone){ blLeft++; break; } } });
   var od=0, open=0; Object.keys(x.acts||{}).forEach(function(k){ var a=x.acts[k]; if(!a||['open','done'].indexOf(a.status)<0) return; open++; if(a.status==='open'&&a.dueDate&&a.dueDate<today) od++; });
-  return {pct:R?R.pct:0,day:d,ver:ver,mine:mine,blLeft:blLeft,open:open,od:od,cho:nfChoOf(f)};
+  var has=A&&A.coverage&&A.coverage.assessed, B=A&&A.baseline&&A.baseline.assessed?A.baseline.pct:null, comp=null; try{ comp=nfgCompFor(x.code,f,pr,null); }catch(e){}
+  var R=A?nfResult(nfResultSc(A,f.graduation||null)):{cls:'grey',txt:'Not assessed yet',word:'—'};
+  return {pct:has?A.pct:(A?A.pct:0),hasPct:!!has,base:B,day:d,days:60,ver:ver,mine:mine,blLeft:blLeft,open:open,od:od,cho:nfChoOf(f),res:R,state:comp?comp.state:null,onTime:comp&&comp.pct!=null?comp.pct:null};
 }
 async function nfMoOpen(){
   if(_nfMoCodes.length<2) return;
   var old=document.getElementById('nf-mo'); if(old) old.remove();
-  var ov=document.createElement('div'); ov.id='nf-mo';
-  var L=(choState.facility&&choState.facility.name)||'';
-  ov.innerHTML='<div class="nfmo-hd"><span style="font-size:22px;">🏥</span><div><b>'+scEsc(t('PHC overview'))+'</b><small id="nfmo-sub">'+_nfMoCodes.length+' sub-centres</small></div><button type="button" aria-label="Close" onclick="nfMoClose()">✕</button></div><div class="nfmo-body" id="nfmo-body"><div class="scx-empty">Loading…</div></div>';
+  var ov=document.createElement('div'); ov.id='nf-mo'; ov.className='nfmo2';
+  ov.innerHTML='<div class="nfmo-body" id="nfmo-body"><div class="nfmo-top2"><div><small id="nfmo-k">'+scEsc(t('Medical Officer'))+'</small><h1>'+scEsc(t('My facilities'))+'</h1></div>'
+    +'<button type="button" class="nfmo-ic" aria-label="Refresh" onclick="nfMoRefresh()"><i class="ti ti-refresh"></i></button><button type="button" class="nfmo-cards" onclick="nfMoClose()">'+scEsc(t('My cards'))+'</button></div>'
+    +'<div id="nfmo-in"><div class="scx-empty">'+scEsc(t('Loading…'))+'</div></div></div>';
   document.body.appendChild(ov);
   _nfMo.list=await nfMoLoad(); nfMoRender();
 }
+async function nfMoRefresh(){ var b=document.getElementById('nfmo-in'); if(b) b.style.opacity='.5'; _nfMo.list=await nfMoLoad(); nfMoRender(); }
 function nfMoClose(){ var o=document.getElementById('nf-mo'); if(o) o.remove(); }
+function nfMoTag(r){ var w=r.txt||'', m=/^Too early · (\d+)% checked$/.exec(w); if(m) w=m[1]+'% '+t('of the checklist checked');
+  return '<span class="one-tag '+(r.cls||'')+'">'+scEsc(r.word==='—'?r.txt:r.word)+'</span>'+(r.word!=='—'&&r.cls!=='green'&&w&&w!==r.word?'<small>'+scEsc(w)+'</small>':''); }
 function nfMoRender(){
-  var body=document.getElementById('nfmo-body'); if(!body) return;
-  var me=choState.staffMobile, rows=(_nfMo.list||[]).map(function(x){ return {x:x,s:nfMoStats(x,me)}; });
-  var phc=null; rows.some(function(r){ var L=r.x.f.links; if(L&&L.phc){ phc=L.phc.name; return true; } });
-  var sub=document.getElementById('nfmo-sub'); if(sub) sub.textContent=(phc?phc+' · ':'')+rows.length+' sub-centres';
-  rows.sort(function(a,b){ return (b.s.ver+b.s.od*2+b.s.blLeft)-(a.s.ver+a.s.od*2+a.s.blLeft)||a.s.pct-b.s.pct; });
-  var tot=function(k){ return rows.reduce(function(n,r){ return n+r.s[k]; },0); };
-  var h='<div class="nfmo-sum"><div><b>'+tot('ver')+'</b><span>'+scEsc(t('CHO cards to verify'))+'</span></div><div><b style="color:var(--red-dk);">'+tot('od')+'</b><span>Overdue actions</span></div><div><b>'+Math.round(rows.reduce(function(n,r){ return n+r.s.pct; },0)/(rows.length||1))+'%</b><span>Average readiness</span></div></div>'
-    +'<div class="scq-muted" style="margin:0 2px 10px;">Sub-centres needing you most are on top. Verify CHO cards and fill your own MO cards in each; corrective actions come from the HealSol mentor.</div>';
-  h+=rows.map(function(r){ var x=r.x, s=r.s, f=x.f, cur=x.code===choState.facilityCode, col=s.pct>=70?'var(--green-dk)':s.pct>=50?'var(--amber-dk)':'var(--red-dk)';
-    return '<div class="nfmo-sc'+(cur?' cur':'')+'"><div class="nfmo-top"><b>'+scEsc(f.name||x.code)+'</b>'+(cur?'<span class="nfl-st ok">open now</span>':'')+'<span class="pct" style="color:'+col+';">'+s.pct+'%</span></div>'
-      +'<div class="nfmo-meta">'+scEsc(x.code)+(s.day!=null?' · Day '+s.day+' of 60':' · not started')+(s.cho.name?' · CHO '+scEsc(s.cho.name):'')+'</div>'
-      +'<div class="nfmo-chips">'+(s.ver?'<span class="v">🛡️ '+s.ver+' CHO card'+(s.ver===1?'':'s')+' to verify</span>':'')+(s.od?'<span class="od">⏰ '+s.od+' overdue action'+(s.od===1?'':'s')+'</span>':'')
-        +(s.blLeft?'<span class="bl">'+s.blLeft+' staff behind on baseline</span>':'')+'<span>📋 Your MO cards: '+s.mine+' done</span><span>'+s.open+' open action'+(s.open===1?'':'s')+'</span></div>'
-      +'<div class="nfmo-btns"><button class="scx-btn sm" onclick="nfMoSwitch(\''+scJs(x.code)+'\')"><i class="ti ti-arrow-right"></i> '+scEsc(cur?t('Back to it'):t('Open'))+'</button>'
-        +(nfWaNum(s.cho.mob)?nfWaBtn("nfNudge('mo','"+scJs(x.code)+"')",'CHO',''):'')+'</div></div>'; }).join('');
+  var body=document.getElementById('nfmo-in'); if(!body) return; body.style.opacity='';
+  var me=nfMoMe(), cur=nfMoCur(), rows=(_nfMo.list||[]).map(function(x){ return {x:x,s:nfMoStats(x,me)}; });
+  var phcRow=rows.find(function(r){ return r.x.type==='phc'; }), phcName=phcRow?(phcRow.x.f.name||phcRow.x.code):'';
+  if(!phcName) rows.some(function(r){ var L=r.x.f.links; if(L&&L.phc){ phcName=L.phc.name; return true; } });
+  var k=document.getElementById('nfmo-k'); if(k) k.textContent=t('Medical Officer')+(phcName?' · '+phcName:'');
+  var need=function(r){ return r.s.ver+r.s.od*2+r.s.blLeft+(r.s.state==='r'?3:0); };
+  rows.sort(function(a,b){ return (b.x.type==='phc')-(a.x.type==='phc')||need(b)-need(a)||(a.s.pct||0)-(b.s.pct||0); });
+  var withPct=rows.filter(function(r){ return r.s.dept?r.s.pct!=null:r.s.hasPct; }), withB=rows.filter(function(r){ return r.s.base!=null; });
+  var avg=withPct.length?Math.round(withPct.reduce(function(n,r){ return n+r.s.pct; },0)/withPct.length):null, avgB=withB.length?Math.round(withB.reduce(function(n,r){ return n+r.s.base; },0)/withB.length):null;
+  var gain=avg!=null&&avgB!=null?avg-avgB:null, ready=rows.filter(function(r){ return r.s.res&&r.s.res.cls==='green'; }).length, nSc=rows.filter(function(r){ return !r.s.dept; }).length, nPhc=rows.length-nSc;
+  var tot=function(k){ return rows.reduce(function(n,r){ return n+(r.s[k]||0); },0); }, mine=tot('mine');
+  var h='<div class="nf-hero fa-hero nfmo-hero"><div class="nf-hero-row"><div class="nf-hero-txt"><div class="nf-hero-k">'+scEsc(t('Average readiness'))+'</div><div class="nf-hero-t">'+rows.length+' '+scEsc(t('facilities'))+'</div>'
+      +'<div class="nf-hero-s">'+(nPhc?nPhc+' PHC · ':'')+nSc+' '+scEsc(nSc===1?t('sub-centre'):t('sub-centres'))+'</div></div>'
+      +'<div class="nf-hero-ring">'+nfRing(avg||0,avgB,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+(avg==null?'—':avg+'%')+'</b><small>'+scEsc(t('readiness'))+'</small></span></div></div>'
+    +'<div class="nf-hero-nums"><div><b class="acc">'+(avgB==null?'—':avgB+'%')+'</b><small>'+scEsc(t('Baseline'))+'</small></div><i></i><div><b>'+(gain==null?'—':(gain>=0?'+':'')+gain)+'</b><small>'+scEsc(t('Growth'))+'</small></div><i></i><div><b>'+ready+'<span style="font-size:13px;opacity:.75;">/'+rows.length+'</span></b><small>'+scEsc(t('NQAS Ready'))+'</small></div></div>'
+    +'<div class="fa-nq">'+scEsc(t('Your MO cards'))+': <b>'+mine+' '+scEsc(t('done'))+'</b>'+(nSc?' · '+scEsc(t('fill them in each sub-centre')):'')+'</div></div>';
+  h+=oneCounters([[tot('ver'),t('cards to verify'),tot('ver')?'o':''],[tot('od'),t('overdue actions'),tot('od')?'r':''],[tot('blLeft'),t('staff behind on baseline'),'']]);
+  h+='<div class="one-sec"><b>'+scEsc(t('Facilities'))+'</b><span>'+scEsc(t('needing you most on top'))+'</span></div><div class="one-card nfmo-list">';
+  h+=rows.map(function(r){ var x=r.x, s=r.s, f=x.f, isCur=x.code===cur, pct=s.dept?s.pct:(s.hasPct?s.pct:null), col=pct==null?'#B9C8C3':pct>=70?'#1E6B5E':pct>=50?'#D4912A':'#B3402A';
+    var meta=[], nd=[];
+    if(s.day==null||s.day<1) meta.push(f.startDate?t('Starts')+' '+nfDateTxt(f.startDate,true):t('Start date not set'));
+    else if(f.graduation) meta.push(t('Graduated')+(f.graduation.at?' '+nfDateTxt(String(f.graduation.at).slice(0,10),true):''));
+    else meta.push(t('Day')+' '+s.day+' '+t('of')+' '+s.days);
+    if(s.dept){ if(s.nDept) meta.push(s.nDept+' '+t('departments')); } else if(s.cho&&s.cho.name) meta.push('CHO '+s.cho.name);
+    if(s.onTime!=null&&!f.graduation&&s.day>0) meta.push(s.onTime+'% '+t('on time'));
+    if(s.state==='r'&&!f.graduation) nd.push(t('Behind'));
+    if(s.ver) nd.push(s.ver+' '+(s.dept?t('department-days to check'):t('CHO cards to verify')));
+    if(s.blLeft) nd.push(s.blLeft+' '+t('staff behind on baseline'));
+    if(s.od) nd.push(s.od+' '+t('overdue')+' '+(s.od===1?t('action'):t('actions')));
+    var hot=s.state==='r'||s.od>0;
+    return '<div class="nfmo-r'+(hot?' hot':'')+(isCur?' cur':'')+'"><div class="nfmo-r1"><div><div class="nfmo-nm"><b>'+scEsc(f.name||x.code)+'</b><span class="nfmo-ty">'+scEsc((x.type||'sc').toUpperCase())+'</span>'
+        +(x.type==='phc'?'<span class="nfmo-ty o">'+scEsc(t('Your PHC'))+'</span>':'')+(isCur?'<span class="nfmo-ty g">'+scEsc(t('open now'))+'</span>':'')+'</div><small>'+scEsc(meta.join(' · '))+'</small></div><b class="nfmo-p">'+(pct==null?'—':pct+'%')+'</b></div>'
+      +'<div class="nfmo-bar"><i style="width:'+(pct||0)+'%;background:'+col+'"></i></div>'
+      +'<div class="nfmo-res">'+nfMoTag(s.res||{})+'</div>'
+      +(nd.length?'<div class="nfmo-nd'+(hot?' w':'')+'">'+scEsc(nd.join(' · '))+'</div>':'')
+      +'<div class="nfmo-btns2"><button type="button" class="'+(nd.length||isCur?'p':'')+'" onclick="nfMoSwitch(\''+scJs(x.code)+'\')">'+scEsc(isCur?t('Back to it'):t('Open'))+'</button>'
+        +(!s.dept&&s.cho&&nfWaNum(s.cho.mob)?'<button type="button" onclick="nfNudge(\'mo\',\''+scJs(x.code)+'\')">'+scEsc(t('Message CHO'))+'</button>':'')+'</div></div>'; }).join('');
+  h+='</div><p class="one-dim" style="margin:10px 4px 30px;">'+scEsc(t('Verify cards and fill your own MO cards after you open a facility. Corrective actions come from the HealSol mentor.'))+'</p>';
   body.innerHTML=h;
 }
 async function nfMoSwitch(code){
   try{ localStorage.setItem('nf_mo_last',code); }catch(e){}
-  if(code===choState.facilityCode){ nfMoClose(); return; }
+  if(code===nfMoCur()){ nfMoClose(); return; }
   try{ clearTimeout(_scSyncTimer); await scFlushSync(); }catch(e){}
   nfMoClose();
   if(typeof nfCoverOn==='function') nfCoverOn();
-  try{ await nfGo({kind:'staff',key:'staff:'+code,code:code},'__auth__'); } finally { if(typeof nfCoverDone==='function') nfCoverDone(); }
+  try{ await nfGo(nfMoEntry(code),'__auth__'); } finally { if(typeof nfCoverDone==='function') nfCoverDone(); }
 }
+// department app (the MO at their PHC): the same way back
+(function(){ var hook=function(){ ['ndTodayHTML','nxFaHomeHTML'].forEach(function(fn){
+  var oT=window[fn]; if(typeof oT!=='function'||oT._mo) return;
+  window[fn]=function(){ var h=oT.apply(this,arguments);
+    try{ if(_nfMoCodes.length>1&&_nd&&_nfMoCodes.indexOf(_nd.code)>=0&&h.indexOf('nfmo-chip')<0) h='<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t('All my facilities'))+' <small>'+_nfMoCodes.length+' ›</small></button>'+h; }catch(e){}
+    return h; }; window[fn]._mo=1; }); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else setTimeout(hook,0);
+})();
 // staff Today: the way back to the overview
 (function(){
   if(typeof nfRenderToday!=='function') return;
   var oT=nfRenderToday;
   nfRenderToday=function(){ var r=oT.apply(this,arguments);
     try{ var host=document.getElementById('nf-today'); if(host&&_nfMoCodes.length>1&&choState.roleId==='MO'&&!document.getElementById('nfmo-chip')){
-      host.insertAdjacentHTML('afterbegin','<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t('All my sub-centres'))+' <small>'+_nfMoCodes.length+' · '+scEsc(t('PHC overview'))+' ›</small></button>'); } }catch(e){}
+      host.insertAdjacentHTML('afterbegin','<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t('All my facilities'))+' <small>'+_nfMoCodes.length+' ›</small></button>'); } }catch(e){}
     return r; };
 })();
 
@@ -19160,7 +19233,7 @@ function nfNudgeText(kind,f,s,me){
 }
 async function nfNudge(kind,code){
   var f, s, me;
-  if(kind==='mo'){ var x=(_nfMo.list||[]).find(function(y){ return y.code===code; }); if(!x) return; f=x.f; s=nfMoStats(x,choState.staffMobile); me={name:choState.staffName,role:'Medical Officer'}; }
+  if(kind==='mo'){ var x=(_nfMo.list||[]).find(function(y){ return y.code===code; }); if(!x) return; f=x.f; s=nfMoStats(x,nfMoMe()); me={name:(typeof choState!=='undefined'&&choState.staffName)||'',role:'Medical Officer'}; }
   else { f=(scMasterFacilities||{})[code]||{}; s=nfMoStats({f:f,pr:(scMasterProgress||{})[code]||{},acts:{}},''); s.od=0; me=scActor()||{}; }
   if(!nfWaNum(s.cho.mob)){ showToast('No mobile number for this facility\'s CHO.','err'); return; }
   nfWaOpen(s.cho.mob,nfNudgeText(kind,f,s,me));
@@ -21028,6 +21101,41 @@ body.nfd-on{overflow:hidden;}
 .nfd-steps{font-size:13px;color:#334155;padding-left:20px;line-height:1.7;margin:0;}
 @media (max-width:760px){ .nfd-two{grid-template-columns:1fr;} .nfd-fun{grid-template-columns:repeat(3,1fr);} .nfd-t.wide{grid-column:span 1;} .nfd-mt{grid-template-columns:1fr;} .nfd-gap{grid-template-columns:1fr;} }
 @media print{ #nf-dash-app{position:static;} }
+/* B (22 Oct 2026): one design — type chips, result bar, two columns, phone */
+#nf-dash-app{background:#F3F6F5;color:#1F2D29;font-family:'Poppins','NF Poppins',system-ui,sans-serif;}
+.nfd-wrap{max-width:1216px;}
+.nfd-types{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px;}
+.nfd-types button{border:1px solid #DCE4E1;border-radius:999px;background:#fff;color:#1F2D29;font:inherit;font-size:13px;padding:8px 14px;cursor:pointer;min-height:40px;}
+.nfd-types button.on{background:#134A41;border-color:#134A41;color:#fff;font-weight:600;}
+.nfd-tiles{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));}
+.nfd-t{border-color:#DCE4E1;border-radius:18px;padding:16px 18px;}
+.nfd-t span{order:-1;font-size:12px;font-weight:400;color:#4F5E59;margin:0 0 2px;} .nfd-t b{font-size:30px;} .nfd-t small{color:#4F5E59;}
+.nfd-t{display:flex;flex-direction:column;}
+.nfd-t.g b{color:#1F5F3E;} .nfd-t.gd b{color:#9A5B12;}
+.nfd-t.hero{background:#134A41;border-color:#134A41;} .nfd-t.hero span,.nfd-t.hero small{color:#CFE5DF;} .nfd-t.hero b{color:#fff;font-size:34px;}
+.nfd-card{border-color:#DCE4E1;border-radius:18px;padding:16px 18px;}
+.nfd-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px;} .nfd-h h3{margin:0;} .nfd-h small{font-size:12px;color:#4F5E59;}
+.nfd-rbar{display:flex;height:28px;border-radius:8px;overflow:hidden;background:#EEF2F1;}
+.nfd-rbar i{display:flex;align-items:center;padding-left:8px;font-style:normal;font-size:12px;font-weight:600;color:#fff;min-width:0;overflow:hidden;}
+.nfd-rbar i.g{background:#1E6B5E;} .nfd-rbar i.a{background:#D4912A;} .nfd-rbar i.r{background:#B3402A;} .nfd-rbar i.e{background:#7D8B87;} .nfd-rbar i.n{background:#D5DDDA;color:#33433E;}
+.nfd-rleg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#33433E;margin-top:10px;} .nfd-rleg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
+.nfd-rleg i.g{background:#1E6B5E;} .nfd-rleg i.a{background:#D4912A;} .nfd-rleg i.r{background:#B3402A;} .nfd-rleg i.e{background:#7D8B87;} .nfd-rleg i.n{background:#C3CEC9;}
+.nfd-rc{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;background:#EEF2F1;color:#33433E;white-space:nowrap;}
+.nfd-rc.g{background:#E3F2EA;color:#1F5F3E;} .nfd-rc.a{background:#FDEBD3;color:#7A4508;} .nfd-rc.r{background:#FCE5E1;color:#8A2F1F;}
+.nfd-ty{display:inline-block;background:#E3ECE9;color:#134A41;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;vertical-align:1px;}
+.nfd-cols{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;} .nfd-main{flex:999 1 620px;min-width:0;} .nfd-side{flex:1 1 320px;min-width:0;}
+.nfd-tb td small{display:block;font-size:12px;color:#4F5E59;} .nfd-tb th.c,.nfd-tb td.c{text-align:center;} .nfd-tb b.up{color:#1F5F3E;} .nfd-tb b.down{color:#B3402A;}
+.nfd-tb tr.w{background:#FFF8F6;} .nfd-bh{color:#9A5B12;font-weight:600;}
+.nfd-st{font-size:13px;color:#33433E;margin:0;}
+@media (max-width:700px){
+  .nfd-tiles{grid-template-columns:repeat(2,minmax(0,1fr));} .nfd-t.hero{grid-column:1 / -1;} .nfd-t b{font-size:24px;} .nfd-t.hero b{font-size:30px;}
+  .nfd-title{flex-direction:column;align-items:stretch;} .nfd-dl{display:grid;grid-template-columns:1fr 1fr;} .nfd-dl .nfd-btn{justify-content:center;min-height:44px;}
+  .nfd-tw{overflow:visible;} .nfd-tb thead{display:none;}
+  .nfd-tb tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;padding:12px 4px;border-bottom:1px solid #EEF2F1;}
+  .nfd-tb td{border:0;padding:0;font-size:12.5px;} .nfd-tb td:first-child{grid-column:1 / -1;font-size:14px;}
+  .nfd-tb td[data-l]:not([data-l=""])::before{content:attr(data-l);display:block;font-size:10.5px;color:#6B7A75;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .nfd-kids tr{grid-template-columns:repeat(4,minmax(0,1fr));} .nfd-kids td:nth-child(2),.nfd-kids td:last-child{grid-column:1 / -1;}
+}
 </style>
 <script id="nf-dash">
 // ══════════════════════════════════════════════════════════════
@@ -21060,10 +21168,10 @@ function nfDGo(lvl,name){ if(lvl==='all'){ _nfD.lvl='all'; _nfD.st=_nfD.di=_nfD.
   nfDRender(); try{ var el=document.getElementById('nfd-body'); if(el) el.scrollIntoView({block:'start'}); }catch(e){} }
 function nfDGoIdx(i){ var c=nfDChildren(_nfD.v); if(!c) return; var r=c.rows[i]; if(r) nfDGo(c.lvl,r.name); }
 function nfDTile(v,l,s,cls){ return '<div class="nfd-t '+(cls||'')+'"><b>'+v+'</b><span>'+scEsc(l)+'</span>'+(s?'<small>'+s+'</small>':'')+'</div>'; }
-function nfDGapsHTML(v){ var rows=nfDRows(v), g;
-  if(_nfD.lvl==='all') g=(v.gaps||{}).aoc||[];
+function nfDGapsHTML(v){ var rows=nfDLevelRows(v), g;
+  if(_nfD.lvl==='all'&&!_nfD.type) g=(v.gaps||{}).aoc||[];
   else { var o={}; rows.forEach(function(r){ if(!(r.assessed>0)) return; Object.keys(r.aoc||{}).forEach(function(k){ if(r.aoc[k]<70) o[k]=(o[k]||0)+1; }); }); g=Object.keys(o).map(function(k){ return {k:k,n:o[k]}; }).sort(function(a,b){ return b.n-a.n; }).slice(0,6); }
-  var n=Math.max(1,rows.filter(function(r){ return r.assessed>0; }).length), std=_nfD.lvl==='all'?((v.gaps||{}).std||[]):[];
+  var n=Math.max(1,rows.filter(function(r){ return r.assessed>0; }).length), std=_nfD.lvl==='all'&&!_nfD.type?((v.gaps||{}).std||[]):[];
   if(!g.length&&!std.length) return '<p class="nfd-muted">No common gaps — every assessed area is at the NQAS line.</p>';
   return g.map(function(x){ var p=nfDPct(x.n,n); return '<div class="nfd-gap"><span><b>AoC '+x.k+'</b> '+scEsc(NF_AOC_NAMES[x.k]||'')+'</span><i><em style="width:'+p+'%"></em></i><small>'+x.n+' facilit'+(x.n===1?'y':'ies')+' below 70%</small></div>'; }).join('')
     +(std.length?'<p class="nfd-std"><b>Standards most often below 50%:</b> '+std.map(function(x){ return scEsc(x.k)+' ('+x.n+')'; }).join(' · ')+'</p>':''); }
@@ -21077,36 +21185,72 @@ function nfDTrendHTML(v){ var T=(v.trend||[]).filter(function(x){ return x.avg!=
     +'<div class="nfd-leg"><span class="a">● Average readiness</span><span class="r">▮ NQAS Ready facilities</span></div>'; }
 function nfDStatusChip(r){ var done=r.grad||r.phase==='complete'||(r.day&&r.day>60); var c=r.comp==='g'?['On track','g']:r.comp==='a'?['Slipping','a']:r.comp==='r'?['Behind','r']:done?['Completed','n']:['Not started','n']; if(r.cu) c=['Catch-up','a']; return '<span class="nfd-chip '+c[1]+'">'+c[0]+'</span>'; }
 function nfDResult(r){ if(r.nh==='certified') return '<span class="nfd-chip gd">🏅 Certified'+(r.ns!=null?' '+r.ns+'%':'')+'</span>'; if(r.grad==='ready') return '<span class="nfd-chip g">NQAS Ready</span>'; if(r.grad==='almost') return '<span class="nfd-chip a">Almost ready</span>'; if(r.grad) return '<span class="nfd-chip n">Not yet</span>'; return '<span class="nfd-muted">In programme</span>'; }
+// ── B (22 Oct 2026): every facility type, the shared result words, State → District → Block → Facility, phone layout ──
+var NF_D_RES=[['ready','NQAS Ready','g'],['almost','Almost ready','a'],['notyet','Not yet ready','r'],['early','Too early','e'],['none','Not started','n']];
+function nfDResOf(r){ var k=r.res;
+  if(!k) k=r.grad?r.grad:!(r.assessed>0)?'none':(r.cov!=null&&r.cov<50)?'early':r.meets?'ready':(r.pct||0)>=70?'almost':'notyet';
+  if(k==='incomplete') k='notyet'; if(k==='none'&&r.day>0) k='early'; return k; }
+function nfDTypes(v){ var t={}; Object.keys(v.fac||{}).forEach(function(c){ var x=(v.fac[c].t||'sc'); t[x]=(t[x]||0)+1; }); return t; }
+function nfDType(t){ _nfD.type=t; nfDRender(); }
+function nfDTypeLbl(t){ return t==='sc'?'SC':String(t||'').toUpperCase(); }
+function nfDAgg(rows){ var A={n:rows.length,started:0,assessed:0,sum:0,sumB:0,nb:0,certified:0,onTrack:0,slipping:0,behind:0,pop:0,popReady:0,res:{},types:{}};
+  rows.forEach(function(r){ var k=nfDResOf(r); A.res[k]=(A.res[k]||0)+1; A.types[r.t||'sc']=(A.types[r.t||'sc']||0)+1;
+    if(r.day>0) A.started++; if(r.assessed>0&&r.pct!=null){ A.assessed++; A.sum+=r.pct; if(r.base!=null){ A.nb++; A.sumB+=r.base; } }
+    if(r.nh==='certified') A.certified++; if(r.comp==='g') A.onTrack++; else if(r.comp==='a') A.slipping++; else if(r.comp==='r') A.behind++;
+    if(r.pop){ A.pop+=r.pop; if(r.grad==='ready'||r.nh==='certified') A.popReady+=r.pop; } });
+  A.avg=A.assessed?Math.round(A.sum/A.assessed):null; A.avgB=A.nb?Math.round(A.sumB/A.nb):null;
+  var withB=rows.filter(function(r){ return r.assessed>0&&r.pct!=null&&r.base!=null; }); A.gain=withB.length?Math.round(withB.reduce(function(n,r){ return n+r.pct-r.base; },0)/withB.length):null;
+  return A; }
+function nfDTypesTxt(T){ return ['sc','uphc','phc','chc'].filter(function(t){ return T[t]; }).map(function(t){ return nfDTypeLbl(t)+' '+T[t]; }).join(' · '); }
+function nfDLevelRows(v){ return nfDRows(v).filter(function(r){ return !_nfD.type||(r.t||'sc')===_nfD.type; }); }
+function nfDKids(rows){ var lvl=_nfD.lvl==='all'?'state':_nfD.lvl==='state'?'district':_nfD.lvl==='district'?'block':null; if(!lvl) return null;
+  var G={}; rows.forEach(function(r){ var k=lvl==='state'?r.st:lvl==='district'?r.di:(r.bl||'No block'); (G[k]=G[k]||[]).push(r); });
+  var list=Object.keys(G).sort(function(a,b){ return a.localeCompare(b); }).map(function(k){ return {name:k,A:nfDAgg(G[k])}; });
+  return {lvl:lvl,label:lvl==='state'?'States':lvl==='district'?'Districts':'Blocks',rows:list}; }
+function nfDKid(i){ var K=nfDKids(nfDLevelRows(_nfD.v)); if(!K) return; var r=K.rows[i]; if(r) nfDGo(K.lvl,r.name); }
+function nfDResChip(r){ var k=nfDResOf(r), d=NF_D_RES.filter(function(x){ return x[0]===k; })[0]||NF_D_RES[4]; if(r.nh==='certified') return '<span class="nfd-chip gd">NHSRC certified</span>'; return '<span class="nfd-rc '+d[2]+'">'+d[1]+'</span>'; }
+function nfDResBar(A){ var tot=Math.max(1,A.n), seg=NF_D_RES.map(function(x){ var n=A.res[x[0]]||0; return n?'<i class="'+x[2]+'" style="width:'+(100*n/tot)+'%" title="'+x[1]+': '+n+'"><span>'+n+'</span></i>':''; }).join('');
+  return '<div class="nfd-card"><div class="nfd-h"><h3>If they graduated today</h3><small>the same words as every facility screen</small></div><div class="nfd-rbar">'+seg+'</div>'
+    +'<div class="nfd-rleg">'+NF_D_RES.map(function(x){ return '<span><i class="'+x[2]+'"></i>'+x[1]+' <b>'+(A.res[x[0]]||0)+'</b></span>'; }).join('')+'</div></div>'; }
 function nfDHTML(v){
-  var R=nfDRoll(v)||{n:0}, rows=nfDRows(v), C=nfDChildren(v), S=v.staff||{}, crumbs=[['all',v.kind==='state'?'All':'Portfolio']];
+  var T=nfDTypes(v), rows=nfDLevelRows(v), A=nfDAgg(rows), K=nfDKids(rows), S=v.staff||{}, donor=v.kind!=='state', names=v.names!==false;
+  var crumbs=[['all',v.kind==='state'?'All':'Portfolio']];
   if(_nfD.lvl!=='all') crumbs.push(['state',_nfD.st]); if(_nfD.lvl==='district'||_nfD.lvl==='block') crumbs.push(['district',_nfD.di]); if(_nfD.lvl==='block') crumbs.push(['block',_nfD.bl||'No block']);
-  var gain=R.avgGain!=null?'+'+R.avgGain+' points since baseline':'';
-  var h='<div class="nfd-crumbs">'+crumbs.map(function(c,i){ return i===crumbs.length-1?'<b>'+scEsc(c[1])+'</b>':'<a href="#" onclick="event.preventDefault();nfDGo(\''+c[0]+'\',\''+scJs(c[1])+'\')">'+scEsc(c[1])+'</a>'; }).join(' › ')+'</div>'
-    +'<div class="nfd-tiles">'+nfDTile(nfDInr(R.n),'Facilities',nfDInr(R.started||0)+' started')
-    +nfDTile(nfDInr(R.ready||0),'NQAS Ready',R.n?nfDPct(R.ready||0,R.n)+'% of facilities':'','g')+nfDTile(nfDInr(R.certified||0),'NHSRC certified','','gd')
-    +nfDTile(R.avgPct!=null?R.avgPct+'%':'—','Average readiness',scEsc(gain))
-    +nfDTile(nfDBig(R.popReady||0),'People served by Ready / certified facilities','of '+nfDBig(R.pop||0)+' people covered','wide')
-    +(_nfD.lvl==='all'?nfDTile(nfDInr(S.total||0),'Staff recognised','🌱 '+nfDInr(S.starter||0)+' · ✅ '+nfDInr(S.practitioner||0)+' · 🏅 '+nfDInr(S.achiever||0)+' · 🤝 '+nfDInr(S.champion||0)):'')+'</div>';
-  var F=[[R.n,'Enrolled'],[R.started||0,'Started'],[R.assessed||0,'Assessed'],[R.graduated||0,'Graduated'],[R.ready||0,'NQAS Ready'],[R.certified||0,'Certified']], mx=Math.max(1,R.n||0);
-  h+='<div class="nfd-card"><h3>Journey</h3><div class="nfd-fun">'+F.map(function(x){ return '<div><i style="height:'+Math.max(4,Math.round(x[0]/mx*64))+'px"></i><b>'+nfDInr(x[0])+'</b><small>'+x[1]+'</small></div>'; }).join('')+'</div></div>';
-  h+='<div class="nfd-two"><div class="nfd-card"><h3>On schedule?</h3><div class="nfd-sch">'
-    +[['g','On track',R.onTrack],['a','Slipping',R.slipping],['r','Behind',R.behind],['c','In catch-up',R.catchup]].map(function(x){ return '<div class="'+x[0]+'"><b>'+nfDInr(x[2]||0)+'</b><span>'+x[1]+'</span></div>'; }).join('')+'</div>'
-    +'<p class="nfd-muted">From the programme timeline: cards on time, missing cards and milestones.</p></div>'
-    +'<div class="nfd-card"><h3>Readiness over time</h3>'+(_nfD.lvl==='all'?nfDTrendHTML(v):'<p class="nfd-muted">Shown for the whole portfolio.</p>')+'</div></div>';
-  h+='<div class="nfd-card"><h3>Most common gaps</h3>'+nfDGapsHTML(v)+'</div>';
-  if(C&&C.rows.length&&!(C.rows.length===1&&_nfD.lvl!=='all'&&C.lvl==='block'&&C.rows[0].name==='No block')){
-    h+='<div class="nfd-card"><h3>By '+C.label.toLowerCase()+'</h3><div class="nfd-tw"><table class="nfd-tb"><thead><tr><th>'+C.label+'</th><th>Facilities</th><th>Average</th><th>Gain</th><th>NQAS Ready</th><th>Certified</th><th>Behind</th><th></th></tr></thead><tbody>'
-      +C.rows.map(function(r,i){ return '<tr onclick="nfDGoIdx('+i+')"><td><b>'+scEsc(r.name)+'</b></td><td>'+nfDInr(r.n)+'</td><td>'+(r.avgPct!=null?r.avgPct+'%':'—')+'</td><td>'+(r.avgGain!=null?'+'+r.avgGain:'—')+'</td><td>'+nfDInr(r.ready||0)+'</td><td>'+nfDInr(r.certified||0)+'</td><td>'+(r.behind?'<span class="nfd-chip r">'+r.behind+'</span>':'0')+'</td><td class="go">›</td></tr>'; }).join('')+'</tbody></table></div></div>'; }
-  if(_nfD.lvl!=='all'||(v.fac&&Object.keys(v.fac).length<=40)){
-    h+='<div class="nfd-card"><h3>Facilities ('+rows.length+')</h3><div class="nfd-tw"><table class="nfd-tb"><thead><tr><th>Facility</th><th>District · block</th><th>Day</th><th>Readiness</th><th>Gain</th><th>Timeline</th><th>Result</th></tr></thead><tbody>'
-      +rows.sort(function(a,b){ return String(a.n).localeCompare(String(b.n)); }).map(function(r){ return '<tr onclick="nfDFac(\''+scJs(r.code)+'\')"><td><b>'+scEsc(r.n)+'</b></td><td>'+scEsc([r.di,r.bl].filter(Boolean).join(' · '))+'</td><td>'+(r.day?(r.day>60?'Done':r.day):'—')+'</td><td>'+(r.assessed&&r.pct!=null?r.pct+'%':'—')+'</td><td>'+(r.base!=null&&r.pct!=null?'+'+Math.max(0,r.pct-r.base):'—')+'</td><td>'+nfDStatusChip(r)+'</td><td>'+nfDResult(r)+'</td></tr>'; }).join('')
-      +'</tbody></table></div></div>'; }
+  var h='<nav class="nfd-crumbs" aria-label="Breadcrumb">'+crumbs.map(function(c,i){ return i===crumbs.length-1?'<b>'+scEsc(c[1])+'</b>':'<a href="#" onclick="event.preventDefault();nfDGo(\''+c[0]+'\',\''+scJs(c[1])+'\')">'+scEsc(c[1])+'</a>'; }).join(' › ')+'</nav>';
+  if(Object.keys(T).length>1){ var all=nfDRows(v), cnt={}; all.forEach(function(r){ cnt[r.t||'sc']=(cnt[r.t||'sc']||0)+1; });
+    h+='<div class="nfd-types" role="group" aria-label="Facility type">'+[['','All',all.length]].concat(['sc','uphc','phc','chc'].filter(function(t){ return cnt[t]; }).map(function(t){ return [t,nfDTypeLbl(t),cnt[t]]; })).map(function(x){ return '<button type="button" class="'+((_nfD.type||'')===x[0]?'on':'')+'" aria-pressed="'+((_nfD.type||'')===x[0])+'" onclick="nfDType(\''+x[0]+'\')">'+x[1]+' '+x[2]+'</button>'; }).join('')+'</div>'; }
+  var tRead='<div class="nfd-t '+(donor?'':'hero')+'"><span>Average readiness</span><b>'+(A.avg!=null?A.avg+'%':'—')+'</b><small>'+(A.gain!=null?(A.gain>=0?'+':'')+A.gain+' since baseline'+(A.avgB!=null?' ('+A.avgB+'%)':''):'baseline not yet')+'</small></div>';
+  var tPeople='<div class="nfd-t '+(donor?'hero':'')+'"><span>People served by NQAS Ready facilities</span><b>'+nfDBig(A.popReady)+'</b><small>of '+nfDBig(A.pop)+' covered</small></div>';
+  h+='<div class="nfd-tiles">'+(donor?tPeople+tRead:tRead)
+    +'<div class="nfd-t"><span>Facilities</span><b>'+nfDInr(A.n)+'</b><small>'+nfDInr(A.started)+' started · '+nfDInr(A.n-A.started)+' not yet</small></div>'
+    +'<div class="nfd-t g"><span>NQAS Ready</span><b>'+nfDInr(A.res.ready||0)+'</b><small>+'+nfDInr(A.res.almost||0)+' almost ready</small></div>'
+    +'<div class="nfd-t gd"><span>NHSRC certified</span><b>'+nfDInr(A.certified)+'</b><small>'+(A.n?nfDPct(A.certified,A.n)+'% of facilities':'')+'</small></div>'
+    +(donor?'':tPeople)+'</div>';
+  h+=nfDResBar(A);
+  // main column: the next level down (or the facilities), side column: trend + gaps
+  var main='';
+  if(K&&K.rows.length&&!(K.lvl==='block'&&K.rows.length===1&&K.rows[0].name==='No block')){
+    main+='<div class="nfd-card"><div class="nfd-h"><h3>'+K.label+'</h3><small>click a row → '+(K.lvl==='state'?'districts':K.lvl==='district'?'blocks':'facilities')+'</small></div><div class="nfd-tw"><table class="nfd-tb nfd-kids"><thead><tr><th>'+K.label.replace(/s$/,'')+'</th><th>Readiness (baseline → now)</th><th class="c">Ready</th><th class="c">Almost</th><th class="c">Not yet</th><th class="c">Too early</th><th>On schedule</th></tr></thead><tbody>'
+      +K.rows.map(function(x,i){ var a=x.A; return '<tr onclick="nfDKid('+i+')" class="'+(a.behind>a.onTrack/2&&a.behind>1?'w':'')+'"><td data-l=""><b>'+scEsc(x.name)+'</b><small>'+a.n+' · '+scEsc(nfDTypesTxt(a.types))+'</small></td>'
+        +'<td data-l="Readiness">'+(a.avg==null?'—':(a.avgB!=null?a.avgB+'% → ':'')+'<b>'+a.avg+'%</b>'+(a.gain!=null?' <b class="'+(a.gain>=0?'up':'down')+'">'+(a.gain>=0?'+':'')+a.gain+'</b>':''))+'</td>'
+        +'<td data-l="Ready" class="c">'+(a.res.ready||0)+'</td><td data-l="Almost" class="c">'+(a.res.almost||0)+'</td><td data-l="Not yet" class="c">'+(a.res.notyet||0)+'</td><td data-l="Too early" class="c">'+(a.res.early||0)+'</td>'
+        +'<td data-l="On schedule">'+a.onTrack+' on track'+(a.behind?' · <span class="nfd-bh">'+a.behind+' behind</span>':'')+'</td></tr>'; }).join('')+'</tbody></table></div></div>'; }
+  if(_nfD.lvl==='block'||_nfD.lvl==='district'&&(!K||K.rows.length<=1)||rows.length<=40&&_nfD.lvl!=='all'){
+    var fr=rows.slice().sort(function(a,b){ return String(a.n||'').localeCompare(String(b.n||''))||String(a.code).localeCompare(String(b.code)); });
+    main+='<div class="nfd-card"><div class="nfd-h"><h3>Facilities ('+fr.length+')</h3>'+(names?'':'<small>names shown only with HealSol\'s permission</small>')+'</div><div class="nfd-tw"><table class="nfd-tb nfd-facs"><thead><tr><th>Facility</th><th>Day</th><th>Readiness</th><th>Result</th><th>Timeline</th></tr></thead><tbody>'
+      +fr.map(function(r,i){ var nm=r.n||(nfDTypeLbl(r.t)+' '+(i+1)); return '<tr onclick="nfDFac(\''+scJs(r.code)+'\')"><td data-l=""><b>'+scEsc(nm)+'</b> <span class="nfd-ty">'+nfDTypeLbl(r.t)+'</span><small>'+scEsc([r.bl,r.di].filter(Boolean).join(' · '))+'</small></td>'
+        +'<td data-l="Day">'+(r.grad?'Graduated':r.day>0?r.day:'Not started')+'</td><td data-l="Readiness">'+(r.assessed&&r.pct!=null?(r.base!=null?r.base+'% → ':'')+'<b>'+r.pct+'%</b>':'—')+'</td>'
+        +'<td data-l="Result">'+nfDResChip(r)+'</td><td data-l="Timeline">'+nfDStatusChip(r)+'</td></tr>'; }).join('')+'</tbody></table></div></div>'; }
+  var side='<div class="nfd-card"><h3>Readiness over time</h3>'+(_nfD.lvl==='all'&&!_nfD.type?nfDTrendHTML(v):'<p class="nfd-muted">Shown for the whole portfolio, all types.</p>')+'</div>'
+    +'<div class="nfd-card"><h3>Most common gaps</h3>'+nfDGapsHTML(v)+'</div>'
+    +(_nfD.lvl==='all'&&!_nfD.type?'<div class="nfd-card"><h3>Staff recognised</h3><p class="nfd-st">'+nfDInr(S.total||0)+' staff · '+nfDInr(S.achiever||0)+' Quality Achievers · '+nfDInr(S.champion||0)+' Quality Champions</p></div>':'');
+  h+='<div class="nfd-cols"><div class="nfd-main">'+(main||'<div class="nfd-card"><p class="nfd-muted">No facilities here'+(_nfD.type?' of this type':'')+'.</p></div>')+'</div><div class="nfd-side">'+side+'</div></div>';
   return h; }
 function nfDFac(code){ var r=(_nfD.v.fac||{})[code]; if(!r) return; var A=r.aoc||{};
   var ov=document.createElement('div'); ov.className='nfd-ov';
-  ov.innerHTML='<div class="nfd-modal" role="dialog" aria-modal="true"><div class="nfd-mh"><div><b>'+scEsc(r.n)+'</b><small>'+scEsc([r.bl,r.di,r.st].filter(Boolean).join(' · '))+'</small></div><button type="button" onclick="this.closest(\'.nfd-ov\').remove()" aria-label="Close">✕</button></div>'
+  ov.innerHTML='<div class="nfd-modal" role="dialog" aria-modal="true"><div class="nfd-mh"><div><b>'+scEsc(r.n||nfDTypeLbl(r.t))+' <span class="nfd-ty">'+nfDTypeLbl(r.t)+'</span></b><small>'+scEsc([r.bl,r.di,r.st].filter(Boolean).join(' · '))+'</small></div><button type="button" onclick="this.closest(\'.nfd-ov\').remove()" aria-label="Close">✕</button></div>'
     +'<div class="nfd-mt">'+nfDTile(r.assessed&&r.pct!=null?r.pct+'%':'—','Readiness now',r.base!=null?'baseline '+r.base+'%':'')+nfDTile(r.day?(r.day>60?'Done':'Day '+r.day):'—','Programme',nfDStatusChip(r))+nfDTile(r.pop?nfDInr(r.pop):'—','People covered','')+'</div>'
-    +'<p>'+nfDResult(r)+(r.gp!=null?' <span class="nfd-muted">graduation score '+r.gp+'%</span>':'')+'</p><h4>Areas of Concern</h4>'
+    +'<p>'+nfDResChip(r)+(r.gp!=null?' <span class="nfd-muted">graduation score '+r.gp+'%</span>':'')+'</p><h4>Areas of Concern</h4>'
     +'ABCDEFGH'.split('').filter(function(k){ return A[k]!=null; }).map(function(k){ var p=A[k]; return '<div class="nfd-aoc"><span><b>'+k+'</b> '+scEsc(NF_AOC_NAMES[k])+'</span><i><em class="'+(p>=70?'ok':'lo')+'" style="width:'+p+'%"></em></i><b>'+p+'%</b></div>'; }).join('')
     +'<p class="nfd-muted">'+(r.gaps?r.gaps+' open gaps · ':'')+(r.stdB?r.stdB+' standards below 50% · ':'')+'NQAS line: every area 70%+, every standard 50%+.</p></div>';
   ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); }); document.body.appendChild(ov); }
@@ -21122,7 +21266,7 @@ function nfDRender(){ var app=document.getElementById('nf-dash-app'); if(!app) r
 function nfDShow(){ var app=document.getElementById('nf-dash-app'); if(!app){ app=document.createElement('div'); app.id='nf-dash-app'; document.body.appendChild(app); } app.style.display='block'; document.body.classList.add('nfd-on'); nfDRender(); try{ window.scrollTo(0,0); }catch(e){} }
 async function nfDOpenViewer(acc){
   var ls=document.getElementById('login-screen'); if(ls) ls.style.display='none';
-  var w=acc.rec||await fbGet('sc_viewers/'+acc.id)||{}; _nfD.who={id:acc.id,name:w.name||acc.id,kind:w.kind,portName:''}; _nfD.mode='viewer'; _nfD.lvl='all'; _nfD.st=_nfD.di=_nfD.bl='';
+  var w=acc.rec||await fbGet('sc_viewers/'+acc.id)||{}; _nfD.who={id:acc.id,name:w.name||acc.id,kind:w.kind,portName:''}; _nfD.mode='viewer'; _nfD.lvl='all'; _nfD.type=''; _nfD.st=_nfD.di=_nfD.bl='';
   _nfD.v=null; try{ _nfD.v=await fbGet('sc_views/'+w.portfolio); }catch(e){} nfDShow(); return true; }
 function nfDClose(){ var app=document.getElementById('nf-dash-app'); if(app) app.style.display='none'; document.body.classList.remove('nfd-on'); _nfD.mode=''; }
 async function nfDLogout(){ nfDClose(); _nfD.v=null; var ls=document.getElementById('login-screen'); if(ls) ls.style.display=''; try{ await nfSecureSignOut(); }catch(e){} try{ nfBack(); }catch(e){} }
@@ -21136,8 +21280,8 @@ async function nfDXlsx(btn){ var v=_nfD.v; if(!v) return; var old=btn&&btn.inner
     X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(sum),'Summary');
     var lvl=function(obj){ return [['Name','State','District','Facilities','Started','Average %','Gain','NQAS Ready','Certified','On track','Slipping','Behind','People']].concat(Object.keys(obj||{}).map(function(k){ var r=obj[k]; return [r.name,r.state||'',r.district||'',r.n,r.started,r.avgPct,r.avgGain,r.ready,r.certified,r.onTrack,r.slipping,r.behind,r.pop]; })); };
     X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(lvl(v.roll.district)),'Districts'); X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(lvl(v.roll.block)),'Blocks');
-    var F=v.fac||{}; X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['Facility','State','District','Block','Programme day','Readiness %','Baseline %','Timeline','Result','Graduation %','NHSRC','NHSRC score','People','Open gaps'].concat('ABCDEFGH'.split('').map(function(k){ return 'AoC '+k+' %'; }))].concat(Object.keys(F).map(function(c){ var r=F[c];
-      return [r.n,r.st,r.di,r.bl,r.day,r.assessed?r.pct:null,r.base,{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'',r.grad||'',r.gp,r.nh||'',r.ns,r.pop,r.gaps].concat('ABCDEFGH'.split('').map(function(k){ return (r.aoc||{})[k]!=null?r.aoc[k]:null; })); }))),'Facilities');
+    var F=v.fac||{}; X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['Facility','Type','State','District','Block','Programme day','Readiness %','Baseline %','Timeline','Result','Graduation %','NHSRC','NHSRC score','People','Open gaps'].concat('ABCDEFGH'.split('').map(function(k){ return 'AoC '+k+' %'; }))].concat(Object.keys(F).map(function(c,i){ var r=F[c];
+      return [r.n||(nfDTypeLbl(r.t)+' '+(i+1)),nfDTypeLbl(r.t),r.st,r.di,r.bl,r.day,r.assessed?r.pct:null,r.base,{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'',(NF_D_RES.filter(function(x){ return x[0]===nfDResOf(r); })[0]||NF_D_RES[4])[1],r.gp,r.nh||'',r.ns,r.pop,r.gaps].concat('ABCDEFGH'.split('').map(function(k){ return (r.aoc||{})[k]!=null?r.aoc[k]:null; })); }))),'Facilities');
     X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['Month','Facilities','Average readiness %','NQAS Ready']].concat((v.trend||[]).map(function(t){ return [t.m,t.n,t.avg,t.ready]; }))),'By month');
     var how=await nfSaveWb(X,wb,nfDFile()+'.xlsx'); nfDoneToast(how); }
   catch(e){ showToast('Could not make the Excel file — check the internet.','err'); }
@@ -21157,7 +21301,7 @@ async function nfDPdf(btn){ var v=_nfD.v; if(!v) return; var old=btn&&btn.innerH
     y+=10+Math.max(1,g.length)*5.5;
     var dist=Object.keys(v.roll.district||{}).map(function(k){ var r=v.roll.district[k]; return [r.name,r.state||'',r.n,r.avgPct!=null?r.avgPct+'%':'—',r.avgGain!=null?'+'+r.avgGain:'—',r.ready||0,r.certified||0,r.behind||0]; });
     doc.autoTable({startY:y,head:[['District','State','Facilities','Average','Gain','Ready','Certified','Behind']],body:dist,styles:{font:doc._nfFont,fontSize:8.5},headStyles:{fillColor:[19,90,85]},margin:{left:14,right:14}});
-    var F=v.fac||{}, rows=Object.keys(F).map(function(c){ var r=F[c]; return [r.n,[r.di,r.bl].filter(Boolean).join(' · '),r.day?(r.day>60?'Done':r.day):'—',r.assessed&&r.pct!=null?r.pct+'%':'—',r.base!=null&&r.pct!=null?'+'+Math.max(0,r.pct-r.base):'—',{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'—',r.nh==='certified'?'Certified':r.grad==='ready'?'NQAS Ready':r.grad==='almost'?'Almost ready':r.grad?'Not yet ready':'In programme']; })
+    var F=v.fac||{}, rows=Object.keys(F).map(function(c,i){ var r=F[c]; return [r.n||(nfDTypeLbl(r.t)+' '+(i+1)),[r.di,r.bl].filter(Boolean).join(' · '),r.day?(r.day>60?'Done':r.day):'—',r.assessed&&r.pct!=null?r.pct+'%':'—',r.base!=null&&r.pct!=null?'+'+Math.max(0,r.pct-r.base):'—',{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'—',r.nh==='certified'?'NHSRC certified':(NF_D_RES.filter(function(x){ return x[0]===nfDResOf(r); })[0]||NF_D_RES[4])[1]]; })
       .sort(function(a,b){ return String(a[0]).localeCompare(String(b[0])); });
     doc.autoTable({startY:doc.lastAutoTable.finalY+8,head:[['Facility','District · block','Day','Readiness','Gain','Timeline','Result']],body:rows,styles:{font:doc._nfFont,fontSize:8},headStyles:{fillColor:[19,90,85]},margin:{left:14,right:14}});
     var pages=doc.getNumberOfPages(); for(var p=1;p<=pages;p++){ doc.setPage(p); doc.setFontSize(7.5); doc.setTextColor(120); doc.text(nfPdfTxt(doc,'NQAS | FAST · HealSol Academy · facility-level figures; staff names are never shown · page '+p+' of '+pages),14,290); }
@@ -21208,7 +21352,8 @@ function nfDPortForm(pid){ var p=pid?(_nfD.ports||{})[pid]||{}:{kind:'donor',sco
     +'<fieldset><legend>1 · Portfolio</legend><label>Name <small>(shown at the top of the dashboard)</small><input id="nfd-pn" maxlength="80" placeholder="e.g. Uttar Pradesh — NHM, or ABC Foundation (Jhansi)" value="'+scEsc(p.name||'')+'"></label>'
     +'<label>Type<select id="nfd-pk"><option value="donor"'+(p.kind!=='state'?' selected':'')+'>Donor / Partner</option><option value="state"'+(p.kind==='state'?' selected':'')+'>State</option></select></label>'
     +'<div class="nfr-logo"><div id="nfd-lgp">'+nfDLogoPrev()+'</div><label class="nfr-btn ghost">📥 '+(p.logo?'Change logo':'Logo (optional)')+'<input type="file" accept="image/png,image/jpeg" hidden onchange="nfDPickLogo(this)"></label><small>Shown on the dashboard and the PDF report. Use only with the partner\'s permission.</small></div>'
-    +'<label class="nfr-tick" style="margin-top:8px;"><input type="checkbox" id="nfd-off"'+(p.off?' checked':'')+'> Switched off (the dashboard is hidden)</label>'
+    +'<label class="nfr-tick" style="margin-top:8px;"><input type="checkbox" id="nfd-names"'+(p.showNames?' checked':'')+'> Partner may see facility names <small class="nfr-muted">(State dashboards always do; partners see "SC 1, SC 2…" when this is off)</small></label>'
+    +'<label class="nfr-tick" style="margin-top:6px;"><input type="checkbox" id="nfd-off"'+(p.off?' checked':'')+'> Switched off (the dashboard is hidden)</label>'
     +'<label class="nfr-tick" style="margin-top:6px;"><input type="checkbox" id="nfd-demo"'+(p.demo?' checked':'')+' onchange="_nfD.edit.demo=this.checked;nfDChips()"> Demo portfolio — also counts demo / self-registered facilities <small class="nfr-muted">(for showing partners — add your own demo facilities one by one, not a whole state; public totals never include them)</small></label></fieldset>'
     +'<fieldset><legend>2 · Facilities it covers</legend><p class="nfr-muted" style="margin:0 0 8px;">Add any mix — a facility in any of them counts.</p>'
     +'<div class="nfd-add"><b>Whole state</b><select id="nfd-s1">'+stOpts+'</select><button type="button" class="nfr-btn ghost sm" onclick="nfDAdd(\'st\')">Add</button></div>'
@@ -21240,7 +21385,7 @@ async function nfDPortSave(){ var g=function(i){ var e=document.getElementById(i
   var sc={}; ['st','di','bl','fac'].forEach(function(t){ var o={}; Object.keys(E.sc[t]||{}).forEach(function(k){ if(E.sc[t][k]) o[k]=true; }); if(Object.keys(o).length) sc[t]=o; });
   if(!Object.keys(sc).length){ err.textContent='Add at least one state, district, block or facility.'; return; }
   var pid=E.pid||('P'+Date.now().toString(36)), old=(_nfD.ports||{})[pid]||{}, by=nfrBy(), now=scNowIso();
-  var rec={name:name,kind:g('nfd-pk')==='state'?'state':'donor',logo:E.logo||null,scope:sc,off:document.getElementById('nfd-off').checked?true:null,demo:document.getElementById('nfd-demo').checked?true:null,by:old.by||by,at:old.at||now,updatedBy:by,updatedAt:now};
+  var rec={name:name,kind:g('nfd-pk')==='state'?'state':'donor',logo:E.logo||null,scope:sc,off:document.getElementById('nfd-off').checked?true:null,showNames:document.getElementById('nfd-names').checked?true:null,demo:document.getElementById('nfd-demo').checked?true:null,by:old.by||by,at:old.at||now,updatedBy:by,updatedAt:now};
   var ok=await fbSet('sc_portfolios/'+pid,JSON.parse(JSON.stringify(rec))); if(!ok){ err.textContent='Could not save.'; return; }
   _nfD.ports[pid]=rec; nfrClose(); showToast('Saved. Tap "Update dashboards now" to prepare its dashboard.','ok'); nfDAdminRender(); }
 // logins
@@ -21283,7 +21428,7 @@ async function nfDUpdateNow(){ var b=document.getElementById('nfd-upd'); if(b){ 
   try{ var r=await nfCall('refreshSummary',{all:true}); showToast('Dashboards updated'+(r&&r.views!=null?' ('+r.views+' portfolio'+(r.views===1?'':'s')+')':'')+'.','ok'); }catch(e){ showToast(e.message||'Could not update.','err'); }
   if(b){ b.disabled=false; b.innerHTML='<i class="ti ti-refresh"></i> Update dashboards now'; } }
 async function nfDPreview(pid){ showToast('Opening the dashboard…','ok'); var v=null; try{ v=await fbGet('sc_views/'+pid); }catch(e){}
-  var p=(_nfD.ports||{})[pid]||{}; _nfD.v=v; _nfD.mode='preview'; _nfD.who={name:'HealSol preview',portName:p.name,kind:p.kind}; _nfD.lvl='all'; _nfD.st=_nfD.di=_nfD.bl=''; nfDShow(); }
+  var p=(_nfD.ports||{})[pid]||{}; _nfD.v=v; _nfD.mode='preview'; _nfD.who={name:'HealSol preview',portName:p.name,kind:p.kind}; _nfD.lvl='all'; _nfD.type=''; _nfD.st=_nfD.di=_nfD.bl=''; nfDShow(); }
 // left menu (HealSol), login routing (State Admin / Donor)
 (function(){
   var oItems=nfAdminItems;
@@ -21295,7 +21440,7 @@ async function nfDPreview(pid){ showToast('Opening the dashboard…','ok'); var 
 })();
 </script>
 <style id="nf-dept-css">/* Department core (UPHC …) — full-screen app #nf-dept-app; uses the app's colour tokens (--teal, --bg, --br, --t1…) */
-body.nd-on > *:not(#nf-dept-app):not(.scx-ov):not(.nfcv-ov):not(#nf-toast):not(#toast):not([id$="-ov"]):not([id$="-overlay"]):not(#nf-stage-ribbon){display:none!important;}
+body.nd-on > *:not(#nf-dept-app):not(.scx-ov):not(.nfcv-ov):not(#nf-toast):not(#toast):not([id$="-ov"]):not([id$="-overlay"]):not(#nf-stage-ribbon):not(#nf-mo){display:none!important;}
 #nf-dept-app{display:none;min-height:100vh;background:var(--bg,#F0F4F3);color:var(--t1,#0F172A);font-family:'NF Poppins','Poppins',system-ui,sans-serif;padding-bottom:84px;}
 #nf-dept-app .nd-hd{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--teal,#1E6B5E);color:#fff;padding:12px 16px;}
 #nf-dept-app .nd-hd>div{flex:1;min-width:0;display:flex;flex-direction:column;}
@@ -25978,6 +26123,12 @@ body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none
 /* sortable headers in the shared role table */
 .hs-rt th .hs-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: inherit; min-height: 32px; }
 .hs-rt th .hs-sort:hover { color: #134A41; text-decoration: underline; }
+/* MOIC block view: groups by PHC */
+.hs-rt tr.hs-grp td{background:#EAF2F0;padding:10px 12px;font-size:13px;border-top:1px solid #DCE4E1;}
+.hs-rt tr.hs-grp td b{font-size:14px;} .hs-rt tr.hs-grp td small{display:block;font-size:12px;color:#4F5E59;margin-top:2px;}
+.hs-rt tr.hs-grp{cursor:default;}
+.hs-grpbar{display:flex;justify-content:space-between;align-items:baseline;margin:6px 2px 8px;} .hs-grpbar b{font-size:15px;}
+@media (max-width:700px){ .hs-rt tr.hs-grp{display:block;border:0;background:none;padding:0;margin:14px 0 4px;} .hs-rt tr.hs-grp td{display:block;border-radius:12px;} .hs-rt tr.hs-grp td::before{content:none!important;} }
 </style>
 <script id="nf-hs-settings">// ══════════════════════════════════════════════════════════════
 // HealSol Settings refinements (21 Oct 2026)
@@ -27044,7 +27195,24 @@ function fpVaBlocked() { try { showToast('View only — open the CHO\'s own logi
 // (consistency review items 5–7, agreed 22 Oct 2026). Each role sees only its own facilities; nothing HealSol-only
 // (enrol, access / payments, Manage ⋯).
 // ══════════════════════════════════════════════════════════════
-var _hsr = { type: '', dist: '', phase: '', status: '' };
+var _hsr = { type: '', dist: '', phase: '', status: '', flat: false };
+// MOIC block view (B, 22 Oct 2026): facilities grouped by PHC (CHC first), "Flat list" to switch off
+function hsrBlock() { try { return scIsDistrict() && _scSup && _scSup.scope === 'block'; } catch (e) { return false; } }
+function hsrNin(x) { return String(x == null ? '' : x).replace(/[^0-9A-Za-z]/g, '').toUpperCase(); }
+function hsrRowsGrouped(sorted, cols, fn) {
+  if (!hsrBlock() || _hsr.flat || hsrRole() === 'champion') return sorted.map(fn).join('');
+  var G = {}, order = [], add = function (k, o) { if (!G[k]) { G[k] = { k: k, rows: [], head: null, name: '', sc: 0 }; order.push(k); } G[k].rows.push(o); return G[k]; };
+  sorted.forEach(function (o) { var f = o.f || {}, L = f.links || {};
+    if (o.type === 'chc') { var g = add('chc:' + o.code, o); g.head = o; g.name = o.name; }
+    else if (o.type === 'phc') { var g2 = add('phc:' + (hsrNin(f.nin) || o.code), o); g2.head = o; g2.name = o.name; }
+    else { var k = L.phc && L.phc.nin ? 'phc:' + hsrNin(L.phc.nin) : 'none'; var g3 = add(k, o); if (!g3.name) g3.name = L.phc && L.phc.name || ''; if (o.type === 'sc') g3.sc++; } });
+  order.sort(function (a, b) { var r = function (k) { return /^chc:/.test(k) ? 0 : k === 'none' ? 2 : 1; }; return r(a) - r(b); });
+  return order.map(function (k) { var g = G[k], rows = g.head ? [g.head].concat(g.rows.filter(function (o) { return o !== g.head; })) : g.rows;
+    var title = k === 'none' ? 'Not linked to a PHC' : g.name || 'PHC', ty = /^chc:/.test(k) ? 'chc' : k === 'none' ? '' : 'phc';
+    var sub = ty === 'chc' ? 'CHC' : ty === 'phc' ? (g.head ? '' : 'PHC not enrolled · ') + g.sc + ' sub-centre' + (g.sc === 1 ? '' : 's') : g.sc + ' sub-centre' + (g.sc === 1 ? '' : 's');
+    if (ty === 'chc') return rows.map(fn).join('');   // the CHC: its own row is the heading
+    return '<tr class="hs-grp"><td colspan="' + cols + '"><b>' + hsE(title) + '</b>' + (ty ? ' ' + hsTypeChip(ty) : '') + (ty !== 'chc' ? '<small>' + hsE(sub) + '</small>' : '') + '</td></tr>' + rows.map(fn).join(''); }).join('');
+}
 function hsrRole() { try { return document.body.classList.contains('nf-champ') ? 'champion' : nfAdminRole(); } catch (e) { return ''; } }
 function hsrOn() { var r = hsrRole(); return !!r && r !== 'admin'; }
 // one row object per facility, from the role's own rows (nfAdminRows / nfChampRows)
@@ -27069,13 +27237,13 @@ function hsrTableHTML(list, champ, compact) {
   var th = function (k, l, cls) { return '<th' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" class="hs-sort" onclick="nfOvSort(\'' + k + '\')">' + l + (sk === k ? (dir < 0 ? ' ↓' : ' ↑') : '') + '</button></th>'; };
   var role = hsrRole(), ver = role !== 'district', cols = (compact ? 4 : 6) + (ver ? 1 : 0) + (champ ? 1 : 0);
   return '<table class="nfo-t hs-ft hs-rt' + (compact ? ' cmp' : '') + '"><thead><tr>' + th('name', 'Facility') + (compact ? '' : th('day', 'Day · phase')) + th('readiness', 'Readiness (baseline → now)') + '<th>Result</th>' + (compact ? '' : '<th class="c">On time</th>') + th('overdue', 'Overdue actions', 'c') + (ver ? th('verify', 'To verify', 'c') : '') + (champ ? '<th></th>' : '') + '</tr></thead><tbody>'
-    + (sorted.length ? sorted.map(function (o) { var ch = o.pct != null && o.base != null ? o.pct - o.base : null, J = hsJ(o.code);
+    + (sorted.length ? hsrRowsGrouped(sorted, cols, function (o) { var ch = o.pct != null && o.base != null ? o.pct - o.base : null, J = hsJ(o.code);
       return '<tr class="nfo-row' + (o.behind ? ' hs-warn' : '') + '" onclick="' + (champ ? "nfChampFacility('" + J + "')" : "scDrillIn('" + J + "')") + '"><td data-l=""><b>' + hsE(o.name) + '</b> ' + hsTypeChip(o.type) + '<small>' + hsE([o.district || o.code, o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : 'No ' + o.inChargeLabel + ' yet'].join(' · ')) + '</small>' + (compact ? '<small>' + (o.phase === 'notstarted' ? 'Not started · ' + (o.f.startDate ? 'starts ' + hsE(hsShortDate(o.f.startDate)) : 'start date not set') : 'Day ' + (o.phase === 'catchup' ? o.days : o.day) + ' · ' + hsE(HS_PHASE[o.phase])) + (o.onTime != null ? ' · ' + o.onTime + '% on time' : '') + '</small>' : '') + '</td>'
         + (compact ? '' : '<td data-l="Day">' + (o.phase === 'notstarted' ? 'Not started<small>' + (o.f.startDate ? 'starts ' + hsE(hsShortDate(o.f.startDate)) : 'start date not set') + '</small>' : 'Day ' + (o.phase === 'catchup' ? o.days : o.day) + '<small>' + hsE(HS_PHASE[o.phase]) + '</small>') + '</td>')
         + '<td data-l="Readiness">' + (o.pct == null ? '<span class="hs-dim">' + (o.loading ? 'Loading…' : o.phase === 'notstarted' ? 'Not assessed yet' : 'No cards yet') + '</span>' : (o.base != null ? o.base + '% → ' : '') + '<b>' + o.pct + '%</b>' + (ch != null ? ' <b class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch + '</b>' : '') + (o.cov != null ? '<small>' + o.cov + '% checked</small>' : '')) + '</td>'
         + '<td data-l="Result">' + hsResult(o) + '</td>' + (compact ? '' : '<td data-l="On time" class="c' + (o.behind ? ' red' : '') + '">' + (o.onTime == null ? '—' : o.onTime + '%') + '</td>') + '<td data-l="Overdue actions" class="c' + (o.overdue ? ' red' : '') + '">' + (o.overdue || 0) + '</td>'
         + (ver ? '<td data-l="To verify" class="c">' + (o.toVerify || 0) + '</td>' : '')
-        + (champ ? '<td class="nfo-acts"><button type="button" class="hs-btn" onclick="event.stopPropagation();scqOpenActionPlan(\'' + J + '\')">Action Plan</button><button type="button" class="hs-btn p" onclick="event.stopPropagation();scqEditSession(null,\'' + J + '\')">' + (o.next ? 'Session ' + hsE(hsShortDate(String(o.next.startAt || '').slice(0, 10))) : 'Plan session') + '</button></td>' : '') + '</tr>'; }).join('')
+        + (champ ? '<td class="nfo-acts"><button type="button" class="hs-btn" onclick="event.stopPropagation();scqOpenActionPlan(\'' + J + '\')">Action Plan</button><button type="button" class="hs-btn p" onclick="event.stopPropagation();scqEditSession(null,\'' + J + '\')">' + (o.next ? 'Session ' + hsE(hsShortDate(String(o.next.startAt || '').slice(0, 10))) : 'Plan session') + '</button></td>' : '') + '</tr>'; })
       : '<tr><td colspan="' + cols + '" class="nfo-empty">' + (_nfOv.q ? 'No facility matches "' + hsE(_nfOv.q) + '".' : 'No facility matches these filters.') + '</td></tr>') + '</tbody></table>';
 }
 // Overview: the old table in nfOverviewHTML becomes the shared one
@@ -27094,13 +27262,15 @@ function hsrRenderFac() {
   all.forEach(function (o) { if (o.district) dist[o.district] = 1; types[o.type] = 1; });
   var sel = function (k, opts) { return '<select class="hs-sel" aria-label="' + k + '" onchange="hsrSet(\'' + k + '\',this.value)">' + opts.map(function (x) { return '<option value="' + hsE(x[0]) + '"' + (_hsr[k] === x[0] ? ' selected' : '') + '>' + hsE(x[1]) + '</option>'; }).join('') + '</select>'; };
   var role = hsrRole(), behind = all.filter(function (o) { return o.behind; }).length, inprog = all.filter(function (o) { return o.inProg; }).length;
-  box.innerHTML = '<div class="nfo-top"><div><h1>Facilities</h1><small>' + all.length + ' ' + (role === 'district' ? 'in your district · view only' : 'assigned to you') + (Object.keys(dist).length ? ' · ' + hsE(Object.keys(dist).sort().join(', ')) : '') + ' · ' + inprog + ' in programme' + (behind ? ' · ' + behind + ' behind schedule' : '') + '</small></div></div>'
+  var blk = hsrBlock();
+  box.innerHTML = '<div class="nfo-top"><div><h1>Facilities</h1><small>' + all.length + ' ' + (blk ? 'in ' + hsE(_scSup.block || _scSup.chcName || 'the') + ' block · view only' : role === 'district' ? 'in your district · view only' : 'assigned to you') + (Object.keys(dist).length ? ' · ' + hsE(Object.keys(dist).sort().join(', ')) : '') + ' · ' + inprog + ' in programme' + (behind ? ' · ' + behind + ' behind schedule' : '') + '</small></div></div>'
     + '<div class="hs-filters"><label class="hs-search"><i class="ti ti-search"></i><input id="hsr-fq" type="search" aria-label="Search facilities" placeholder="Search name, ID, in-charge" value="' + hsE(_nfOv.q || '') + '" oninput="hsrSet(\'q\',this.value)"></label>'
     + (Object.keys(types).length > 1 ? sel('type', [['', 'All types']].concat(HS_TYPES.filter(function (t) { return types[t]; }).map(function (t) { return [t, hsShort(t)]; }))) : '')
     + (Object.keys(dist).length > 1 ? sel('dist', [['', 'All districts']].concat(Object.keys(dist).sort().map(function (d) { return [d, d]; }))) : '')
     + sel('phase', [['', 'Any phase'], ['inprog', 'In programme'], ['notstarted', 'Not started'], ['baseline', 'Baseline'], ['impl', 'Implementation'], ['endline', 'End-line'], ['ready', 'Readiness week'], ['closing', 'Waiting for graduation'], ['graduated', 'Graduated'], ['catchup', 'Catch-up']])
     + sel('status', [['', 'Any status'], ['behind', 'Behind schedule'], ['overdue', 'Overdue actions']].concat(role === 'district' ? [] : [['verify', 'Cards to verify']]))
     + (_hsr.type || _hsr.dist || _hsr.phase || _hsr.status || _nfOv.q ? '<button type="button" class="hs-link" onclick="_hsr.type=_hsr.dist=_hsr.phase=_hsr.status=\'\';_nfOv.q=\'\';hsrRenderFac()">Clear filters</button>' : '') + '</div>'
+    + (blk ? '<div class="hs-grpbar"><b>' + (_hsr.flat ? 'All facilities' : 'By PHC') + '</b><button type="button" class="hs-link" onclick="_hsr.flat=!_hsr.flat;hsrRenderFac()">' + (_hsr.flat ? 'Group by PHC' : 'Flat list') + '</button></div>' : '')
     + '<div class="nfo-card hs-tw">' + hsrTableHTML(list, false) + '</div>';
 }
 // Reports page (Supervisor · District Admin): the HealSol cards they may open

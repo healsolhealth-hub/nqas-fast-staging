@@ -1348,7 +1348,7 @@ function scMdNext(di){
 
 <!-- ══ BUILD 4.4 — laptop dashboards ══ -->
 <link rel="stylesheet" href="assets/sc-laptop.3b958233dd.css" onerror="nfAssetFail(this)">
-<script src="assets/sc-laptop.6008c00403.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-laptop.f633cb1c90.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Readiness redesign + separate service dropdowns ══ -->
 <style>
@@ -1522,7 +1522,7 @@ function nfReleaseLayers(){
 .nfs-card .scx-btn{align-self:flex-start;} td.pw{font-family:monospace;font-weight:700;color:var(--teal-dk);}
 html.nf-secure #sc-add-pwd{display:none!important;}
 .ti-database-export{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M4 6c0 1.657 3.582 3 8 3s8 -1.343 8 -3s-3.582 -3 -8 -3s-8 1.343 -8 3%22 /%3E%3Cpath d=%22M4 6v6c0 1.657 3.582 3 8 3c1.118 0 2.183 -.086 3.15 -.241%22 /%3E%3Cpath d=%22M20 12v-6%22 /%3E%3Cpath d=%22M4 12v6c0 1.657 3.582 3 8 3c.157 0 .312 -.002 .466 -.005%22 /%3E%3Cpath d=%22M16 19h6%22 /%3E%3Cpath d=%22M19 16l3 3l-3 3%22 /%3E%3C/svg%3E")}.ti-id{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z%22 /%3E%3Cpath d=%22M9 10m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0%22 /%3E%3Cpath d=%22M15 8l2 0%22 /%3E%3Cpath d=%22M15 12l2 0%22 /%3E%3Cpath d=%22M7 16l10 0%22 /%3E%3C/svg%3E")}</style>
-<script src="assets/shared-secure.7c38c8228c.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-secure.dc4bab961d.js" onerror="nfAssetFail(this)"></script>
 
 <script id="nf-registration" src="assets/shared-registration.6833f0a40c.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-payments" src="assets/shared-payments.2b35528884.js" onerror="nfAssetFail(this)"></script>
@@ -1811,35 +1811,8 @@ function nfCoverDone(){
 <script id="nf-wp" src="assets/sc-week-plan.126d067680.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 3: PHC / CHC links · MO PHC overview · MOIC block view ══ -->
-<style id="nf-links-css">
-.nfl-card{border:1px solid var(--br);border-radius:14px;padding:12px 14px;background:#fff;margin-bottom:10px;}
-.nfl-card h4{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:6px;}
-.nfl-kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12.5px;color:var(--t2);} .nfl-kv b{color:var(--t1);font-weight:600;}
-.nfl-st{display:inline-block;font-size:11px;font-weight:700;border-radius:10px;padding:2px 9px;margin-left:6px;}
-.nfl-st.ok{background:#DCFCE7;color:#15803D;} .nfl-st.wait{background:#FEF3C7;color:#92400E;} .nfl-st.none{background:#F1F5F9;color:#64748B;}
-.nfl-row{display:flex;gap:10px;align-items:flex-start;border-top:1px solid var(--br);padding:9px 0;font-size:12.5px;}
-.nfl-row:first-child{border-top:0;} .nfl-row > div{flex:1 1 220px;min-width:0;} #nfl-body .nfl-row{flex-wrap:wrap;} #nfl-body .nfl-row > .scx-btn{width:100%;} .nfl-row small{display:block;color:var(--t3);font-size:11.5px;line-height:1.4;}
-.nfl-row .scx-btn{flex:0 0 auto;}
-.nfl-tree{font-size:12.5px;line-height:1.55;} .nfl-tree .c{font-weight:700;margin-top:6px;} .nfl-tree .p{margin-left:14px;} .nfl-tree .s{margin-left:28px;color:var(--t2);}
-#nf-mo{position:fixed;inset:0;z-index:9000;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;}
-.nfmo-hd{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--br);padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:2;}
-.nfmo-hd b{font-size:16px;display:block;} .nfmo-hd small{font-size:12px;color:var(--t3);}
-.nfmo-hd button{margin-left:auto;border:0;background:var(--bg);width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;flex:0 0 auto;}
-.nfmo-body{padding:14px 16px 40px;max-width:720px;margin:0 auto;}
-.nfmo-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
-.nfmo-sum div{background:#fff;border:1px solid var(--br);border-radius:14px;padding:10px;text-align:center;} .nfmo-sum b{display:block;font-size:20px;color:var(--teal);} .nfmo-sum span{font-size:11px;color:var(--t3);}
-.nfmo-sc{background:#fff;border:1px solid var(--br);border-radius:16px;padding:12px 14px;margin-bottom:10px;}
-.nfmo-sc.cur{border-color:var(--teal);}
-.nfmo-top{display:flex;align-items:center;gap:8px;} .nfmo-top b{font-size:14.5px;} .nfmo-top .pct{margin-left:auto;font-size:18px;font-weight:800;}
-.nfmo-meta{font-size:11.5px;color:var(--t3);margin:2px 0 8px;}
-.nfmo-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;} .nfmo-chips span{font-size:11.5px;border-radius:10px;padding:3px 9px;background:var(--bg);color:var(--t2);font-weight:600;}
-.nfmo-chips .v{background:#EDE9FE;color:#5B21B6;} .nfmo-chips .od{background:#FEE2E2;color:#B91C1C;} .nfmo-chips .bl{background:#FEF3C7;color:#92400E;}
-.nfmo-btns{display:flex;gap:8px;flex-wrap:wrap;}
-.nfmo-chip{display:flex;align-items:center;gap:8px;width:100%;border:1px solid #BFE3DD;background:#F2FBF9;color:var(--teal);font:inherit;font-size:13px;font-weight:700;border-radius:14px;padding:10px 12px;margin:12px 0 0;cursor:pointer;}
-.nfmo-chip small{margin-left:auto;font-weight:600;color:var(--t3);}
-.nfl-drill{margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--t2);}
-</style>
-<script id="nf-links" src="assets/sc-links.847cb78153.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-links-css" rel="stylesheet" href="assets/sc-links.64e7b4e4ec.css" onerror="nfAssetFail(this)">
+<script id="nf-links" src="assets/sc-links.b13c433cc1.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ How to fix (per MoV item) + linked checks (contradiction notes) ══ -->
 <script id="nf-fix-data" src="assets/data-sc-how-to-fix.370427c0e7.js" onerror="nfAssetFail(this)"></script>
@@ -1916,9 +1889,9 @@ function nfCoverDone(){
 <link id="nf-imp-css" rel="stylesheet" href="assets/shared-impact.b1cba457b4.css" onerror="nfAssetFail(this)">
 <script id="nf-imp" src="assets/shared-impact.9f7d5ac345.js" onerror="nfAssetFail(this)"></script>
 
-<link id="nf-dash-css" rel="stylesheet" href="assets/shared-dashboards.c05c6b7e04.css" onerror="nfAssetFail(this)">
-<script id="nf-dash" src="assets/shared-dashboards.e526ddccf2.js" onerror="nfAssetFail(this)"></script>
-<link id="nf-dept-css" rel="stylesheet" href="assets/dept-core.05bad2d39a.css" onerror="nfAssetFail(this)">
+<link id="nf-dash-css" rel="stylesheet" href="assets/shared-dashboards.9030b996af.css" onerror="nfAssetFail(this)">
+<script id="nf-dash" src="assets/shared-dashboards.6389b2bdbd.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-dept-css" rel="stylesheet" href="assets/dept-core.4ed6e40053.css" onerror="nfAssetFail(this)">
 <link id="nf-dept-screens-css" rel="stylesheet" href="assets/dept-screens.f786feb4e5.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-plan" src="assets/dept-plan.e35a7f99c9.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept" src="assets/dept-core.81b441613b.js" onerror="nfAssetFail(this)"></script>
@@ -1961,6 +1934,12 @@ body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none
 /* sortable headers in the shared role table */
 .hs-rt th .hs-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: inherit; min-height: 32px; }
 .hs-rt th .hs-sort:hover { color: #134A41; text-decoration: underline; }
+/* MOIC block view: groups by PHC */
+.hs-rt tr.hs-grp td{background:#EAF2F0;padding:10px 12px;font-size:13px;border-top:1px solid #DCE4E1;}
+.hs-rt tr.hs-grp td b{font-size:14px;} .hs-rt tr.hs-grp td small{display:block;font-size:12px;color:#4F5E59;margin-top:2px;}
+.hs-rt tr.hs-grp{cursor:default;}
+.hs-grpbar{display:flex;justify-content:space-between;align-items:baseline;margin:6px 2px 8px;} .hs-grpbar b{font-size:15px;}
+@media (max-width:700px){ .hs-rt tr.hs-grp{display:block;border:0;background:none;padding:0;margin:14px 0 4px;} .hs-rt tr.hs-grp td{display:block;border-radius:12px;} .hs-rt tr.hs-grp td::before{content:none!important;} }
 </style>
 <script id="nf-hs-settings" src="assets/shared-hs-settings.f1365f98fb.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-fac-page-css" rel="stylesheet" href="assets/shared-fac-page.7d7df7d9b9.css" onerror="nfAssetFail(this)">
@@ -1970,7 +1949,7 @@ body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none
 <script id="nf-fac-page" src="assets/shared-fac-page.f6d63b3ce5.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-fac-ready" src="assets/shared-fac-ready.3755ce3545.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-fac-sc" src="assets/shared-fac-sc.5e2a4ee502.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-hs-roles" src="assets/shared-hs-roles.aed064dab9.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hs-roles" src="assets/shared-hs-roles.bc2509b592.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-sc-draft" src="assets/shared-sc-draft.672ef4231a.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-day-score">// ══════════════════════════════════════════════════════════════
 // Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".

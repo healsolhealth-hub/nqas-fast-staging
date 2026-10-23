@@ -165,7 +165,7 @@ function nfRenderOverview(){
   var name=r==='admin'?'HealSol Admin':((_scSup||{}).name||'');
   var dist={}; rows.forEach(function(x){ if(x.district) dist[x.district]=1; });
   var sub=rows.length+' facilit'+(rows.length===1?'y':'ies')+(Object.keys(dist).length?' · '+Object.keys(dist).sort().join(', '):'')+(r==='district'?' · view only':'');
-  if(r==='district'&&typeof _scSup!=='undefined'&&_scSup&&_scSup.scope==='block') sub=rows.length+' sub-centre'+(rows.length===1?'':'s')+' · '+(_scSup.block||_scSup.chcName||'')+' block · MOIC · view only';
+  if(r==='district'&&typeof _scSup!=='undefined'&&_scSup&&_scSup.scope==='block') sub=(function(){ var n={}; rows.forEach(function(x){ var t=x.dept?nfTypeOf((scMasterFacilities||{})[x.code]||{}):'sc'; n[t]=(n[t]||0)+1; }); var p=['chc','phc','uphc','sc'].filter(function(t){ return n[t]; }).map(function(t){ return n[t]+' '+(t==='sc'?(n[t]===1?'sub-centre':'sub-centres'):t.toUpperCase()); }); return p.join(' · ')||'0 facilities'; })()+' · '+(_scSup.block||_scSup.chcName||'')+' block · MOIC · view only';
   var kpis=r==='district'
     ?[{l:'Facilities assessed',v:rows.filter(function(x){ return x.agg.coverage&&x.agg.coverage.assessed; }).length,s:'baseline started',c:'var(--teal-dk)'},
       {l:'Below NQAS minimum',v:rows.filter(function(x){ return x.agg.coverage&&x.agg.coverage.assessed&&!x.agg.nqas.meets; }).length,s:'facilities',c:'var(--amber-dk)'},

@@ -29,10 +29,10 @@ function nfDGo(lvl,name){ if(lvl==='all'){ _nfD.lvl='all'; _nfD.st=_nfD.di=_nfD.
   nfDRender(); try{ var el=document.getElementById('nfd-body'); if(el) el.scrollIntoView({block:'start'}); }catch(e){} }
 function nfDGoIdx(i){ var c=nfDChildren(_nfD.v); if(!c) return; var r=c.rows[i]; if(r) nfDGo(c.lvl,r.name); }
 function nfDTile(v,l,s,cls){ return '<div class="nfd-t '+(cls||'')+'"><b>'+v+'</b><span>'+scEsc(l)+'</span>'+(s?'<small>'+s+'</small>':'')+'</div>'; }
-function nfDGapsHTML(v){ var rows=nfDRows(v), g;
-  if(_nfD.lvl==='all') g=(v.gaps||{}).aoc||[];
+function nfDGapsHTML(v){ var rows=nfDLevelRows(v), g;
+  if(_nfD.lvl==='all'&&!_nfD.type) g=(v.gaps||{}).aoc||[];
   else { var o={}; rows.forEach(function(r){ if(!(r.assessed>0)) return; Object.keys(r.aoc||{}).forEach(function(k){ if(r.aoc[k]<70) o[k]=(o[k]||0)+1; }); }); g=Object.keys(o).map(function(k){ return {k:k,n:o[k]}; }).sort(function(a,b){ return b.n-a.n; }).slice(0,6); }
-  var n=Math.max(1,rows.filter(function(r){ return r.assessed>0; }).length), std=_nfD.lvl==='all'?((v.gaps||{}).std||[]):[];
+  var n=Math.max(1,rows.filter(function(r){ return r.assessed>0; }).length), std=_nfD.lvl==='all'&&!_nfD.type?((v.gaps||{}).std||[]):[];
   if(!g.length&&!std.length) return '<p class="nfd-muted">No common gaps — every assessed area is at the NQAS line.</p>';
   return g.map(function(x){ var p=nfDPct(x.n,n); return '<div class="nfd-gap"><span><b>AoC '+x.k+'</b> '+scEsc(NF_AOC_NAMES[x.k]||'')+'</span><i><em style="width:'+p+'%"></em></i><small>'+x.n+' facilit'+(x.n===1?'y':'ies')+' below 70%</small></div>'; }).join('')
     +(std.length?'<p class="nfd-std"><b>Standards most often below 50%:</b> '+std.map(function(x){ return scEsc(x.k)+' ('+x.n+')'; }).join(' · ')+'</p>':''); }
@@ -46,36 +46,72 @@ function nfDTrendHTML(v){ var T=(v.trend||[]).filter(function(x){ return x.avg!=
     +'<div class="nfd-leg"><span class="a">● Average readiness</span><span class="r">▮ NQAS Ready facilities</span></div>'; }
 function nfDStatusChip(r){ var done=r.grad||r.phase==='complete'||(r.day&&r.day>60); var c=r.comp==='g'?['On track','g']:r.comp==='a'?['Slipping','a']:r.comp==='r'?['Behind','r']:done?['Completed','n']:['Not started','n']; if(r.cu) c=['Catch-up','a']; return '<span class="nfd-chip '+c[1]+'">'+c[0]+'</span>'; }
 function nfDResult(r){ if(r.nh==='certified') return '<span class="nfd-chip gd">🏅 Certified'+(r.ns!=null?' '+r.ns+'%':'')+'</span>'; if(r.grad==='ready') return '<span class="nfd-chip g">NQAS Ready</span>'; if(r.grad==='almost') return '<span class="nfd-chip a">Almost ready</span>'; if(r.grad) return '<span class="nfd-chip n">Not yet</span>'; return '<span class="nfd-muted">In programme</span>'; }
+// ── B (22 Oct 2026): every facility type, the shared result words, State → District → Block → Facility, phone layout ──
+var NF_D_RES=[['ready','NQAS Ready','g'],['almost','Almost ready','a'],['notyet','Not yet ready','r'],['early','Too early','e'],['none','Not started','n']];
+function nfDResOf(r){ var k=r.res;
+  if(!k) k=r.grad?r.grad:!(r.assessed>0)?'none':(r.cov!=null&&r.cov<50)?'early':r.meets?'ready':(r.pct||0)>=70?'almost':'notyet';
+  if(k==='incomplete') k='notyet'; if(k==='none'&&r.day>0) k='early'; return k; }
+function nfDTypes(v){ var t={}; Object.keys(v.fac||{}).forEach(function(c){ var x=(v.fac[c].t||'sc'); t[x]=(t[x]||0)+1; }); return t; }
+function nfDType(t){ _nfD.type=t; nfDRender(); }
+function nfDTypeLbl(t){ return t==='sc'?'SC':String(t||'').toUpperCase(); }
+function nfDAgg(rows){ var A={n:rows.length,started:0,assessed:0,sum:0,sumB:0,nb:0,certified:0,onTrack:0,slipping:0,behind:0,pop:0,popReady:0,res:{},types:{}};
+  rows.forEach(function(r){ var k=nfDResOf(r); A.res[k]=(A.res[k]||0)+1; A.types[r.t||'sc']=(A.types[r.t||'sc']||0)+1;
+    if(r.day>0) A.started++; if(r.assessed>0&&r.pct!=null){ A.assessed++; A.sum+=r.pct; if(r.base!=null){ A.nb++; A.sumB+=r.base; } }
+    if(r.nh==='certified') A.certified++; if(r.comp==='g') A.onTrack++; else if(r.comp==='a') A.slipping++; else if(r.comp==='r') A.behind++;
+    if(r.pop){ A.pop+=r.pop; if(r.grad==='ready'||r.nh==='certified') A.popReady+=r.pop; } });
+  A.avg=A.assessed?Math.round(A.sum/A.assessed):null; A.avgB=A.nb?Math.round(A.sumB/A.nb):null;
+  var withB=rows.filter(function(r){ return r.assessed>0&&r.pct!=null&&r.base!=null; }); A.gain=withB.length?Math.round(withB.reduce(function(n,r){ return n+r.pct-r.base; },0)/withB.length):null;
+  return A; }
+function nfDTypesTxt(T){ return ['sc','uphc','phc','chc'].filter(function(t){ return T[t]; }).map(function(t){ return nfDTypeLbl(t)+' '+T[t]; }).join(' · '); }
+function nfDLevelRows(v){ return nfDRows(v).filter(function(r){ return !_nfD.type||(r.t||'sc')===_nfD.type; }); }
+function nfDKids(rows){ var lvl=_nfD.lvl==='all'?'state':_nfD.lvl==='state'?'district':_nfD.lvl==='district'?'block':null; if(!lvl) return null;
+  var G={}; rows.forEach(function(r){ var k=lvl==='state'?r.st:lvl==='district'?r.di:(r.bl||'No block'); (G[k]=G[k]||[]).push(r); });
+  var list=Object.keys(G).sort(function(a,b){ return a.localeCompare(b); }).map(function(k){ return {name:k,A:nfDAgg(G[k])}; });
+  return {lvl:lvl,label:lvl==='state'?'States':lvl==='district'?'Districts':'Blocks',rows:list}; }
+function nfDKid(i){ var K=nfDKids(nfDLevelRows(_nfD.v)); if(!K) return; var r=K.rows[i]; if(r) nfDGo(K.lvl,r.name); }
+function nfDResChip(r){ var k=nfDResOf(r), d=NF_D_RES.filter(function(x){ return x[0]===k; })[0]||NF_D_RES[4]; if(r.nh==='certified') return '<span class="nfd-chip gd">NHSRC certified</span>'; return '<span class="nfd-rc '+d[2]+'">'+d[1]+'</span>'; }
+function nfDResBar(A){ var tot=Math.max(1,A.n), seg=NF_D_RES.map(function(x){ var n=A.res[x[0]]||0; return n?'<i class="'+x[2]+'" style="width:'+(100*n/tot)+'%" title="'+x[1]+': '+n+'"><span>'+n+'</span></i>':''; }).join('');
+  return '<div class="nfd-card"><div class="nfd-h"><h3>If they graduated today</h3><small>the same words as every facility screen</small></div><div class="nfd-rbar">'+seg+'</div>'
+    +'<div class="nfd-rleg">'+NF_D_RES.map(function(x){ return '<span><i class="'+x[2]+'"></i>'+x[1]+' <b>'+(A.res[x[0]]||0)+'</b></span>'; }).join('')+'</div></div>'; }
 function nfDHTML(v){
-  var R=nfDRoll(v)||{n:0}, rows=nfDRows(v), C=nfDChildren(v), S=v.staff||{}, crumbs=[['all',v.kind==='state'?'All':'Portfolio']];
+  var T=nfDTypes(v), rows=nfDLevelRows(v), A=nfDAgg(rows), K=nfDKids(rows), S=v.staff||{}, donor=v.kind!=='state', names=v.names!==false;
+  var crumbs=[['all',v.kind==='state'?'All':'Portfolio']];
   if(_nfD.lvl!=='all') crumbs.push(['state',_nfD.st]); if(_nfD.lvl==='district'||_nfD.lvl==='block') crumbs.push(['district',_nfD.di]); if(_nfD.lvl==='block') crumbs.push(['block',_nfD.bl||'No block']);
-  var gain=R.avgGain!=null?'+'+R.avgGain+' points since baseline':'';
-  var h='<div class="nfd-crumbs">'+crumbs.map(function(c,i){ return i===crumbs.length-1?'<b>'+scEsc(c[1])+'</b>':'<a href="#" onclick="event.preventDefault();nfDGo(\''+c[0]+'\',\''+scJs(c[1])+'\')">'+scEsc(c[1])+'</a>'; }).join(' › ')+'</div>'
-    +'<div class="nfd-tiles">'+nfDTile(nfDInr(R.n),'Facilities',nfDInr(R.started||0)+' started')
-    +nfDTile(nfDInr(R.ready||0),'NQAS Ready',R.n?nfDPct(R.ready||0,R.n)+'% of facilities':'','g')+nfDTile(nfDInr(R.certified||0),'NHSRC certified','','gd')
-    +nfDTile(R.avgPct!=null?R.avgPct+'%':'—','Average readiness',scEsc(gain))
-    +nfDTile(nfDBig(R.popReady||0),'People served by Ready / certified facilities','of '+nfDBig(R.pop||0)+' people covered','wide')
-    +(_nfD.lvl==='all'?nfDTile(nfDInr(S.total||0),'Staff recognised','🌱 '+nfDInr(S.starter||0)+' · ✅ '+nfDInr(S.practitioner||0)+' · 🏅 '+nfDInr(S.achiever||0)+' · 🤝 '+nfDInr(S.champion||0)):'')+'</div>';
-  var F=[[R.n,'Enrolled'],[R.started||0,'Started'],[R.assessed||0,'Assessed'],[R.graduated||0,'Graduated'],[R.ready||0,'NQAS Ready'],[R.certified||0,'Certified']], mx=Math.max(1,R.n||0);
-  h+='<div class="nfd-card"><h3>Journey</h3><div class="nfd-fun">'+F.map(function(x){ return '<div><i style="height:'+Math.max(4,Math.round(x[0]/mx*64))+'px"></i><b>'+nfDInr(x[0])+'</b><small>'+x[1]+'</small></div>'; }).join('')+'</div></div>';
-  h+='<div class="nfd-two"><div class="nfd-card"><h3>On schedule?</h3><div class="nfd-sch">'
-    +[['g','On track',R.onTrack],['a','Slipping',R.slipping],['r','Behind',R.behind],['c','In catch-up',R.catchup]].map(function(x){ return '<div class="'+x[0]+'"><b>'+nfDInr(x[2]||0)+'</b><span>'+x[1]+'</span></div>'; }).join('')+'</div>'
-    +'<p class="nfd-muted">From the programme timeline: cards on time, missing cards and milestones.</p></div>'
-    +'<div class="nfd-card"><h3>Readiness over time</h3>'+(_nfD.lvl==='all'?nfDTrendHTML(v):'<p class="nfd-muted">Shown for the whole portfolio.</p>')+'</div></div>';
-  h+='<div class="nfd-card"><h3>Most common gaps</h3>'+nfDGapsHTML(v)+'</div>';
-  if(C&&C.rows.length&&!(C.rows.length===1&&_nfD.lvl!=='all'&&C.lvl==='block'&&C.rows[0].name==='No block')){
-    h+='<div class="nfd-card"><h3>By '+C.label.toLowerCase()+'</h3><div class="nfd-tw"><table class="nfd-tb"><thead><tr><th>'+C.label+'</th><th>Facilities</th><th>Average</th><th>Gain</th><th>NQAS Ready</th><th>Certified</th><th>Behind</th><th></th></tr></thead><tbody>'
-      +C.rows.map(function(r,i){ return '<tr onclick="nfDGoIdx('+i+')"><td><b>'+scEsc(r.name)+'</b></td><td>'+nfDInr(r.n)+'</td><td>'+(r.avgPct!=null?r.avgPct+'%':'—')+'</td><td>'+(r.avgGain!=null?'+'+r.avgGain:'—')+'</td><td>'+nfDInr(r.ready||0)+'</td><td>'+nfDInr(r.certified||0)+'</td><td>'+(r.behind?'<span class="nfd-chip r">'+r.behind+'</span>':'0')+'</td><td class="go">›</td></tr>'; }).join('')+'</tbody></table></div></div>'; }
-  if(_nfD.lvl!=='all'||(v.fac&&Object.keys(v.fac).length<=40)){
-    h+='<div class="nfd-card"><h3>Facilities ('+rows.length+')</h3><div class="nfd-tw"><table class="nfd-tb"><thead><tr><th>Facility</th><th>District · block</th><th>Day</th><th>Readiness</th><th>Gain</th><th>Timeline</th><th>Result</th></tr></thead><tbody>'
-      +rows.sort(function(a,b){ return String(a.n).localeCompare(String(b.n)); }).map(function(r){ return '<tr onclick="nfDFac(\''+scJs(r.code)+'\')"><td><b>'+scEsc(r.n)+'</b></td><td>'+scEsc([r.di,r.bl].filter(Boolean).join(' · '))+'</td><td>'+(r.day?(r.day>60?'Done':r.day):'—')+'</td><td>'+(r.assessed&&r.pct!=null?r.pct+'%':'—')+'</td><td>'+(r.base!=null&&r.pct!=null?'+'+Math.max(0,r.pct-r.base):'—')+'</td><td>'+nfDStatusChip(r)+'</td><td>'+nfDResult(r)+'</td></tr>'; }).join('')
-      +'</tbody></table></div></div>'; }
+  var h='<nav class="nfd-crumbs" aria-label="Breadcrumb">'+crumbs.map(function(c,i){ return i===crumbs.length-1?'<b>'+scEsc(c[1])+'</b>':'<a href="#" onclick="event.preventDefault();nfDGo(\''+c[0]+'\',\''+scJs(c[1])+'\')">'+scEsc(c[1])+'</a>'; }).join(' › ')+'</nav>';
+  if(Object.keys(T).length>1){ var all=nfDRows(v), cnt={}; all.forEach(function(r){ cnt[r.t||'sc']=(cnt[r.t||'sc']||0)+1; });
+    h+='<div class="nfd-types" role="group" aria-label="Facility type">'+[['','All',all.length]].concat(['sc','uphc','phc','chc'].filter(function(t){ return cnt[t]; }).map(function(t){ return [t,nfDTypeLbl(t),cnt[t]]; })).map(function(x){ return '<button type="button" class="'+((_nfD.type||'')===x[0]?'on':'')+'" aria-pressed="'+((_nfD.type||'')===x[0])+'" onclick="nfDType(\''+x[0]+'\')">'+x[1]+' '+x[2]+'</button>'; }).join('')+'</div>'; }
+  var tRead='<div class="nfd-t '+(donor?'':'hero')+'"><span>Average readiness</span><b>'+(A.avg!=null?A.avg+'%':'—')+'</b><small>'+(A.gain!=null?(A.gain>=0?'+':'')+A.gain+' since baseline'+(A.avgB!=null?' ('+A.avgB+'%)':''):'baseline not yet')+'</small></div>';
+  var tPeople='<div class="nfd-t '+(donor?'hero':'')+'"><span>People served by NQAS Ready facilities</span><b>'+nfDBig(A.popReady)+'</b><small>of '+nfDBig(A.pop)+' covered</small></div>';
+  h+='<div class="nfd-tiles">'+(donor?tPeople+tRead:tRead)
+    +'<div class="nfd-t"><span>Facilities</span><b>'+nfDInr(A.n)+'</b><small>'+nfDInr(A.started)+' started · '+nfDInr(A.n-A.started)+' not yet</small></div>'
+    +'<div class="nfd-t g"><span>NQAS Ready</span><b>'+nfDInr(A.res.ready||0)+'</b><small>+'+nfDInr(A.res.almost||0)+' almost ready</small></div>'
+    +'<div class="nfd-t gd"><span>NHSRC certified</span><b>'+nfDInr(A.certified)+'</b><small>'+(A.n?nfDPct(A.certified,A.n)+'% of facilities':'')+'</small></div>'
+    +(donor?'':tPeople)+'</div>';
+  h+=nfDResBar(A);
+  // main column: the next level down (or the facilities), side column: trend + gaps
+  var main='';
+  if(K&&K.rows.length&&!(K.lvl==='block'&&K.rows.length===1&&K.rows[0].name==='No block')){
+    main+='<div class="nfd-card"><div class="nfd-h"><h3>'+K.label+'</h3><small>click a row → '+(K.lvl==='state'?'districts':K.lvl==='district'?'blocks':'facilities')+'</small></div><div class="nfd-tw"><table class="nfd-tb nfd-kids"><thead><tr><th>'+K.label.replace(/s$/,'')+'</th><th>Readiness (baseline → now)</th><th class="c">Ready</th><th class="c">Almost</th><th class="c">Not yet</th><th class="c">Too early</th><th>On schedule</th></tr></thead><tbody>'
+      +K.rows.map(function(x,i){ var a=x.A; return '<tr onclick="nfDKid('+i+')" class="'+(a.behind>a.onTrack/2&&a.behind>1?'w':'')+'"><td data-l=""><b>'+scEsc(x.name)+'</b><small>'+a.n+' · '+scEsc(nfDTypesTxt(a.types))+'</small></td>'
+        +'<td data-l="Readiness">'+(a.avg==null?'—':(a.avgB!=null?a.avgB+'% → ':'')+'<b>'+a.avg+'%</b>'+(a.gain!=null?' <b class="'+(a.gain>=0?'up':'down')+'">'+(a.gain>=0?'+':'')+a.gain+'</b>':''))+'</td>'
+        +'<td data-l="Ready" class="c">'+(a.res.ready||0)+'</td><td data-l="Almost" class="c">'+(a.res.almost||0)+'</td><td data-l="Not yet" class="c">'+(a.res.notyet||0)+'</td><td data-l="Too early" class="c">'+(a.res.early||0)+'</td>'
+        +'<td data-l="On schedule">'+a.onTrack+' on track'+(a.behind?' · <span class="nfd-bh">'+a.behind+' behind</span>':'')+'</td></tr>'; }).join('')+'</tbody></table></div></div>'; }
+  if(_nfD.lvl==='block'||_nfD.lvl==='district'&&(!K||K.rows.length<=1)||rows.length<=40&&_nfD.lvl!=='all'){
+    var fr=rows.slice().sort(function(a,b){ return String(a.n||'').localeCompare(String(b.n||''))||String(a.code).localeCompare(String(b.code)); });
+    main+='<div class="nfd-card"><div class="nfd-h"><h3>Facilities ('+fr.length+')</h3>'+(names?'':'<small>names shown only with HealSol\'s permission</small>')+'</div><div class="nfd-tw"><table class="nfd-tb nfd-facs"><thead><tr><th>Facility</th><th>Day</th><th>Readiness</th><th>Result</th><th>Timeline</th></tr></thead><tbody>'
+      +fr.map(function(r,i){ var nm=r.n||(nfDTypeLbl(r.t)+' '+(i+1)); return '<tr onclick="nfDFac(\''+scJs(r.code)+'\')"><td data-l=""><b>'+scEsc(nm)+'</b> <span class="nfd-ty">'+nfDTypeLbl(r.t)+'</span><small>'+scEsc([r.bl,r.di].filter(Boolean).join(' · '))+'</small></td>'
+        +'<td data-l="Day">'+(r.grad?'Graduated':r.day>0?r.day:'Not started')+'</td><td data-l="Readiness">'+(r.assessed&&r.pct!=null?(r.base!=null?r.base+'% → ':'')+'<b>'+r.pct+'%</b>':'—')+'</td>'
+        +'<td data-l="Result">'+nfDResChip(r)+'</td><td data-l="Timeline">'+nfDStatusChip(r)+'</td></tr>'; }).join('')+'</tbody></table></div></div>'; }
+  var side='<div class="nfd-card"><h3>Readiness over time</h3>'+(_nfD.lvl==='all'&&!_nfD.type?nfDTrendHTML(v):'<p class="nfd-muted">Shown for the whole portfolio, all types.</p>')+'</div>'
+    +'<div class="nfd-card"><h3>Most common gaps</h3>'+nfDGapsHTML(v)+'</div>'
+    +(_nfD.lvl==='all'&&!_nfD.type?'<div class="nfd-card"><h3>Staff recognised</h3><p class="nfd-st">'+nfDInr(S.total||0)+' staff · '+nfDInr(S.achiever||0)+' Quality Achievers · '+nfDInr(S.champion||0)+' Quality Champions</p></div>':'');
+  h+='<div class="nfd-cols"><div class="nfd-main">'+(main||'<div class="nfd-card"><p class="nfd-muted">No facilities here'+(_nfD.type?' of this type':'')+'.</p></div>')+'</div><div class="nfd-side">'+side+'</div></div>';
   return h; }
 function nfDFac(code){ var r=(_nfD.v.fac||{})[code]; if(!r) return; var A=r.aoc||{};
   var ov=document.createElement('div'); ov.className='nfd-ov';
-  ov.innerHTML='<div class="nfd-modal" role="dialog" aria-modal="true"><div class="nfd-mh"><div><b>'+scEsc(r.n)+'</b><small>'+scEsc([r.bl,r.di,r.st].filter(Boolean).join(' · '))+'</small></div><button type="button" onclick="this.closest(\'.nfd-ov\').remove()" aria-label="Close">✕</button></div>'
+  ov.innerHTML='<div class="nfd-modal" role="dialog" aria-modal="true"><div class="nfd-mh"><div><b>'+scEsc(r.n||nfDTypeLbl(r.t))+' <span class="nfd-ty">'+nfDTypeLbl(r.t)+'</span></b><small>'+scEsc([r.bl,r.di,r.st].filter(Boolean).join(' · '))+'</small></div><button type="button" onclick="this.closest(\'.nfd-ov\').remove()" aria-label="Close">✕</button></div>'
     +'<div class="nfd-mt">'+nfDTile(r.assessed&&r.pct!=null?r.pct+'%':'—','Readiness now',r.base!=null?'baseline '+r.base+'%':'')+nfDTile(r.day?(r.day>60?'Done':'Day '+r.day):'—','Programme',nfDStatusChip(r))+nfDTile(r.pop?nfDInr(r.pop):'—','People covered','')+'</div>'
-    +'<p>'+nfDResult(r)+(r.gp!=null?' <span class="nfd-muted">graduation score '+r.gp+'%</span>':'')+'</p><h4>Areas of Concern</h4>'
+    +'<p>'+nfDResChip(r)+(r.gp!=null?' <span class="nfd-muted">graduation score '+r.gp+'%</span>':'')+'</p><h4>Areas of Concern</h4>'
     +'ABCDEFGH'.split('').filter(function(k){ return A[k]!=null; }).map(function(k){ var p=A[k]; return '<div class="nfd-aoc"><span><b>'+k+'</b> '+scEsc(NF_AOC_NAMES[k])+'</span><i><em class="'+(p>=70?'ok':'lo')+'" style="width:'+p+'%"></em></i><b>'+p+'%</b></div>'; }).join('')
     +'<p class="nfd-muted">'+(r.gaps?r.gaps+' open gaps · ':'')+(r.stdB?r.stdB+' standards below 50% · ':'')+'NQAS line: every area 70%+, every standard 50%+.</p></div>';
   ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); }); document.body.appendChild(ov); }
@@ -91,7 +127,7 @@ function nfDRender(){ var app=document.getElementById('nf-dash-app'); if(!app) r
 function nfDShow(){ var app=document.getElementById('nf-dash-app'); if(!app){ app=document.createElement('div'); app.id='nf-dash-app'; document.body.appendChild(app); } app.style.display='block'; document.body.classList.add('nfd-on'); nfDRender(); try{ window.scrollTo(0,0); }catch(e){} }
 async function nfDOpenViewer(acc){
   var ls=document.getElementById('login-screen'); if(ls) ls.style.display='none';
-  var w=acc.rec||await fbGet('sc_viewers/'+acc.id)||{}; _nfD.who={id:acc.id,name:w.name||acc.id,kind:w.kind,portName:''}; _nfD.mode='viewer'; _nfD.lvl='all'; _nfD.st=_nfD.di=_nfD.bl='';
+  var w=acc.rec||await fbGet('sc_viewers/'+acc.id)||{}; _nfD.who={id:acc.id,name:w.name||acc.id,kind:w.kind,portName:''}; _nfD.mode='viewer'; _nfD.lvl='all'; _nfD.type=''; _nfD.st=_nfD.di=_nfD.bl='';
   _nfD.v=null; try{ _nfD.v=await fbGet('sc_views/'+w.portfolio); }catch(e){} nfDShow(); return true; }
 function nfDClose(){ var app=document.getElementById('nf-dash-app'); if(app) app.style.display='none'; document.body.classList.remove('nfd-on'); _nfD.mode=''; }
 async function nfDLogout(){ nfDClose(); _nfD.v=null; var ls=document.getElementById('login-screen'); if(ls) ls.style.display=''; try{ await nfSecureSignOut(); }catch(e){} try{ nfBack(); }catch(e){} }
@@ -105,8 +141,8 @@ async function nfDXlsx(btn){ var v=_nfD.v; if(!v) return; var old=btn&&btn.inner
     X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(sum),'Summary');
     var lvl=function(obj){ return [['Name','State','District','Facilities','Started','Average %','Gain','NQAS Ready','Certified','On track','Slipping','Behind','People']].concat(Object.keys(obj||{}).map(function(k){ var r=obj[k]; return [r.name,r.state||'',r.district||'',r.n,r.started,r.avgPct,r.avgGain,r.ready,r.certified,r.onTrack,r.slipping,r.behind,r.pop]; })); };
     X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(lvl(v.roll.district)),'Districts'); X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(lvl(v.roll.block)),'Blocks');
-    var F=v.fac||{}; X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['Facility','State','District','Block','Programme day','Readiness %','Baseline %','Timeline','Result','Graduation %','NHSRC','NHSRC score','People','Open gaps'].concat('ABCDEFGH'.split('').map(function(k){ return 'AoC '+k+' %'; }))].concat(Object.keys(F).map(function(c){ var r=F[c];
-      return [r.n,r.st,r.di,r.bl,r.day,r.assessed?r.pct:null,r.base,{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'',r.grad||'',r.gp,r.nh||'',r.ns,r.pop,r.gaps].concat('ABCDEFGH'.split('').map(function(k){ return (r.aoc||{})[k]!=null?r.aoc[k]:null; })); }))),'Facilities');
+    var F=v.fac||{}; X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['Facility','Type','State','District','Block','Programme day','Readiness %','Baseline %','Timeline','Result','Graduation %','NHSRC','NHSRC score','People','Open gaps'].concat('ABCDEFGH'.split('').map(function(k){ return 'AoC '+k+' %'; }))].concat(Object.keys(F).map(function(c,i){ var r=F[c];
+      return [r.n||(nfDTypeLbl(r.t)+' '+(i+1)),nfDTypeLbl(r.t),r.st,r.di,r.bl,r.day,r.assessed?r.pct:null,r.base,{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'',(NF_D_RES.filter(function(x){ return x[0]===nfDResOf(r); })[0]||NF_D_RES[4])[1],r.gp,r.nh||'',r.ns,r.pop,r.gaps].concat('ABCDEFGH'.split('').map(function(k){ return (r.aoc||{})[k]!=null?r.aoc[k]:null; })); }))),'Facilities');
     X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['Month','Facilities','Average readiness %','NQAS Ready']].concat((v.trend||[]).map(function(t){ return [t.m,t.n,t.avg,t.ready]; }))),'By month');
     var how=await nfSaveWb(X,wb,nfDFile()+'.xlsx'); nfDoneToast(how); }
   catch(e){ showToast('Could not make the Excel file — check the internet.','err'); }
@@ -126,7 +162,7 @@ async function nfDPdf(btn){ var v=_nfD.v; if(!v) return; var old=btn&&btn.innerH
     y+=10+Math.max(1,g.length)*5.5;
     var dist=Object.keys(v.roll.district||{}).map(function(k){ var r=v.roll.district[k]; return [r.name,r.state||'',r.n,r.avgPct!=null?r.avgPct+'%':'—',r.avgGain!=null?'+'+r.avgGain:'—',r.ready||0,r.certified||0,r.behind||0]; });
     doc.autoTable({startY:y,head:[['District','State','Facilities','Average','Gain','Ready','Certified','Behind']],body:dist,styles:{font:doc._nfFont,fontSize:8.5},headStyles:{fillColor:[19,90,85]},margin:{left:14,right:14}});
-    var F=v.fac||{}, rows=Object.keys(F).map(function(c){ var r=F[c]; return [r.n,[r.di,r.bl].filter(Boolean).join(' · '),r.day?(r.day>60?'Done':r.day):'—',r.assessed&&r.pct!=null?r.pct+'%':'—',r.base!=null&&r.pct!=null?'+'+Math.max(0,r.pct-r.base):'—',{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'—',r.nh==='certified'?'Certified':r.grad==='ready'?'NQAS Ready':r.grad==='almost'?'Almost ready':r.grad?'Not yet ready':'In programme']; })
+    var F=v.fac||{}, rows=Object.keys(F).map(function(c,i){ var r=F[c]; return [r.n||(nfDTypeLbl(r.t)+' '+(i+1)),[r.di,r.bl].filter(Boolean).join(' · '),r.day?(r.day>60?'Done':r.day):'—',r.assessed&&r.pct!=null?r.pct+'%':'—',r.base!=null&&r.pct!=null?'+'+Math.max(0,r.pct-r.base):'—',{g:'On track',a:'Slipping',r:'Behind'}[r.comp]||'—',r.nh==='certified'?'NHSRC certified':(NF_D_RES.filter(function(x){ return x[0]===nfDResOf(r); })[0]||NF_D_RES[4])[1]]; })
       .sort(function(a,b){ return String(a[0]).localeCompare(String(b[0])); });
     doc.autoTable({startY:doc.lastAutoTable.finalY+8,head:[['Facility','District · block','Day','Readiness','Gain','Timeline','Result']],body:rows,styles:{font:doc._nfFont,fontSize:8},headStyles:{fillColor:[19,90,85]},margin:{left:14,right:14}});
     var pages=doc.getNumberOfPages(); for(var p=1;p<=pages;p++){ doc.setPage(p); doc.setFontSize(7.5); doc.setTextColor(120); doc.text(nfPdfTxt(doc,'NQAS | FAST · HealSol Academy · facility-level figures; staff names are never shown · page '+p+' of '+pages),14,290); }
@@ -177,7 +213,8 @@ function nfDPortForm(pid){ var p=pid?(_nfD.ports||{})[pid]||{}:{kind:'donor',sco
     +'<fieldset><legend>1 · Portfolio</legend><label>Name <small>(shown at the top of the dashboard)</small><input id="nfd-pn" maxlength="80" placeholder="e.g. Uttar Pradesh — NHM, or ABC Foundation (Jhansi)" value="'+scEsc(p.name||'')+'"></label>'
     +'<label>Type<select id="nfd-pk"><option value="donor"'+(p.kind!=='state'?' selected':'')+'>Donor / Partner</option><option value="state"'+(p.kind==='state'?' selected':'')+'>State</option></select></label>'
     +'<div class="nfr-logo"><div id="nfd-lgp">'+nfDLogoPrev()+'</div><label class="nfr-btn ghost">📥 '+(p.logo?'Change logo':'Logo (optional)')+'<input type="file" accept="image/png,image/jpeg" hidden onchange="nfDPickLogo(this)"></label><small>Shown on the dashboard and the PDF report. Use only with the partner\'s permission.</small></div>'
-    +'<label class="nfr-tick" style="margin-top:8px;"><input type="checkbox" id="nfd-off"'+(p.off?' checked':'')+'> Switched off (the dashboard is hidden)</label>'
+    +'<label class="nfr-tick" style="margin-top:8px;"><input type="checkbox" id="nfd-names"'+(p.showNames?' checked':'')+'> Partner may see facility names <small class="nfr-muted">(State dashboards always do; partners see "SC 1, SC 2…" when this is off)</small></label>'
+    +'<label class="nfr-tick" style="margin-top:6px;"><input type="checkbox" id="nfd-off"'+(p.off?' checked':'')+'> Switched off (the dashboard is hidden)</label>'
     +'<label class="nfr-tick" style="margin-top:6px;"><input type="checkbox" id="nfd-demo"'+(p.demo?' checked':'')+' onchange="_nfD.edit.demo=this.checked;nfDChips()"> Demo portfolio — also counts demo / self-registered facilities <small class="nfr-muted">(for showing partners — add your own demo facilities one by one, not a whole state; public totals never include them)</small></label></fieldset>'
     +'<fieldset><legend>2 · Facilities it covers</legend><p class="nfr-muted" style="margin:0 0 8px;">Add any mix — a facility in any of them counts.</p>'
     +'<div class="nfd-add"><b>Whole state</b><select id="nfd-s1">'+stOpts+'</select><button type="button" class="nfr-btn ghost sm" onclick="nfDAdd(\'st\')">Add</button></div>'
@@ -209,7 +246,7 @@ async function nfDPortSave(){ var g=function(i){ var e=document.getElementById(i
   var sc={}; ['st','di','bl','fac'].forEach(function(t){ var o={}; Object.keys(E.sc[t]||{}).forEach(function(k){ if(E.sc[t][k]) o[k]=true; }); if(Object.keys(o).length) sc[t]=o; });
   if(!Object.keys(sc).length){ err.textContent='Add at least one state, district, block or facility.'; return; }
   var pid=E.pid||('P'+Date.now().toString(36)), old=(_nfD.ports||{})[pid]||{}, by=nfrBy(), now=scNowIso();
-  var rec={name:name,kind:g('nfd-pk')==='state'?'state':'donor',logo:E.logo||null,scope:sc,off:document.getElementById('nfd-off').checked?true:null,demo:document.getElementById('nfd-demo').checked?true:null,by:old.by||by,at:old.at||now,updatedBy:by,updatedAt:now};
+  var rec={name:name,kind:g('nfd-pk')==='state'?'state':'donor',logo:E.logo||null,scope:sc,off:document.getElementById('nfd-off').checked?true:null,showNames:document.getElementById('nfd-names').checked?true:null,demo:document.getElementById('nfd-demo').checked?true:null,by:old.by||by,at:old.at||now,updatedBy:by,updatedAt:now};
   var ok=await fbSet('sc_portfolios/'+pid,JSON.parse(JSON.stringify(rec))); if(!ok){ err.textContent='Could not save.'; return; }
   _nfD.ports[pid]=rec; nfrClose(); showToast('Saved. Tap "Update dashboards now" to prepare its dashboard.','ok'); nfDAdminRender(); }
 // logins
@@ -252,7 +289,7 @@ async function nfDUpdateNow(){ var b=document.getElementById('nfd-upd'); if(b){ 
   try{ var r=await nfCall('refreshSummary',{all:true}); showToast('Dashboards updated'+(r&&r.views!=null?' ('+r.views+' portfolio'+(r.views===1?'':'s')+')':'')+'.','ok'); }catch(e){ showToast(e.message||'Could not update.','err'); }
   if(b){ b.disabled=false; b.innerHTML='<i class="ti ti-refresh"></i> Update dashboards now'; } }
 async function nfDPreview(pid){ showToast('Opening the dashboard…','ok'); var v=null; try{ v=await fbGet('sc_views/'+pid); }catch(e){}
-  var p=(_nfD.ports||{})[pid]||{}; _nfD.v=v; _nfD.mode='preview'; _nfD.who={name:'HealSol preview',portName:p.name,kind:p.kind}; _nfD.lvl='all'; _nfD.st=_nfD.di=_nfD.bl=''; nfDShow(); }
+  var p=(_nfD.ports||{})[pid]||{}; _nfD.v=v; _nfD.mode='preview'; _nfD.who={name:'HealSol preview',portName:p.name,kind:p.kind}; _nfD.lvl='all'; _nfD.type=''; _nfD.st=_nfD.di=_nfD.bl=''; nfDShow(); }
 // left menu (HealSol), login routing (State Admin / Donor)
 (function(){
   var oItems=nfAdminItems;

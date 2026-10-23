@@ -69,7 +69,7 @@ async function nfRouteAuthed(){
   var c=_nfAuth.claims, list=[];
   if(c.hs) list.push({kind:'admin',key:'admin',pwd:'',title:'HealSol Admin',sub:'All facilities, setup and content'});
   if(c.sup){ var s=await fbGet('sc_supervisors/'+c.sup); if(s&&!s.disabled) list.push({kind:'supervisor',key:'sup:'+c.sup,id:c.sup,title:'Supervisor',sub:(s.name||c.sup)+' · '+Object.keys(s.facilities||{}).length+' facilities'}); }
-  if(c.dist){ var d=await fbGet('sc_district_admins/'+c.dist); if(d&&!d.disabled) list.push({kind:'district',key:'dist:'+c.dist,id:c.dist,title:d.scope==='block'?'MOIC · '+(d.block||d.chcName||'Block')+' block':'District Admin',sub:(d.name||c.dist)+(d.scope==='block'?' · all sub-centres of the block, view only':' · view readiness and reports')}); }
+  if(c.dist){ var d=await fbGet('sc_district_admins/'+c.dist); if(d&&!d.disabled) list.push({kind:'district',key:'dist:'+c.dist,id:c.dist,title:d.scope==='block'?'Block view · '+(d.block||d.chcName||'Block'):'District Admin',sub:(d.name||c.dist)+(d.scope==='block'?' · MOIC · every facility of the block, view only':' · view readiness and reports')}); }
   if(c.view){ var vw=await fbGet('sc_viewers/'+c.view); if(vw&&!vw.disabled) list.push({kind:'viewer',key:'view:'+c.view,id:c.view,rec:vw,title:vw.kind==='state'?'State dashboard':'Partner dashboard',sub:(vw.name||c.view)+(vw.org?' · '+vw.org:'')+' · view only'}); }
   if(c.mob){
     var idx=await fbGet('sc_staff_index/'+c.mob)||{};

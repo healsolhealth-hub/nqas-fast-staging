@@ -41,3 +41,38 @@ body.nfd-on{overflow:hidden;}
 .nfd-steps{font-size:13px;color:#334155;padding-left:20px;line-height:1.7;margin:0;}
 @media (max-width:760px){ .nfd-two{grid-template-columns:1fr;} .nfd-fun{grid-template-columns:repeat(3,1fr);} .nfd-t.wide{grid-column:span 1;} .nfd-mt{grid-template-columns:1fr;} .nfd-gap{grid-template-columns:1fr;} }
 @media print{ #nf-dash-app{position:static;} }
+/* B (22 Oct 2026): one design — type chips, result bar, two columns, phone */
+#nf-dash-app{background:#F3F6F5;color:#1F2D29;font-family:'Poppins','NF Poppins',system-ui,sans-serif;}
+.nfd-wrap{max-width:1216px;}
+.nfd-types{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px;}
+.nfd-types button{border:1px solid #DCE4E1;border-radius:999px;background:#fff;color:#1F2D29;font:inherit;font-size:13px;padding:8px 14px;cursor:pointer;min-height:40px;}
+.nfd-types button.on{background:#134A41;border-color:#134A41;color:#fff;font-weight:600;}
+.nfd-tiles{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));}
+.nfd-t{border-color:#DCE4E1;border-radius:18px;padding:16px 18px;}
+.nfd-t span{order:-1;font-size:12px;font-weight:400;color:#4F5E59;margin:0 0 2px;} .nfd-t b{font-size:30px;} .nfd-t small{color:#4F5E59;}
+.nfd-t{display:flex;flex-direction:column;}
+.nfd-t.g b{color:#1F5F3E;} .nfd-t.gd b{color:#9A5B12;}
+.nfd-t.hero{background:#134A41;border-color:#134A41;} .nfd-t.hero span,.nfd-t.hero small{color:#CFE5DF;} .nfd-t.hero b{color:#fff;font-size:34px;}
+.nfd-card{border-color:#DCE4E1;border-radius:18px;padding:16px 18px;}
+.nfd-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px;} .nfd-h h3{margin:0;} .nfd-h small{font-size:12px;color:#4F5E59;}
+.nfd-rbar{display:flex;height:28px;border-radius:8px;overflow:hidden;background:#EEF2F1;}
+.nfd-rbar i{display:flex;align-items:center;padding-left:8px;font-style:normal;font-size:12px;font-weight:600;color:#fff;min-width:0;overflow:hidden;}
+.nfd-rbar i.g{background:#1E6B5E;} .nfd-rbar i.a{background:#D4912A;} .nfd-rbar i.r{background:#B3402A;} .nfd-rbar i.e{background:#7D8B87;} .nfd-rbar i.n{background:#D5DDDA;color:#33433E;}
+.nfd-rleg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#33433E;margin-top:10px;} .nfd-rleg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
+.nfd-rleg i.g{background:#1E6B5E;} .nfd-rleg i.a{background:#D4912A;} .nfd-rleg i.r{background:#B3402A;} .nfd-rleg i.e{background:#7D8B87;} .nfd-rleg i.n{background:#C3CEC9;}
+.nfd-rc{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;background:#EEF2F1;color:#33433E;white-space:nowrap;}
+.nfd-rc.g{background:#E3F2EA;color:#1F5F3E;} .nfd-rc.a{background:#FDEBD3;color:#7A4508;} .nfd-rc.r{background:#FCE5E1;color:#8A2F1F;}
+.nfd-ty{display:inline-block;background:#E3ECE9;color:#134A41;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;vertical-align:1px;}
+.nfd-cols{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;} .nfd-main{flex:999 1 620px;min-width:0;} .nfd-side{flex:1 1 320px;min-width:0;}
+.nfd-tb td small{display:block;font-size:12px;color:#4F5E59;} .nfd-tb th.c,.nfd-tb td.c{text-align:center;} .nfd-tb b.up{color:#1F5F3E;} .nfd-tb b.down{color:#B3402A;}
+.nfd-tb tr.w{background:#FFF8F6;} .nfd-bh{color:#9A5B12;font-weight:600;}
+.nfd-st{font-size:13px;color:#33433E;margin:0;}
+@media (max-width:700px){
+  .nfd-tiles{grid-template-columns:repeat(2,minmax(0,1fr));} .nfd-t.hero{grid-column:1 / -1;} .nfd-t b{font-size:24px;} .nfd-t.hero b{font-size:30px;}
+  .nfd-title{flex-direction:column;align-items:stretch;} .nfd-dl{display:grid;grid-template-columns:1fr 1fr;} .nfd-dl .nfd-btn{justify-content:center;min-height:44px;}
+  .nfd-tw{overflow:visible;} .nfd-tb thead{display:none;}
+  .nfd-tb tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;padding:12px 4px;border-bottom:1px solid #EEF2F1;}
+  .nfd-tb td{border:0;padding:0;font-size:12.5px;} .nfd-tb td:first-child{grid-column:1 / -1;font-size:14px;}
+  .nfd-tb td[data-l]:not([data-l=""])::before{content:attr(data-l);display:block;font-size:10.5px;color:#6B7A75;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .nfd-kids tr{grid-template-columns:repeat(4,minmax(0,1fr));} .nfd-kids td:nth-child(2),.nfd-kids td:last-child{grid-column:1 / -1;}
+}
