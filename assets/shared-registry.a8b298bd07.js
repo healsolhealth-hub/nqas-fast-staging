@@ -9,7 +9,7 @@
 //   every facility card links to Google Maps.
 // ══════════════════════════════════════════════════════════════
 var _rg = { tab: 'enrolled', type: '', dist: '', block: '', status: '', q: '', tile: 'all', flat: false, sel: null, R: null, U: null, mine: null, loading: false, err: '',
-  imp: null, color: 'status', showNot: true, links: false, pick: null, map: null, covOpen: {}, at: 0 };
+  imp: null, color: 'status', showNot: true, links: false, pick: null, map: null, covOpen: {}, at: 0, open: {}, show: '', draft: null };
 var RG_TYPES = ['sc', 'phc', 'chc', 'uphc'];
 var RG_LABEL = { sc: 'SC', phc: 'PHC', chc: 'CHC', uphc: 'UPHC' };
 var RG_NAME = { sc: 'Sub-Centre', phc: 'PHC', chc: 'CHC', uphc: 'UPHC' };
@@ -104,7 +104,7 @@ function rgScope(nodes) {   // type + district + block + status + search (not th
   var q = rgLow(_rg.q);
   return nodes.filter(function (n) {
     if (_rg.type && n.t !== _rg.type) return false;
-    if (_rg.dist && n.dk !== _rg.dist) return false;
+    if (!rgIn(n)) return false;
     if (_rg.block && rgLow(n.blk) !== rgLow(_rg.block)) return false;
     if (_rg.status === 'en' && !n.code) return false; if (_rg.status === 'not' && n.code) return false;
     if (q && (n.name + ' ' + n.nin + ' ' + (n.code || '')).toLowerCase().indexOf(q) < 0) return false;
@@ -112,7 +112,7 @@ function rgScope(nodes) {   // type + district + block + status + search (not th
   });
 }
 function rgTileOk(n, k) { return k === 'en' ? !!n.code : k === 'nogps' ? n.lat == null : k === 'nopop' ? !n.pop : true; }
-function rgSet(k, v) { _rg[k] = v; if (k === 'dist') { _rg.block = ''; _rg.sel = null; } if (k === 'tab') { _rg.sel = null; _rg.pick = null; } rgRender(); }
+function rgSet(k, v) { _rg[k] = v; if (k === 'dist') { _rg.block = ''; _rg.sel = null; _rg.open = {}; } if (k === 'tab') { _rg.sel = null; _rg.pick = null; } rgRender(); }
 function rgQ(v) { _rg.q = v; clearTimeout(window._rgT); window._rgT = setTimeout(function () { rgRender(); var i = document.getElementById('rg-q'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (e) {} } }, 250); }
 
 // ── page ──
@@ -136,14 +136,14 @@ function rgHeadHTML(nodes) {
   return '<div class="nfo-top rg-top"><div><h1>Facilities</h1><small>' + sub + '</small></div>'
     + (hs ? '<div class="rg-acts"><button type="button" class="hs-btn" onclick="rgDownload()">Download</button><button type="button" class="hs-btn" onclick="rgImportPick()">Import list</button>'
       + '<button type="button" class="hs-btn p" onclick="rgEdit(null)">+ Add facility</button></div>' : '<div class="rg-acts"><button type="button" class="hs-btn" onclick="rgLoad(true)">Refresh</button></div>') + '</div>'
-    + '<div class="rg-bar">' + rgTabs() + (_rg.tab !== 'enrolled' ? rgTypeTabs(nodes.filter(function (n) { return _rg.tab === 'coverage' || !_rg.dist || n.dk === _rg.dist; })) : '') + '</div>';
+    + '<div class="rg-bar">' + rgTabs() + (_rg.tab !== 'enrolled' ? rgTypeTabs(nodes.filter(function (n) { return _rg.tab === 'coverage' || rgIn(n); })) : '') + '</div>';
 }
 function rgRender() {
   if (_rg.tab === 'enrolled') return;
   var box = rgBox(); if (!box) return;
   if (!_rg.R) { box.innerHTML = rgHeadHTML([]) + '<div class="nfo-card rg-empty">Loading the registry…</div>'; rgLoad(); return; }
   var nodes = rgNodes();
-  if (_rg.dist && !nodes.some(function (n) { return n.dk === _rg.dist; })) _rg.dist = '';
+  if (_rg.dist && !nodes.some(rgIn)) _rg.dist = '';
   if (!_rg.dist) { var c = {}; nodes.forEach(function (n) { if (n.district) c[n.dk] = (c[n.dk] || 0) + 1; }); var best = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; })[0]; if (best && _rg.tab === 'registry') _rg.dist = best; }
   var body = _rg.tab === 'registry' ? rgRegistryHTML(nodes) : _rg.tab === 'coverage' ? rgCoverageHTML(nodes) : rgMapHTML(nodes);
   if (_rg.map && _rg.tab !== 'map') { try { _rg.map.remove(); } catch (e) {} _rg.map = null; }
@@ -152,28 +152,103 @@ function rgRender() {
 }
 function rgDistList(nodes) {
   var S = {}; nodes.forEach(function (n) { if (!n.district) return; var st = n.state || 'Other'; S[st] = S[st] || {}; S[st][n.dk] = S[st][n.dk] || { name: n.district, n: 0 }; S[st][n.dk].n++; });
-  return '<nav class="rg-dl" aria-label="Districts">' + Object.keys(S).sort().map(function (st) {
-    return '<div class="rg-cap">' + rgE(st) + '</div>' + Object.keys(S[st]).sort(function (a, b) { return S[st][a].name.localeCompare(S[st][b].name); }).map(function (k) {
+  return '<nav class="rg-dl" aria-label="States and districts">' + Object.keys(S).sort().map(function (st) {
+    var tot = Object.keys(S[st]).reduce(function (a, k) { return a + S[st][k].n; }, 0), sk = 'S:' + rgLow(st);
+    return '<div class="rg-cap">' + rgE(st) + '</div><button type="button" class="rg-whole' + (_rg.dist === sk ? ' on' : '') + '" onclick="rgOpenState(\'' + rgJ(st) + '\')"><span>Whole state</span><em>' + rgFmtN(tot) + '</em></button>' + Object.keys(S[st]).sort(function (a, b) { return S[st][a].name.localeCompare(S[st][b].name); }).map(function (k) {
       return '<button type="button" class="' + (_rg.dist === k ? 'on' : '') + '" onclick="rgSet(\'dist\',\'' + rgJ(k) + '\')"><span>' + rgE(S[st][k].name) + '</span><em>' + S[st][k].n + '</em></button>'; }).join(''); }).join('')
     + (nodes.some(function (n) { return !n.district; }) ? '<div class="rg-cap">No district</div><button type="button" class="' + (_rg.dist === '|' ? 'on' : '') + '" onclick="rgSet(\'dist\',\'|\')"><span>Not set</span><em>' + nodes.filter(function (n) { return !n.district; }).length + '</em></button>' : '') + '</nav>';
+}
+
+// ── whole state: State → district → block → CHC → PHC → SC, opened one level at a time (24 Oct 2026) ──
+function rgIsState() { return String(_rg.dist || '').indexOf('S:') === 0; }
+function rgIn(n) { var d = _rg.dist || ''; if (!d) return true; if (d.indexOf('S:') === 0) return rgLow(n.state) === d.slice(2); return n.dk === d; }
+function rgOpenState(state) { _rg.tab = 'registry'; _rg.dist = 'S:' + rgLow(state); _rg.block = ''; _rg.sel = null; _rg.open = {}; _rg.q = ''; _rg.show = ''; rgRender(); }
+// what needs a look: a Sub-Centre with no PHC, an enrolled Sub-Centre without its MO / MOIC login, an enrolled facility with no location
+function rgAttn(n, byNin) {
+  var out = [];
+  if (n.t === 'sc' && (!n.phc || !byNin[n.phc]) && !(n.chc && byNin[n.chc])) out.push('no PHC / CHC');
+  if (n.code && n.t === 'sc') { var L = (n.f && n.f.links) || {}; if (n.phc && !L.moMobile) out.push('no MO login'); if (n.chc && !L.moicId) out.push('no MOIC login'); }
+  if (n.code && n.lat == null) out.push('no location');
+  return out;
+}
+function rgOpenT(k) { _rg.open = _rg.open || {}; _rg.open[k] = !_rg.open[k]; rgRender(); }
+function rgOpenAll(keys) { _rg.open = _rg.open || {}; keys.split(',').forEach(function (k) { if (k) _rg.open[k] = true; }); rgRender(); }
+function rgStateTree(nodes) {
+  var byNin = nodes.byNin || {}, key = String(_rg.dist).slice(2), all = nodes.filter(function (n) { return rgLow(n.state) === key && (!_rg.type || n.t === _rg.type); });
+  var q = rgLow(_rg.q), show = _rg.show || '', forced = !!(q || show);
+  // search / "needs attention" / "enrolled": keep the matches and the chain above them, all opened
+  var keep = null;
+  if (forced) { keep = {};
+    var hit = function (n) { if (q && (n.name + ' ' + n.nin + ' ' + (n.code || '')).toLowerCase().indexOf(q) < 0) return false;
+      if (show === 'attn') return rgAttn(n, byNin).length > 0; if (show === 'en') return !!n.code; if (show === 'not') return !n.code; return true; };
+    all.forEach(function (n) { if (!hit(n)) return; keep[n.id] = 1; var p = n.t === 'sc' ? byNin[n.phc] : null, c = byNin[n.t === 'phc' ? n.chc : n.t === 'sc' ? (p && p.chc) || n.chc : ''];
+      if (p) keep[p.id] = 1; if (c) keep[c.id] = 1; });
+    all = all.filter(function (n) { return keep[n.id]; }); }
+  var open = function (k) { return forced || !!(_rg.open || {})[k]; };
+  var byName = function (a, b) { return a.name.localeCompare(b.name); };
+  var D = {}; all.forEach(function (n) { (D[n.dk] = D[n.dk] || { name: n.district || 'No district', L: [] }).L.push(n); });
+  var cnt = function (L) { var c = { chc: 0, phc: 0, sc: 0, uphc: 0, en: 0, at: 0, b: {} }; L.forEach(function (n) { c[n.t]++; if (n.code) c.en++; if (rgAttn(n, byNin).length) c.at++; if (n.blk) c.b[n.blk] = 1; }); c.nb = Object.keys(c.b).length; return c; };
+  var under = function (c, withBlocks) { return [withBlocks && c.nb ? c.nb + ' block' + (c.nb === 1 ? '' : 's') : '', c.chc ? c.chc + ' CHC' + (c.chc === 1 ? '' : 's') : '', c.phc ? c.phc + ' PHC' + (c.phc === 1 ? '' : 's') : '', c.sc ? rgFmtN(c.sc) + ' SC' + (c.sc === 1 ? '' : 's') : '', c.uphc ? c.uphc + ' UPHC' + (c.uphc === 1 ? '' : 's') : ''].filter(Boolean).join(' · '); };
+  var stat = function (c) { return '<b class="rg-en">' + c.en + ' of ' + rgFmtN(c.chc + c.phc + c.sc + c.uphc) + ' enrolled</b>' + (c.at ? ' · <span class="rg-tag a">' + c.at + ' need' + (c.at === 1 ? 's' : '') + ' a look</span>' : ''); };
+  var rows = [], LIMIT = 800, more = 0;
+  var grp = function (lvl, k, label, c, withBlocks, all2, cls) { var o = open(k);
+    rows.push('<tr class="rg-tg ' + (cls || '') + '"><td style="padding-left:' + (10 + lvl * 22) + 'px"><button type="button" class="rg-car" aria-expanded="' + o + '" onclick="rgOpenT(\'' + rgJ(k) + '\')"><span aria-hidden="true">' + (o ? '▾' : '▸') + '</span>' + label + '</button>'
+      + (o && all2 && !forced ? ' <button type="button" class="hs-link rg-xall" onclick="rgOpenAll(\'' + rgJ(all2) + '\')">Expand all</button>' : '') + '</td><td class="rg-dim">' + under(c, withBlocks) + '</td><td>' + stat(c) + '</td></tr>'); return o; };
+  var fac = function (lvl, n, k, kids) { if (rows.length > LIMIT) { more++; return false; }
+    var o = kids ? open(k) : false, at = rgAttn(n, byNin);
+    rows.push('<tr class="rg-r rg-tf' + (_rg.sel === n.id ? ' on' : '') + '" onclick="rgPick(\'' + rgJ(n.id) + '\')"><td style="padding-left:' + (10 + lvl * 22) + 'px">'
+      + (kids ? '<button type="button" class="rg-car sm" aria-expanded="' + o + '" aria-label="' + (o ? 'Close' : 'Open') + ' ' + rgE(n.name) + '" onclick="event.stopPropagation();rgOpenT(\'' + rgJ(k) + '\')"><span aria-hidden="true">' + (o ? '▾' : '▸') + '</span></button>' : '<span class="rg-car-sp"></span>')
+      + '<span class="rg-ty ' + n.t + '">' + RG_LABEL[n.t] + '</span> <button type="button" class="rg-rb" onclick="event.stopPropagation();rgPick(\'' + rgJ(n.id) + '\')">' + rgE(n.name) + '</button> <small class="rg-dim">' + rgE(n.nin || n.code || '') + '</small></td>'
+      + '<td class="rg-dim">' + (kids ? kids : '') + '</td><td>' + rgStatusTxt(n) + at.map(function (x) { return ' <span class="rg-tag a">' + rgE(x) + '</span>'; }).join('') + '</td></tr>'); return o; };
+  var sc0 = cnt(all), dks = Object.keys(D).sort(function (a, b) { return D[a].name.localeCompare(D[b].name); });
+  var stName = (all[0] || nodes.find(function (n) { return rgLow(n.state) === key; }) || {}).state || key;
+  rows.push('<tr class="rg-tg rg-t0"><td><b>' + rgE(stName) + '</b> <small class="rg-dim">' + dks.length + ' district' + (dks.length === 1 ? '' : 's') + '</small></td><td class="rg-dim">' + under(sc0, true) + '</td><td>' + stat(sc0) + '</td></tr>');
+  dks.forEach(function (dk) { var L = D[dk].L, c = cnt(L), dkK = 'd:' + dk;
+    var B = {}; L.forEach(function (n) { var b = n.t === 'uphc' ? '~urban' : (n.blk || '~none'); (B[b] = B[b] || []).push(n); });
+    var bks = Object.keys(B).sort(function (a, b) { var r = function (x) { return x === '~none' ? 2 : x === '~urban' ? 1 : 0; }; return r(a) - r(b) || a.localeCompare(b); });
+    var keysIn = [dkK]; bks.forEach(function (b) { keysIn.push('b:' + dk + '|' + b); B[b].forEach(function (n) { keysIn.push('n:' + n.id); }); });
+    if (!grp(1, dkK, '<b>' + rgE(D[dk].name) + '</b>', c, true, keysIn.join(','), 'rg-t1')) return;
+    bks.forEach(function (b) { var BL = B[b], bk = 'b:' + dk + '|' + b, bc = cnt(BL);
+      var label = b === '~none' ? '<span class="rg-warnt">Not linked to a block</span>' : b === '~urban' ? 'Urban (UPHC)' : rgE(b) + ' block';
+      var keysB = [bk].concat(BL.map(function (n) { return 'n:' + n.id; })).join(',');
+      if (!grp(2, bk, label, bc, false, keysB, 'rg-t2')) return;
+      var done = {}, chcs = BL.filter(function (n) { return n.t === 'chc'; }).sort(byName), phcs = BL.filter(function (n) { return n.t === 'phc'; }).sort(byName), scs = BL.filter(function (n) { return n.t === 'sc'; }).sort(byName);
+      var scsOf = function (p) { return scs.filter(function (s) { return p.nin && s.phc === p.nin; }); };
+      var lone = function (c) { return scs.filter(function (s) { return c.nin && s.chc === c.nin && (!s.phc || !byNin[s.phc]); }); };
+      var phcRow = function (p, lvl) { done[p.id] = 1; var S = scsOf(p); if (fac(lvl, p, 'n:' + p.id, S.length ? S.length + ' SC' + (S.length === 1 ? '' : 's') : '')) S.forEach(function (s) { done[s.id] = 1; fac(lvl + 1, s); }); else S.forEach(function (s) { done[s.id] = 1; }); };
+      chcs.forEach(function (c) { done[c.id] = 1; var P = phcs.filter(function (p) { return c.nin && p.chc === c.nin; }), Ls = lone(c);
+        var kidsTxt = [P.length ? P.length + ' PHC' + (P.length === 1 ? '' : 's') : '', Ls.length ? Ls.length + ' SC' + (Ls.length === 1 ? '' : 's') + ' direct' : ''].filter(Boolean).join(' · ');
+        if (fac(3, c, 'n:' + c.id, kidsTxt)) { P.forEach(function (p) { phcRow(p, 4); }); Ls.forEach(function (s) { done[s.id] = 1; fac(4, s); }); }
+        else { P.forEach(function (p) { done[p.id] = 1; scsOf(p).forEach(function (s) { done[s.id] = 1; }); }); Ls.forEach(function (s) { done[s.id] = 1; }); } });
+      phcs.forEach(function (p) { if (!done[p.id]) phcRow(p, 3); });
+      var rest = BL.filter(function (n) { return !done[n.id]; }).sort(byName);
+      if (rest.length && (chcs.length || phcs.length) && rows.length <= LIMIT) rows.push('<tr class="rg-sub"><td colspan="3" style="padding-left:' + (10 + 3 * 22) + 'px">Not linked to a PHC · ' + rest.length + '</td></tr>');
+      rest.forEach(function (n) { fac(3, n); }); }); });
+  if (more) rows.push('<tr class="rg-sub"><td colspan="3">' + rgFmtN(more) + ' more not shown — search, or open one district at a time.</td></tr>');
+  return { html: rows.join(''), empty: !all.length };
 }
 
 // ── Registry ──
 function rgRegistryHTML(nodes) {
   var sc = rgScope(nodes), list = sc.filter(function (n) { return rgTileOk(n, _rg.tile); }), sel = _rg.sel ? nodes.find(function (n) { return n.id === _rg.sel; }) : null;
-  var dn = _rg.dist ? ((nodes.find(function (n) { return n.dk === _rg.dist; }) || {}).district || 'no district') : 'all districts';
+  var st = rgIsState(), dn = st ? ((nodes.find(rgIn) || {}).state || 'the state') : _rg.dist ? ((nodes.find(function (n) { return n.dk === _rg.dist; }) || {}).district || 'no district') : 'all districts';
   var cnt = { all: sc.length, en: sc.filter(function (n) { return n.code; }).length, nogps: sc.filter(function (n) { return n.lat == null; }).length, nopop: sc.filter(function (n) { return !n.pop; }).length };
   var tile = function (k, l, sub, warn) { return '<button type="button" class="ce-tile' + (warn && cnt[k] ? ' warn2' : '') + (_rg.tile === k ? ' on' : '') + '" aria-pressed="' + (_rg.tile === k) + '" onclick="rgSet(\'tile\',\'' + k + '\')"><span>' + l + '</span><b>' + rgFmtN(cnt[k]) + '</b><small>' + sub + '</small></button>'; };
-  var blocks = {}; nodes.forEach(function (n) { if ((!_rg.dist || n.dk === _rg.dist) && n.blk) blocks[n.blk] = 1; });
+  var blocks = {}; nodes.forEach(function (n) { if (rgIn(n) && n.blk) blocks[n.blk] = 1; });
+  var tree = st && !_rg.flat, T = tree ? rgStateTree(nodes) : null;
   var h = '<div class="ce-tiles">' + tile('all', 'In the registry', 'in ' + rgE(dn)) + tile('en', 'Enrolled', cnt.all ? Math.round(100 * cnt.en / cnt.all) + '% of the registry' : '')
     + tile('nogps', 'No location', 'not on the map yet', 1) + tile('nopop', 'No population', 'left out of coverage', 1) + '</div>'
     + '<div class="rg-body' + (sel ? ' has-sel' : '') + '">' + rgDistList(nodes)
-    + '<section class="rg-tbl" aria-label="Registry"><div class="rg-filt"><label class="rg-search"><span class="rg-sr">Search</span><input id="rg-q" type="search" placeholder="Search name, NIN or ID" value="' + rgE(_rg.q) + '" oninput="rgQ(this.value)"></label>'
-    + '<label>Block<select onchange="rgSet(\'block\',this.value)"><option value="">All blocks</option>' + Object.keys(blocks).sort().map(function (b) { return '<option' + (rgLow(_rg.block) === rgLow(b) ? ' selected' : '') + '>' + rgE(b) + '</option>'; }).join('') + '</select></label>'
-    + '<label>Status<select onchange="rgSet(\'status\',this.value)"><option value="">Enrolled or not</option><option value="en"' + (_rg.status === 'en' ? ' selected' : '') + '>Enrolled</option><option value="not"' + (_rg.status === 'not' ? ' selected' : '') + '>Not enrolled</option></select></label>'
+    + '<section class="rg-tbl" aria-label="Registry"><div class="rg-filt"><label class="rg-search"><span class="rg-sr">Search</span><input id="rg-q" type="search" placeholder="' + (st ? 'Find a facility in ' + rgE(dn) + ' — opens its chain' : 'Search name, NIN or ID') + '" value="' + rgE(_rg.q) + '" oninput="rgQ(this.value)"></label>'
+    + (tree ? '<label>Show<select onchange="rgSet(\'show\',this.value)"><option value="">Everything</option><option value="attn"' + (_rg.show === 'attn' ? ' selected' : '') + '>Needs a look</option><option value="en"' + (_rg.show === 'en' ? ' selected' : '') + '>Enrolled only</option><option value="not"' + (_rg.show === 'not' ? ' selected' : '') + '>Not enrolled</option></select></label>'
+        + '<button type="button" class="hs-btn" onclick="_rg.open={};rgRender()">Collapse all</button>'
+      : (st ? '' : '<label>Block<select onchange="rgSet(\'block\',this.value)"><option value="">All blocks</option>' + Object.keys(blocks).sort().map(function (b) { return '<option' + (rgLow(_rg.block) === rgLow(b) ? ' selected' : '') + '>' + rgE(b) + '</option>'; }).join('') + '</select></label>')
+        + '<label>Status<select onchange="rgSet(\'status\',this.value)"><option value="">Enrolled or not</option><option value="en"' + (_rg.status === 'en' ? ' selected' : '') + '>Enrolled</option><option value="not"' + (_rg.status === 'not' ? ' selected' : '') + '>Not enrolled</option></select></label>')
     + '<label class="rg-sw"><input type="checkbox" ' + (_rg.flat ? 'checked ' : '') + 'onchange="rgSet(\'flat\',this.checked)"> Flat list</label></div>'
-    + '<div class="rg-scroll"><table><thead><tr><th scope="col">Facility</th><th scope="col">NIN</th><th scope="col">Status</th><th scope="col">Location</th><th scope="col">Population</th></tr></thead><tbody>'
-    + rgRowsHTML(list, nodes) + '</tbody></table>' + (list.length ? '' : '<div class="rg-empty">' + (nodes.length ? 'No facility matches.' : 'The registry is empty. Import the district\'s facility list, or add facilities one by one.') + '</div>') + '</div>'
+    + (tree ? '<div class="rg-scroll rg-tree"><table><thead><tr><th scope="col">State → district → block → CHC → PHC → SC</th><th scope="col">Under it</th><th scope="col">Status</th></tr></thead><tbody>' + T.html + '</tbody></table>'
+        + (T.empty ? '<div class="rg-empty">' + (_rg.q || _rg.show ? 'No facility matches.' : 'No facilities in this state yet.') + '</div>' : '') + '</div>'
+      : '<div class="rg-scroll"><table><thead><tr><th scope="col">Facility</th><th scope="col">NIN</th><th scope="col">Status</th><th scope="col">Location</th><th scope="col">Population</th></tr></thead><tbody>'
+    + rgRowsHTML(list, nodes) + '</tbody></table>' + (list.length ? '' : '<div class="rg-empty">' + (nodes.length ? 'No facility matches.' : 'The registry is empty. Import the district\'s facility list, or add facilities one by one.') + '</div>') + '</div>')
     + '<div class="rg-foot">Pick a row to see and edit the record. Location set by the in-charge on the phone is used first; otherwise the registry\'s.</div></section>'
     + (sel ? '<aside class="rg-side" aria-label="Facility record">' + rgSideHTML(sel, nodes) + '</aside>' : '') + '</div>';
   return h;
@@ -282,7 +357,7 @@ function rgSideHTML(n, nodes) {
 function rgEdit(id) {
   if (!rgHS()) return;
   if (id) { _rg.sel = id; rgRender(); return; }
-  var n0 = (rgNodes().find(function (n) { return n.dk === _rg.dist; }) || {});
+  var n0 = (rgNodes().find(function (n) { return rgIsState() ? rgIn(n) : n.dk === _rg.dist; }) || {}); if (rgIsState()) n0 = { state: n0.state };
   _rg.R = _rg.R || {}; var rid = 'NEW'; _rg.draft = null;
   _rg.R[rid] = { t: 'sc', name: 'New facility', state: n0.state || '', district: n0.district || '', _new: true };   // always opens as a Sub-Centre
   _rg.tab = 'registry'; _rg.sel = rid; rgRender();
@@ -388,7 +463,7 @@ function rgCoverageHTML(nodes) {
     var prim = n.t === 'sc' || n.t === 'uphc'; if (prim && n.pop) { d.popAll += n.pop; if (n.code) d.pop += n.pop; }
     if (n.code && n.info && n.info.pct != null) d.pct.push(n.info.pct); if (rgStatus(n) === 'ready') d.ready++;
     if (n.blk) { var b = d.blocks[n.blk] = d.blocks[n.blk] || { name: n.blk, t: {}, pop: 0, popAll: 0, en: 0, n: 0 }; var bt = b.t[n.t] = b.t[n.t] || { en: 0, n: 0 }; bt.n++; b.n++; if (n.code) { bt.en++; b.en++; } if (prim && n.pop) { b.popAll += n.pop; if (n.code) b.pop += n.pop; } } });
-  var ks = Object.keys(D).sort(function (a, b) { return D[b].en - D[a].en || D[a].name.localeCompare(D[b].name); });
+  var ks = Object.keys(D).sort(function (a, b) { return D[a].state.localeCompare(D[b].state) || D[b].en - D[a].en || D[a].name.localeCompare(D[b].name); });
   var tot = { en: 0, n: 0, pop: 0, popAll: 0, ready: 0, blocks: 0 }; ks.forEach(function (k) { var d = D[k]; tot.en += d.en; tot.n += d.n; tot.pop += d.pop; tot.popAll += d.popAll; tot.ready += d.ready; tot.blocks += Object.keys(d.blocks).filter(function (b) { return d.blocks[b].en; }).length; });
   if (!Object.keys(_rg.covOpen).length && ks[0]) _rg.covOpen[ks[0]] = true;
   var types = RG_TYPES.filter(function (t) { return (!_rg.type || _rg.type === t) && sc.some(function (n) { return n.t === t; }); });
@@ -397,10 +472,15 @@ function rgCoverageHTML(nodes) {
     + '<div class="rg-kpi"><small>Population covered</small><b>' + (tot.popAll ? rgLakh(tot.pop) : '—') + '</b><small>' + (tot.popAll ? Math.round(100 * tot.pop / tot.popAll) + '% of ' + rgLakh(tot.popAll) + ' (Sub-Centre and UPHC areas)' : 'add population in the registry') + '</small></div>'
     + '<div class="rg-kpi"><small>Districts</small><b>' + ks.length + '</b><small>' + tot.blocks + ' block' + (tot.blocks === 1 ? '' : 's') + ' with an enrolled facility</small></div>'
     + '<div class="rg-kpi"><small>NQAS ready</small><b>' + tot.ready + '</b><small>graduated "Ready"</small></div></div>'
-    + '<div class="nfo-card rg-cov"><div class="rg-scroll"><table><thead><tr><th scope="col">District</th>' + types.map(function (t) { return '<th scope="col">' + RG_NAME[t] + 's</th>'; }).join('') + '<th scope="col">Population covered</th><th scope="col">Readiness</th></tr></thead><tbody>'
-    + ks.map(function (k) { var d = D[k], avg = d.pct.length ? Math.round(d.pct.reduce(function (s, x) { return s + x; }, 0) / d.pct.length) : null, open = !!_rg.covOpen[k];
+    + '<div class="nfo-card rg-cov"><div class="rg-scroll"><table><thead><tr><th scope="col">State · district</th>' + types.map(function (t) { return '<th scope="col">' + RG_NAME[t] + 's</th>'; }).join('') + '<th scope="col">Population covered</th><th scope="col">Readiness</th></tr></thead><tbody>'
+    + ks.map(function (k, i) { var d = D[k], avg = d.pct.length ? Math.round(d.pct.reduce(function (s, x) { return s + x; }, 0) / d.pct.length) : null, open = !!_rg.covOpen[k];
       var bl = Object.keys(d.blocks).sort();
-      return '<tr class="rg-cr' + (open ? ' on' : '') + '" onclick="_rg.covOpen[\'' + rgJ(k) + '\']=!_rg.covOpen[\'' + rgJ(k) + '\'];rgRender()"><td><button type="button" class="rg-rb" aria-expanded="' + open + '"><b>' + rgE(d.name) + '</b></button><small>' + rgE(d.state) + (bl.length ? ' · ' + bl.length + ' block' + (bl.length === 1 ? '' : 's') : '') + '</small></td>'
+      var sh = '';
+      if (i === 0 || D[ks[i - 1]].state !== d.state) { var SK = ks.filter(function (x) { return D[x].state === d.state; }), ST = { t: {}, en: 0, n: 0, pop: 0, popAll: 0 };
+        SK.forEach(function (x) { var y = D[x]; ST.en += y.en; ST.n += y.n; ST.pop += y.pop; ST.popAll += y.popAll; Object.keys(y.t).forEach(function (t) { var a = ST.t[t] = ST.t[t] || { en: 0, n: 0 }; a.en += y.t[t].en; a.n += y.t[t].n; }); });
+        sh = '<tr class="rg-sth"><td><b>' + rgE(d.state || 'No state') + '</b><small>' + SK.length + ' district' + (SK.length === 1 ? '' : 's') + (rgHS() && d.state ? ' · <button type="button" class="hs-link" onclick="event.stopPropagation();rgOpenState(\'' + rgJ(d.state) + '\')">Open in Registry</button>' : '') + '</small></td>'
+          + types.map(function (t) { return cell(ST.t[t]); }).join('') + '<td>' + (ST.popAll ? '<b>' + rgFmtN(ST.pop) + '</b> of ' + rgFmtN(ST.popAll) : '<span class="rg-dim">—</span>') + '</td><td></td></tr>'; }
+      return sh + '<tr class="rg-cr' + (open ? ' on' : '') + '" onclick="_rg.covOpen[\'' + rgJ(k) + '\']=!_rg.covOpen[\'' + rgJ(k) + '\'];rgRender()"><td><button type="button" class="rg-rb" aria-expanded="' + open + '"><b>' + rgE(d.name) + '</b></button><small>' + rgE(d.state) + (bl.length ? ' · ' + bl.length + ' block' + (bl.length === 1 ? '' : 's') : '') + '</small></td>'
         + types.map(function (t) { return cell(d.t[t]); }).join('') + '<td>' + (d.popAll ? '<b>' + rgFmtN(d.pop) + '</b> of ' + rgFmtN(d.popAll) + '<small>' + Math.round(100 * d.pop / d.popAll) + '%</small>' : '<span class="rg-dim">no population</span>') + '</td>'
         + '<td>' + (avg != null ? avg + '%' : '—') + (d.ready ? ' <small>· ' + d.ready + ' ready</small>' : '') + '</td></tr>'
         + (open && bl.length ? '<tr class="rg-blks"><td colspan="' + (types.length + 3) + '"><div class="rg-cap">Blocks in ' + rgE(d.name) + '</div><div class="rg-bgrid">' + bl.map(function (b) { var B = d.blocks[b];
@@ -430,7 +510,9 @@ function rgMapHTML(nodes) {
   var sc = rgScope(nodes), noGeo = sc.filter(function (n) { return n.lat == null && (_rg.showNot || n.code); }), pick = _rg.pick ? nodes.find(function (n) { return n.id === _rg.pick; }) : null;
   var D = {}; nodes.forEach(function (n) { if (n.district) D[n.dk] = n.district; });
   var leg = _rg.color === 'readiness' ? [['70% and above', '#1E6B5E'], ['50–69%', '#D4912A'], ['Below 50%', '#B3402A'], ['No readiness yet', '#9AA8A3']] : ['ok', 'slip', 'behind', 'start', 'ready', 'grad'].map(function (k) { return [RG_ST[k][0], RG_ST[k][1]]; });
-  return '<div class="rg-filt rg-mapf"><label>District<select onchange="rgSet(\'dist\',this.value)"><option value="">All districts</option>' + Object.keys(D).sort(function (a, b) { return D[a].localeCompare(D[b]); }).map(function (k) { return '<option value="' + rgE(k) + '"' + (_rg.dist === k ? ' selected' : '') + '>' + rgE(D[k]) + '</option>'; }).join('') + '</select></label>'
+  var SD = {}; nodes.forEach(function (n) { if (!n.district) return; var st = n.state || 'Other'; (SD[st] = SD[st] || {})[n.dk] = n.district; });
+  return '<div class="rg-filt rg-mapf"><label>Area<select onchange="rgSet(\'dist\',this.value)"><option value="">All states</option>' + Object.keys(SD).sort().map(function (st) { var sk = 'S:' + rgLow(st);
+      return '<optgroup label="' + rgE(st) + '"><option value="' + rgE(sk) + '"' + (_rg.dist === sk ? ' selected' : '') + '>' + rgE(st) + ' · whole state</option>' + Object.keys(SD[st]).sort(function (x, y) { return SD[st][x].localeCompare(SD[st][y]); }).map(function (k) { return '<option value="' + rgE(k) + '"' + (_rg.dist === k ? ' selected' : '') + '>' + rgE(SD[st][k]) + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></label>'
     + '<label>Colour by<select onchange="rgSet(\'color\',this.value)"><option value="status">Programme status</option><option value="readiness"' + (_rg.color === 'readiness' ? ' selected' : '') + '>Readiness</option></select></label>'
     + '<label class="rg-sw"><input type="checkbox" ' + (_rg.showNot ? 'checked ' : '') + 'onchange="rgSet(\'showNot\',this.checked)"> Show facilities not enrolled</label>'
     + '<label class="rg-sw"><input type="checkbox" ' + (_rg.links ? 'checked ' : '') + 'onchange="rgSet(\'links\',this.checked)"> Show links SC → PHC → CHC</label></div>'

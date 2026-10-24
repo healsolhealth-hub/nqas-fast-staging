@@ -93,3 +93,11 @@
 .rg-logins{display:flex;flex-direction:column;gap:4px;border:1px solid #DCE4E1;border-radius:12px;padding:10px;font-size:13px;}
 .rg-logins b{font-size:13px;} .rg-logins .hs-btn{align-self:flex-start;margin-top:4px;min-height:40px;}
 .rg-warn{background:#FFF6E8;border:1px solid #F1D4A6;border-radius:8px;padding:6px 8px;color:#6B4A12;}
+/* whole state */
+.rg-dl .rg-whole{font-weight:600;}
+.rg-tree td{vertical-align:middle;} .rg-tree tr.rg-tg{background:#FAFCFB;} .rg-tree tr.rg-t0{background:#EEF6F3;} .rg-tree tr.rg-t0 td{padding-top:12px;padding-bottom:12px;}
+.rg-tree tr.rg-t1 td:first-child{font-size:14.5px;} .rg-tree tr.rg-t2{background:#fff;}
+.rg-car{border:0;background:transparent;font:inherit;color:#16201D;padding:0;min-height:36px;display:inline-flex;gap:8px;align-items:center;text-align:left;cursor:pointer;}
+.rg-car>span{width:14px;color:#4F5E59;display:inline-block;} .rg-car.sm{min-height:28px;min-width:22px;margin-right:4px;} .rg-car-sp{display:inline-block;width:26px;}
+.rg-xall{margin-left:8px;font-size:12.5px;} .rg-warnt{color:#8E2F1E;}
+.rg-cov tr.rg-sth{background:#EEF6F3;} .rg-cov tr.rg-sth td{font-size:14px;} .rg-cov tr.rg-sth small{display:block;color:#4F5E59;}

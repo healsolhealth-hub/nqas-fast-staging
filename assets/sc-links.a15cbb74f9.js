@@ -61,35 +61,86 @@ async function nfLinkCho(){
     return r; };
 })();
 // ── HealSol: Setup → PHC & CHC links ───────────────────────────
-var _nfUnits={}, _nfLk={facs:{}};
+var _nfUnits={}, _nfLk={facs:{},view:'',area:'',q:'',all:{},stOpen:{}};
 async function nfEnsureLinks(){
   if(appMode!=='sc-admin') return; var main=document.querySelector('#admin-app .admin-main'); if(!main||document.getElementById('nfl-setup')) return;
   var c=document.createElement('div'); c.id='nfl-setup'; c.className='nf-ho'; c.dataset.nfv='setup';
-  c.innerHTML='<h3><i class="ti ti-building-hospital"></i> PHC &amp; CHC links · MO and MOIC logins</h3><p>Each Sub-Centre reports to a PHC (its Medical Officer) and a CHC (block MOIC). Confirming a link adds the MO as staff of the Sub-Centre and gives the block one view-only MOIC login. A link made here also shows in Facilities → Registry, and a link made there is sent here — no need to do it twice.</p><div id="nfl-body">Loading…</div>';
+  c.innerHTML='<h3><i class="ti ti-building-hospital"></i> PHC &amp; CHC links · MO and MOIC logins</h3><p>Your to-do list for logins. A link gives the PHC&rsquo;s Medical Officer and the block MOIC their logins. Links made here also show in Facilities → Registry, and the other way round. The full network is in Facilities → Registry and Map.</p><div id="nfl-body">Loading…</div>';
   main.appendChild(c); await nfLinksLoad(); nfLinksRender();
 }
 async function nfLinksLoad(){ try{ _nfLk.facs=await fbGet('sc_facilities')||{}; }catch(e){} try{ _nfUnits=await fbGet('sc_units')||{}; }catch(e){} }
+// Settings → PHC & CHC links as a to-do list (24 Oct 2026, canvas "Settings · PHC & CHC links and logins"):
+//  tiles Waiting · Missing logins · Not linked · Linked, logins done; lists show 3 rows until opened; one search;
+//  an area filter (state / district); "Link a Sub-Centre" by name or code; By state (opens to districts) → the Registry.
+function nflLow(x){ return String(x==null?'':x).trim().toLowerCase(); }
+function nflKind(f){ var L=f.links;
+  if(f.linkProposal) return 'wait';
+  if(!L) return 'un';
+  if((L.phc&&L.phc.nin&&!L.moMobile)||(L.chc&&L.chc.nin&&!L.moicId)) return 'miss';
+  return 'done'; }
+function nflArea(f){ var a=_nfLk.area||''; if(!a) return true; if(a.indexOf('S:')===0) return nflLow(f.state)===a.slice(2); return nflLow(f.state)+'|'+nflLow(f.district)===a; }
+function nflSet(k,v){ _nfLk[k]=v; nfLinksRender(); }
+function nflQ(v){ _nfLk.q=v; clearTimeout(window._nflT); window._nflT=setTimeout(function(){ nfLinksRender(); var i=document.getElementById('nfl-q'); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length,i.value.length); }catch(e){} } },250); }
+function nflPickLink(){ var v=String((document.getElementById('nfl-pick')||{}).value||'').trim(); if(!v){ showToast('Type a Sub-Centre name or code.','err'); return; }
+  var F=_nfLk.facs, m=/·\s*([A-Z0-9-]+)\s*$/.exec(v), code=m&&F[m[1]]?m[1]:(F[v.toUpperCase()]?v.toUpperCase():null);
+  if(!code){ var hits=Object.keys(F).filter(function(k){ return F[k]&&nflLow(F[k].name)===nflLow(v); }); if(hits.length===1) code=hits[0]; }
+  if(!code){ showToast('No enrolled Sub-Centre matches "'+v+'". Pick one from the list.','err'); return; }
+  nfLinkConfirm(code,false); }
+function nflOpenRegistry(state,district){ try{ nfAdminView('hsfac'); }catch(e){}
+  setTimeout(function(){ if(typeof rgOpenState!=='function') return; if(district){ _rg.tab='registry'; _rg.dist=rgDk(state,district); _rg.sel=null; _rg.open={}; rgRender(); } else rgOpenState(state); },60); }
 function nfLinksRender(){
   var body=document.getElementById('nfl-body'); if(!body) return;
-  var F=_nfLk.facs, codes=Object.keys(F).filter(function(k){ return F[k]&&!F[k].migratedTo&&!(typeof nfTypeOf==='function'&&nfTypeOf(F[k])!=='sc'); });   // links are for Sub-Centres (UPHC / PHC / CHC are not linked here)
-  var pend=codes.filter(function(k){ return F[k].linkProposal; }), un=codes.filter(function(k){ return !F[k].links&&!F[k].linkProposal; });
-  var h='<div class="scx-sub" style="margin-top:4px;">Waiting for you ('+pend.length+')</div>';
-  h+=pend.length?pend.map(function(k){ var f=F[k], p=f.linkProposal;
-    return '<div class="nfl-row"><div><b>'+scEsc(f.name||k)+'</b> <span class="scq-muted">'+scEsc(k)+'</span><small>Proposed by '+scEsc(p.proposedBy||'CHO')+' · '+scEsc(scFmtDate(p.proposedAt))+(f.links?' · changes an existing link':'')+'</small>'+nfLinkSummaryHTML(null,p)+'</div>'
-      +'<button class="scx-btn sm" onclick="nfLinkConfirm(\''+scJs(k)+'\',true)"><i class="ti ti-checks"></i> Review &amp; confirm</button></div>'; }).join(''):'<div class="scx-empty" style="padding:8px;">No proposals waiting.</div>';
-  h+='<div class="nfl-btns" style="margin:10px 0;"><select id="nfl-fac" class="scx-in" style="max-width:100%;margin-bottom:6px;">'+codes.sort(function(a,b){ return String(F[a].name||a).localeCompare(String(F[b].name||b)); })
-      .map(function(k){ return '<option value="'+scEsc(k)+'">'+scEsc((F[k].name||k)+' · '+k+(F[k].links?' · linked':''))+'</option>'; }).join('')+'</select>'
-    +'<button class="scx-btn" onclick="nfLinkConfirm(document.getElementById(\'nfl-fac\').value,false)"><i class="ti ti-building-hospital"></i> Link a facility</button></div>';
-  // the network: CHC → PHC → Sub-Centres
-  var U=_nfUnits, chcs=Object.keys(U).filter(function(n){ return U[n]&&U[n].type==='CHC'; }), phcs=Object.keys(U).filter(function(n){ return U[n]&&U[n].type==='PHC'; });
-  var scs=function(u){ return Object.keys((u&&u.facilities)||{}).map(function(k){ return '<div class="s">• '+scEsc((F[k]||{}).name||k)+' <span class="scq-muted">'+scEsc(k)+'</span></div>'; }).join(''); };
-  var ph=function(n){ var u=U[n]; return '<div class="p">'+scEsc(/^phc/i.test(u.name||'')?u.name:'PHC '+(u.name||n))+' <span class="scq-muted">NIN '+scEsc(n)+(u.mo?' · MO '+scEsc(u.mo.name||'')+' '+scEsc(u.mo.mobile||''):'')+'</span></div>'+scs(u); };
-  h+='<div class="scx-sub">Linked network</div><div class="nfl-tree">'+(chcs.length||phcs.length?chcs.map(function(n){ var u=U[n];
-      return '<div class="c">'+scEsc(/^chc/i.test(u.name||'')?u.name:'CHC '+(u.name||n))+' · '+scEsc(u.block||'')+' block <span class="scq-muted">NIN '+scEsc(n)+' · MOIC login '+scEsc(u.moicId||'—')+(u.moic?' · '+scEsc(u.moic.name||'')+' '+scEsc(u.moic.mobile||''):'')+'</span></div>'
-        +phcs.filter(function(p){ return U[p].chcNin===n; }).map(ph).join(''); }).join('')
-      +phcs.filter(function(p){ return !U[p].chcNin||!U[U[p].chcNin]; }).map(function(p){ return '<div class="c">No CHC yet</div>'+ph(p); }).join('')
-    :'<div class="scx-empty" style="padding:8px;">Nothing linked yet.</div>')+'</div>'
-    +(un.length?'<div class="scq-muted" style="margin-top:6px;">'+un.length+' facilit'+(un.length===1?'y is':'ies are')+' not linked yet.</div>':'');
+  var F=_nfLk.facs, U=_nfUnits||{}, codes=Object.keys(F).filter(function(k){ return F[k]&&!F[k].migratedTo&&!(typeof nfTypeOf==='function'&&nfTypeOf(F[k])!=='sc'); });   // links are for Sub-Centres (UPHC / PHC / CHC are not linked here)
+  var inArea=codes.filter(function(k){ return nflArea(F[k]); }), q=nflLow(_nfLk.q);
+  var match=function(k){ if(!q) return true; var f=F[k], L=f.links||f.linkProposal||{}; return (f.name+' '+k+' '+((L.phc||{}).name||'')+' '+((L.chc||{}).name||'')+' '+((L.chc||{}).block||'')+' '+(f.district||'')).toLowerCase().indexOf(q)>=0; };
+  var G={wait:[],miss:[],un:[],done:[]}; inArea.forEach(function(k){ G[nflKind(F[k])].push(k); });
+  var byName=function(a,b){ return String(F[a].name||a).localeCompare(String(F[b].name||b)); };
+  Object.keys(G).forEach(function(g){ G[g].sort(byName); });
+  var view=_nfLk.view||'', open=_nfLk.all||(_nfLk.all={});
+  // area filter: states, then their districts
+  var SD={}; codes.forEach(function(k){ var f=F[k]; if(!f.state&&!f.district) return; var st=f.state||'No state'; (SD[st]=SD[st]||{})[nflLow(f.state)+'|'+nflLow(f.district)]=f.district||'No district'; });
+  var areaSel='<label class="nfl-area">Area<select onchange="nflSet(\'area\',this.value)"><option value="">All states and districts</option>'+Object.keys(SD).sort().map(function(st){ var sk='S:'+nflLow(st);
+      return '<optgroup label="'+scEsc(st)+'"><option value="'+scEsc(sk)+'"'+(_nfLk.area===sk?' selected':'')+'>'+scEsc(st)+' · whole state</option>'+Object.keys(SD[st]).sort(function(a,b){ return SD[st][a].localeCompare(SD[st][b]); }).map(function(dk){ return '<option value="'+scEsc(dk)+'"'+(_nfLk.area===dk?' selected':'')+'>'+scEsc(SD[st][dk])+'</option>'; }).join('')+'</optgroup>'; }).join('')+'</select></label>';
+  var tile=function(k,label,sub,cls){ return '<button type="button" class="nfl-tile '+(cls||'')+(view===k?' on':'')+'" aria-pressed="'+(view===k)+'" onclick="nflSet(\'view\',_nfLk.view===\''+k+'\'?\'\':\''+k+'\')"><span>'+label+'</span><b>'+G[k].length+'</b><small>'+sub+'</small></button>'; };
+  var h='<div class="nfl-top">'+areaSel+'<label class="nfl-qw"><span class="rg-sr">Find</span><input id="nfl-q" type="search" placeholder="Find a Sub-Centre, PHC or CHC" value="'+scEsc(_nfLk.q||'')+'" oninput="nflQ(this.value)"></label>'
+    +'</div>'
+    +'<div class="nfl-tiles" role="group" aria-label="Show">'+tile('wait','Waiting for you','CHO proposals to confirm')+tile('miss','Missing logins','linked, but no MO or MOIC login',G.miss.length?'warn':'')
+    +tile('un','Not linked yet','enrolled Sub-Centres, no PHC / CHC')+tile('done','Linked, logins done','nothing to do','ok')+'</div>';
+  var list=function(k,title,rowFn,always){ if(view&&view!==k) return ''; if(!view&&!always) return '';
+    var L=G[k].filter(match), all=!!open[k]||!!q||view===k, shown=all?L:L.slice(0,3);
+    return '<div class="nfl-sec"><h4 class="scx-sub">'+title+' · '+L.length+'</h4>'+(L.length?'<div class="nfl-list">'+shown.map(rowFn).join('')
+      +(L.length>shown.length?'<div class="nfl-more"><button type="button" class="hs-link" onclick="_nfLk.all.'+k+'=true;nfLinksRender()">Show all '+L.length+'</button></div>':'')+'</div>'
+      :'<div class="scx-empty" style="padding:8px;">'+(q?'Nothing matches.':k==='wait'?'No proposals waiting.':k==='miss'?'Every linked Sub-Centre has its logins.':k==='un'?'Every enrolled Sub-Centre is linked.':'None yet.')+'</div>')+'</div>'; };
+  var where=function(f){ return scEsc([f.district,(f.links&&f.links.chc&&f.links.chc.block)?f.links.chc.block+' block':''].filter(Boolean).join(' · ')); };
+  h+=list('wait','Waiting for you',function(k){ var f=F[k], p=f.linkProposal;
+    return '<div class="nfl-row"><div><b>'+scEsc(f.name||k)+'</b> <span class="scq-muted">'+scEsc(k)+(f.district?' · '+scEsc(f.district):'')+'</span><small>Proposed by '+scEsc(p.proposedBy||'CHO')+' · '+scEsc(scFmtDate(p.proposedAt))+(f.links?' · changes an existing link':'')+'</small>'+nfLinkSummaryHTML(null,p)+'</div>'
+      +'<button class="scx-btn sm" onclick="nfLinkConfirm(\''+scJs(k)+'\',true)"><i class="ti ti-checks"></i> Review &amp; confirm</button></div>'; },true);
+  h+=list('miss','Missing logins',function(k){ var f=F[k], L=f.links||{}, miss=[];
+    if(L.phc&&L.phc.nin&&!L.moMobile) miss.push('MO'); if(L.chc&&L.chc.nin&&!L.moicId) miss.push('MOIC');
+    return '<div class="nfl-row"><div><b>'+scEsc(f.name||k)+'</b> <span class="scq-muted">'+where(f)+'</span><small>'+scEsc([L.phc&&L.phc.name,L.chc&&L.chc.name].filter(Boolean).join(' · '))+'</small><div class="nfl-miss">'+miss.map(function(m){ return '<span>No '+m+' login</span>'; }).join('')+'</div></div>'
+      +'<button class="scx-btn sm o" onclick="nfLinkConfirm(\''+scJs(k)+'\',false)">Give logins</button></div>'; },true);
+  h+=list('un','Not linked yet',function(k){ var f=F[k];
+    return '<div class="nfl-row"><div><b>'+scEsc(f.name||k)+'</b> <span class="scq-muted">'+scEsc(k)+(f.district?' · '+scEsc(f.district):'')+'</span></div><button class="scx-btn sm o" onclick="nfLinkConfirm(\''+scJs(k)+'\',false)">Link</button></div>'; },true);
+  h+=list('done','Linked, logins done',function(k){ var f=F[k], L=f.links||{};
+    return '<div class="nfl-row"><div><b>'+scEsc(f.name||k)+'</b> <span class="scq-muted">'+where(f)+'</span><small>'+scEsc([L.phc&&L.phc.name,L.chc&&L.chc.name].filter(Boolean).join(' · '))+(L.moName?' · MO '+scEsc(L.moName):'')+(L.moicId?' · MOIC '+scEsc(L.moicId):'')+'</small></div><button class="scx-btn sm o" onclick="nfLinkConfirm(\''+scJs(k)+'\',false)">Change</button></div>'; },false);
+  // link any Sub-Centre by name or code
+  h+='<div class="nfl-pickw"><label>Link or change any enrolled Sub-Centre<input id="nfl-pick" list="nfl-dl" placeholder="Type a name or code, e.g. Rampur or UP-AGR-SC-0001" autocomplete="off"></label>'
+    +'<datalist id="nfl-dl">'+codes.slice().sort(byName).map(function(k){ return '<option value="'+scEsc((F[k].name||k)+' · '+k)+'">'+(F[k].links?'linked':'not linked')+'</option>'; }).join('')+'</datalist>'
+    +'<button class="scx-btn" onclick="nflPickLink()"><i class="ti ti-building-hospital"></i> Link a Sub-Centre</button></div>';
+  // by state → districts
+  var S={}; inArea.forEach(function(k){ var f=F[k], st=f.state||'No state', dn=f.district||'No district', L=f.links||{};
+    var a=S[st]=S[st]||{name:st,d:{},chc:{},phc:{},mo:{},moic:{},n:0,ln:0}, d=a.d[dn]=a.d[dn]||{name:dn,chc:{},phc:{},mo:{},moic:{},n:0,ln:0};
+    [a,d].forEach(function(x){ x.n++; if(f.links){ x.ln++; if(L.chc&&L.chc.nin){ x.chc[L.chc.nin]=1; if(L.moicId) x.moic[L.chc.nin]=1; } if(L.phc&&L.phc.nin){ x.phc[L.phc.nin]=1; if(L.moMobile||(U[L.phc.nin]&&U[L.phc.nin].mo)) x.mo[L.phc.nin]=1; } } }); });
+  var nk=function(o){ return Object.keys(o).length; }, stOpen=_nfLk.stOpen||(_nfLk.stOpen={});
+  var cells=function(x){ return '<td>'+nk(x.chc)+'</td><td>'+nk(x.phc)+'</td><td>'+x.ln+' of '+x.n+'</td><td>'+nk(x.mo)+' of '+nk(x.phc)+'</td><td>'+nk(x.moic)+' of '+nk(x.chc)+'</td>'; };
+  var sks=Object.keys(S).sort();
+  h+='<div class="nfl-sec"><h4 class="scx-sub">By state</h4><div class="nfl-stt"><table><thead><tr><th scope="col">State · district</th><th scope="col">CHCs</th><th scope="col">PHCs</th><th scope="col">Sub-Centres linked</th><th scope="col">MO logins</th><th scope="col">MOIC logins</th><th scope="col"><span class="rg-sr">Open</span></th></tr></thead><tbody>'
+    +(sks.length?sks.map(function(st){ var a=S[st], o=!!stOpen[st]||sks.length===1;
+      return '<tr class="nfl-st0"><td><button type="button" class="rg-car" aria-expanded="'+o+'" onclick="_nfLk.stOpen[\''+scJs(st)+'\']=!_nfLk.stOpen[\''+scJs(st)+'\'];nfLinksRender()"><span aria-hidden="true">'+(o?'▾':'▸')+'</span><b>'+scEsc(st)+'</b></button> <span class="scq-muted">'+nk(a.d)+' district'+(nk(a.d)===1?'':'s')+'</span></td>'+cells(a)
+        +'<td class="r">'+(st!=='No state'?'<button type="button" class="hs-link" onclick="nflOpenRegistry(\''+scJs(st)+'\')">Open the state in Registry</button>':'')+'</td></tr>'
+        +(o?Object.keys(a.d).sort().map(function(dn){ var d=a.d[dn]; return '<tr class="nfl-st1"><td>'+scEsc(dn)+'</td>'+cells(d)+'<td class="r">'+(st!=='No state'&&dn!=='No district'?'<button type="button" class="hs-link" onclick="nflOpenRegistry(\''+scJs(st)+'\',\''+scJs(dn)+'\')">Open in Registry</button>':'')+'</td></tr>'; }).join(''):''); }).join('')
+      :'<tr><td colspan="7" class="scq-muted">No enrolled Sub-Centres here yet.</td></tr>')
+    +'</tbody></table></div><div class="scq-muted nfl-foot">A state opens to its districts. "Open the state in Registry" shows the whole chain: state → district → block → CHC → PHC → SC. UPHCs are not here: they are urban and do not report to a PHC or CHC.</div></div>';
   body.innerHTML=h;
 }
 async function nfLinkConfirm(code,fromProposal){
