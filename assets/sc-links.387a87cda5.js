@@ -65,7 +65,7 @@ var _nfUnits={}, _nfLk={facs:{}};
 async function nfEnsureLinks(){
   if(appMode!=='sc-admin') return; var main=document.querySelector('#admin-app .admin-main'); if(!main||document.getElementById('nfl-setup')) return;
   var c=document.createElement('div'); c.id='nfl-setup'; c.className='nf-ho'; c.dataset.nfv='setup';
-  c.innerHTML='<h3><i class="ti ti-building-hospital"></i> PHC &amp; CHC links</h3><p>Each Sub-Centre reports to a PHC (its Medical Officer) and a CHC (block MOIC). Confirming a link adds the MO as staff of the Sub-Centre and gives the block one view-only MOIC login.</p><div id="nfl-body">Loading…</div>';
+  c.innerHTML='<h3><i class="ti ti-building-hospital"></i> PHC &amp; CHC links · MO and MOIC logins</h3><p>Each Sub-Centre reports to a PHC (its Medical Officer) and a CHC (block MOIC). Confirming a link adds the MO as staff of the Sub-Centre and gives the block one view-only MOIC login. A link made here also shows in Facilities → Registry, and a link made there is sent here — no need to do it twice.</p><div id="nfl-body">Loading…</div>';
   main.appendChild(c); await nfLinksLoad(); nfLinksRender();
 }
 async function nfLinksLoad(){ try{ _nfLk.facs=await fbGet('sc_facilities')||{}; }catch(e){} try{ _nfUnits=await fbGet('sc_units')||{}; }catch(e){} }
@@ -104,7 +104,7 @@ async function nfLinkConfirm(code,fromProposal){
       fill('chcNin',{chcName:function(u){ return u.name; },block:function(u){ return u.block; },moicName:function(u){ return u.moic&&u.moic.name; },moicMobile:function(u){ return u.moic&&u.moic.mobile; }}); }});
   if(!v) return;
   var r; try{ r=await nfCall('linkFacility',Object.assign({code:code},nfLinkNest(v))); }catch(e){ showToast(e.message||'Could not link.','err'); return; }
-  showToast((f.name||code)+' linked.','ok'); await nfLinksLoad(); nfLinksRender(); nfLinkResult(f,r||{},nfLinkNest(v));
+  showToast((f.name||code)+' linked.','ok'); if(typeof _rg!=='undefined') _rg.at=0; if(typeof rgRefreshLinks==='function') rgRefreshLinks([code]); await nfLinksLoad(); nfLinksRender(); nfLinkResult(f,r||{},nfLinkNest(v));
 }
 function nfLinkResult(f,r,n){
   var lines=[], cred=function(who,id,pw,mob,name){ var msg='NQAS | FAST login for '+(name||who)+'\nLogin ID: '+id+'\nTemporary password: '+pw+'\nYou will choose your own password at first login.';

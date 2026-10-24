@@ -82,3 +82,14 @@
 @media (max-width:1180px){ .rg-body.has-sel{grid-template-columns:210px minmax(0,1fr);} .rg-side{grid-column:1 / -1;position:static;} .rg-mapw{grid-template-columns:1fr;} }
 @media (max-width:900px){ .rg-body,.rg-body.has-sel{grid-template-columns:1fr;} .rg-dl{flex-direction:row;overflow-x:auto;} .rg-dl button{white-space:nowrap;} .rg-dl .rg-cap{display:none;} .rg-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} #rg-map{height:420px;} }
 #rg-fd .nx-mi span small{display:block;margin-top:2px;}
+/* PHC / CHC: facilities under it · enrolled Sub-Centre: logins */
+.rg-kids{display:flex;flex-direction:column;gap:6px;border:1px solid #DCE4E1;border-radius:12px;padding:10px;background:#FBFCFC;}
+.rg-kids>b{font-size:13px;color:#16201D;} .rg-kids>b em{font-style:normal;font-weight:500;color:#5D6D68;margin-left:4px;}
+.rg-kids input[type=search]{min-height:38px;border:1px solid #C9D6D2;border-radius:10px;padding:0 10px;font:inherit;font-size:13.5px;}
+.rg-kids-l{display:flex;flex-direction:column;max-height:240px;overflow:auto;}
+.rg-form .rg-kids-l label{flex-direction:row;align-items:flex-start;gap:8px;font-weight:400;font-size:13.5px;color:#16201D;padding:6px 2px;border-bottom:1px solid #EEF2F1;min-height:32px;}
+.rg-form .rg-kids-l input{width:18px;height:18px;min-height:0;flex:none;margin-top:2px;accent-color:#134A41;}
+.rg-kids-l em.rg-en{font-style:normal;font-size:11.5px;} .rg-kids-l small{display:block;font-size:12px;}
+.rg-logins{display:flex;flex-direction:column;gap:4px;border:1px solid #DCE4E1;border-radius:12px;padding:10px;font-size:13px;}
+.rg-logins b{font-size:13px;} .rg-logins .hs-btn{align-self:flex-start;margin-top:4px;min-height:40px;}
+.rg-warn{background:#FFF6E8;border:1px solid #F1D4A6;border-radius:8px;padding:6px 8px;color:#6B4A12;}
