@@ -14,7 +14,7 @@
 // an upload without the assets folder). The page then opens app-inline.html — the same app as one file — instead.
 function nfAssetFail(el){ try{ console.warn('[NQAS] asset missing:',el&&(el.src||el.href)); location.replace('app-inline.html'+location.search+location.hash); }catch(e){} }
 </script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- Razorpay checkout: loaded when someone pays (shared/payments.js) -->
 <title>NQAS | FAST · HealSol Academy</title>
 <script id="nf-level">
 // ══════════════════════════════════════════════════════════════
@@ -323,7 +323,7 @@ function nfEnrollTypeChanged(sel){
 function nfEnrollDeptsOff(){ return [].map.call(document.querySelectorAll('#sc-enroll-depts input[data-nf-dept]'),function(c){ return c.checked?null:c.getAttribute('data-nf-dept'); }).filter(Boolean); }
 document.addEventListener('DOMContentLoaded',function(){ try{ nfLvlApply(); }catch(e){} try{ nfFillTypeSelect(document.getElementById('sc-enroll-type')); }catch(e){} });
 </script>
-<script id="nf-assets">var NF_ASSETS={"uphc-checklist":"#nf-data-uphc-checklist","phc-checklist":"#nf-data-phc-checklist","chc-checklist":"#nf-data-chc-checklist","uphc-hindi":"#nf-data-uphc-hindi","phc-hindi":"#nf-data-phc-hindi","chc-hindi":"#nf-data-chc-hindi"};</script>
+<script id="nf-assets">var NF_ASSETS={"uphc-checklist":"#nf-data-uphc-checklist","phc-checklist":"#nf-data-phc-checklist","chc-checklist":"#nf-data-chc-checklist","uphc-hindi":"#nf-data-uphc-hindi","phc-hindi":"#nf-data-phc-hindi","chc-hindi":"#nf-data-chc-hindi","sc-checkpoints":"#inline","sign-font":"#inline","pdf-fonts":"#inline","sc-fix":"#inline"};</script>
 <script id="nf-data-loader">// Data files loaded on demand (phase 3): a facility type's checklist is fetched only when a facility of that type opens.
 // NF_ASSETS (written by app/build.js): name → 'assets/data-<name>.<hash>.json' (published page) or '#nf-data-<name>'
 // (single file: inline <script type="application/json">). nfLoadData(name) → Promise of the parsed data, fetched once
@@ -340,6 +340,35 @@ function nfLoadData(name){
   _nfData[name]=p.catch(function(e){ delete _nfData[name]; throw e; });
   return _nfData[name];
 }
+
+// Scripts loaded on demand (page.json {lazy: name}): nfLoadScript(name) → Promise, resolved once the script has run.
+// In the single file they are already inline ('#inline'); in site/ the file is added the first time it is needed.
+var _nfScr={};
+function nfLoadScript(name){
+  if(_nfScr[name]) return _nfScr[name];
+  var ref=(typeof NF_ASSETS!=='undefined'&&NF_ASSETS)?NF_ASSETS[name]:null;
+  // an older nightly-summary inliner turns script assets into <script type="application/json" id="nf-data-NAME"> blocks: run them here
+  if(ref&&ref.indexOf('#nf-data-')===0){ var el=document.getElementById(ref.slice(1));
+    if(el&&el.type==='application/json'&&!el._nfRan){ el._nfRan=1; try{ (0,eval)(el.textContent.replace(/\\u003c/g,'<')); }catch(e){ console.warn('[lazy script]',name,e); } } }
+  if(!ref||ref.charAt(0)==='#') return (_nfScr[name]=Promise.resolve());
+  var p=new Promise(function(ok,no){ var s=document.createElement('script'); s.src=ref; s.async=true; s.onload=function(){ ok(); }; s.onerror=function(){ no(new Error('Could not load '+ref)); }; document.head.appendChild(s); });
+  _nfScr[name]=p.catch(function(e){ delete _nfScr[name]; throw e; });
+  return _nfScr[name];
+}
+
+// SC data (checkpoints, How to fix, linked checks: ~470 KB) — in site/ it loads in the background while the login screen
+// shows; every login waits for it in nfGo (nfScDataReady), so nothing after login runs without it. (speed, 26 Oct 2026)
+var _nfScHooks=[], _nfScReady=null, _nfScDone=false;
+function nfScDataThen(fn){ if(_nfScDone){ try{ fn(); }catch(e){ console.warn('[SC data]',e); } } else _nfScHooks.push(fn); }
+function nfScDataReady(){
+  if(_nfScReady) return _nfScReady;
+  _nfScReady=Promise.all([nfLoadScript('sc-checkpoints'),nfLoadScript('sc-fix')]).then(function(){
+    _nfScDone=true; var h=_nfScHooks; _nfScHooks=[]; h.forEach(function(fn){ try{ fn(); }catch(e){ console.warn('[SC data]',e); } });
+  }).catch(function(e){ _nfScReady=null; throw e; });
+  return _nfScReady;
+}
+(function(){ var go=function(){ nfScDataReady().catch(function(){}); };
+  if(document.readyState==='complete') setTimeout(go,0); else window.addEventListener('load',go); })();
 </script>
 
 
@@ -2375,6 +2404,7 @@ window.addEventListener('load', async function(){
     try{ var old=JSON.parse(localStorage.getItem('sc_autologin')||'null'); if(old&&old.pwd) localStorage.removeItem('sc_autologin'); }catch(e){}
     return;
   }
+  try{ await nfScDataReady(); }catch(e){}
   try{
     const saved = localStorage.getItem('sc_autologin');
     if(saved){
@@ -11020,13 +11050,14 @@ async function scCritEdit(){
   function merge(fb){
     var out={std:{},me:{}};
     ['std','me'].forEach(function(t){
-      Object.keys((SC_REG_BASE||{})[t]||{}).forEach(function(k){ out[t][k]=Object.assign({},SC_REG_BASE[t][k]); });
+      var B=(typeof SC_REG_BASE!=='undefined'&&SC_REG_BASE)||{};   // SC data may still be loading (speed, 26 Oct 2026)
+      Object.keys(B[t]||{}).forEach(function(k){ out[t][k]=Object.assign({},B[t][k]); });
       Object.keys((fb||{})[t]||{}).forEach(function(k){ var e=fb[t][k]||{}, b=out[t][k]||{};
         out[t][k]={title:e.title||b.title||'',hi:e.hi||b.hi||''}; });
     });
     return out;
   }
-  _scReg=merge(_scReg);
+  _scReg=merge(_scReg); nfScDataThen(function(){ _scReg=merge(_scReg); });
   var oLoad=scCpmLoad;
   scCpmLoad=async function(force){ var r=await oLoad.apply(this,arguments); _scReg=merge(_scReg); try{ await scCritLoad(); }catch(e){} return r; };
   // Official order everywhere (AoC → Standard → ME → checkpoint as in the checklist)
@@ -13816,6 +13847,7 @@ async function nfFindAccounts(id){
 function nfVal(id,v){ var el=document.getElementById(id); if(el) el.value=v; }
 function nfText(id){ var el=document.getElementById(id); return el&&el.classList.contains('show')?el.textContent:''; }
 async function nfGo(acc,pwd){
+  try{ await nfScDataReady(); }catch(e){ nfError(t('Could not load the app. Check your internet connection and try again.')); return false; }
   var loginEl=document.getElementById('login-screen'), err='';
   ['sc-staff-err','sc-sup-err','admin-err','sc-cho-err','scq-login-err','scd-login-err'].forEach(function(e){ var x=document.getElementById(e); if(x){ x.textContent=''; x.classList.remove('show'); } });
   // the facility type: a staff member's facility decides it; portals covering many facilities use the Sub-Centre core for now
@@ -16467,6 +16499,8 @@ async function nfOpenReceipts(code){
 
   phcStartCheckout=async function(){
     if(!nfIsChoNow()){ showToast('Only the CHO can pay for the subscription.','err'); return; }
+    // the Razorpay checkout script is added only when someone pays (speed, 26 Oct 2026 — it used to load on every open)
+    if(typeof Razorpay==='undefined'){ try{ await nfLoadScriptAny(['https://checkout.razorpay.com/v1/checkout.js'],function(){ return typeof Razorpay!=='undefined'; }); }catch(e){} }
     if(typeof Razorpay==='undefined'){ showToast('The payment window could not load — check your internet connection.','err'); return; }
     var btn=document.getElementById('upgrade-pay-btn'), label=btn?btn.innerHTML:''; if(btn){ btn.disabled=true; btn.textContent='Preparing payment…'; }
     var o;
@@ -16686,7 +16720,10 @@ var NF_CERT={days:60,baseline:7,minDone:48,share:0.5};
 // public Verify address printed on certificates (Wix page that shows this app's Verify page) and the app's home on the website
 var NF_CERT_VERIFY_BASE=NF_APP.verifyBase, NF_APP_HOME=NF_APP.appHome;
 var _nfCert={rec:null,code:'',mob:'',loaded:false};
-(function(){ try{ var st=document.createElement('style'); st.id='nf-sign-font'; st.textContent="@font-face{font-family:'NF Sign';font-style:normal;font-weight:400;font-display:swap;src:url(data:font/ttf;base64,"+NF_PDF_FONT_SIGN+") format('truetype');}"; document.head.appendChild(st); }catch(e){} })();
+// the signature font (vendor/sign-font.js, ~70 KB) is loaded only when a certificate is shown or printed (speed, 26 Oct 2026)
+function nfSignFont(){
+  return nfLoadScript('sign-font').then(function(){ try{ if(document.getElementById('nf-sign-font')||typeof NF_PDF_FONT_SIGN==='undefined') return; var st=document.createElement('style'); st.id='nf-sign-font'; st.textContent="@font-face{font-family:'NF Sign';font-style:normal;font-weight:400;font-display:swap;src:url(data:font/ttf;base64,"+NF_PDF_FONT_SIGN+") format('truetype');}"; document.head.appendChild(st); }catch(e){} }).catch(function(){});
+}
 function nfCertGradeOf(p){ return p>=80?'Distinction':p>=70?'Merit':'Completion'; }
 function nfCertTitle(g){ return g==='Completion'?'CERTIFICATE OF COMPLETION':'CERTIFICATE OF ACHIEVEMENT'; }
 function nfCertBase(){ return NF_CERT_VERIFY_BASE; }
@@ -16774,7 +16811,7 @@ function nfCertLinkedIn(r){
     +'&organizationName='+encodeURIComponent('HealSol Academy')+'&issueYear='+d.getFullYear()+'&issueMonth='+(d.getMonth()+1)+'&certUrl='+encodeURIComponent(r.verifyUrl||'')+'&certId='+encodeURIComponent(r.certId);
 }
 function nfCertShareText(r){ return 'I earned the NQAS | FAST '+(r.grade==='Completion'?'Certificate of Completion':'Certificate of Achievement with '+r.grade)+' from HealSol Academy — '+r.facilityName+', facility score '+r.facPct+'%. Verify: '+(r.verifyUrl||r.certId); }
-function nfShowCert(r){
+function nfShowCert(r){ nfSignFont();
   if(!r) return; var old=document.getElementById('nfcv'); if(old) old.remove();
   var ov=document.createElement('div'); ov.id='nfcv'; ov.className='nfcv-ov'; ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
   ov.innerHTML='<div class="nfcv-box"><div class="nfcv-bar"><b>'+scEsc(r.grade==='Completion'?'Certificate of Completion':'Certificate of Achievement · '+r.grade)+'<small>'+scEsc(r.certId)+'</small></b>'
@@ -16787,7 +16824,7 @@ function nfShowCert(r){
   window._nfCertOpen=r; document.body.appendChild(ov);
 }
 // ── PDF (A4 landscape) ──
-async function nfCertPdf(r){
+async function nfCertPdf(r){ await nfSignFont();
   var J=await nfLoadPdf(), doc=nfPdfNew(J,'l'), F=doc._nfFont, T=function(s){ return nfPdfTxt(doc,s); }, W=297, H=210, cx=W/2;
   var TEAL=[19,90,85], ORG=[233,150,58], GREY=[107,122,120], INK=[19,32,31], g=r.grade||'Completion';
   try{ doc.addFileToVFS('Sign.ttf',NF_PDF_FONT_SIGN); doc.addFont('Sign.ttf','Sign','normal'); }catch(e){}
@@ -16857,6 +16894,7 @@ async function nfCertShare(r,btn){
 async function nfVerifyBoot(){
   var id=''; try{ id=(new URLSearchParams(location.search).get('cert')||'').trim().toUpperCase(); }catch(e){}
   if(!id) return false;
+  nfSignFont();
   var pg=document.createElement('div'); pg.id='nf-verify';
   pg.innerHTML='<div class="nfv-top"><img src="'+SC_BRAND.logoNqas+'" alt="NQAS"><img src="'+SC_BRAND.logoHealsol+'" alt="HealSol Academy"></div><div class="nfv-st" style="background:#fff;">Checking certificate '+scEsc(id)+'…</div>';
   document.body.appendChild(pg);
@@ -17213,7 +17251,7 @@ function nfLoadScriptAny(urls,ready){
 }
 function nfLoadPdf(){
   var J=function(){ return window.jspdf&&window.jspdf.jsPDF; };
-  return nfLoadScriptAny(NF_PDF_URLS[0],J)
+  return nfLoadScript('pdf-fonts').catch(function(){}).then(function(){ return nfLoadScriptAny(NF_PDF_URLS[0],J); })
     .then(function(){ return nfLoadScriptAny(NF_PDF_URLS[1],function(){ return !!(J()&&J().API&&typeof J().API.autoTable==='function'); }); })
     .then(function(){ return J(); });
 }
@@ -19774,12 +19812,20 @@ scPlayCpVideo=function(di,ci){ var d=getDay(di), cp=d&&d.cps?d.cps[ci]:null, v=n
 <script id="nf-lx">
 // Firebase: shared/cp_master/links = {edits:{'L-012':{s,both,why,whyHi,a,ak,b,bk,removed}}, added:{'N-…':{a,ak,b,bk,s,both,why,whyHi,removed}}, updatedAt, updatedBy, lastImport}
 // NF_LINKS (used by the contradiction notes) is rebuilt from the built-in draft + these edits whenever the checkpoint master loads.
-var NF_LINKS_BASE=NF_LINKS.map(function(l,i){ var x=l.slice(); x.lid='L-'+('00'+(i+1)).slice(-3); return x; });
+// built lazily: the SC data (NF_LINKS) arrives after the login screen shows (speed, 26 Oct 2026)
+var NF_LINKS_BASE=null;
+function nfLxBaseAll(){
+  if(NF_LINKS_BASE) return NF_LINKS_BASE;
+  if(typeof _nfScDone!=='undefined'&&!_nfScDone) return [];             // not arrived yet: nothing to build from, do not keep it
+  return (NF_LINKS_BASE=(typeof NF_LINKS!=='undefined'?NF_LINKS:[]).map(function(l,i){ var x=l.slice(); x.lid='L-'+('00'+(i+1)).slice(-3); return x; }));
+}
+nfScDataThen(function(){ NF_LINKS_BASE=null; nfLxBaseAll(); try{ if(typeof _scCpm!=='undefined'&&_scCpm) nfLxRebuild(); }catch(e){} });
 var _nfLxAll=[], _nfLxUi={cp:null,q:'',s:'',st:'active',limit:80};
 function nfLxData(){ var L=_scCpm.links; return (L&&typeof L==='object')?L:{}; }
 function nfLxRebuild(){
+  if(typeof _nfScDone!=='undefined'&&!_nfScDone) return;                 // SC data not in yet: do not overwrite NF_LINKS; the hook above rebuilds
   var D=nfLxData(), E=D.edits||{}, A=D.added||{}, all=[];
-  NF_LINKS_BASE.forEach(function(l){ var e=E[l.lid], x=l.slice(); x.lid=l.lid;
+  nfLxBaseAll().forEach(function(l){ var e=E[l.lid], x=l.slice(); x.lid=l.lid;
     if(e){ if(e.a){ x[0]=e.a; x[1]=+e.ak||0; } if(e.b){ x[2]=e.b; x[3]=+e.bk||0; } if(e.s) x[4]=e.s==='S'?'S':'C'; if(e.both!=null) x[5]=e.both?1:0;
       if(e.why!=null) x[6]=e.why; if(e.whyHi!=null) x[7]=e.whyHi; x.edited=Object.keys(e).some(function(k){ return k!=='removed'&&k!=='at'; }); x.removed=!!e.removed; }
     all.push(x); });
@@ -19788,7 +19834,7 @@ function nfLxRebuild(){
   _nfLxAll=all; NF_LINKS=all.filter(function(x){ return !x.removed; }); _nfLkByCp=null;
 }
 function nfLxGet(lid){ return _nfLxAll.find(function(x){ return x.lid===lid; })||null; }
-function nfLxBase(lid){ return NF_LINKS_BASE.find(function(x){ return x.lid===lid; })||null; }
+function nfLxBase(lid){ return nfLxBaseAll().find(function(x){ return x.lid===lid; })||null; }
 // load: the checkpoint master already fetches shared/cp_master — keep its links part too
 (function(){ var oL=scCpmLoad;
   scCpmLoad=async function(force){ var fresh=force||!_scCpm.loadedAt||(Date.now()-_scCpm.loadedAt)>=60000;
@@ -19994,7 +20040,7 @@ async function nfLxExport(){
       ['Then upload the file in Card Editor → 🔗 Linked checks → Import review. Nothing is applied until you confirm.']]);
     rd['!cols']=[{wch:120}]; X.utils.book_append_sheet(wb,rd,'Read me');
     var ws=X.utils.aoa_to_sheet(nfLxSheetRows()); ws['!cols']=[8,18,11,6,5,46,11,6,5,46,10,11,40,40,11,40].map(function(w){ return {wch:w}; });
-    ws['!autofilter']={ref:'A1:P'+(NF_LINKS_BASE.length+400)}; X.utils.book_append_sheet(wb,ws,'Linked checks');
+    ws['!autofilter']={ref:'A1:P'+(nfLxBaseAll().length+400)}; X.utils.book_append_sheet(wb,ws,'Linked checks');
     X.writeFile(wb,'NQAS-FAST-Linked-checks-'+scNowIso().slice(0,10)+'.xlsx'); showToast('Linked checks downloaded.','ok');
   }catch(e){ console.warn(e); showToast('Could not create the Excel file — check connection.','err'); }
 }
@@ -20082,8 +20128,8 @@ function nfgRwDay(progId,di){
   if(typeof aeGetActiveArray==='function'){ var oArr=aeGetActiveArray; aeGetActiveArray=function(){ var arr=oArr.apply(this,arguments)||[], pid=scCpmEditorLetterToProg(adminActiveProg||'C'); return arr.map(function(d,di){ return nfgRwDay(pid,di)||d; }); }; }
   if(typeof aeOpenDay==='function'){ var oOpen=aeOpenDay; aeOpenDay=function(di){ var d=nfgRwDay('nqas_12B',di); if(!d) return oOpen.apply(this,arguments); adminEditorDay=null;
     scAeGenNote(document.getElementById('ae-editor-panel'),'<b>Day '+(di+1)+' · '+scEsc(d.title)+'</b><br>Readiness week (Days 57–60) is built in: end-line verification by the Quality Champion / Supervisor (Days 57–58), the final team review (Day 59) and graduation (Day 60). '+d.cps.length+' short milestone items, not scored for readiness.'); }; }
-  SC_CPM_BASE.forEach(function(c){ if(c.kind==='milestone'&&/^M-\d+$/.test(c.id)) c.retired=true; });   // old Boss Battle / Consolidation / Mock / Grand Finale items
-  try{ scCpmInvalidate(); }catch(e){}
+  nfScDataThen(function(){ SC_CPM_BASE.forEach(function(c){ if(c.kind==='milestone'&&/^M-\d+$/.test(c.id)) c.retired=true; });   // old Boss Battle / Consolidation / Mock / Grand Finale items
+    try{ scCpmInvalidate(); }catch(e){} });
 })();
 // ── end-line + verification status, graduation snapshot ──
 function nfgCtx(st){ return {code:st.code,fac:st.fac||{},progId:st.progId||(st.fac||{}).progId||'nqas_12A',roster:st.staff||{},progress:st.progress||{}}; }
@@ -22441,7 +22487,9 @@ async function ndMasterSetup(cfg, cl) {
   var T = cfg.id, S = nfDeptShape(cfg), base = cl.items, deps = cfg.departments || [];
   var basePlan = {}; deps.forEach(function (d) { basePlan[d.id] = nfDeptBaseline(base, d.id, S); });
   var L = null; try { L = await ndMasterLive(T); } catch (e) { L = null; }
-  try { await nfDeptHiLoad(T); } catch (e) {}
+  // built-in Hindi: wait for it only when the phone is in Hindi; in English it comes quietly after the card shows (speed, 26 Oct)
+  if (ndLangInit() === 'hi') { try { await nfDeptHiLoad(T); } catch (e) {} }
+  else setTimeout(function () { nfDeptHiLoad(T).then(function () { if (_nd && _nd.cfg && _nd.cfg.id === T) _nd.ct = {}; }).catch(function () {}); }, 4000);
   var lay = nfDeptLayerRows(base, L || {});
   _nd.cl = Object.assign({}, cl, { items: lay.rows }); _nd.byId = lay.all; _nd.master = L ? { v: L.v, from: L.from } : null;
   _nd.live = L || {}; _nd.ct = {}; _nd.anyRoles = null; _nd.base0 = {}; base.forEach(function (r) { _nd.base0[r[0]] = r; }); _nd.lang = ndLangInit();
@@ -23022,7 +23070,11 @@ function ndSetLang(l) {
   if (typeof setLang === 'function') { setLang(l); return; }
   if (_nd) ndKeepScroll();
 }
-function ndLangSync() { if (typeof _nd === 'undefined' || !_nd) return; var l = (typeof _appLang !== 'undefined' && _appLang === 'hi') ? 'hi' : 'en'; _nd.lang = l; try { localStorage.setItem('nd_lang', l); } catch (e) {} }
+function ndLangSync() {
+  if (typeof _nd === 'undefined' || !_nd) return; var l = (typeof _appLang !== 'undefined' && _appLang === 'hi') ? 'hi' : 'en'; _nd.lang = l; try { localStorage.setItem('nd_lang', l); } catch (e) {}
+  var T = _nd.cfg && _nd.cfg.id;   // switched to Hindi before the built-in Hindi arrived: fetch it, then redraw the card
+  if (l === 'hi' && T && !_ndHiDone[T]) nfDeptHiLoad(T).then(function () { if (_nd && _nd.cfg && _nd.cfg.id === T) { _nd.ct = {}; ndKeepScroll(); } }).catch(function () {});
+}
 function ndLangInit() { return (typeof _appLang !== 'undefined' && _appLang === 'hi') ? 'hi' : 'en'; }
 function ndLangSeg() {
   var hi = ndLang() === 'hi';

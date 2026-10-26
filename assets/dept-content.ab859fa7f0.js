@@ -18,7 +18,11 @@ function ndSetLang(l) {
   if (typeof setLang === 'function') { setLang(l); return; }
   if (_nd) ndKeepScroll();
 }
-function ndLangSync() { if (typeof _nd === 'undefined' || !_nd) return; var l = (typeof _appLang !== 'undefined' && _appLang === 'hi') ? 'hi' : 'en'; _nd.lang = l; try { localStorage.setItem('nd_lang', l); } catch (e) {} }
+function ndLangSync() {
+  if (typeof _nd === 'undefined' || !_nd) return; var l = (typeof _appLang !== 'undefined' && _appLang === 'hi') ? 'hi' : 'en'; _nd.lang = l; try { localStorage.setItem('nd_lang', l); } catch (e) {}
+  var T = _nd.cfg && _nd.cfg.id;   // switched to Hindi before the built-in Hindi arrived: fetch it, then redraw the card
+  if (l === 'hi' && T && !_ndHiDone[T]) nfDeptHiLoad(T).then(function () { if (_nd && _nd.cfg && _nd.cfg.id === T) { _nd.ct = {}; ndKeepScroll(); } }).catch(function () {});
+}
 function ndLangInit() { return (typeof _appLang !== 'undefined' && _appLang === 'hi') ? 'hi' : 'en'; }
 function ndLangSeg() {
   var hi = ndLang() === 'hi';

@@ -69,6 +69,7 @@ async function nfFindAccounts(id){
 function nfVal(id,v){ var el=document.getElementById(id); if(el) el.value=v; }
 function nfText(id){ var el=document.getElementById(id); return el&&el.classList.contains('show')?el.textContent:''; }
 async function nfGo(acc,pwd){
+  try{ await nfScDataReady(); }catch(e){ nfError(t('Could not load the app. Check your internet connection and try again.')); return false; }
   var loginEl=document.getElementById('login-screen'), err='';
   ['sc-staff-err','sc-sup-err','admin-err','sc-cho-err','scq-login-err','scd-login-err'].forEach(function(e){ var x=document.getElementById(e); if(x){ x.textContent=''; x.classList.remove('show'); } });
   // the facility type: a staff member's facility decides it; portals covering many facilities use the Sub-Centre core for now

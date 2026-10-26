@@ -133,6 +133,7 @@ window.addEventListener('load', async function(){
     try{ var old=JSON.parse(localStorage.getItem('sc_autologin')||'null'); if(old&&old.pwd) localStorage.removeItem('sc_autologin'); }catch(e){}
     return;
   }
+  try{ await nfScDataReady(); }catch(e){}
   try{
     const saved = localStorage.getItem('sc_autologin');
     if(saved){

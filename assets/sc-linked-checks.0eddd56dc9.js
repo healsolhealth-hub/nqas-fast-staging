@@ -1,12 +1,20 @@
 
 // Firebase: shared/cp_master/links = {edits:{'L-012':{s,both,why,whyHi,a,ak,b,bk,removed}}, added:{'N-…':{a,ak,b,bk,s,both,why,whyHi,removed}}, updatedAt, updatedBy, lastImport}
 // NF_LINKS (used by the contradiction notes) is rebuilt from the built-in draft + these edits whenever the checkpoint master loads.
-var NF_LINKS_BASE=NF_LINKS.map(function(l,i){ var x=l.slice(); x.lid='L-'+('00'+(i+1)).slice(-3); return x; });
+// built lazily: the SC data (NF_LINKS) arrives after the login screen shows (speed, 26 Oct 2026)
+var NF_LINKS_BASE=null;
+function nfLxBaseAll(){
+  if(NF_LINKS_BASE) return NF_LINKS_BASE;
+  if(typeof _nfScDone!=='undefined'&&!_nfScDone) return [];             // not arrived yet: nothing to build from, do not keep it
+  return (NF_LINKS_BASE=(typeof NF_LINKS!=='undefined'?NF_LINKS:[]).map(function(l,i){ var x=l.slice(); x.lid='L-'+('00'+(i+1)).slice(-3); return x; }));
+}
+nfScDataThen(function(){ NF_LINKS_BASE=null; nfLxBaseAll(); try{ if(typeof _scCpm!=='undefined'&&_scCpm) nfLxRebuild(); }catch(e){} });
 var _nfLxAll=[], _nfLxUi={cp:null,q:'',s:'',st:'active',limit:80};
 function nfLxData(){ var L=_scCpm.links; return (L&&typeof L==='object')?L:{}; }
 function nfLxRebuild(){
+  if(typeof _nfScDone!=='undefined'&&!_nfScDone) return;                 // SC data not in yet: do not overwrite NF_LINKS; the hook above rebuilds
   var D=nfLxData(), E=D.edits||{}, A=D.added||{}, all=[];
-  NF_LINKS_BASE.forEach(function(l){ var e=E[l.lid], x=l.slice(); x.lid=l.lid;
+  nfLxBaseAll().forEach(function(l){ var e=E[l.lid], x=l.slice(); x.lid=l.lid;
     if(e){ if(e.a){ x[0]=e.a; x[1]=+e.ak||0; } if(e.b){ x[2]=e.b; x[3]=+e.bk||0; } if(e.s) x[4]=e.s==='S'?'S':'C'; if(e.both!=null) x[5]=e.both?1:0;
       if(e.why!=null) x[6]=e.why; if(e.whyHi!=null) x[7]=e.whyHi; x.edited=Object.keys(e).some(function(k){ return k!=='removed'&&k!=='at'; }); x.removed=!!e.removed; }
     all.push(x); });
@@ -15,7 +23,7 @@ function nfLxRebuild(){
   _nfLxAll=all; NF_LINKS=all.filter(function(x){ return !x.removed; }); _nfLkByCp=null;
 }
 function nfLxGet(lid){ return _nfLxAll.find(function(x){ return x.lid===lid; })||null; }
-function nfLxBase(lid){ return NF_LINKS_BASE.find(function(x){ return x.lid===lid; })||null; }
+function nfLxBase(lid){ return nfLxBaseAll().find(function(x){ return x.lid===lid; })||null; }
 // load: the checkpoint master already fetches shared/cp_master — keep its links part too
 (function(){ var oL=scCpmLoad;
   scCpmLoad=async function(force){ var fresh=force||!_scCpm.loadedAt||(Date.now()-_scCpm.loadedAt)>=60000;
@@ -221,7 +229,7 @@ async function nfLxExport(){
       ['Then upload the file in Card Editor → 🔗 Linked checks → Import review. Nothing is applied until you confirm.']]);
     rd['!cols']=[{wch:120}]; X.utils.book_append_sheet(wb,rd,'Read me');
     var ws=X.utils.aoa_to_sheet(nfLxSheetRows()); ws['!cols']=[8,18,11,6,5,46,11,6,5,46,10,11,40,40,11,40].map(function(w){ return {wch:w}; });
-    ws['!autofilter']={ref:'A1:P'+(NF_LINKS_BASE.length+400)}; X.utils.book_append_sheet(wb,ws,'Linked checks');
+    ws['!autofilter']={ref:'A1:P'+(nfLxBaseAll().length+400)}; X.utils.book_append_sheet(wb,ws,'Linked checks');
     X.writeFile(wb,'NQAS-FAST-Linked-checks-'+scNowIso().slice(0,10)+'.xlsx'); showToast('Linked checks downloaded.','ok');
   }catch(e){ console.warn(e); showToast('Could not create the Excel file — check connection.','err'); }
 }

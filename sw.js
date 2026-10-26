@@ -6,15 +6,13 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "f3d1468027a2";
+const BUILD = "b1469cd43496";
 const ASSETS = [
- "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.0eb3c1d272.js",
- "assets/data-sc-how-to-fix.370427c0e7.js",
  "assets/dept-admin.ee8d5ffab0.js",
- "assets/dept-content.12dc9dc5b6.js",
+ "assets/dept-content.ab859fa7f0.js",
  "assets/dept-core.4ed6e40053.css",
- "assets/dept-core.6405ec3122.js",
+ "assets/dept-core.c213623be7.js",
  "assets/dept-grad.3d65c1e346.js",
  "assets/dept-grad.c07401b26c.css",
  "assets/dept-master-ui.46abe08c31.js",
@@ -34,7 +32,7 @@ const ASSETS = [
  "assets/sc-champion-verify.6be0e5d069.js",
  "assets/sc-champions.caf844a402.js",
  "assets/sc-champions.e1ab6daa4b.css",
- "assets/sc-checklist.63f7006cf3.js",
+ "assets/sc-checklist.f5e8f6206b.js",
  "assets/sc-compliance.db47e45d0f.js",
  "assets/sc-cp-master.c533185d48.js",
  "assets/sc-cp-progress.02e5f35df1.js",
@@ -44,17 +42,17 @@ const ASSETS = [
  "assets/sc-fadm.1fb01e6ce7.css",
  "assets/sc-fadm.3f3b4d2d74.js",
  "assets/sc-gaps.df1042b0ae.js",
- "assets/sc-graduation.3051aaf5b6.js",
+ "assets/sc-graduation.5fcd31094e.js",
  "assets/sc-healsol-view.fdd1503355.js",
  "assets/sc-hierarchy.4d51074fef.js",
  "assets/sc-how-to-fix.7dbba620cc.js",
  "assets/sc-implementation.8bce442784.js",
  "assets/sc-laptop.3b958233dd.css",
  "assets/sc-laptop.f633cb1c90.js",
- "assets/sc-linked-checks.047edf7bec.js",
+ "assets/sc-linked-checks.0eddd56dc9.js",
  "assets/sc-links.a15cbb74f9.js",
  "assets/sc-links.e145d9c6bb.css",
- "assets/sc-login-3tier.ea1c50562d.js",
+ "assets/sc-login-3tier.6baeea5ce4.js",
  "assets/sc-looks-met.c2aaaff056.js",
  "assets/sc-phases.07a2a34a96.css",
  "assets/sc-phases.23968f3a3c.js",
@@ -76,8 +74,8 @@ const ASSETS = [
  "assets/shared-brand.1b47ef65ba.js",
  "assets/shared-business-ind.a9e4d359b8.js",
  "assets/shared-business-ind.d97663522b.css",
+ "assets/shared-cert.210bb0517e.js",
  "assets/shared-cert.50af794399.css",
- "assets/shared-cert.5960091762.js",
  "assets/shared-content-shell.afbafa0c3e.css",
  "assets/shared-content-shell.ba4570feab.js",
  "assets/shared-dashboards.6389b2bdbd.js",
@@ -95,13 +93,13 @@ const ASSETS = [
  "assets/shared-hs-settings.f1365f98fb.js",
  "assets/shared-impact.9f7d5ac345.js",
  "assets/shared-impact.b1cba457b4.css",
+ "assets/shared-one-login.39388a85bf.js",
  "assets/shared-one-login.6f478da916.css",
- "assets/shared-one-login.c204d6395c.js",
  "assets/shared-one-ui.1b4350b497.css",
  "assets/shared-one-ui.c255a0db58.js",
- "assets/shared-payments.2b35528884.js",
+ "assets/shared-payments.12fb4e5a71.js",
  "assets/shared-pdf-reports.1da837fa8c.js",
- "assets/shared-pdf.33e49f6393.js",
+ "assets/shared-pdf.da58c8e364.js",
  "assets/shared-registration.6833f0a40c.js",
  "assets/shared-registry.b481a87ed7.js",
  "assets/shared-registry.cfa8f1d09c.css",
@@ -113,16 +111,34 @@ const ASSETS = [
  "assets/shared-vocab.22993a26fc.js",
  "assets/shared-whatsapp.a6f1e4452b.js",
  "assets/types-settings.c9093f9dc9.js",
- "assets/vendor-pdf-fonts.d24cedb333.js",
- "assets/vendor-poppins-font.7a4a5ae076.css",
+ "assets/vendor-poppins-font.0ea9314335.css",
  "assets/vendor-qrcode.fabb956c75.js",
- "assets/vendor-sign-font.245deebf21.js",
  "icons/apple-touch-icon.png",
  "icons/icon-192.png",
  "icons/icon-512.png",
  "icons/icon-maskable-512.png",
  "manifest.webmanifest"
 ];
+const KEEP = [
+ "assets/data-chc-checklist.1d22f2ed41.json",
+ "assets/data-chc-hindi.fa7c99a1ef.json",
+ "assets/data-phc-checklist.0f179b7980.json",
+ "assets/data-phc-hindi.32c71d43c3.json",
+ "assets/data-sc-checkpoints.faf119347a.js",
+ "assets/data-sc-how-to-fix.370427c0e7.js",
+ "assets/data-uphc-checklist.09cb37887b.json",
+ "assets/data-uphc-hindi.29e9e07d2c.json",
+ "assets/font-58dba357cb.woff2",
+ "assets/font-6b986471df.woff2",
+ "assets/font-7d93459d86.woff2",
+ "assets/font-9338e65fc0.woff2",
+ "assets/font-cd36de204a.woff2",
+ "assets/font-de10eb6f1f.woff2",
+ "assets/font-f018c9ad67.woff2",
+ "assets/font-f4e80d9dfd.woff2",
+ "assets/vendor-pdf-fonts.d24cedb333.js",
+ "assets/vendor-sign-font.245deebf21.js"
+];   // data, fonts and on-demand scripts: not downloaded at install, but not thrown away while still used
 const STATIC = 'nqf-static', PAGES = 'nqf-pages', LIBS = 'nqf-libs';
 const LIB_RE = /^https:\/\/(www\.gstatic\.com\/firebasejs\/\d+\.\d+\.\d+\/|cdnjs\.cloudflare\.com\/ajax\/libs\/[^/]+\/\d[^/]*\/|cdn\.jsdelivr\.net\/npm\/[^/]+@\d[^/]*\/|unpkg\.com\/[^/]+@\d[^/]*\/)/;
 const scopeUrl = p => new URL(p, self.registration.scope).href;
@@ -137,7 +153,7 @@ self.addEventListener('install', e => {
 });
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
-    const keep = new Set(ASSETS.map(scopeUrl)), c = await caches.open(STATIC);
+    const keep = new Set(ASSETS.concat(KEEP).map(scopeUrl)), c = await caches.open(STATIC);
     await Promise.all((await c.keys()).filter(r => !keep.has(r.url)).map(r => c.delete(r)));   // blocks of older builds
     const names = await caches.keys();
     await Promise.all(names.filter(n => [STATIC, PAGES, LIBS].indexOf(n) < 0).map(n => caches.delete(n)));

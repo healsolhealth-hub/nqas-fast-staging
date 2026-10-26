@@ -10,7 +10,10 @@ var NF_CERT={days:60,baseline:7,minDone:48,share:0.5};
 // public Verify address printed on certificates (Wix page that shows this app's Verify page) and the app's home on the website
 var NF_CERT_VERIFY_BASE=NF_APP.verifyBase, NF_APP_HOME=NF_APP.appHome;
 var _nfCert={rec:null,code:'',mob:'',loaded:false};
-(function(){ try{ var st=document.createElement('style'); st.id='nf-sign-font'; st.textContent="@font-face{font-family:'NF Sign';font-style:normal;font-weight:400;font-display:swap;src:url(data:font/ttf;base64,"+NF_PDF_FONT_SIGN+") format('truetype');}"; document.head.appendChild(st); }catch(e){} })();
+// the signature font (vendor/sign-font.js, ~70 KB) is loaded only when a certificate is shown or printed (speed, 26 Oct 2026)
+function nfSignFont(){
+  return nfLoadScript('sign-font').then(function(){ try{ if(document.getElementById('nf-sign-font')||typeof NF_PDF_FONT_SIGN==='undefined') return; var st=document.createElement('style'); st.id='nf-sign-font'; st.textContent="@font-face{font-family:'NF Sign';font-style:normal;font-weight:400;font-display:swap;src:url(data:font/ttf;base64,"+NF_PDF_FONT_SIGN+") format('truetype');}"; document.head.appendChild(st); }catch(e){} }).catch(function(){});
+}
 function nfCertGradeOf(p){ return p>=80?'Distinction':p>=70?'Merit':'Completion'; }
 function nfCertTitle(g){ return g==='Completion'?'CERTIFICATE OF COMPLETION':'CERTIFICATE OF ACHIEVEMENT'; }
 function nfCertBase(){ return NF_CERT_VERIFY_BASE; }
@@ -98,7 +101,7 @@ function nfCertLinkedIn(r){
     +'&organizationName='+encodeURIComponent('HealSol Academy')+'&issueYear='+d.getFullYear()+'&issueMonth='+(d.getMonth()+1)+'&certUrl='+encodeURIComponent(r.verifyUrl||'')+'&certId='+encodeURIComponent(r.certId);
 }
 function nfCertShareText(r){ return 'I earned the NQAS | FAST '+(r.grade==='Completion'?'Certificate of Completion':'Certificate of Achievement with '+r.grade)+' from HealSol Academy — '+r.facilityName+', facility score '+r.facPct+'%. Verify: '+(r.verifyUrl||r.certId); }
-function nfShowCert(r){
+function nfShowCert(r){ nfSignFont();
   if(!r) return; var old=document.getElementById('nfcv'); if(old) old.remove();
   var ov=document.createElement('div'); ov.id='nfcv'; ov.className='nfcv-ov'; ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
   ov.innerHTML='<div class="nfcv-box"><div class="nfcv-bar"><b>'+scEsc(r.grade==='Completion'?'Certificate of Completion':'Certificate of Achievement · '+r.grade)+'<small>'+scEsc(r.certId)+'</small></b>'
@@ -111,7 +114,7 @@ function nfShowCert(r){
   window._nfCertOpen=r; document.body.appendChild(ov);
 }
 // ── PDF (A4 landscape) ──
-async function nfCertPdf(r){
+async function nfCertPdf(r){ await nfSignFont();
   var J=await nfLoadPdf(), doc=nfPdfNew(J,'l'), F=doc._nfFont, T=function(s){ return nfPdfTxt(doc,s); }, W=297, H=210, cx=W/2;
   var TEAL=[19,90,85], ORG=[233,150,58], GREY=[107,122,120], INK=[19,32,31], g=r.grade||'Completion';
   try{ doc.addFileToVFS('Sign.ttf',NF_PDF_FONT_SIGN); doc.addFont('Sign.ttf','Sign','normal'); }catch(e){}
@@ -181,6 +184,7 @@ async function nfCertShare(r,btn){
 async function nfVerifyBoot(){
   var id=''; try{ id=(new URLSearchParams(location.search).get('cert')||'').trim().toUpperCase(); }catch(e){}
   if(!id) return false;
+  nfSignFont();
   var pg=document.createElement('div'); pg.id='nf-verify';
   pg.innerHTML='<div class="nfv-top"><img src="'+SC_BRAND.logoNqas+'" alt="NQAS"><img src="'+SC_BRAND.logoHealsol+'" alt="HealSol Academy"></div><div class="nfv-st" style="background:#fff;">Checking certificate '+scEsc(id)+'…</div>';
   document.body.appendChild(pg);

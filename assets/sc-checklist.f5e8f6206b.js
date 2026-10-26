@@ -62,13 +62,14 @@ async function scCritEdit(){
   function merge(fb){
     var out={std:{},me:{}};
     ['std','me'].forEach(function(t){
-      Object.keys((SC_REG_BASE||{})[t]||{}).forEach(function(k){ out[t][k]=Object.assign({},SC_REG_BASE[t][k]); });
+      var B=(typeof SC_REG_BASE!=='undefined'&&SC_REG_BASE)||{};   // SC data may still be loading (speed, 26 Oct 2026)
+      Object.keys(B[t]||{}).forEach(function(k){ out[t][k]=Object.assign({},B[t][k]); });
       Object.keys((fb||{})[t]||{}).forEach(function(k){ var e=fb[t][k]||{}, b=out[t][k]||{};
         out[t][k]={title:e.title||b.title||'',hi:e.hi||b.hi||''}; });
     });
     return out;
   }
-  _scReg=merge(_scReg);
+  _scReg=merge(_scReg); nfScDataThen(function(){ _scReg=merge(_scReg); });
   var oLoad=scCpmLoad;
   scCpmLoad=async function(force){ var r=await oLoad.apply(this,arguments); _scReg=merge(_scReg); try{ await scCritLoad(); }catch(e){} return r; };
   // Official order everywhere (AoC → Standard → ME → checkpoint as in the checklist)

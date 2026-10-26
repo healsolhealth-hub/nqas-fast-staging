@@ -67,6 +67,8 @@ async function nfOpenReceipts(code){
 
   phcStartCheckout=async function(){
     if(!nfIsChoNow()){ showToast('Only the CHO can pay for the subscription.','err'); return; }
+    // the Razorpay checkout script is added only when someone pays (speed, 26 Oct 2026 — it used to load on every open)
+    if(typeof Razorpay==='undefined'){ try{ await nfLoadScriptAny(['https://checkout.razorpay.com/v1/checkout.js'],function(){ return typeof Razorpay!=='undefined'; }); }catch(e){} }
     if(typeof Razorpay==='undefined'){ showToast('The payment window could not load — check your internet connection.','err'); return; }
     var btn=document.getElementById('upgrade-pay-btn'), label=btn?btn.innerHTML:''; if(btn){ btn.disabled=true; btn.textContent='Preparing payment…'; }
     var o;

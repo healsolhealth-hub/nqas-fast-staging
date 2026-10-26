@@ -49,7 +49,7 @@ function nfLoadScriptAny(urls,ready){
 }
 function nfLoadPdf(){
   var J=function(){ return window.jspdf&&window.jspdf.jsPDF; };
-  return nfLoadScriptAny(NF_PDF_URLS[0],J)
+  return nfLoadScript('pdf-fonts').catch(function(){}).then(function(){ return nfLoadScriptAny(NF_PDF_URLS[0],J); })
     .then(function(){ return nfLoadScriptAny(NF_PDF_URLS[1],function(){ return !!(J()&&J().API&&typeof J().API.autoTable==='function'); }); })
     .then(function(){ return J(); });
 }

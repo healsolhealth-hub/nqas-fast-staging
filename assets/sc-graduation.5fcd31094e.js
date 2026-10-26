@@ -59,8 +59,8 @@ function nfgRwDay(progId,di){
   if(typeof aeGetActiveArray==='function'){ var oArr=aeGetActiveArray; aeGetActiveArray=function(){ var arr=oArr.apply(this,arguments)||[], pid=scCpmEditorLetterToProg(adminActiveProg||'C'); return arr.map(function(d,di){ return nfgRwDay(pid,di)||d; }); }; }
   if(typeof aeOpenDay==='function'){ var oOpen=aeOpenDay; aeOpenDay=function(di){ var d=nfgRwDay('nqas_12B',di); if(!d) return oOpen.apply(this,arguments); adminEditorDay=null;
     scAeGenNote(document.getElementById('ae-editor-panel'),'<b>Day '+(di+1)+' · '+scEsc(d.title)+'</b><br>Readiness week (Days 57–60) is built in: end-line verification by the Quality Champion / Supervisor (Days 57–58), the final team review (Day 59) and graduation (Day 60). '+d.cps.length+' short milestone items, not scored for readiness.'); }; }
-  SC_CPM_BASE.forEach(function(c){ if(c.kind==='milestone'&&/^M-\d+$/.test(c.id)) c.retired=true; });   // old Boss Battle / Consolidation / Mock / Grand Finale items
-  try{ scCpmInvalidate(); }catch(e){}
+  nfScDataThen(function(){ SC_CPM_BASE.forEach(function(c){ if(c.kind==='milestone'&&/^M-\d+$/.test(c.id)) c.retired=true; });   // old Boss Battle / Consolidation / Mock / Grand Finale items
+    try{ scCpmInvalidate(); }catch(e){} });
 })();
 // ── end-line + verification status, graduation snapshot ──
 function nfgCtx(st){ return {code:st.code,fac:st.fac||{},progId:st.progId||(st.fac||{}).progId||'nqas_12A',roster:st.staff||{},progress:st.progress||{}}; }

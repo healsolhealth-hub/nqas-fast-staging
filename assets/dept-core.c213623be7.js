@@ -127,7 +127,9 @@ async function ndMasterSetup(cfg, cl) {
   var T = cfg.id, S = nfDeptShape(cfg), base = cl.items, deps = cfg.departments || [];
   var basePlan = {}; deps.forEach(function (d) { basePlan[d.id] = nfDeptBaseline(base, d.id, S); });
   var L = null; try { L = await ndMasterLive(T); } catch (e) { L = null; }
-  try { await nfDeptHiLoad(T); } catch (e) {}
+  // built-in Hindi: wait for it only when the phone is in Hindi; in English it comes quietly after the card shows (speed, 26 Oct)
+  if (ndLangInit() === 'hi') { try { await nfDeptHiLoad(T); } catch (e) {} }
+  else setTimeout(function () { nfDeptHiLoad(T).then(function () { if (_nd && _nd.cfg && _nd.cfg.id === T) _nd.ct = {}; }).catch(function () {}); }, 4000);
   var lay = nfDeptLayerRows(base, L || {});
   _nd.cl = Object.assign({}, cl, { items: lay.rows }); _nd.byId = lay.all; _nd.master = L ? { v: L.v, from: L.from } : null;
   _nd.live = L || {}; _nd.ct = {}; _nd.anyRoles = null; _nd.base0 = {}; base.forEach(function (r) { _nd.base0[r[0]] = r; }); _nd.lang = ndLangInit();

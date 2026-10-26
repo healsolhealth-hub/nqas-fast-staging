@@ -14,10 +14,10 @@
 // an upload without the assets folder). The page then opens app-inline.html — the same app as one file — instead.
 function nfAssetFail(el){ try{ console.warn('[NQAS] asset missing:',el&&(el.src||el.href)); location.replace('app-inline.html'+location.search+location.hash); }catch(e){} }
 </script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- Razorpay checkout: loaded when someone pays (shared/payments.js) -->
 <title>NQAS | FAST · HealSol Academy</title>
 <script id="nf-level" src="assets/types-settings.c9093f9dc9.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-assets">var NF_ASSETS={"uphc-checklist":"assets/data-uphc-checklist.09cb37887b.json","phc-checklist":"assets/data-phc-checklist.0f179b7980.json","chc-checklist":"assets/data-chc-checklist.1d22f2ed41.json","uphc-hindi":"assets/data-uphc-hindi.29e9e07d2c.json","phc-hindi":"assets/data-phc-hindi.32c71d43c3.json","chc-hindi":"assets/data-chc-hindi.fa7c99a1ef.json"};</script>
+<script id="nf-assets">var NF_ASSETS={"uphc-checklist":"assets/data-uphc-checklist.09cb37887b.json","phc-checklist":"assets/data-phc-checklist.0f179b7980.json","chc-checklist":"assets/data-chc-checklist.1d22f2ed41.json","uphc-hindi":"assets/data-uphc-hindi.29e9e07d2c.json","phc-hindi":"assets/data-phc-hindi.32c71d43c3.json","chc-hindi":"assets/data-chc-hindi.fa7c99a1ef.json","sc-checkpoints":"assets/data-sc-checkpoints.faf119347a.js","sign-font":"assets/vendor-sign-font.245deebf21.js","pdf-fonts":"assets/vendor-pdf-fonts.d24cedb333.js","sc-fix":"assets/data-sc-how-to-fix.370427c0e7.js"};</script>
 <script id="nf-data-loader">// Data files loaded on demand (phase 3): a facility type's checklist is fetched only when a facility of that type opens.
 // NF_ASSETS (written by app/build.js): name → 'assets/data-<name>.<hash>.json' (published page) or '#nf-data-<name>'
 // (single file: inline <script type="application/json">). nfLoadData(name) → Promise of the parsed data, fetched once
@@ -34,6 +34,35 @@ function nfLoadData(name){
   _nfData[name]=p.catch(function(e){ delete _nfData[name]; throw e; });
   return _nfData[name];
 }
+
+// Scripts loaded on demand (page.json {lazy: name}): nfLoadScript(name) → Promise, resolved once the script has run.
+// In the single file they are already inline ('#inline'); in site/ the file is added the first time it is needed.
+var _nfScr={};
+function nfLoadScript(name){
+  if(_nfScr[name]) return _nfScr[name];
+  var ref=(typeof NF_ASSETS!=='undefined'&&NF_ASSETS)?NF_ASSETS[name]:null;
+  // an older nightly-summary inliner turns script assets into <script type="application/json" id="nf-data-NAME"> blocks: run them here
+  if(ref&&ref.indexOf('#nf-data-')===0){ var el=document.getElementById(ref.slice(1));
+    if(el&&el.type==='application/json'&&!el._nfRan){ el._nfRan=1; try{ (0,eval)(el.textContent.replace(/\\u003c/g,'<')); }catch(e){ console.warn('[lazy script]',name,e); } } }
+  if(!ref||ref.charAt(0)==='#') return (_nfScr[name]=Promise.resolve());
+  var p=new Promise(function(ok,no){ var s=document.createElement('script'); s.src=ref; s.async=true; s.onload=function(){ ok(); }; s.onerror=function(){ no(new Error('Could not load '+ref)); }; document.head.appendChild(s); });
+  _nfScr[name]=p.catch(function(e){ delete _nfScr[name]; throw e; });
+  return _nfScr[name];
+}
+
+// SC data (checkpoints, How to fix, linked checks: ~470 KB) — in site/ it loads in the background while the login screen
+// shows; every login waits for it in nfGo (nfScDataReady), so nothing after login runs without it. (speed, 26 Oct 2026)
+var _nfScHooks=[], _nfScReady=null, _nfScDone=false;
+function nfScDataThen(fn){ if(_nfScDone){ try{ fn(); }catch(e){ console.warn('[SC data]',e); } } else _nfScHooks.push(fn); }
+function nfScDataReady(){
+  if(_nfScReady) return _nfScReady;
+  _nfScReady=Promise.all([nfLoadScript('sc-checkpoints'),nfLoadScript('sc-fix')]).then(function(){
+    _nfScDone=true; var h=_nfScHooks; _nfScHooks=[]; h.forEach(function(fn){ try{ fn(); }catch(e){ console.warn('[SC data]',e); } });
+  }).catch(function(e){ _nfScReady=null; throw e; });
+  return _nfScReady;
+}
+(function(){ var go=function(){ nfScDataReady().catch(function(){}); };
+  if(document.readyState==='complete') setTimeout(go,0); else window.addEventListener('load',go); })();
 </script>
 
 
@@ -779,7 +808,7 @@ function nfLoadData(name){
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
-<script src="assets/sc-login-3tier.ea1c50562d.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-login-3tier.6baeea5ce4.js" onerror="nfAssetFail(this)"></script>
 <script src="assets/data-sc-days.0eb3c1d272.js" onerror="nfAssetFail(this)"></script>
 
 <div class="report-modal-overlay" id="rpt-filter-modal">
@@ -1018,7 +1047,7 @@ body.scb1-light #ws-guide-toggle-btn{display:none !important;}
 .scm-meta span.m{background:#FEF3C7;color:#92400E;}
 .scm-meta span.pk{background:#fff;border:1px solid #E2E8F0;}
 </style>
-<script src="assets/data-sc-checkpoints.faf119347a.js" onerror="nfAssetFail(this)"></script>
+
 <script src="assets/sc-cp-master.c533185d48.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ STEP A.2 — NQAS hierarchy (AoC → Standard → ME) ══ -->
@@ -1082,7 +1111,7 @@ body.scb1-light #ws-guide-toggle-btn{display:none !important;}
 .scm-min{font-style:normal;font-size:10px;font-weight:800;color:#64748B;background:#F1F5F9;border-radius:7px;padding:1px 6px;}
 .scm-min.hi{color:#9A3412;background:#FFEDD5;}
 </style>
-<script src="assets/sc-checklist.63f7006cf3.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-checklist.f5e8f6206b.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ STEP B — Per-checkpoint progress, MoV ticks, scoring rule, reset ══ -->
 <style>
@@ -1335,12 +1364,12 @@ function scMdNext(di){
 <script src="assets/sc-champion-verify.6be0e5d069.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ BUILD 4.1 — Foundation (brand, bundled fonts & icons) ══ -->
-<link rel="stylesheet" href="assets/vendor-poppins-font.7a4a5ae076.css" onerror="nfAssetFail(this)">
+<link rel="stylesheet" href="assets/vendor-poppins-font.0ea9314335.css" onerror="nfAssetFail(this)">
 <script src="assets/shared-brand.1b47ef65ba.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ BUILD 4.2 — single login ══ -->
 <link rel="stylesheet" href="assets/shared-one-login.6f478da916.css" onerror="nfAssetFail(this)">
-<script src="assets/shared-one-login.c204d6395c.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-one-login.39388a85bf.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ BUILD 4.3 — staff app (Today · Cards · Progress · Me) ══ -->
 <link rel="stylesheet" href="assets/sc-staff-app.e0189e484b.css" onerror="nfAssetFail(this)">
@@ -1525,7 +1554,7 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 <script src="assets/shared-secure.dc4bab961d.js" onerror="nfAssetFail(this)"></script>
 
 <script id="nf-registration" src="assets/shared-registration.6833f0a40c.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-payments" src="assets/shared-payments.2b35528884.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-payments" src="assets/shared-payments.12fb4e5a71.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-rcpt-css">
 .nf-rcpt{font-size:13px;color:#0F172A;max-width:520px;margin:0 auto;}
 .nf-rcpt-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0F5C52;padding-bottom:10px;margin-bottom:10px;gap:10px;}
@@ -1546,9 +1575,9 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 </style>
 <script id="nf-biz-report" src="assets/shared-biz-report.7d0c383ae8.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-qr" src="assets/vendor-qrcode.fabb956c75.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-sign-font-data" src="assets/vendor-sign-font.245deebf21.js" onerror="nfAssetFail(this)"></script>
+
 <link id="nf-cert-css" rel="stylesheet" href="assets/shared-cert.50af794399.css" onerror="nfAssetFail(this)">
-<script id="nf-cert" src="assets/shared-cert.5960091762.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-cert" src="assets/shared-cert.210bb0517e.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-wa-css">
 /* WhatsApp: help card, help links, one-tap message buttons */
 .nf-help{display:flex;gap:12px;align-items:center;margin-top:12px;border-radius:20px;padding:14px 16px;background:#fff;border:1px solid var(--br,#E2E8F0);}
@@ -1568,7 +1597,7 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 <script id="nf-wa" src="assets/shared-whatsapp.a6f1e4452b.js" onerror="nfAssetFail(this)"></script>
 
 
-<script id="nf-pdf-fonts" src="assets/vendor-pdf-fonts.d24cedb333.js" onerror="nfAssetFail(this)"></script>
+
 <style id="nf-pro-css">
 /* PRO badge — paid and contract facilities, shows the package (12A / 12B) */
 .nf-pro{display:inline-flex;align-items:stretch;vertical-align:middle;border-radius:6px;overflow:hidden;border:1px solid #135A55;font:700 9.5px/1 'NF Poppins',system-ui,sans-serif;letter-spacing:.05em;white-space:nowrap;margin-left:4px;box-shadow:0 1px 2px rgba(19,90,85,.18);}
@@ -1590,7 +1619,7 @@ function nfProBadge(f,cls){ var t=nfProTier(f); if(!t) return '';
   return '<span class="nf-pro'+(cls?' '+cls:'')+'" title="'+(f.subscriptionStatus==='paid'?'Paid subscription':'Full programme (contract)')+' · package '+t+'"><i class="p">PRO</i><i class="t">'+t+'</i></span>'; }
 </script>
 <link id="nf-biz-dash-css" rel="stylesheet" href="assets/shared-biz-dash.c8831fea1d.css" onerror="nfAssetFail(this)">
-<script id="nf-pdf" src="assets/shared-pdf.33e49f6393.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-pdf" src="assets/shared-pdf.da58c8e364.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-biz-dash" src="assets/shared-biz-dash.1058fd58bd.js" onerror="nfAssetFail(this)"></script>
 
 <style>
@@ -1815,7 +1844,7 @@ function nfCoverDone(){
 <script id="nf-links" src="assets/sc-links.a15cbb74f9.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ How to fix (per MoV item) + linked checks (contradiction notes) ══ -->
-<script id="nf-fix-data" src="assets/data-sc-how-to-fix.370427c0e7.js" onerror="nfAssetFail(this)"></script>
+
 <style id="nf-fix-css">
 .nffx{margin-top:6px;} .nffx summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--teal);list-style:none;} .nffx summary:before{content:'🔧 ';}
 .nffx-b{font-size:12px;color:var(--t2);line-height:1.5;background:#F8FAFC;border-radius:10px;padding:7px 10px;margin-top:4px;white-space:pre-line;}
@@ -1857,7 +1886,7 @@ function nfCoverDone(){
 .scm-row .nflx-cnt{flex:0 0 auto;font-size:11.5px;}
 .scm-lkf{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;}
 </style>
-<script id="nf-lx" src="assets/sc-linked-checks.047edf7bec.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-lx" src="assets/sc-linked-checks.0eddd56dc9.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 1 of CQI: Readiness week · graduation · close date · catch-up · NHSRC record · population · timeline compliance ══ -->
 <style id="nf-grad-css">
@@ -1880,7 +1909,7 @@ function nfCoverDone(){
 .nfg-banner button{margin-top:6px;}
 .master-fac-card .nfg-row{margin:6px 0 0;}
 </style>
-<script id="nf-grad" src="assets/sc-graduation.3051aaf5b6.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-grad" src="assets/sc-graduation.5fcd31094e.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 2 of CQI: nightly facility summaries (server runs this app's own scoring) · light dashboards at scale · block · refresh ══ -->
 <script id="nf-sum" src="assets/sc-summary.0ba9eaf152.js" onerror="nfAssetFail(this)"></script>
@@ -1894,9 +1923,9 @@ function nfCoverDone(){
 <link id="nf-dept-css" rel="stylesheet" href="assets/dept-core.4ed6e40053.css" onerror="nfAssetFail(this)">
 <link id="nf-dept-screens-css" rel="stylesheet" href="assets/dept-screens.f9291d80a9.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-plan" src="assets/dept-plan.e35a7f99c9.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept" src="assets/dept-core.6405ec3122.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept" src="assets/dept-core.c213623be7.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-review" src="assets/dept-review.4d1f634f05.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-content" src="assets/dept-content.12dc9dc5b6.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-content" src="assets/dept-content.ab859fa7f0.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-screens" src="assets/dept-screens.1ab0b095db.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-master-css" rel="stylesheet" href="assets/dept-master.ab2a010ceb.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-master" src="assets/dept-master.2c4bf87ad0.js" onerror="nfAssetFail(this)"></script>
