@@ -1744,6 +1744,8 @@ function setLang(lang,silent){
     el.textContent=(_appLang==='hi'&&HINDI_UI[key])?HINDI_UI[key]:key;
   });
   if(!silent&&typeof showToast==='function') showToast(_appLang==='hi'?'हिंदी भाषा चुनी गई ✓':'English selected ✓','ok');
+  // UPHC / PHC / CHC staff app: the cards follow the one app language (26 Oct 2026)
+  try{ if(typeof _nd!=='undefined'&&_nd&&typeof ndLangSync==='function'){ ndLangSync(); if(typeof ndKeepScroll==='function') ndKeepScroll(); } }catch(e){}
   // Re-render whatever the staff member is looking at right now
   try{
     var ws=document.getElementById('welcome-screen');

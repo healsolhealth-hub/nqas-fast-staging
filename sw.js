@@ -6,13 +6,13 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "2f2b8033284a";
+const BUILD = "f3d1468027a2";
 const ASSETS = [
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.0eb3c1d272.js",
  "assets/data-sc-how-to-fix.370427c0e7.js",
  "assets/dept-admin.ee8d5ffab0.js",
- "assets/dept-content.514e2082d6.js",
+ "assets/dept-content.12dc9dc5b6.js",
  "assets/dept-core.4ed6e40053.css",
  "assets/dept-core.6405ec3122.js",
  "assets/dept-grad.3d65c1e346.js",
@@ -22,8 +22,8 @@ const ASSETS = [
  "assets/dept-master.ab2a010ceb.css",
  "assets/dept-plan.e35a7f99c9.js",
  "assets/dept-review.4d1f634f05.js",
- "assets/dept-screens.62ce4fab0e.js",
- "assets/dept-screens.f786feb4e5.css",
+ "assets/dept-screens.1ab0b095db.js",
+ "assets/dept-screens.f9291d80a9.css",
  "assets/dept-summary.5fb8e55baf.js",
  "assets/sc-baseline-review.9bd6ffb924.js",
  "assets/sc-baseline-review.cba584c030.css",
@@ -66,7 +66,7 @@ const ASSETS = [
  "assets/sc-staff-app.14042a7974.js",
  "assets/sc-staff-app.e0189e484b.css",
  "assets/sc-summary.0ba9eaf152.js",
- "assets/sc-v2-core.e5a63c8bb0.js",
+ "assets/sc-v2-core.329f5d3321.js",
  "assets/sc-v2.bfc3486435.css",
  "assets/sc-week-plan.126d067680.js",
  "assets/shared-base.296e41553e.css",
@@ -88,7 +88,7 @@ const ASSETS = [
  "assets/shared-fac-sc.5e2a4ee502.js",
  "assets/shared-hindi-admin.a43e18db13.js",
  "assets/shared-hindi-dom.82e2be6c6a.js",
- "assets/shared-hindi-ui.dfe796924f.js",
+ "assets/shared-hindi-ui.3842d8b978.js",
  "assets/shared-hs-home.e7217c5933.js",
  "assets/shared-hs-home.f2fa190596.css",
  "assets/shared-hs-roles.bc2509b592.js",

@@ -11,8 +11,15 @@
 //     date from "Time needed"); "each staff member" → one action everyone posted in the department does (owners, dn).
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════
 function ndLang() { return _nd && _nd.lang === 'hi' ? 'hi' : 'en'; }
-function ndSetLang(l) { if (!_nd) return; _nd.lang = l === 'hi' ? 'hi' : 'en'; try { localStorage.setItem('nd_lang', _nd.lang); } catch (e) {} ndKeepScroll(); }
-function ndLangInit() { var l = null; try { l = localStorage.getItem('nd_lang'); } catch (e) {} if (!l && typeof _appLang !== 'undefined' && _appLang === 'hi') l = 'hi'; return l === 'hi' ? 'hi' : 'en'; }
+// One language for the whole app (HealSol 26 Oct 2026, like SC): the card's EN / हिं and Me → Language both call setLang,
+//   which changes the screens and the card content together and is remembered per phone (nqas_lang).
+function ndSetLang(l) {
+  l = l === 'hi' ? 'hi' : 'en'; if (_nd) _nd.lang = l;
+  if (typeof setLang === 'function') { setLang(l); return; }
+  if (_nd) ndKeepScroll();
+}
+function ndLangSync() { if (typeof _nd === 'undefined' || !_nd) return; var l = (typeof _appLang !== 'undefined' && _appLang === 'hi') ? 'hi' : 'en'; _nd.lang = l; try { localStorage.setItem('nd_lang', l); } catch (e) {} }
+function ndLangInit() { return (typeof _appLang !== 'undefined' && _appLang === 'hi') ? 'hi' : 'en'; }
 function ndLangSeg() {
   var hi = ndLang() === 'hi';
   return '<span class="nx-lang" role="tablist" aria-label="Card language"><button type="button" role="tab" aria-selected="' + !hi + '" class="' + (hi ? '' : 'on') + '" onclick="ndSetLang(\'en\')">EN</button><button type="button" role="tab" aria-selected="' + hi + '" class="' + (hi ? 'on' : '') + '" onclick="ndSetLang(\'hi\')">हिं</button></span>';
