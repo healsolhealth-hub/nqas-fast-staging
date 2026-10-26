@@ -6,10 +6,10 @@
 //   keep their ids, so scRenderChoStaff / scMountInsights / scChoSetStartDate work as before.
 // ══════════════════════════════════════════════════════════════
 var _faTab='home', _faBuilt=false, _faStepped=false;
-var FA_HI={'Facility dashboard':'सुविधा डैशबोर्ड','Home':'होम','Staff':'स्टाफ','Readiness':'तैयारी','More':'और','My cards':'मेरे कार्ड','Day':'दिन','of':'में से',
+var FA_HI={'Facility dashboard':'स्वास्थ्य केंद्र डैशबोर्ड','Home':'होम','Staff':'स्टाफ','Readiness':'तैयारी','More':'और','My cards':'मेरे कार्ड','Day':'दिन','of':'में से',
   'Needs your attention':'आपका ध्यान चाहिए','Quick actions':'त्वरित कार्य','Add staff':'स्टाफ जोड़ें','Download':'डाउनलोड','Live session':'लाइव सत्र',
   'All clear':'सब ठीक है','Nothing needs your attention right now.':'अभी किसी बात पर ध्यान देने की ज़रूरत नहीं है।','Open readiness':'तैयारी देखें',
-  'Facility readiness':'सुविधा की तैयारी','Baseline':'बेसलाइन','Growth':'बढ़त','Checkpoints':'चेकपॉइंट','Loading…':'लोड हो रहा है…',
+  'Facility readiness':'स्वास्थ्य केंद्र की तैयारी','Baseline':'बेसलाइन','Growth':'बढ़त','Checkpoints':'चेकपॉइंट','Loading…':'लोड हो रहा है…',
   'Programme':'कार्यक्रम','Account':'खाता','Change my password':'मेरा पासवर्ड बदलें','Help on WhatsApp':'WhatsApp पर मदद','Logout':'लॉग आउट','Live sessions':'लाइव सत्र',
   'Programme start date':'कार्यक्रम शुरू होने की तारीख','Set date':'तारीख सेट करें','people':'लोग','person':'व्यक्ति','Close':'बंद करें','you':'आप',
   'Reset password':'Reset password','Remove':'हटाएँ','cards done':'कार्ड पूरे','cards in':'कार्ड जमा','cards in on time':'समय पर जमा कार्ड','no card days yet':'अभी कोई कार्ड दिन नहीं','readiness':'तैयारी','Who do you want to add?':'किसे जोड़ना है?',

@@ -657,8 +657,8 @@ function rgGeoOpen() {
   var old = document.getElementById('rg-geo'); if (old) old.remove();
   var ov = document.createElement('div'); ov.id = 'rg-geo'; ov.className = 'scx-ov rg-geo-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'rg-geo-t');
   var tn = (NF_LEVELS[(typeof nfTypeOf === 'function' ? nfTypeOf(M.f) : 'sc')] || {}).name || 'facility';
-  ov.innerHTML = '<div class="scx-box rg-geo-box"><div class="rg-geo-hd"><b id="rg-geo-t">' + rgT('Facility location', 'सुविधा का स्थान') + '</b><button type="button" class="ce-x" aria-label="Close" onclick="document.getElementById(\'rg-geo\').remove()">×</button></div>'
-    + '<p>' + rgT('Stand at the ' + rgE(tn) + ' and tap the button. It puts your facility on the district map. One time only.', 'सुविधा पर खड़े होकर बटन दबाएँ। इससे आपकी सुविधा ज़िले के नक्शे पर आ जाएगी।') + '</p>'
+  ov.innerHTML = '<div class="scx-box rg-geo-box"><div class="rg-geo-hd"><b id="rg-geo-t">' + rgT('Facility location', 'स्वास्थ्य केंद्र का स्थान') + '</b><button type="button" class="ce-x" aria-label="Close" onclick="document.getElementById(\'rg-geo\').remove()">×</button></div>'
+    + '<p>' + rgT('Stand at the ' + rgE(tn) + ' and tap the button. It puts your facility on the district map. One time only.', 'स्वास्थ्य केंद्र पर खड़े होकर बटन दबाएँ। इससे आपकी स्वास्थ्य केंद्र ज़िले के नक्शे पर आ जाएगी।') + '</p>'
     + '<div id="rg-geo-now" class="rg-geo-now">' + (rgGeoLine(M.f) ? rgT('Saved: ', 'दर्ज: ') + rgGeoLine(M.f) + (M.f.geo.acc ? ' (±' + Math.round(M.f.geo.acc) + ' m)' : '') + ' · ' + rgE(String(M.f.geo.at || '').slice(0, 10)) + ' · <a href="' + rgGmaps(M.f.geo.lat, M.f.geo.lng) + '" target="_blank" rel="noopener">' + rgT('See on Google Maps', 'Google Maps पर देखें') + '</a>' : rgT('Not saved yet.', 'अभी दर्ज नहीं।')) + '</div>'
     + '<button type="button" class="rg-geo-go" id="rg-geo-use" onclick="rgGeoUse()">' + rgT('Use my location', 'मेरा स्थान लें') + '</button>'
     + '<div id="rg-geo-res" class="rg-geo-res" hidden></div>'
@@ -718,7 +718,7 @@ function rgPromptHTML(f) {
   var noGeo = !rgGeoLine(f);
   if (!noGeo || !rgIsInCharge()) return '';
   var tn = ((NF_LEVELS[(typeof nfTypeOf === 'function' ? nfTypeOf(f) : 'sc')] || {}).name || 'facility');
-  return '<div class="rg-prompt" id="rg-prompt"><b>' + rgT('Add your ' + rgE(tn) + '\'s location', 'अपनी सुविधा का स्थान जोड़ें') + '</b><span>' + rgT('Stand at the facility and tap the button — it puts you on the district map.', 'सुविधा पर खड़े होकर बटन दबाएँ।') + '</span>'
+  return '<div class="rg-prompt" id="rg-prompt"><b>' + rgT('Add your ' + rgE(tn) + '\'s location', 'अपने स्वास्थ्य केंद्र का स्थान जोड़ें') + '</b><span>' + rgT('Stand at the facility and tap the button — it puts you on the district map.', 'स्वास्थ्य केंद्र पर खड़े होकर बटन दबाएँ।') + '</span>'
     + '<button type="button" onclick="rgGeoOpen()">' + rgT('Use my location', 'मेरा स्थान लें') + '</button></div>';
 }
 
@@ -749,7 +749,7 @@ function rgPromptHTML(f) {
   if (typeof faMore === 'function') { var oM = faMore;
     faMore = function () { var r = oM.apply(this, arguments);
       try { var a = document.getElementById('fa-acct'); if (!a || document.getElementById('rg-geo-row')) return r; var M = rgMyFac(); if (!M || !rgIsInCharge()) return r; var g = rgGeoLine(M.f);
-        var html = '<button type="button" class="nf-row" id="rg-geo-row" onclick="rgGeoOpen()"><i class="ti ti-map"></i><span>' + rgT('Facility location', 'सुविधा का स्थान') + ' <span class="nfl-st ' + (g ? 'ok' : 'no') + '">' + (g ? rgT('Added', 'दर्ज') : rgT('Not set', 'नहीं')) + '</span><small style="display:block;color:var(--t3);font-size:11.5px;">' + (g ? rgE(g) : rgT('Puts your facility on the district map', 'आपकी सुविधा नक्शे पर')) + '</small></span><i class="ti ti-chevron-right nf-row-chev"></i></button>';
+        var html = '<button type="button" class="nf-row" id="rg-geo-row" onclick="rgGeoOpen()"><i class="ti ti-map"></i><span>' + rgT('Facility location', 'स्वास्थ्य केंद्र का स्थान') + ' <span class="nfl-st ' + (g ? 'ok' : 'no') + '">' + (g ? rgT('Added', 'दर्ज') : rgT('Not set', 'नहीं')) + '</span><small style="display:block;color:var(--t3);font-size:11.5px;">' + (g ? rgE(g) : rgT('Puts your facility on the district map', 'आपकी स्वास्थ्य केंद्र नक्शे पर')) + '</small></span><i class="ti ti-chevron-right nf-row-chev"></i></button>';
         var pr = document.getElementById('nfg-pop-row'); if (pr) pr.insertAdjacentHTML('afterend', html); else a.insertAdjacentHTML('afterbegin', html); } catch (e) { console.warn('[RG] more', e); }
       return r; }; }
   // UPHC / PHC / CHC in-charge: Facility dashboard home prompt and More → Facility details

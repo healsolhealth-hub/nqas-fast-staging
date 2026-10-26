@@ -6,7 +6,7 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "a103bd125bee";
+const BUILD = "66af4a2938fc";
 const ASSETS = [
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-days.0eb3c1d272.js",
@@ -42,7 +42,7 @@ const ASSETS = [
  "assets/sc-day-placement.9f84827e93.js",
  "assets/sc-district.d83509bdc1.js",
  "assets/sc-fadm.1fb01e6ce7.css",
- "assets/sc-fadm.7c6992e5f7.js",
+ "assets/sc-fadm.3f3b4d2d74.js",
  "assets/sc-gaps.df1042b0ae.js",
  "assets/sc-graduation.3051aaf5b6.js",
  "assets/sc-healsol-view.fdd1503355.js",
@@ -86,6 +86,9 @@ const ASSETS = [
  "assets/shared-fac-page.f6d63b3ce5.js",
  "assets/shared-fac-ready.3755ce3545.js",
  "assets/shared-fac-sc.5e2a4ee502.js",
+ "assets/shared-hindi-admin.a43e18db13.js",
+ "assets/shared-hindi-dom.82e2be6c6a.js",
+ "assets/shared-hindi-ui.dfe796924f.js",
  "assets/shared-hs-home.e7217c5933.js",
  "assets/shared-hs-home.f2fa190596.css",
  "assets/shared-hs-roles.bc2509b592.js",
@@ -100,7 +103,7 @@ const ASSETS = [
  "assets/shared-pdf-reports.1da837fa8c.js",
  "assets/shared-pdf.33e49f6393.js",
  "assets/shared-registration.6833f0a40c.js",
- "assets/shared-registry.a8b298bd07.js",
+ "assets/shared-registry.b481a87ed7.js",
  "assets/shared-registry.cfa8f1d09c.css",
  "assets/shared-reports.9ec078601e.js",
  "assets/shared-sc-content.057fe71840.js",
