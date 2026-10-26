@@ -18,6 +18,16 @@ function ndLangSeg() {
   return '<span class="nx-lang" role="tablist" aria-label="Card language"><button type="button" role="tab" aria-selected="' + !hi + '" class="' + (hi ? '' : 'on') + '" onclick="ndSetLang(\'en\')">EN</button><button type="button" role="tab" aria-selected="' + hi + '" class="' + (hi ? 'on' : '') + '" onclick="ndSetLang(\'hi\')">हिं</button></span>';
 }
 function ndJ(v, d) { if (v == null) return d; if (typeof v !== 'string') return v; try { return JSON.parse(v); } catch (e) { return d; } }
+// built-in Hindi for UPHC / PHC / CHC checkpoints and things to check (25 Oct 2026): data/<type>/hindi.json = {English: Hindi}
+//   one file per type (built by developer/hindi/content/merge.js), fetched once per page. HealSol's own Hindi (Content)
+//   always wins; this fills the gaps so the card's हिं shows Hindi from day one.
+var ND_HI = {}, _ndHiDone = {};
+async function nfDeptHiLoad(T) {
+  T = T || 'chc'; if (_ndHiDone[T]) return ND_HI;
+  try { var d = await nfLoadData(T + '-hindi'); if (d) { Object.keys(d).forEach(function (k) { if (!ND_HI[k]) ND_HI[k] = d[k]; }); _ndHiDone[T] = 1; } } catch (e) {}
+  return ND_HI;
+}
+function nfDeptHi(en) { if (!en) return ''; return ND_HI[String(en).replace(/\s+/g, ' ').trim()] || ''; }
 // a checkpoint's content: {hi, items:[{t,h,m}], fix:{'1':{w,f,fh,e,eh,tm}}, video, videoHi, roles:[]}
 function ndCt(id) {
   _nd.ct = _nd.ct || {}; if (_nd.ct[id]) return _nd.ct[id];
@@ -25,7 +35,8 @@ function ndCt(id) {
   var m = String(row[6] || '').split('/').filter(Boolean), items;
   if (e.items !== undefined) items = ndJ(e.items, []);
   else items = nfMovSplit(b ? b[7] : '').map(function (t) { return { t: t, h: '', m: m.slice() }; });   // the checklist's MoV split into things (HealSol 19 Oct)
-  return (_nd.ct[id] = { hi: e.hi || '', items: items || [], fix: ndJ(e.fix, {}) || {}, video: e.video || '', videoHi: e.videoHi || '', roles: ndJ(e.roles, []) || [] });
+  (items || []).forEach(function (it) { if (it && !it.h && it.t) it.h = nfDeptHi(it.t); });
+  return (_nd.ct[id] = { hi: e.hi || nfDeptHi(e.t || row[5] || (b && b[5])), items: items || [], fix: ndJ(e.fix, {}) || {}, video: e.video || '', videoHi: e.videoHi || '', roles: ndJ(e.roles, []) || [] });
 }
 function ndCpTextL(id) { var c = ndCt(id); return ndLang() === 'hi' && c.hi ? c.hi : ndCpText(id); }
 function ndItemTxt(it) { return ndLang() === 'hi' && it.h ? it.h : it.t; }

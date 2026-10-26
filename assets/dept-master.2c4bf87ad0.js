@@ -39,8 +39,9 @@ function nmMethods(s) {
 }
 function nmFromRow(r) {
   var m = nmMethods(r[6]), what = String(r[7] || '').replace(/\s+/g, ' ').trim();
-  return { id: r[0], dept: r[1], aoc: r[2], std: r[3], me: r[4], t: r[5], method: m, what: what, ord: r[8] || 0, hi: '',
-    items: nfMovSplit(what).map(function (t) { return { t: t, h: '', m: m.slice() }; }), /* default things to tick (HealSol 19 Oct) */ video: '', videoHi: '', fix: {}, roles: [], pk: '', retired: false };
+  var H = typeof nfDeptHi === 'function' ? nfDeptHi : function () { return ''; };
+  return { id: r[0], dept: r[1], aoc: r[2], std: r[3], me: r[4], t: r[5], method: m, what: what, ord: r[8] || 0, hi: H(r[5]),
+    items: nfMovSplit(what).map(function (t) { return { t: t, h: H(t), m: m.slice() }; }), /* default things to tick (HealSol 19 Oct) */ video: '', videoHi: '', fix: {}, roles: [], pk: '', retired: false };
 }
 // encode one field for the database / compare
 function nmEnc(f, v) {
@@ -62,6 +63,7 @@ function nmDecRec(id, o) { var c = { id: id, what: '', ord: (o && o.ord) || 9999
 async function nmLoadBase(T) {
   if (_nm.base[T]) return _nm.base[T];
   var d = await nfLoadData(nmCfg(T).checklist || (T + '-checklist'));
+  try { if (typeof nfDeptHiLoad === 'function') await nfDeptHiLoad(T); } catch (e) {}
   var B = { data: d, byId: {}, ids: [], depts: d.depts || [], toCheck: d.toCheck || [] };
   (d.items || []).forEach(function (r) { var c = nmFromRow(r); B.byId[c.id] = c; B.ids.push(c.id); });
   _nm.base[T] = B; return B;
@@ -86,6 +88,7 @@ function nmGetL(T, id, D) {
   var b = B && B.byId[id]; if (!b) return null;
   var c = JSON.parse(JSON.stringify(b)), e = D.edits[id] || {};
   Object.keys(e).forEach(function (f) { if (NM_FIELDS.indexOf(f) >= 0) c[f] = nmDec(f, e[f]); });
+  if (typeof nfDeptHi === 'function') { if (!c.hi && e.t === undefined) c.hi = nfDeptHi(c.t); (c.items || []).forEach(function (x) { if (x && !x.h && x.t) x.h = nfDeptHi(x.t); }); }   // built-in Hindi fills the gaps
   return c;
 }
 function nmAll(T) {
