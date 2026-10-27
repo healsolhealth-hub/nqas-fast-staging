@@ -6,20 +6,20 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "b1469cd43496";
+const BUILD = "0c4a9d0f0e3c";
 const ASSETS = [
  "assets/data-sc-days.0eb3c1d272.js",
  "assets/dept-admin.ee8d5ffab0.js",
- "assets/dept-content.ab859fa7f0.js",
+ "assets/dept-content.bbcfa094c1.js",
  "assets/dept-core.4ed6e40053.css",
- "assets/dept-core.c213623be7.js",
+ "assets/dept-core.fa10621186.js",
  "assets/dept-grad.3d65c1e346.js",
  "assets/dept-grad.c07401b26c.css",
- "assets/dept-master-ui.46abe08c31.js",
- "assets/dept-master.2c4bf87ad0.js",
- "assets/dept-master.ab2a010ceb.css",
+ "assets/dept-master-ui.e493849b6c.js",
+ "assets/dept-master.1ceca8c5a8.css",
+ "assets/dept-master.8cc7ea5f67.js",
  "assets/dept-plan.e35a7f99c9.js",
- "assets/dept-review.4d1f634f05.js",
+ "assets/dept-review.28e080f175.js",
  "assets/dept-screens.1ab0b095db.js",
  "assets/dept-screens.f9291d80a9.css",
  "assets/dept-summary.5fb8e55baf.js",
@@ -121,12 +121,15 @@ const ASSETS = [
 ];
 const KEEP = [
  "assets/data-chc-checklist.1d22f2ed41.json",
+ "assets/data-chc-fix.ad0f694a2c.json",
  "assets/data-chc-hindi.fa7c99a1ef.json",
  "assets/data-phc-checklist.0f179b7980.json",
+ "assets/data-phc-fix.4875d574ef.json",
  "assets/data-phc-hindi.32c71d43c3.json",
  "assets/data-sc-checkpoints.faf119347a.js",
  "assets/data-sc-how-to-fix.370427c0e7.js",
  "assets/data-uphc-checklist.09cb37887b.json",
+ "assets/data-uphc-fix.a1e44c80ea.json",
  "assets/data-uphc-hindi.29e9e07d2c.json",
  "assets/font-58dba357cb.woff2",
  "assets/font-6b986471df.woff2",

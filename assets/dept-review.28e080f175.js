@@ -241,6 +241,11 @@ function ndDecide(dept, day, id, v) {
   var up2 = {}; ndRecheckUp(up2, id, v); if (Object.keys(up2).length) ndPut(up2);
   ndToast('Decided: ' + ['Not met', 'Partial', 'Met'][v] + '.', 'ok'); ndKeepScroll();
 }
+// built-in How to fix loaded before an action is made from it (waits at most 4 s; offline it goes on without)
+function ndFixReady() {
+  var T = _nd && _nd.cfg && _nd.cfg.id; if (!T || ND_FIX[T] || typeof nfDeptFixLoad !== 'function') return Promise.resolve();
+  return Promise.race([nfDeptFixLoad(T), new Promise(function (ok) { setTimeout(ok, 4000); })]).catch(function () {});
+}
 // ready-made action: from the most common reason on the unmet cards and the checkpoint's means of verification
 function ndSuggest(id, dept, day) {
   var fx = ndFixFor(id, dept, day);
@@ -260,15 +265,18 @@ function ndAssignUp(up, id, dept, x) {
   if (x.each) { var ow = {}; ndFillers(dept).forEach(function (m) { ow[m] = true; }); if (Object.keys(ow).length > 1) { rec.owners = ow; if (!ow[rec.owner]) rec.owner = Object.keys(ow)[0]; } }
   up['sc_dactions/' + _nd.code + '/' + id] = rec;
 }
-function ndAssignQuick(id) {
+async function ndAssignQuick(id) {
+  await ndFixReady();
   var it = ndUnassigned(ndMob()).find(function (x) { return x.id === id; }); if (!it) return;
   var up = {}; ndAssignUp(up, id, it.dept, ndSuggest(id, it.dept, it.day)); ndPut(up); ndToast('Action assigned.', 'ok'); ndKeepScroll();
 }
-function ndAssignAll(dept) {
+async function ndAssignAll(dept) {
+  await ndFixReady();
   var up = {}, n = 0; ndUnassigned(ndMob()).filter(function (x) { return x.dept === dept; }).forEach(function (x) { ndAssignUp(up, x.id, x.dept, ndSuggest(x.id, x.dept, x.day)); n++; });
   if (n) { ndPut(up); ndToast(n + ' actions assigned.', 'ok'); ndKeepScroll(); }
 }
 async function ndAssign(id) {   // change the text / owner / due before assigning (lead), or write how to fix (Supervisor)
+  await ndFixReady();
   var r0 = _nd.byId[id]; if (!r0) return;
   var a = (_nd.actions || {})[id], sup = _nd.view === 'sup', it = ndUnassigned(ndMob()).find(function (x) { return x.id === id; });
   var dept = r0[1], sug = a && a.status !== 'closed' ? a : ndSuggest(id, dept, it ? it.day : ndDay()), staff = ndStaff();

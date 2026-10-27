@@ -39,6 +39,31 @@ async function nfDeptHiLoad(T) {
   return ND_HI;
 }
 function nfDeptHi(en) { if (!en) return ''; return ND_HI[String(en).replace(/\s+/g, ' ').trim()] || ''; }
+// built-in How to fix for UPHC / PHC / CHC (27 Oct 2026): data/<type>/fix.json, built by developer/fix/merge.js in the SC
+//   How-to-fix style (who S/E, 3 steps, evidence, time; English + Hindi). HealSol's own How to fix (Card Editor) always wins;
+//   this fills the gaps. Shape: {r:[[w,f,fh,e,eh,tm]], i:{"cp\u0001thing": n}, c:{"cp": n}, t:{"thing": n}}.
+var ND_FIX = {}, _ndFixP = {};
+function nfDeptFixLoad(T) {
+  T = T || 'chc'; if (ND_FIX[T]) return Promise.resolve(ND_FIX[T]); if (_ndFixP[T]) return _ndFixP[T];
+  return (_ndFixP[T] = nfLoadData(T + '-fix').then(function (d) { ND_FIX[T] = (d && d.r) ? d : { r: [], i: {}, c: {}, t: {} }; return ND_FIX[T]; })
+    .catch(function () { delete _ndFixP[T]; return null; }));
+}
+function nfFixNorm(s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/^check (for |that |if |whether )?/, ''); }
+// the built-in How to fix of a thing to check (item text) under a checkpoint, or of the whole checkpoint (no item) → {w,f,fh,e,eh,tm,b:1}
+function nfFixBuiltin(T, cp, item, nItems) {
+  var d = ND_FIX[T]; if (!d || !d.r) return null; var c = nfFixNorm(cp), r;
+  if (item) { var t = nfFixNorm(item); r = d.i[c + '\u0001' + t]; if (r == null) r = d.t[t]; if (r == null && nItems === 1) r = d.c[c]; }
+  else r = d.c[c];
+  var x = r == null ? null : d.r[r]; return x ? { w: x[0], f: x[1], fh: x[2], e: x[3], eh: x[4], tm: x[5], b: 1 } : null;
+}
+// How to fix of item k (1-based; 0 = the whole checkpoint): HealSol's, else the built-in one (null when neither)
+function ndFixEntry(id, k) {
+  var c = ndCt(id), f = (c.fix || {})[String(k || 0)]; if (f && (f.f || f.fh)) return f;
+  var T = _nd.cfg && _nd.cfg.id; if (!T) return null;
+  var L = _nd.live || {}, e = (L.added || {})[id] || (L.edits || {})[id] || {}, cp = e.t || ndCpText(id), n = c.items.length;
+  if (k && !c.items[k - 1]) return null;
+  return nfFixBuiltin(T, cp, k ? c.items[k - 1].t : '', n);
+}
 // a checkpoint's content: {hi, items:[{t,h,m}], fix:{'1':{w,f,fh,e,eh,tm}}, video, videoHi, roles:[]}
 function ndCt(id) {
   _nd.ct = _nd.ct || {}; if (_nd.ct[id]) return _nd.ct[id];
@@ -58,7 +83,7 @@ function ndPlayVideo(id) {
 }
 // How to fix of an item (1-based; 0 = the whole checkpoint) in the card language: {w, steps, ev, tm}
 function ndFix(id, k) {
-  var f = (ndCt(id).fix || {})[String(k || 0)]; if (!f || !(f.f || f.fh)) return null;
+  var f = ndFixEntry(id, k); if (!f || !(f.f || f.fh)) return null;
   var hi = ndLang() === 'hi';
   return { w: f.w === 'E' ? 'E' : 'S', steps: hi && f.fh ? f.fh : (f.f || f.fh), en: f.f || f.fh || '', ev: hi && f.eh ? f.eh : (f.e || f.eh || ''), evEn: f.e || '', tm: f.tm || '' };
 }
@@ -119,7 +144,7 @@ function ndFixFor(id, dept, day) {
   var miss = ndMissed(id, dept, day), ks = miss.length ? miss : (ndCt(id).items.length ? [] : [0]), parts = [], ev = [], tm = '', each = false;
   if (!ks.length) ks = [0];
   ks.forEach(function (k) {
-    var f = (ndCt(id).fix || {})[String(k)]; if (!f || !f.f) return;
+    var f = ndFixEntry(id, k); if (!f || !f.f) return;
     parts.push((ks.length > 1 && k ? 'Item ' + k + ': ' : '') + f.f); if (f.e) ev.push(f.e); if (f.tm && ndDueDays(f.tm) > ndDueDays(tm || '0 day')) tm = f.tm; if (f.w === 'E') each = true;
   });
   if (!parts.length) return null;

@@ -108,6 +108,8 @@ tr.on .nm-rowbtn{font-weight:600;}
 .nm-fix{grid-column:2;border-top:1px solid #E6ECEA;padding-top:12px;display:flex;flex-direction:column;gap:10px;}
 .nm-mov > .nm-fix{grid-column:auto;}
 .nm-fix label{font-weight:400;color:var(--nm-mut2);font-size:12px;}
+.nm-fixbi{grid-column:1 / -1;border:1px dashed var(--nm-bd2);border-radius:8px;padding:8px 10px;margin:0 0 8px;font-size:12px;color:var(--nm-mut2);display:flex;flex-direction:column;gap:4px;align-items:flex-start;}
+.nm-fixbi-s{color:inherit;white-space:normal;line-height:1.45;}
 .nm-inl{flex-direction:row!important;align-items:center;} .nm-inl input{width:160px;}
 .nm-chk{flex-direction:row!important;align-items:center;gap:8px!important;font-weight:400!important;min-height:40px;}
 .nm-chk input{width:18px;height:18px;}

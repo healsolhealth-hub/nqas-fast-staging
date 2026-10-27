@@ -130,6 +130,8 @@ async function ndMasterSetup(cfg, cl) {
   // built-in Hindi: wait for it only when the phone is in Hindi; in English it comes quietly after the card shows (speed, 26 Oct)
   if (ndLangInit() === 'hi') { try { await nfDeptHiLoad(T); } catch (e) {} }
   else setTimeout(function () { nfDeptHiLoad(T).then(function () { if (_nd && _nd.cfg && _nd.cfg.id === T) _nd.ct = {}; }).catch(function () {}); }, 4000);
+  // built-in How to fix: only needed at review / actions, so it comes quietly after the card shows (27 Oct)
+  setTimeout(function () { nfDeptFixLoad(T).then(function (d) { if (d && _nd && _nd.cfg && _nd.cfg.id === T && _nd.screen === 'lead' && typeof ndKeepScroll === 'function') ndKeepScroll(); }).catch(function () {}); }, 3000);
   var lay = nfDeptLayerRows(base, L || {});
   _nd.cl = Object.assign({}, cl, { items: lay.rows }); _nd.byId = lay.all; _nd.master = L ? { v: L.v, from: L.from } : null;
   _nd.live = L || {}; _nd.ct = {}; _nd.anyRoles = null; _nd.base0 = {}; base.forEach(function (r) { _nd.base0[r[0]] = r; }); _nd.lang = ndLangInit();

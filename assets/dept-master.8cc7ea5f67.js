@@ -64,6 +64,7 @@ async function nmLoadBase(T) {
   if (_nm.base[T]) return _nm.base[T];
   var d = await nfLoadData(nmCfg(T).checklist || (T + '-checklist'));
   try { if (typeof nfDeptHiLoad === 'function') await nfDeptHiLoad(T); } catch (e) {}
+  try { if (typeof nfDeptFixLoad === 'function') await nfDeptFixLoad(T); } catch (e) {}   // built-in How to fix (shown until HealSol writes one)
   var B = { data: d, byId: {}, ids: [], depts: d.depts || [], toCheck: d.toCheck || [] };
   (d.items || []).forEach(function (r) { var c = nmFromRow(r); B.byId[c.id] = c; B.ids.push(c.id); });
   _nm.base[T] = B; return B;

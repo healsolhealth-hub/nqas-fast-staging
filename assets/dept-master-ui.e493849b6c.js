@@ -246,6 +246,16 @@ function nmItemSplit() {
   var old = f.items; f.items = L.map(function (x, i) { var o = old.find(function (y) { return y.t === x.t; }); return o ? o : x; });
   f.fix = {}; _nm.ui.fixAt = 1; _nm.ui.dirty = true; nmRender();
 }
+// built-in How to fix of item n (0 = whole checkpoint) of the open form — shown to staff until HealSol writes one
+function nmFixBi(n) {
+  var f = _nm.ui.form; if (!f || typeof nfFixBuiltin !== 'function') return null;
+  return nfFixBuiltin(_nm.ui.type, f.t, n ? ((f.items[n - 1] || {}).t || '') : '', f.items.length);
+}
+function nmFixHas(n) { var e = ((_nm.ui.form || {}).fix || {})[String(n)]; return !!(e && (e.f || e.fh)); }
+function nmFixCopy(n) {   // start from the built-in wording
+  var b = nmFixBi(n), f = _nm.ui.form; if (!b || !f) return; f.fix = f.fix || {};
+  f.fix[String(n)] = { w: b.w, f: b.f, fh: b.fh, e: b.e, eh: b.eh, tm: b.tm }; _nm.ui.dirty = true; nmRender();
+}
 function nmFixAt(n) { _nm.ui.fixAt = n; nmRender(); }
 function nmFix(k, v) { var f = _nm.ui.form, n = String(f.items.length ? (_nm.ui.fixAt || 1) : 0); f.fix = f.fix || {}; var e = f.fix[n] = f.fix[n] || { w: 'S' }; e[k] = v; if (!e.f && !e.fh && !e.e && !e.eh && !e.tm && k !== 'w') delete f.fix[n]; _nm.ui.dirty = true; }
 function nmRoleAdd(v) { var f = _nm.ui.form; if (v && f.roles.indexOf(v) < 0) f.roles.push(v); _nm.ui.dirty = true; nmRender(); }
@@ -266,7 +276,7 @@ function nmContentHTML() {
       + '<label>Hindi<input type="text" lang="hi" value="' + nmE(it.h) + '" oninput="nmItem(\'h\',' + i + ',this.value)"></label></div>'
       + '<div class="nm-im">' + NM_METHODS.map(function (m) { var on = (it.m || []).indexOf(m) >= 0; return '<button type="button" aria-pressed="' + on + '" class="nm-mb' + (on ? ' on' : '') + '" onclick="nmItemM(' + i + ',\'' + m + '\')">' + m + '</button>'; }).join('')
       + '<button type="button" class="nm-ib sm" aria-label="Remove item ' + (i + 1) + '" onclick="nmItemDel(' + i + ')">' + NM_I.x + '</button></div>'
-      + (cur ? nmFixHTML(at, fx) : '<div class="nm-fixst">' + (((f.fix || {})[String(i + 1)] || {}).f ? 'How to fix written' : 'How to fix empty') + ' · <button type="button" class="nm-lnk" onclick="nmFixAt(' + (i + 1) + ')">Edit</button></div>') + '</div>';
+      + (cur ? nmFixHTML(at, fx) : '<div class="nm-fixst">' + (nmFixHas(i + 1) ? 'How to fix written' : nmFixBi(i + 1) ? 'Built-in How to fix' : 'How to fix empty') + ' · <button type="button" class="nm-lnk" onclick="nmFixAt(' + (i + 1) + ')">Edit</button></div>') + '</div>';
   };
   return '<section class="nm-card"><label>Checkpoint in Hindi<input type="text" lang="hi" value="' + nmE(f.hi) + '" placeholder="हिंदी में चेकपॉइंट" oninput="nmF(\'hi\',this.value)"></label></section>'
     + '<section class="nm-card nm-mov"><div class="nm-ch"><div><b>MoV items · ' + n + '</b><small>' + nmE(nmRuleTxt(n)) + '</small></div>'
@@ -284,8 +294,8 @@ function nmContentHTML() {
     + '<label>Add a role<select onchange="nmRoleAdd(this.value)">' + nmOpt('', 'Choose a ' + nmE(nmCfg(T).short || '') + ' role…', '') + roles.filter(function (r) { return f.roles.indexOf(r.id) < 0; }).map(function (r) { return nmOpt(r.id, r.label, ''); }).join('') + '</select></label></section></div>';
 }
 function nmFixHTML(n, fx) {
-  var w = fx.w || 'S';
-  return '<div class="nm-fix"><div class="nm-ch"><b>How to fix ' + (n ? 'item ' + n : 'this checkpoint') + '</b><div class="nm-pills" role="radiogroup" aria-label="Who fixes it">'
+  var w = fx.w || 'S', bi = (fx.f || fx.fh) ? null : nmFixBi(n);
+  return '<div class="nm-fix">' + (bi ? '<div class="nm-fixbi"><b>Built-in How to fix</b> · staff see this until you write your own<div class="nm-fixbi-s">' + nmE(bi.f).replace(/\n/g, '<br>') + '</div>' + (bi.e ? '<div><small>Evidence: ' + nmE(bi.e) + '</small></div>' : '') + (bi.tm ? '<div><small>Time: ' + nmE(bi.tm) + ' · ' + (bi.w === 'E' ? 'Each staff member' : 'One person fixes') + '</small></div>' : '') + '<button type="button" class="nm-btn out" onclick="nmFixCopy(' + n + ')">Edit a copy</button></div>' : '') + '<div class="nm-ch"><b>How to fix ' + (n ? 'item ' + n : 'this checkpoint') + '</b><div class="nm-pills" role="radiogroup" aria-label="Who fixes it">'
     + '<button type="button" role="radio" aria-checked="' + (w === 'S') + '" class="nm-pill' + (w === 'S' ? ' on' : '') + '" onclick="nmFix(\'w\',\'S\');nmRender()">One person fixes</button>'
     + '<button type="button" role="radio" aria-checked="' + (w === 'E') + '" class="nm-pill' + (w === 'E' ? ' on' : '') + '" onclick="nmFix(\'w\',\'E\');nmRender()">Each staff member</button></div></div>'
     + '<div class="nm-g2"><label>Steps · English<textarea rows="4" oninput="nmFix(\'f\',this.value)" placeholder="1. …">' + nmE(fx.f) + '</textarea></label>'
