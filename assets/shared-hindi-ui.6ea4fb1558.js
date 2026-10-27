@@ -354,7 +354,7 @@ if (typeof HINDI_UI === "object") Object.assign(HINDI_UI, {"Full programme (cont
 "all":"सभी",
 "All Met for the rest of Standard {x}":"मानक {x} के बाकी सभी पूरे",
 "All facilities":"सभी स्वास्थ्य केंद्र",
-"All my facilities":"मेरे सभी स्वास्थ्य केंद्र",
+"All my facilities":"मेरे सभी स्वास्थ्य केंद्र","My block":"मेरा ब्लॉक","My CHC":"मेरा सीएचसी",
 "All types":"सभी प्रकार",
 "Any phase":"कोई भी चरण",
 "Any status":"कोई भी स्थिति",

@@ -6,7 +6,7 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "0c4a9d0f0e3c";
+const BUILD = "e9ab4a4731cd";
 const ASSETS = [
  "assets/data-sc-days.0eb3c1d272.js",
  "assets/dept-admin.ee8d5ffab0.js",
@@ -38,7 +38,7 @@ const ASSETS = [
  "assets/sc-cp-progress.02e5f35df1.js",
  "assets/sc-cross-cutting.74584f8128.js",
  "assets/sc-day-placement.9f84827e93.js",
- "assets/sc-district.d83509bdc1.js",
+ "assets/sc-district.23a31f9262.js",
  "assets/sc-fadm.1fb01e6ce7.css",
  "assets/sc-fadm.3f3b4d2d74.js",
  "assets/sc-gaps.df1042b0ae.js",
@@ -50,7 +50,7 @@ const ASSETS = [
  "assets/sc-laptop.3b958233dd.css",
  "assets/sc-laptop.f633cb1c90.js",
  "assets/sc-linked-checks.0eddd56dc9.js",
- "assets/sc-links.a15cbb74f9.js",
+ "assets/sc-links.d1a5c6e1f5.js",
  "assets/sc-links.e145d9c6bb.css",
  "assets/sc-login-3tier.6baeea5ce4.js",
  "assets/sc-looks-met.c2aaaff056.js",
@@ -86,10 +86,10 @@ const ASSETS = [
  "assets/shared-fac-sc.5e2a4ee502.js",
  "assets/shared-hindi-admin.a43e18db13.js",
  "assets/shared-hindi-dom.82e2be6c6a.js",
- "assets/shared-hindi-ui.3842d8b978.js",
- "assets/shared-hs-home.e7217c5933.js",
+ "assets/shared-hindi-ui.6ea4fb1558.js",
  "assets/shared-hs-home.f2fa190596.css",
- "assets/shared-hs-roles.bc2509b592.js",
+ "assets/shared-hs-home.f5e6c6a8f0.js",
+ "assets/shared-hs-roles.4159b7ea03.js",
  "assets/shared-hs-settings.f1365f98fb.js",
  "assets/shared-impact.9f7d5ac345.js",
  "assets/shared-impact.b1cba457b4.css",
@@ -101,13 +101,13 @@ const ASSETS = [
  "assets/shared-pdf-reports.1da837fa8c.js",
  "assets/shared-pdf.da58c8e364.js",
  "assets/shared-registration.6833f0a40c.js",
- "assets/shared-registry.b481a87ed7.js",
- "assets/shared-registry.cfa8f1d09c.css",
+ "assets/shared-registry.4c71f8b593.css",
+ "assets/shared-registry.e7fa17a07d.js",
  "assets/shared-reports.9ec078601e.js",
  "assets/shared-sc-content.057fe71840.js",
  "assets/shared-sc-content.4dd2befa79.css",
  "assets/shared-sc-draft.672ef4231a.js",
- "assets/shared-secure.dc4bab961d.js",
+ "assets/shared-secure.96c5e9e074.js",
  "assets/shared-vocab.22993a26fc.js",
  "assets/shared-whatsapp.a6f1e4452b.js",
  "assets/types-settings.c9093f9dc9.js",

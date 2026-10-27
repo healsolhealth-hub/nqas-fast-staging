@@ -29,7 +29,8 @@ function scDistEnsurePanel(){
 function scRenderDistrictAdmin(){
   if(appMode!=='sc-admin'||!scDistEnsurePanel()) return;
   var list=document.getElementById('scd-dist-list'); if(!list) return;
-  var ids=Object.keys(_scDistricts||{}).sort();
+  try{ nfPLoginsRender(); }catch(e){ console.warn('[logins]',e); }
+  var ids=Object.keys(_scDistricts||{}).filter(function(k){ return ((_scDistricts[k]||{}).scope)!=='block'; }).sort();   // block MOIC views: their own list below (27 Oct)
   if(!ids.length){ list.innerHTML='<div class="scx-empty" style="padding:10px;">No District Admins yet.</div>'; return; }
   list.innerHTML=ids.map(function(id){
     var d=_scDistricts[id]||{}, facs=scDistFacilities(d), I=scJs(id), dn=scDistNames(facs);
@@ -209,3 +210,42 @@ async function scDistrictLogin(){
   logoutAdmin=async function(){ var was=scIsDistrict(); await oLogout.apply(this,arguments);
     if(!document.getElementById('admin-app').classList.contains('vis')){ document.getElementById('admin-app').classList.remove('scx-dist'); if(was) _scSup=null; } };
 })();
+
+// ── HealSol → People: the logins made by enrolment and PHC / CHC links (27 Oct 2026) ──
+// MOIC (block view) — one per CHC, made when a Sub-Centre or PHC is linked to the CHC · MO (PHC) — the PHC's Medical Officer
+// on its Sub-Centres (from the link form, or the enrolled PHC's in-charge). Read only here; reset password; open where it belongs.
+var _nfPL={units:null,busy:false};
+function nfPLoginsEnsure(){
+  var host=document.getElementById('scd-dist-panel'); if(!host) return null;
+  var el=document.getElementById('nf-plogins');
+  if(!el){ el=document.createElement('div'); el.id='nf-plogins'; el.className='hs-only'; el.style.cssText='background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;'; host.parentNode.insertBefore(el,host.nextSibling); }
+  return el;
+}
+async function nfPLoginsRender(force){
+  var el=nfPLoginsEnsure(); if(!el) return;
+  if((!_nfPL.units||force)&&!_nfPL.busy){ _nfPL.busy=true; try{ _nfPL.units=(await fbGet('sc_units'))||{}; }catch(e){ _nfPL.units=_nfPL.units||{}; } _nfPL.busy=false; }
+  var U=_nfPL.units||{}, D=_scDistricts||{}, F=scMasterFacilities||{};
+  var blk=Object.keys(D).filter(function(k){ return (D[k]||{}).scope==='block'; }).sort();
+  var mos={}; Object.keys(U).forEach(function(n){ var u=U[n]||{}; if(String(u.type).toUpperCase()!=='PHC'||!u.mo||!u.mo.mobile) return; var m=u.mo.mobile; (mos[m]=mos[m]||{name:u.mo.name||'',phcs:[],scs:0}).phcs.push({nin:n,name:u.name||n,code:u.facCode||''}); mos[m].scs+=Object.keys(u.facilities||{}).length; });
+  var row=function(av,name,sub,btns,off){ return '<div class="scx-sup-row"'+(off?' style="opacity:0.6;"':'')+'><div class="scx-av">'+scEsc(String(av).charAt(0).toUpperCase())+'</div><div style="flex:1;min-width:180px;"><div style="font-size:12px;font-weight:800;color:var(--t1);">'+name+'</div><div style="font-size:10px;color:var(--t3);font-weight:700;">'+sub+'</div></div>'+btns+'</div>'; };
+  var rs=function(id,nm){ return '<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="nfPLReset(\''+scJs(id)+'\',\''+scJs(nm)+'\')"><i class="ti ti-key"></i> Reset password</button>'; };
+  var h='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;"><div style="font-size:13px;font-weight:800;color:var(--t1);font-family:\'Poppins\',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-building-hospital" style="color:var(--teal);font-size:15px;"></i> MOIC (block) and MO (PHC) logins</div>'
+    +'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="nfPLoginsRender(true)"><i class="ti ti-refresh"></i> Refresh</button></div>'
+    +'<div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Made by the system when facilities are enrolled and linked (Enrol &amp; links → PHC &amp; CHC links, or the Registry) — not added here. A CHC MOIC also signs in with their own mobile; an enrolled PHC\'s in-charge becomes the MO of its Sub-Centres.</div>'
+    +'<div style="font-size:11px;font-weight:800;color:var(--t2);margin:6px 0;">MOIC · block view ('+blk.length+')</div>'
+    +(blk.length?blk.map(function(id){ var d=D[id]||{}, n=scDistFacilities(d).length, chc=Object.keys(F).find(function(c){ var f=F[c]||{}; return f.type==='chc'&&String(f.nin||'').toUpperCase()===String(d.chcNin||'').toUpperCase(); });
+        return row(d.name||id,scEsc(d.name||id)+(d.disabled?' <span class="scx-chip end">Disabled</span>':''),'ID: '+scEsc(id)+' · '+scEsc(d.block||'')+' block · '+scEsc(d.chcName||'CHC')+(d.chcNin?' ('+scEsc(d.chcNin)+')':'')+' · '+n+' facilit'+(n===1?'y':'ies')+(d.mobile?' · own mobile '+scEsc(d.mobile):''),
+          (chc?'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="scDrillIn(\''+scJs(chc)+'\')">Open CHC</button>':'')+rs(id,d.name||id),d.disabled); }).join('')
+      :'<div class="scx-empty" style="padding:8px;">None yet — link a Sub-Centre or PHC to a CHC.</div>')
+    +'<div style="font-size:11px;font-weight:800;color:var(--t2);margin:12px 0 6px;">MO · PHC ('+Object.keys(mos).length+')</div>'
+    +(Object.keys(mos).length?Object.keys(mos).sort(function(a,b){ return String(mos[a].name).localeCompare(String(mos[b].name)); }).map(function(m){ var x=mos[m];
+        return row(x.name||m,scEsc(x.name||'Medical Officer'),scEsc(m)+' · '+x.phcs.map(function(p){ return scEsc(p.name); }).join(', ')+' · '+x.scs+' sub-centre'+(x.scs===1?'':'s'),
+          (x.phcs[0]&&x.phcs[0].code?'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="scDrillIn(\''+scJs(x.phcs[0].code)+'\')">Open PHC</button>':'')+rs(m,x.name||m)); }).join('')
+      :'<div class="scx-empty" style="padding:8px;">None yet — they come with PHC links.</div>');
+  el.innerHTML=h;
+}
+async function nfPLReset(id,name){
+  if(!(await showConfirm('Give '+name+' a new temporary password? Their old password stops working.','🔑','Reset password','Reset'))) return;
+  try{ var r=await nfCall('resetPassword',{identifier:id}); nfShowTempPassword(name,r.identifier,r.tempPassword,'New password — '+name); }
+  catch(e){ showToast(nfErrText(e),'err'); }
+}

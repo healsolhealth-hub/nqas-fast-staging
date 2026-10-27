@@ -319,7 +319,7 @@ var HS_STABS = [['enrol', 'Enrol & links'], ['people', 'People'], ['rules', 'Pro
 function hsSetupGroup(el) {
   var id = el.id || '', t = (el.textContent || '').slice(0, 400);
   if (id === 'scb-reset-panel' || /Security migration|Reset progress/.test(t)) return 'danger';
-  if (id === 'scd-dist-panel' || id === 'scq-champ-panel' || id === 'nf-ho-card' || id === 'nf-sec-panel' || el.querySelector('#sc-sup-list')) return 'people';
+  if (id === 'scd-dist-panel' || id === 'nf-plogins' || id === 'scq-champ-panel' || id === 'nf-ho-card' || id === 'nf-sec-panel' || el.querySelector('#sc-sup-list')) return 'people';
   if (el.querySelector('#pricing-list')) return 'pricing';
   if (id === 'nf-supset') return 'support';
   if (id === 'nf-certset' || id === 'hs-rules') return 'rules';

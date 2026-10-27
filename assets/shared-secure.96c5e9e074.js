@@ -82,6 +82,9 @@ async function nfRouteAuthed(){
   _nfLogin.id=c.mob||c.sup||c.dist||c.view||'healsol'; _nfLogin.pwd='__auth__'; _nfLogin.matches=list;
   if(!list.length){ nfError('Your account has no active role. Contact HealSol Academy.'); _nfAuth=null; try{ await firebase.auth().signOut(); }catch(e){} return; }
   if(list.length===1){ await nfGo(list[0],'__auth__'); return; }
+  // a switch asked for inside the app (CHC MOIC: My block ⇄ My CHC) opens that entry once after the reload (27 Oct)
+  var sw=''; try{ sw=sessionStorage.getItem('nf_role_switch')||''; sessionStorage.removeItem('nf_role_switch'); }catch(e){}
+  var swPick=sw&&list.find(function(a){ return a.key===sw; }); if(swPick){ await nfGo(swPick,'__auth__'); return; }
   var rem=nfRememberedKey(_nfLogin.id), pick=list.find(function(a){ return a.key===rem; });
   if(pick){ await nfGo(pick,'__auth__'); return; }
   nfShowRoles(list);

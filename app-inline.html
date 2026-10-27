@@ -12346,7 +12346,8 @@ function scDistEnsurePanel(){
 function scRenderDistrictAdmin(){
   if(appMode!=='sc-admin'||!scDistEnsurePanel()) return;
   var list=document.getElementById('scd-dist-list'); if(!list) return;
-  var ids=Object.keys(_scDistricts||{}).sort();
+  try{ nfPLoginsRender(); }catch(e){ console.warn('[logins]',e); }
+  var ids=Object.keys(_scDistricts||{}).filter(function(k){ return ((_scDistricts[k]||{}).scope)!=='block'; }).sort();   // block MOIC views: their own list below (27 Oct)
   if(!ids.length){ list.innerHTML='<div class="scx-empty" style="padding:10px;">No District Admins yet.</div>'; return; }
   list.innerHTML=ids.map(function(id){
     var d=_scDistricts[id]||{}, facs=scDistFacilities(d), I=scJs(id), dn=scDistNames(facs);
@@ -12526,6 +12527,45 @@ async function scDistrictLogin(){
   logoutAdmin=async function(){ var was=scIsDistrict(); await oLogout.apply(this,arguments);
     if(!document.getElementById('admin-app').classList.contains('vis')){ document.getElementById('admin-app').classList.remove('scx-dist'); if(was) _scSup=null; } };
 })();
+
+// ── HealSol → People: the logins made by enrolment and PHC / CHC links (27 Oct 2026) ──
+// MOIC (block view) — one per CHC, made when a Sub-Centre or PHC is linked to the CHC · MO (PHC) — the PHC's Medical Officer
+// on its Sub-Centres (from the link form, or the enrolled PHC's in-charge). Read only here; reset password; open where it belongs.
+var _nfPL={units:null,busy:false};
+function nfPLoginsEnsure(){
+  var host=document.getElementById('scd-dist-panel'); if(!host) return null;
+  var el=document.getElementById('nf-plogins');
+  if(!el){ el=document.createElement('div'); el.id='nf-plogins'; el.className='hs-only'; el.style.cssText='background:var(--bgc);border-radius:14px;border:1px solid var(--br);padding:16px;margin-bottom:14px;'; host.parentNode.insertBefore(el,host.nextSibling); }
+  return el;
+}
+async function nfPLoginsRender(force){
+  var el=nfPLoginsEnsure(); if(!el) return;
+  if((!_nfPL.units||force)&&!_nfPL.busy){ _nfPL.busy=true; try{ _nfPL.units=(await fbGet('sc_units'))||{}; }catch(e){ _nfPL.units=_nfPL.units||{}; } _nfPL.busy=false; }
+  var U=_nfPL.units||{}, D=_scDistricts||{}, F=scMasterFacilities||{};
+  var blk=Object.keys(D).filter(function(k){ return (D[k]||{}).scope==='block'; }).sort();
+  var mos={}; Object.keys(U).forEach(function(n){ var u=U[n]||{}; if(String(u.type).toUpperCase()!=='PHC'||!u.mo||!u.mo.mobile) return; var m=u.mo.mobile; (mos[m]=mos[m]||{name:u.mo.name||'',phcs:[],scs:0}).phcs.push({nin:n,name:u.name||n,code:u.facCode||''}); mos[m].scs+=Object.keys(u.facilities||{}).length; });
+  var row=function(av,name,sub,btns,off){ return '<div class="scx-sup-row"'+(off?' style="opacity:0.6;"':'')+'><div class="scx-av">'+scEsc(String(av).charAt(0).toUpperCase())+'</div><div style="flex:1;min-width:180px;"><div style="font-size:12px;font-weight:800;color:var(--t1);">'+name+'</div><div style="font-size:10px;color:var(--t3);font-weight:700;">'+sub+'</div></div>'+btns+'</div>'; };
+  var rs=function(id,nm){ return '<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="nfPLReset(\''+scJs(id)+'\',\''+scJs(nm)+'\')"><i class="ti ti-key"></i> Reset password</button>'; };
+  var h='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;"><div style="font-size:13px;font-weight:800;color:var(--t1);font-family:\'Poppins\',sans-serif;display:flex;align-items:center;gap:6px;"><i class="ti ti-building-hospital" style="color:var(--teal);font-size:15px;"></i> MOIC (block) and MO (PHC) logins</div>'
+    +'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="nfPLoginsRender(true)"><i class="ti ti-refresh"></i> Refresh</button></div>'
+    +'<div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Made by the system when facilities are enrolled and linked (Enrol &amp; links → PHC &amp; CHC links, or the Registry) — not added here. A CHC MOIC also signs in with their own mobile; an enrolled PHC\'s in-charge becomes the MO of its Sub-Centres.</div>'
+    +'<div style="font-size:11px;font-weight:800;color:var(--t2);margin:6px 0;">MOIC · block view ('+blk.length+')</div>'
+    +(blk.length?blk.map(function(id){ var d=D[id]||{}, n=scDistFacilities(d).length, chc=Object.keys(F).find(function(c){ var f=F[c]||{}; return f.type==='chc'&&String(f.nin||'').toUpperCase()===String(d.chcNin||'').toUpperCase(); });
+        return row(d.name||id,scEsc(d.name||id)+(d.disabled?' <span class="scx-chip end">Disabled</span>':''),'ID: '+scEsc(id)+' · '+scEsc(d.block||'')+' block · '+scEsc(d.chcName||'CHC')+(d.chcNin?' ('+scEsc(d.chcNin)+')':'')+' · '+n+' facilit'+(n===1?'y':'ies')+(d.mobile?' · own mobile '+scEsc(d.mobile):''),
+          (chc?'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="scDrillIn(\''+scJs(chc)+'\')">Open CHC</button>':'')+rs(id,d.name||id),d.disabled); }).join('')
+      :'<div class="scx-empty" style="padding:8px;">None yet — link a Sub-Centre or PHC to a CHC.</div>')
+    +'<div style="font-size:11px;font-weight:800;color:var(--t2);margin:12px 0 6px;">MO · PHC ('+Object.keys(mos).length+')</div>'
+    +(Object.keys(mos).length?Object.keys(mos).sort(function(a,b){ return String(mos[a].name).localeCompare(String(mos[b].name)); }).map(function(m){ var x=mos[m];
+        return row(x.name||m,scEsc(x.name||'Medical Officer'),scEsc(m)+' · '+x.phcs.map(function(p){ return scEsc(p.name); }).join(', ')+' · '+x.scs+' sub-centre'+(x.scs===1?'':'s'),
+          (x.phcs[0]&&x.phcs[0].code?'<button class="scx-btn sm ghost" style="flex:0 0 auto;" onclick="scDrillIn(\''+scJs(x.phcs[0].code)+'\')">Open PHC</button>':'')+rs(m,x.name||m)); }).join('')
+      :'<div class="scx-empty" style="padding:8px;">None yet — they come with PHC links.</div>');
+  el.innerHTML=h;
+}
+async function nfPLReset(id,name){
+  if(!(await showConfirm('Give '+name+' a new temporary password? Their old password stops working.','🔑','Reset password','Reset'))) return;
+  try{ var r=await nfCall('resetPassword',{identifier:id}); nfShowTempPassword(name,r.identifier,r.tempPassword,'New password — '+name); }
+  catch(e){ showToast(nfErrText(e),'err'); }
+}
 </script>
 
 <!-- ══ Review & Action Plan — MoV-level actions, Supervisor-only assignment ══ -->
@@ -16000,6 +16040,9 @@ async function nfRouteAuthed(){
   _nfLogin.id=c.mob||c.sup||c.dist||c.view||'healsol'; _nfLogin.pwd='__auth__'; _nfLogin.matches=list;
   if(!list.length){ nfError('Your account has no active role. Contact HealSol Academy.'); _nfAuth=null; try{ await firebase.auth().signOut(); }catch(e){} return; }
   if(list.length===1){ await nfGo(list[0],'__auth__'); return; }
+  // a switch asked for inside the app (CHC MOIC: My block ⇄ My CHC) opens that entry once after the reload (27 Oct)
+  var sw=''; try{ sw=sessionStorage.getItem('nf_role_switch')||''; sessionStorage.removeItem('nf_role_switch'); }catch(e){}
+  var swPick=sw&&list.find(function(a){ return a.key===sw; }); if(swPick){ await nfGo(swPick,'__auth__'); return; }
   var rem=nfRememberedKey(_nfLogin.id), pick=list.find(function(a){ return a.key===rem; });
   if(pick){ await nfGo(pick,'__auth__'); return; }
   nfShowRoles(list);
@@ -19526,6 +19569,25 @@ async function nfNudge(kind,code){
         +(scIsDistrict()&&nfWaNum(nfChoOf(f).mob)?nfWaBtn("nfNudge('dist','"+scJs(code)+"')",'Nudge the CHO',''):'');
       if(h) info.insertAdjacentHTML('beforeend','<div class="nfl-drill">'+h+'</div>'); } }catch(e){ console.warn('[SC] drill links',e); }
     return r; };
+})();
+
+// ── CHC MOIC: their CHC dashboard ⇄ their block view, one tap, no new sign-in (27 Oct 2026) ──
+function nfBlockEntry(){ return ((typeof _nfLogin!=='undefined'&&_nfLogin.matches)||[]).find(function(a){ return a.kind==='district'&&/^Block view/.test(a.title||''); })||null; }
+function nfChcEntry(){ return ((typeof _nfLogin!=='undefined'&&_nfLogin.matches)||[]).find(function(a){ return a.kind==='staff'&&a.type==='chc'; })||null; }
+async function nfSwitchEntry(key){
+  try{ clearTimeout(_scSyncTimer); await scFlushSync(); }catch(e){}
+  try{ sessionStorage.setItem('nf_role_switch',key); }catch(e){ return; }
+  if(typeof nfCoverOn==='function') nfCoverOn();
+  location.reload();
+}
+function nfBlockChip(){ var b=nfBlockEntry(); if(!b||typeof _nd==='undefined'||!_nd||!_nd.cfg||_nd.cfg.id!=='chc') return '';
+  return '<button type="button" class="nfmo-chip" id="nf-blk-chip" onclick="nfSwitchEntry(\''+scJs(b.key)+'\')"><i class="ti ti-map-2"></i> '+scEsc(t('My block'))+' <small>'+scEsc(String(b.title||'').replace(/^Block view · /,''))+' ›</small></button>'; }
+function nfChcChip(){ var c=nfChcEntry(); if(!c) return '';
+  return '<button type="button" class="nfmo-chip" id="nf-chc-chip" onclick="nfSwitchEntry(\''+scJs(c.key)+'\')"><i class="ti ti-building-hospital"></i> '+scEsc(t('My CHC'))+' <small>'+scEsc(String(c.title||'').replace(/^[^·]*· /,''))+' ›</small></button>'; }
+(function(){ var hook=function(){ ['ndTodayHTML','nxFaHomeHTML'].forEach(function(fn){
+  var oT=window[fn]; if(typeof oT!=='function'||oT._blk) return;
+  window[fn]=function(){ var h=oT.apply(this,arguments); try{ if(h.indexOf('nf-blk-chip')<0){ var c=nfBlockChip(); if(c) h=c+h; } }catch(e){} return h; }; window[fn]._blk=1; }); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else setTimeout(hook,0);
 })();
 </script>
 
@@ -26388,7 +26450,7 @@ var HS_STABS = [['enrol', 'Enrol & links'], ['people', 'People'], ['rules', 'Pro
 function hsSetupGroup(el) {
   var id = el.id || '', t = (el.textContent || '').slice(0, 400);
   if (id === 'scb-reset-panel' || /Security migration|Reset progress/.test(t)) return 'danger';
-  if (id === 'scd-dist-panel' || id === 'scq-champ-panel' || id === 'nf-ho-card' || id === 'nf-sec-panel' || el.querySelector('#sc-sup-list')) return 'people';
+  if (id === 'scd-dist-panel' || id === 'nf-plogins' || id === 'scq-champ-panel' || id === 'nf-ho-card' || id === 'nf-sec-panel' || el.querySelector('#sc-sup-list')) return 'people';
   if (el.querySelector('#pricing-list')) return 'pricing';
   if (id === 'nf-supset') return 'support';
   if (id === 'nf-certset' || id === 'hs-rules') return 'rules';
@@ -27652,7 +27714,7 @@ function hsrRenderFac() {
   var sel = function (k, opts) { return '<select class="hs-sel" aria-label="' + k + '" onchange="hsrSet(\'' + k + '\',this.value)">' + opts.map(function (x) { return '<option value="' + hsE(x[0]) + '"' + (_hsr[k] === x[0] ? ' selected' : '') + '>' + hsE(x[1]) + '</option>'; }).join('') + '</select>'; };
   var role = hsrRole(), behind = all.filter(function (o) { return o.behind; }).length, inprog = all.filter(function (o) { return o.inProg; }).length;
   var blk = hsrBlock();
-  box.innerHTML = '<div class="nfo-top"><div><h1>Facilities</h1><small>' + all.length + ' ' + (blk ? 'in ' + hsE(_scSup.block || _scSup.chcName || 'the') + ' block · view only' : role === 'district' ? 'in your district · view only' : 'assigned to you') + (Object.keys(dist).length ? ' · ' + hsE(Object.keys(dist).sort().join(', ')) : '') + ' · ' + inprog + ' in programme' + (behind ? ' · ' + behind + ' behind schedule' : '') + '</small></div></div>'
+  box.innerHTML = (blk && typeof nfChcChip === 'function' ? nfChcChip() : '') + '<div class="nfo-top"><div><h1>Facilities</h1><small>' + all.length + ' ' + (blk ? 'in ' + hsE(_scSup.block || _scSup.chcName || 'the') + ' block · view only' : role === 'district' ? 'in your district · view only' : 'assigned to you') + (Object.keys(dist).length ? ' · ' + hsE(Object.keys(dist).sort().join(', ')) : '') + ' · ' + inprog + ' in programme' + (behind ? ' · ' + behind + ' behind schedule' : '') + '</small></div></div>'
     + '<div class="hs-filters"><label class="hs-search"><i class="ti ti-search"></i><input id="hsr-fq" type="search" aria-label="Search facilities" placeholder="Search name, ID, in-charge" value="' + hsE(_nfOv.q || '') + '" oninput="hsrSet(\'q\',this.value)"></label>'
     + (Object.keys(types).length > 1 ? sel('type', [['', 'All types']].concat(HS_TYPES.filter(function (t) { return types[t]; }).map(function (t) { return [t, hsShort(t)]; }))) : '')
     + (Object.keys(dist).length > 1 ? sel('dist', [['', 'All districts']].concat(Object.keys(dist).sort().map(function (d) { return [d, d]; }))) : '')
@@ -28975,6 +29037,34 @@ async function sccImportApply() {
 .rg-car>span{width:14px;color:#4F5E59;display:inline-block;} .rg-car.sm{min-height:28px;min-width:22px;margin-right:4px;} .rg-car-sp{display:inline-block;width:26px;}
 .rg-xall{margin-left:8px;font-size:12.5px;} .rg-warnt{color:#8E2F1E;}
 .rg-cov tr.rg-sth{background:#EEF6F3;} .rg-cov tr.rg-sth td{font-size:14px;} .rg-cov tr.rg-sth small{display:block;color:#4F5E59;}
+/* Coverage cards, change log, verify (27 Oct 2026) */
+.rg-tag.g{background:#DDF1EA;color:#145244;}
+.rg-ccard{padding:18px 20px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px;}
+.rg-chead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.rg-chead h2{margin:0;font-size:22px;line-height:1.2;} .rg-chead small{color:#5D6D68;font-size:13px;}
+.rg-ccard .rg-kpis{margin:0;}
+.rg-ctab{width:100%;border-collapse:collapse;font-size:14px;}
+.rg-ctab th,.rg-ctab td{padding:10px 12px;border-bottom:1px solid #E6ECEA;text-align:left;vertical-align:top;}
+.rg-ctab thead th{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:#5D6D68;font-weight:700;background:#F6F9F8;}
+.rg-ctab tbody th{font-weight:600;white-space:nowrap;text-transform:none;letter-spacing:0;font-size:14px;color:#0B2E28;} .rg-ctab tbody th small{display:block;font-weight:400;color:#5D6D68;font-size:12px;}
+.rg-ctab td small{display:block;color:#5D6D68;font-size:12px;margin-top:2px;}
+.rg-ctab .rg-cr{cursor:pointer;} .rg-ctab .rg-cr:hover{background:#F2F7F5;}
+.rg-att{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;}
+.rg-att > b{margin-right:4px;}
+.rg-chip{border:1px solid #E7C99A;background:#FFF7EA;color:#7A4508;border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;font-weight:600;}
+button.rg-chip{cursor:pointer;min-height:32px;} button.rg-chip:hover{background:#FDEBD3;}
+button.rg-bc{text-align:left;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:2px;}
+.rg-verall{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:#FFF7EA;border:1px solid #E7C99A;border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13px;}
+.rg-verbox{margin-top:8px;}
+.rg-log{margin:0 0 14px;padding:14px 16px;} .rg-log table{width:100%;border-collapse:collapse;font-size:13px;} .rg-log th,.rg-log td{padding:7px 10px;border-bottom:1px solid #E6ECEA;text-align:left;}
+.rg-log .rg-imp-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+@media (max-width:700px){
+  .rg-ccard{padding:14px 12px;}
+  .rg-ctab thead{display:none;}
+  .rg-ctab tr{display:block;border-bottom:1px solid #E6ECEA;padding:8px 0;}
+  .rg-ctab th,.rg-ctab td{display:flex;justify-content:space-between;gap:10px;border:0;padding:4px 4px;}
+  .rg-ctab td::before{content:attr(data-l);color:#5D6D68;font-size:12px;}
+}
 </style>
 <script id="nf-registry">// ══════════════════════════════════════════════════════════════
 // FACILITY REGISTRY · COVERAGE · MAP (24 Oct 2026, canvas "Facility registry & map", approved).
@@ -28991,6 +29081,7 @@ var _rg = { tab: 'enrolled', type: '', dist: '', block: '', status: '', q: '', t
 var RG_TYPES = ['sc', 'phc', 'chc', 'uphc'];
 var RG_LABEL = { sc: 'SC', phc: 'PHC', chc: 'CHC', uphc: 'UPHC' };
 var RG_NAME = { sc: 'Sub-Centre', phc: 'PHC', chc: 'CHC', uphc: 'UPHC' };
+var RG_LONG = { sc: 'Sub-Centres', phc: 'Primary Health Centres', chc: 'Community Health Centres', uphc: 'Urban PHCs' };
 var RG_LEAFLET = { js: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js', css: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css' };
 var RG_POP = { sc: [500, 30000], phc: [5000, 150000], chc: [30000, 600000], uphc: [10000, 200000] };
 function rgE(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -29000,6 +29091,12 @@ function rgLow(x) { return String(x == null ? '' : x).trim().toLowerCase(); }
 function rgDk(state, district) { return rgLow(state) + '|' + rgLow(district); }
 function rgHS() { try { return typeof hsOn === 'function' && hsOn(); } catch (e) { return false; } }
 function rgDist() { try { return typeof hsrOn === 'function' && hsrOn() && hsrRole() === 'district'; } catch (e) { return false; } }
+// who may change the registry: HealSol, and a District Admin for their own district (27 Oct 2026; the block MOIC view stays view only)
+function rgEditor() { return rgHS() || (rgDist() && !!(_rg.mine && _rg.mine.edit)); }
+function rgDistEd() { return !rgHS() && rgEditor(); }
+function rgAreas() { return (_rg.mine && _rg.mine.areas) || []; }
+function rgMyArea(st, di) { return rgAreas().some(function (a) { return rgLow(a.district) === rgLow(di) && (!a.state || !st || rgLow(a.state) === rgLow(st)); }); }
+function rgBy() { try { if (typeof nmBy === 'function' && rgHS()) return nmBy(); } catch (e) {} try { return (_scSup && (_scSup.name || _scSup.id)) || 'District Admin'; } catch (e) { return 'District Admin'; } }
 function rgFmtN(n) { return n == null ? '' : Number(n).toLocaleString('en-IN'); }
 function rgLakh(n) { return n >= 100000 ? (Math.round(n / 10000) / 10) + ' lakh' : rgFmtN(n); }
 function rgGmaps(lat, lng) { return 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng; }
@@ -29024,6 +29121,7 @@ async function rgLoad(force) {
     _rg.at = Date.now();
   } catch (e) { console.warn('[RG] load', e); _rg.err = 'Could not load the registry — check the connection.'; _rg.R = _rg.R || {}; _rg.U = _rg.U || {}; }
   _rg.loading = false; rgRender();
+  if (_rg.tab === 'enrolled') { try { var bx = rgBox(), tb = bx && bx.querySelector('.rg-tabs'); if (tb) tb.outerHTML = rgTabs(); } catch (e) {} }   // a District Admin's Registry tab appears once we know they may edit
 }
 function rgInfo(code) { try { return hsInfo(code); } catch (e) { return null; } }
 // every facility we know: registry records + enrolled facilities + PHC / CHC units from the links
@@ -29052,6 +29150,11 @@ function rgNodes() {
     else if (n.rlat != null && n.rlng != null) { n.lat = +n.rlat; n.lng = +n.rlng; n.gsrc = 'registry'; }
     n.pop = f.population && f.population.n ? +f.population.n : (n.rpop ? +n.rpop : null);
     n.info = n.code && n.f ? rgInfo(n.code) : null;
+    var R0 = n.rec || {}, nh = f.nhsrc || {};
+    n.acc = R0.acc ? +R0.acc : (nh.status === 'certified' ? (+(String(nh.certifiedOn || nh.nationalOn || '').slice(0, 4)) || true) : null);
+    n.closed = R0.closed || ''; n.ver = R0.ver || null;
+    // details that came from the facility itself (enrolment, its in-charge, a Settings link) and nobody has checked yet
+    n.unver = !n.ver && !!(n.code || n.unit || R0.src === 'link');
   });
   var blockOf = function (n, d) { if (n.block) return n.block; if ((d || 0) > 3) return ''; var p = n.t === 'sc' ? (byNin[n.phc] || byNin[n.chc]) : n.t === 'phc' ? byNin[n.chc] : null; return p ? blockOf(p, (d || 0) + 1) : ''; };
   out.forEach(function (n) { n.blk = n.t === 'uphc' ? '' : blockOf(n); n.dk = rgDk(n.state, n.district); });
@@ -29084,12 +29187,13 @@ function rgScope(nodes) {   // type + district + block + status + search (not th
     if (_rg.type && n.t !== _rg.type) return false;
     if (!rgIn(n)) return false;
     if (_rg.block && rgLow(n.blk) !== rgLow(_rg.block)) return false;
+    if (_rg.status === 'closed') { if (!n.closed) return false; } else if (n.closed) return false;
     if (_rg.status === 'en' && !n.code) return false; if (_rg.status === 'not' && n.code) return false;
     if (q && (n.name + ' ' + n.nin + ' ' + (n.code || '')).toLowerCase().indexOf(q) < 0) return false;
     return true;
   });
 }
-function rgTileOk(n, k) { return k === 'en' ? !!n.code : k === 'nogps' ? n.lat == null : k === 'nopop' ? !n.pop : true; }
+function rgTileOk(n, k) { return k === 'en' ? !!n.code : k === 'nogps' ? n.lat == null : k === 'nopop' ? !n.pop : k === 'unver' ? n.unver : k === 'noparent' ? (n.t === 'sc' && !n.phc && !n.chc) : true; }
 function rgSet(k, v) { _rg[k] = v; if (k === 'dist') { _rg.block = ''; _rg.sel = null; _rg.open = {}; } if (k === 'tab') { _rg.sel = null; _rg.pick = null; } rgRender(); }
 function rgQ(v) { _rg.q = v; clearTimeout(window._rgT); window._rgT = setTimeout(function () { rgRender(); var i = document.getElementById('rg-q'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (e) {} } }, 250); }
 
@@ -29100,7 +29204,8 @@ function rgBox() {
   return null;
 }
 function rgTabs() {
-  var t = [['enrolled', 'Enrolled']].concat(rgHS() ? [['registry', 'Registry']] : []).concat([['coverage', 'Coverage'], ['map', 'Map']]);
+  if (rgDist() && !_rg.mine && !_rg.loading && !_rg.R) setTimeout(function () { rgLoad(); }, 0);
+  var t = [['enrolled', 'Enrolled']].concat(rgEditor() ? [['registry', 'Registry']] : []).concat([['coverage', 'Coverage'], ['map', 'Map']]);
   return '<div class="rg-tabs" role="tablist" aria-label="Facilities view">' + t.map(function (x) { return '<button type="button" role="tab" aria-selected="' + (_rg.tab === x[0]) + '" class="' + (_rg.tab === x[0] ? 'on' : '') + '" onclick="rgSet(\'tab\',\'' + x[0] + '\')">' + x[1] + '</button>'; }).join('') + '</div>';
 }
 function rgTypeTabs(nodes) {
@@ -29110,11 +29215,15 @@ function rgTypeTabs(nodes) {
 }
 function rgHeadHTML(nodes) {
   var hs = rgHS(), dists = {}; nodes.forEach(function (n) { if (n.district) dists[n.dk] = 1; });
-  var sub = hs ? 'Every facility we know, enrolled or not · HealSol' : (_rg.mine && _rg.mine.scope === 'block' ? 'Your block · view only' : 'Your district · view only');
+  var ed = rgEditor(), blk = _rg.mine && _rg.mine.scope === 'block';
+  var sub = hs ? 'Every facility we know, enrolled or not · HealSol' : blk ? 'Your block · view only' : ed ? 'Your district · you can add and correct facilities' : 'Your district · view only';
   return '<div class="nfo-top rg-top"><div><h1>Facilities</h1><small>' + sub + '</small></div>'
-    + (hs ? '<div class="rg-acts"><button type="button" class="hs-btn" onclick="rgDownload()">Download</button><button type="button" class="hs-btn" onclick="rgImportPick()">Import list</button>'
-      + '<button type="button" class="hs-btn p" onclick="rgEdit(null)">+ Add facility</button></div>' : '<div class="rg-acts"><button type="button" class="hs-btn" onclick="rgLoad(true)">Refresh</button></div>') + '</div>'
-    + '<div class="rg-bar">' + rgTabs() + (_rg.tab !== 'enrolled' ? rgTypeTabs(nodes.filter(function (n) { return _rg.tab === 'coverage' || rgIn(n); })) : '') + '</div>';
+    + (ed ? '<div class="rg-acts"><button type="button" class="hs-btn" onclick="rgDownload()">' + (hs ? 'Download' : 'Download district sheet') + '</button><button type="button" class="hs-btn" onclick="rgImportPick()">' + (hs ? 'Import list' : 'Upload sheet') + '</button>'
+      + '<button type="button" class="hs-btn" onclick="rgLogOpen()">' + (hs ? 'Registry changes' : 'Recent changes') + '</button>'
+      + '<button type="button" class="hs-btn p" onclick="rgEdit(null)">+ Add facility</button></div>'
+      : '<div class="rg-acts">' + (blk ? '<button type="button" class="hs-btn" onclick="rgDownload()">Download block sheet</button>' : '') + '<button type="button" class="hs-btn" onclick="rgLoad(true)">Refresh</button></div>') + '</div>'
+    + (_rg.log ? rgLogHTML() : '')
+    + '<div class="rg-bar">' + rgTabs() + (_rg.tab !== 'enrolled' && _rg.tab !== 'coverage' ? rgTypeTabs(nodes.filter(function (n) { return _rg.tab === 'coverage' || rgIn(n); })) : '') + '</div>';
 }
 function rgRender() {
   if (_rg.tab === 'enrolled') return;
@@ -29210,18 +29319,20 @@ function rgStateTree(nodes) {
 function rgRegistryHTML(nodes) {
   var sc = rgScope(nodes), list = sc.filter(function (n) { return rgTileOk(n, _rg.tile); }), sel = _rg.sel ? nodes.find(function (n) { return n.id === _rg.sel; }) : null;
   var st = rgIsState(), dn = st ? ((nodes.find(rgIn) || {}).state || 'the state') : _rg.dist ? ((nodes.find(function (n) { return n.dk === _rg.dist; }) || {}).district || 'no district') : 'all districts';
-  var cnt = { all: sc.length, en: sc.filter(function (n) { return n.code; }).length, nogps: sc.filter(function (n) { return n.lat == null; }).length, nopop: sc.filter(function (n) { return !n.pop; }).length };
+  var cnt = { all: sc.length, en: sc.filter(function (n) { return n.code; }).length, nogps: sc.filter(function (n) { return n.lat == null; }).length, nopop: sc.filter(function (n) { return !n.pop; }).length, unver: sc.filter(function (n) { return n.unver; }).length, noparent: sc.filter(function (n) { return rgTileOk(n, 'noparent'); }).length };
   var tile = function (k, l, sub, warn) { return '<button type="button" class="ce-tile' + (warn && cnt[k] ? ' warn2' : '') + (_rg.tile === k ? ' on' : '') + '" aria-pressed="' + (_rg.tile === k) + '" onclick="rgSet(\'tile\',\'' + k + '\')"><span>' + l + '</span><b>' + rgFmtN(cnt[k]) + '</b><small>' + sub + '</small></button>'; };
   var blocks = {}; nodes.forEach(function (n) { if (rgIn(n) && n.blk) blocks[n.blk] = 1; });
   var tree = st && !_rg.flat, T = tree ? rgStateTree(nodes) : null;
   var h = '<div class="ce-tiles">' + tile('all', 'In the registry', 'in ' + rgE(dn)) + tile('en', 'Enrolled', cnt.all ? Math.round(100 * cnt.en / cnt.all) + '% of the registry' : '')
-    + tile('nogps', 'No location', 'not on the map yet', 1) + tile('nopop', 'No population', 'left out of coverage', 1) + '</div>'
+    + tile('nogps', 'No location', 'not on the map yet', 1) + tile('nopop', 'No population', 'left out of coverage', 1)
+    + tile('noparent', 'SC with no PHC / CHC', 'link them to their parents', 1) + tile('unver', 'Not verified', 'details from the facility itself', 1) + '</div>'
+    + (_rg.tile === 'unver' && list.length ? '<div class="rg-verall"><span>' + rgFmtN(list.length) + ' facilit' + (list.length === 1 ? 'y' : 'ies') + ' gave these details themselves (enrolment, their in-charge, a link). Check name, NIN, block, parents, location and population, then verify.</span><button type="button" class="hs-btn p" onclick="rgVerifyMany()">Verify all ' + rgFmtN(list.length) + ' shown</button></div>' : '')
     + '<div class="rg-body' + (sel ? ' has-sel' : '') + '">' + rgDistList(nodes)
     + '<section class="rg-tbl" aria-label="Registry"><div class="rg-filt"><label class="rg-search"><span class="rg-sr">Search</span><input id="rg-q" type="search" placeholder="' + (st ? 'Find a facility in ' + rgE(dn) + ' — opens its chain' : 'Search name, NIN or ID') + '" value="' + rgE(_rg.q) + '" oninput="rgQ(this.value)"></label>'
     + (tree ? '<label>Show<select onchange="rgSet(\'show\',this.value)"><option value="">Everything</option><option value="attn"' + (_rg.show === 'attn' ? ' selected' : '') + '>Needs a look</option><option value="en"' + (_rg.show === 'en' ? ' selected' : '') + '>Enrolled only</option><option value="not"' + (_rg.show === 'not' ? ' selected' : '') + '>Not enrolled</option></select></label>'
         + '<button type="button" class="hs-btn" onclick="_rg.open={};rgRender()">Collapse all</button>'
       : (st ? '' : '<label>Block<select onchange="rgSet(\'block\',this.value)"><option value="">All blocks</option>' + Object.keys(blocks).sort().map(function (b) { return '<option' + (rgLow(_rg.block) === rgLow(b) ? ' selected' : '') + '>' + rgE(b) + '</option>'; }).join('') + '</select></label>')
-        + '<label>Status<select onchange="rgSet(\'status\',this.value)"><option value="">Enrolled or not</option><option value="en"' + (_rg.status === 'en' ? ' selected' : '') + '>Enrolled</option><option value="not"' + (_rg.status === 'not' ? ' selected' : '') + '>Not enrolled</option></select></label>')
+        + '<label>Status<select onchange="rgSet(\'status\',this.value)"><option value="">Enrolled or not</option><option value="en"' + (_rg.status === 'en' ? ' selected' : '') + '>Enrolled</option><option value="not"' + (_rg.status === 'not' ? ' selected' : '') + '>Not enrolled</option><option value="closed"' + (_rg.status === 'closed' ? ' selected' : '') + '>Closed / merged</option></select></label>')
     + '<label class="rg-sw"><input type="checkbox" ' + (_rg.flat ? 'checked ' : '') + 'onchange="rgSet(\'flat\',this.checked)"> Flat list</label></div>'
     + (tree ? '<div class="rg-scroll rg-tree"><table><thead><tr><th scope="col">State → district → block → CHC → PHC → SC</th><th scope="col">Under it</th><th scope="col">Status</th></tr></thead><tbody>' + T.html + '</tbody></table>'
         + (T.empty ? '<div class="rg-empty">' + (_rg.q || _rg.show ? 'No facility matches.' : 'No facilities in this state yet.') + '</div>' : '') + '</div>'
@@ -29234,7 +29345,7 @@ function rgRegistryHTML(nodes) {
 function rgRow(n, depth) {
   var gps = n.lat != null ? (n.gsrc === 'in-charge' ? 'Set by in-charge' : 'Set') : '<span class="rg-tag a">No location</span>';
   return '<tr class="rg-r' + (_rg.sel === n.id ? ' on' : '') + '" onclick="rgPick(\'' + rgJ(n.id) + '\')"><td style="padding-left:' + (14 + depth * 20) + 'px"><span class="rg-ty ' + n.t + '">' + RG_LABEL[n.t] + '</span> <button type="button" class="rg-rb" onclick="event.stopPropagation();rgPick(\'' + rgJ(n.id) + '\')">' + rgE(n.name) + '</button></td>'
-    + '<td class="rg-dim">' + rgE(n.nin || '—') + '</td><td>' + rgStatusTxt(n) + '</td><td>' + gps + '</td><td>' + (n.pop ? rgFmtN(n.pop) : '<span class="rg-tag a">Missing</span>') + '</td></tr>';
+    + '<td class="rg-dim">' + rgE(n.nin || '—') + '</td><td>' + rgStatusTxt(n) + (n.closed ? ' <span class="rg-tag r">' + (n.closed === 'merged' ? 'merged' : 'closed') + '</span>' : '') + (n.unver ? ' <span class="rg-tag a">not verified</span>' : n.ver ? ' <span class="rg-tag g">verified</span>' : '') + (n.acc ? ' <span class="rg-tag g">NQAS ' + (n.acc === true ? '' : n.acc) + '</span>' : '') + '</td><td>' + gps + '</td><td>' + (n.pop ? rgFmtN(n.pop) : '<span class="rg-tag a">Missing</span>') + '</td></tr>';
 }
 function rgRowsHTML(list, nodes) {
   if (!list.length) return '';
@@ -29260,7 +29371,7 @@ function rgRowsHTML(list, nodes) {
 }
 function rgPick(id) { if (_rg.R && _rg.R.NEW && id !== 'NEW') delete _rg.R.NEW; _rg.draft = null; _rg.sel = _rg.sel === id ? null : id; rgRender(); if (_rg.sel && (window.innerWidth || 1280) < 1180) { var s = document.querySelector('.rg-side'); if (s && s.scrollIntoView) s.scrollIntoView({ block: 'start' }); } }
 // form values in the panel survive a redraw (Type change) — kept per record until Save / close
-function rgFormVals() { var o = {}; ['t', 'nin', 'name', 'state', 'district', 'block', 'phc', 'chc', 'lat', 'lng', 'pop'].forEach(function (k) { var e = document.getElementById('rg-f-' + k); if (e) o[k] = e.value; });
+function rgFormVals() { var o = {}; ['t', 'nin', 'name', 'state', 'district', 'block', 'phc', 'chc', 'lat', 'lng', 'pop', 'acc', 'closed'].forEach(function (k) { var e = document.getElementById('rg-f-' + k); if (e) o[k] = e.value; });
   var kids = {}; document.querySelectorAll('.rg-kids input[type=checkbox]').forEach(function (c) { kids[c.value + '|' + c.getAttribute('data-k')] = c.checked; }); o.kids = kids; return o; }
 function rgTypeChange(id) { var v = rgFormVals(); _rg.draft = { id: id, v: v }; rgRender(); }
 function rgKidsFilter(box, q) { q = rgLow(q); var el = document.getElementById(box); if (!el) return; el.querySelectorAll('label[data-n]').forEach(function (l) { l.style.display = !q || l.getAttribute('data-n').indexOf(q) >= 0 ? '' : 'none'; }); }
@@ -29297,7 +29408,7 @@ function rgLoginHTML(n, nodes) {
 }
 function rgWant(n) { return { phc: rgNin(n.phc), chc: rgNin(n.chc) }; }
 function rgSideHTML(n, nodes) {
-  var hs = rgHS(), rec = n.rec || {}, f = n.f || {}, g = f.geo, I = rgJ(n.id);
+  var hs = rgHS(), ed = rgEditor(), de = rgDistEd(), rec = n.rec || {}, f = n.f || {}, g = f.geo, I = rgJ(n.id);
   var d = _rg.draft && _rg.draft.id === n.id ? _rg.draft.v : null, t = (d && d.t) || n.t;
   var val = function (k, dv) { return d && k in d ? d[k] : dv; };
   var sameD = nodes.filter(function (x) { return x.dk === n.dk; });
@@ -29306,7 +29417,8 @@ function rgSideHTML(n, nodes) {
     return opt('', '— none —', cur) + L.map(function (x) { return opt(x.nin, x.name + ' · ' + x.nin, cur); }).join('') + (cur && !L.some(function (x) { return x.nin === cur; }) ? opt(cur, 'NIN ' + cur + ' (not in the registry)', cur) : ''); };
   var noNin = function (pt) { var L = sameD.filter(function (x) { return x.t === pt && !x.nin && x.id !== n.id; }); if (!L.length) return '';
     return '<small class="rg-dim rg-nonin">' + rgE(L.map(function (x) { return x.name; }).join(', ')) + (L.length === 1 ? ' has' : ' have') + ' no NIN, so ' + (L.length === 1 ? 'it is' : 'they are') + ' not in this list. Links use the NIN: open ' + (L.length === 1 ? 'it' : 'each') + ', add the NIN and Save, then come back here.</small>'; };
-  var ro = !hs, inp = function (id, label, v, extra) { v = val(id, v); return '<label>' + label + '<input id="rg-f-' + id + '" ' + (ro ? 'readonly ' : '') + (extra || '') + ' value="' + rgE(v == null ? '' : v) + '"></label>'; };
+  var ro = !ed, lock = { state: de, district: de, nin: de && !!n.code };
+  var inp = function (id, label, v, extra) { v = val(id, v); return '<label>' + label + '<input id="rg-f-' + id + '" ' + (ro || lock[id] ? 'readonly ' : '') + (extra || '') + ' value="' + rgE(v == null ? '' : v) + '"></label>'; };
   var hasNin = !!rgNin(val('nin', n.nin));
   var kids = function (kind) { return hasNin ? rgKidsHTML(n, nodes, kind, d && { nin: d.nin, kids: d.kids }) : '<small class="rg-dim">Enter this ' + RG_NAME[t] + '\'s NIN to link facilities under it.</small>'; };
   var h = '<div class="rg-sh"><span>' + RG_NAME[t] + (n.nin ? ' · ' + rgE(n.nin) : '') + '</span><button type="button" class="ce-x" aria-label="Close" onclick="rgPick(null)">×</button></div>'
@@ -29321,21 +29433,27 @@ function rgSideHTML(n, nodes) {
     + inp('block', t === 'uphc' ? 'City / ward' : 'Block', rec.block || n.block || '')
     + (t === 'sc' ? '<label>Parent PHC<select id="rg-f-phc"' + (ro ? ' disabled' : '') + '>' + parents('phc', val('phc', n.phc)) + '</select></label>' + (hs ? noNin('phc') : '') : '')
     + (t === 'sc' || t === 'phc' ? '<label>Parent CHC (block)<select id="rg-f-chc"' + (ro ? ' disabled' : '') + '>' + parents('chc', val('chc', n.chc)) + '</select></label>' + (hs ? noNin('chc') : '') : '')
-    + (hs && t === 'phc' ? kids('sc-phc') : '')
-    + (hs && t === 'chc' ? kids('phc-chc') + (hasNin ? rgKidsHTML(n, nodes, 'sc-chc', d && { nin: d.nin, kids: d.kids }) : '') : '')
+    + (ed && t === 'phc' ? kids('sc-phc') : '')
+    + (ed && t === 'chc' ? kids('phc-chc') + (hasNin ? rgKidsHTML(n, nodes, 'sc-chc', d && { nin: d.nin, kids: d.kids }) : '') : '')
     + '<div class="rg-2">' + inp('lat', 'Latitude', n.rlat, 'inputmode="decimal" placeholder="e.g. 25.45210"') + inp('lng', 'Longitude', n.rlng, 'inputmode="decimal" placeholder="e.g. 78.56120"') + '</div>'
-    + inp('pop', 'Population', n.rpop || '', 'inputmode="numeric" placeholder="' + (n.pop && !n.rpop ? rgFmtN(n.pop) + ' (from the in-charge)' : 'e.g. 5000') + '"')
+    + '<div class="rg-2">' + inp('pop', 'Population', n.rpop || '', 'inputmode="numeric" placeholder="' + (n.pop && !n.rpop ? rgFmtN(n.pop) + ' (from the in-charge)' : t === 'sc' ? 'e.g. 5000' : 'area as per HMIS') + '"')
+    + inp('acc', 'NQAS accredited (year)', rec.acc || '', 'inputmode="numeric" placeholder="' + (n.acc === true ? 'certified (NHSRC record)' : n.acc && !rec.acc ? n.acc + ' (NHSRC record)' : 'e.g. 2024') + '"') + '</div>'
+    + (!n.code ? '<label>Status<select id="rg-f-closed"' + (ro ? ' disabled' : '') + '>' + opt('', 'Working', val('closed', rec.closed || '')) + opt('closed', 'Closed', val('closed', rec.closed || '')) + opt('merged', 'Merged with another facility', val('closed', rec.closed || '')) + '</select></label>' : '')
     + '</div>'
+    + (n.unver ? '<div class="rg-warn rg-verbox"><b>Not verified</b> — these details came from the facility itself (' + (n.code ? 'enrolment and its in-charge' : 'a Settings link') + ').' + (ed ? ' Check them, correct anything wrong, then <button type="button" class="hs-link" onclick="rgSave(\'' + I + '\',true)">Save and verify</button>.' : '') + '</div>'
+      : n.ver ? '<small class="rg-dim">Verified by ' + rgE(n.ver.by || '') + ' on ' + rgE(String(n.ver.at || '').slice(0, 10)) + '</small>' : '')
     + rgLoginHTML(n, nodes)
-    + (hs ? '<div class="rg-sbtn"><button type="button" class="hs-btn p" id="rg-save" onclick="rgSave(\'' + I + '\')">Save</button>' + (n.rid && n.rid !== 'NEW' && !n.code ? '<button type="button" class="hs-btn" onclick="rgDelete(\'' + I + '\')">Delete</button>' : '') + '</div>'
+    + (ed ? '<div class="rg-sbtn"><button type="button" class="hs-btn p" id="rg-save" onclick="rgSave(\'' + I + '\')">Save</button>' + (hs && n.rid && n.rid !== 'NEW' && !n.code ? '<button type="button" class="hs-btn" onclick="rgDelete(\'' + I + '\')">Delete</button>' : '') + '</div>'
+      + (de ? '<small class="rg-dim">Saved straight away and logged. ' + (n.code && t === 'sc' ? 'A new PHC / CHC for this enrolled Sub-Centre goes to HealSol, who updates the MO / MOIC logins.' : 'A facility is never deleted — mark it Closed or Merged.') + '</small>' : '')
       + '<small class="rg-dim">' + (n.rid && n.rid !== 'NEW' ? 'In the registry' + (rec.src ? ' · ' + rgE(rec.src === 'import' ? 'imported' : rec.src === 'link' ? 'from a Settings link' : 'added by hand') : '') + (rec.at ? ' · ' + rgE(String(rec.at).slice(0, 10)) : '') : 'Not in the registry yet — Save adds it') + '</small>'
-      + (t === 'sc' || t === 'phc' || t === 'chc' ? '<small class="rg-dim">Links made here also update Settings → PHC &amp; CHC links for enrolled Sub-Centres, and the other way round.</small>' : '') : '');
+      + (hs && (t === 'sc' || t === 'phc' || t === 'chc') ? '<small class="rg-dim">Links made here also update Settings → PHC &amp; CHC links for enrolled Sub-Centres, and the other way round.</small>' : '') : '');
   return h;
 }
 function rgEdit(id) {
-  if (!rgHS()) return;
+  if (!rgEditor()) return;
   if (id) { _rg.sel = id; rgRender(); return; }
   var n0 = (rgNodes().find(function (n) { return rgIsState() ? rgIn(n) : n.dk === _rg.dist; }) || {}); if (rgIsState()) n0 = { state: n0.state };
+  if (rgDistEd() && !rgMyArea(n0.state, n0.district)) { var a0 = rgAreas()[0] || {}; n0 = { state: a0.state || '', district: a0.district || '' }; }
   _rg.R = _rg.R || {}; var rid = 'NEW'; _rg.draft = null;
   _rg.R[rid] = { t: 'sc', name: 'New facility', state: n0.state || '', district: n0.district || '', _new: true };   // always opens as a Sub-Centre
   _rg.tab = 'registry'; _rg.sel = rid; rgRender();
@@ -29348,21 +29466,24 @@ function rgRecOf(x) {   // a full registry record for any node (virtual ones get
   if (!r.code && x.code) r.code = x.code; if (r.phc == null && x.phc) r.phc = x.phc; if (r.chc == null && x.chc) r.chc = x.chc;
   if (!r.src) r.src = 'manual'; return r;
 }
-async function rgSave(id) {
+async function rgSave(id, verify) {
   var nodes = rgNodes(), n = nodes.find(function (x) { return x.id === id; }); if (!n) return;
   var v = rgFormVals();
   var rec = Object.assign({}, n.rec || {}); delete rec._new;
   rec.t = v.t || n.t; rec.nin = rgNin(v.nin); rec.name = String(v.name || '').trim(); rec.state = String(v.state || '').trim(); rec.district = String(v.district || '').trim(); rec.block = String(v.block || '').trim();
   rec.phc = rec.t === 'sc' && v.phc !== undefined ? rgNin(v.phc) : ''; rec.chc = (rec.t === 'sc' || rec.t === 'phc') && v.chc !== undefined ? rgNin(v.chc) : '';
-  var lat = rgNum(v.lat), lng = rgNum(v.lng), pop = rgNum(v.pop);
+  var lat = rgNum(v.lat), lng = rgNum(v.lng), pop = rgNum(v.pop), acc = rgNum(v.acc);
   if (!rec.name) { showToast('Enter the facility name.', 'err'); return; }
+  if (acc !== null && (isNaN(acc) || acc < 2000 || acc > 2100)) { showToast('NQAS accredited: the year, like 2024 (or leave it empty).', 'err'); return; }
+  if (rgDistEd() && !rgMyArea(rec.state, rec.district)) { showToast('You can add and change facilities of your own district only.', 'err'); return; }
+  rec.acc = acc != null ? Math.round(acc) : null; rec.closed = !n.code && (v.closed === 'closed' || v.closed === 'merged') ? v.closed : null;
   if ((lat == null) !== (lng == null) || lat !== null && (isNaN(lat) || lat < 6 || lat > 38) || lng !== null && (isNaN(lng) || lng < 68 || lng > 98)) { showToast('Enter both latitude (6–38) and longitude (68–98), or leave both empty.', 'err'); return; }
   if (pop !== null && (isNaN(pop) || pop < 1 || pop > 10000000)) { showToast('Population: a whole number from 1 to 1,00,00,000.', 'err'); return; }
   if (rec.nin && nodes.some(function (x) { return x.id !== n.id && x.nin === rec.nin; })) { showToast('NIN ' + rec.nin + ' already belongs to ' + nodes.find(function (x) { return x.id !== n.id && x.nin === rec.nin; }).name + '.', 'err'); return; }
   rec.lat = lat; rec.lng = lng; rec.pop = pop != null ? Math.round(pop) : null;
   if (n.code) rec.code = n.code;
-  var who = (typeof nmBy === 'function' && nmBy()) || 'HealSol', now = new Date().toISOString();
-  rec.src = rec.src || 'manual'; rec.at = now; rec.by = who;
+  var who = rgBy() || 'HealSol', now = new Date().toISOString();
+  rec.src = rec.src || 'manual'; rec.at = now; rec.by = who; if (verify) rec.ver = { by: who, at: now };
   var clean = function (r) { Object.keys(r).forEach(function (k) { if (r[k] === '' || r[k] == null) delete r[k]; }); return r; };
   clean(rec);
   var rid = n.rid && n.rid !== 'NEW' ? n.rid : rgNewId(rec.nin), up = {}; up[rid] = rec;
@@ -29381,6 +29502,13 @@ async function rgSave(id) {
   if (rec.t === 'phc' && me && (rgNin(n.chc) !== (rec.chc || ''))) nodes.forEach(function (x) { if (x.t === 'sc' && x.phc === me && !touched.some(function (q) { return q.x.id === x.id; })) {
     var r = rgRecOf(x); r.chc = rec.chc || ''; r.at = now; r.by = who; clean(r); var xr = x.rid || rgNewId(r.nin, up); up[xr] = r; touched.push({ x: x, rid: xr, rec: r }); } });
   var b = document.getElementById('rg-save'); if (b) { b.disabled = true; b.textContent = 'Saving…'; }
+  if (rgDistEd()) {   // District Admin: through the server (own district, enrolled facilities protected, logged)
+    var res = null; try { res = await nfCall('distRegistrySave', { rows: up, kind: verify ? 'verify' : 'edit', verify: verify ? [rid] : [] }); } catch (e) { showToast(nfErrText(e), 'err'); }
+    if (!res) { if (b) { b.disabled = false; b.textContent = 'Save'; } return; }
+    if (res.errors && res.errors.length) showToast(res.errors.join(' · '), 'err');
+    if (res.saved) showToast(rec.name + (verify ? ' saved and verified' : ' saved') + (touched.length ? ' · ' + touched.length + ' linked facilit' + (touched.length === 1 ? 'y' : 'ies') + ' updated' : '') + '.', 'ok');
+    delete _rg.R.NEW; _rg.draft = null; _rg.sel = res.saved ? rid : _rg.sel; await rgLoad(true); return rid;
+  }
   var ok = false; try { await db.ref('sc_registry').update(up); ok = true; } catch (e) { console.warn('[RG] save', e); }
   if (!ok) { showToast('Could not save — check the connection.', 'err'); if (b) { b.disabled = false; b.textContent = 'Save'; } return; }
   delete _rg.R.NEW; Object.keys(up).forEach(function (k) { _rg.R[k] = up[k]; }); _rg.sel = rid; _rg.draft = null; _rg.dist = rgDk(rec.state, rec.district);
@@ -29389,6 +29517,51 @@ async function rgSave(id) {
   var codes = []; if (rec.t === 'sc' && rec.code) codes.push(rec.code); touched.forEach(function (q) { if (q.rec.t === 'sc' && q.rec.code) codes.push(q.rec.code); });
   if (codes.length) await rgSyncLinks(codes);
   return rid;
+}
+// verify every facility shown under "Not verified" (their details as they are)
+async function rgVerifyMany() {
+  var nodes = rgNodes(), list = rgScope(nodes).filter(function (n) { return n.unver; }); if (!list.length) return;
+  if (!(await showConfirm('Mark ' + list.length + ' facilit' + (list.length === 1 ? 'y' : 'ies') + ' as verified? Do this only after checking their details.', '✅', 'Verify', 'Verify ' + list.length))) return;
+  var who = rgBy(), now = new Date().toISOString(), up = {}, extra = {};
+  list.forEach(function (x) { var r = rgRecOf(x); if (r.lat == null && x.lat != null) { r.lat = x.lat; r.lng = x.lng; } if (r.pop == null && x.pop) r.pop = x.pop; Object.keys(r).forEach(function (k) { if (r[k] === '' || r[k] == null) delete r[k]; });
+    r.ver = { by: who, at: now }; r.at = now; r.by = who; var rid = x.rid || rgNewId(r.nin, extra); extra[rid] = 1; up[rid] = r; });
+  var keys = Object.keys(up), done = 0, errs = [];
+  if (rgDistEd()) { var batch = 'V' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    for (var i = 0; i < keys.length; i += 400) { var part = {}; keys.slice(i, i + 400).forEach(function (k) { part[k] = up[k]; });
+      try { var r = await nfCall('distRegistrySave', { rows: part, kind: 'verify', batch: batch, verify: Object.keys(part) }); done += r.saved || 0; errs = errs.concat(r.errors || []); } catch (e) { errs.push(nfErrText(e)); break; } } }
+  else { try { await db.ref('sc_registry').update(up); done = keys.length; } catch (e) { errs.push('Could not save — check the connection.'); } }
+  if (done) showToast(done + ' verified.', 'ok'); if (errs.length) showToast(errs.slice(0, 4).join(' · ') + (errs.length > 4 ? ' …' : ''), 'err');
+  _rg.tile = 'all'; await rgLoad(true);
+}
+// ── change log: District Admin sees their district's recent changes; HealSol sees all and can undo a whole save / upload ──
+async function rgLogOpen() {
+  if (_rg.log) { _rg.log = null; rgRender(); return; }
+  _rg.log = { loading: true }; rgRender();
+  try {
+    if (rgHS()) { var L = (await fbGet('sc_registry_log')) || {}, out = [];
+      Object.keys(L).forEach(function (b) { var parts = L[b] || {}, g = null; Object.keys(parts).forEach(function (k) { var x = parts[k] || {};
+        g = g || { batch: b, kind: x.kind, at: x.at, by: x.byName || x.by, district: x.district, state: x.state, n: 0, undone: true }; g.n += x.n || 0; if (!x.undone) g.undone = false; if (String(x.at) > String(g.at)) g.at = x.at; }); if (g) out.push(g); });
+      out.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); }); _rg.log = { rows: out.slice(0, 60) }; }
+    else { await rgLoad(true); var G = {}; ((_rg.mine && _rg.mine.logs) || []).forEach(function (x) { var g = G[x.batch] = G[x.batch] || { batch: x.batch, kind: x.kind, at: x.at, by: x.by, district: x.district, n: 0, undone: true }; g.n += x.n || 0; if (!x.undone) g.undone = false; });
+      _rg.log = { rows: Object.keys(G).map(function (k) { return G[k]; }).sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); }) }; }
+  } catch (e) { _rg.log = { rows: [], err: 'Could not load the changes.' }; }
+  rgRender();
+}
+function rgLogHTML() {
+  var L = _rg.log || {}, hs = rgHS(), K = { edit: 'Edited', upload: 'Uploaded a sheet', verify: 'Verified' };
+  return '<div class="nfo-card rg-log"><div class="rg-imp-h"><b>' + (hs ? 'Registry changes by District Admins' : 'Recent changes in your district') + '</b><button type="button" class="ce-x" aria-label="Close" onclick="rgLogOpen()">×</button></div>'
+    + (L.loading ? '<small class="rg-dim">Loading…</small>' : !(L.rows || []).length ? '<small class="rg-dim">' + (L.err || 'No changes yet.') + '</small>'
+      : '<div class="rg-scroll"><table><thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">District</th><th scope="col">What</th><th scope="col">Facilities</th>' + (hs ? '<th scope="col"></th>' : '') + '</tr></thead><tbody>'
+        + L.rows.map(function (x) { return '<tr><td>' + rgE(String(x.at || '').slice(0, 16).replace('T', ' ')) + '</td><td>' + rgE(x.by || '') + '</td><td>' + rgE(x.district || '') + '</td><td>' + rgE(K[x.kind] || x.kind || '') + (x.undone ? ' <span class="rg-tag r">undone</span>' : '') + '</td><td>' + rgFmtN(x.n) + '</td>'
+          + (hs ? '<td>' + (x.undone ? '' : '<button type="button" class="hs-link" onclick="rgUndo(\'' + rgJ(x.batch) + '\')">Undo</button>') + '</td>' : '') + '</tr>'; }).join('') + '</tbody></table></div>')
+    + (hs ? '' : '<small class="rg-dim">Saved changes show at once. HealSol can undo a save if something went wrong.</small>') + '</div>';
+}
+async function rgUndo(batch) {
+  if (!rgHS()) return;
+  if (!(await showConfirm('Put every facility of this change back as it was before? A facility changed again since is left as it is.', '↩️', 'Undo change', 'Undo', 'var(--red)'))) return;
+  try { var r = await nfCall('undoRegistryBatch', { batch: batch }); showToast(r.restored + ' put back' + (r.skipped ? ' · ' + r.skipped + ' changed again since, left as they are' : '') + '.', 'ok'); }
+  catch (e) { showToast(nfErrText(e), 'err'); return; }
+  _rg.log = null; await rgLoad(true); await rgLogOpen();
 }
 function rgNewId(nin, extra) { var R = _rg.R || {}, X = extra || {}; if (nin && !R['N' + nin] && !X['N' + nin]) return 'N' + nin; var id; do { id = 'R' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); } while (R[id] || X[id]); return id; }
 
@@ -29433,39 +29606,85 @@ async function rgDelete(id) {
   if (await fbSet('sc_registry/' + n.rid, null)) { delete _rg.R[n.rid]; _rg.sel = null; showToast('Deleted from the registry.', 'ok'); rgRender(); }
 }
 
-// ── Coverage ──
+// ── Coverage (27 Oct 2026, HealSol: "District name · State name", then one line per type) ──
+//   Type · Total · Enrolled in FAST · NQAS accredited · Population served · % of population with quality care.
+//   Population served = the population of every facility of that type we know (enrolled or not; the in-charge's figure
+//   first, else the registry's). Quality care = the share of it served by an NQAS-accredited facility. The types overlap
+//   (a Sub-Centre's area is inside its PHC's, which is inside the CHC's block), so the lines are never added up.
+//   District Admin: their district (no state row) and its blocks · MOIC: their block · HealSol: all states → state → district → block.
+function rgCovStats(L) {
+  var S = { t: {}, n: 0, en: 0, acc: 0, ready: 0, nopop: 0, nogps: 0, noparent: 0, unver: 0 };
+  RG_TYPES.forEach(function (t) { S.t[t] = { n: 0, en: 0, acc: 0, pop: 0, popN: 0, qpop: 0 }; });
+  L.forEach(function (n) { if (n.closed) return; var T = S.t[n.t]; if (!T) return;
+    T.n++; S.n++; if (n.code) { T.en++; S.en++; } if (n.acc) { T.acc++; S.acc++; }
+    if (n.pop) { T.pop += n.pop; T.popN++; if (n.acc) T.qpop += n.pop; } else S.nopop++;
+    if (n.lat == null) S.nogps++; if (n.t === 'sc' && !n.phc && !n.chc) S.noparent++; if (n.unver) S.unver++; if (rgStatus(n) === 'ready') S.ready++; });
+  var P = { pop: S.t.sc.pop + S.t.uphc.pop, qpop: S.t.sc.qpop + S.t.uphc.qpop }; S.prim = P;   // Sub-Centre + UPHC areas do not overlap
+  return S;
+}
+function rgPct(a, b) { return b ? Math.round(100 * a / b) : null; }
+function rgCovTypes(S, types) {
+  var row = function (t) { var T = S.t[t], p = rgPct(T.en, T.n), q = rgPct(T.qpop, T.pop);
+    return '<tr><th scope="row"><b>' + RG_LABEL[t] + '</b><small>' + RG_LONG[t] + '</small></th><td data-l="Total"><b>' + rgFmtN(T.n) + '</b></td>'
+      + '<td data-l="Enrolled in FAST">' + (T.n ? '<b>' + rgFmtN(T.en) + '</b> <small>' + p + '%</small><div class="rg-barx"><i style="width:' + p + '%"></i></div>' : '<span class="rg-dim">—</span>') + '</td>'
+      + '<td data-l="NQAS accredited">' + (T.n ? '<b>' + rgFmtN(T.acc) + '</b>' + (T.acc ? ' <small>' + rgPct(T.acc, T.n) + '%</small>' : '') : '<span class="rg-dim">—</span>') + '</td>'
+      + '<td data-l="Population served">' + (T.pop ? '<b>' + rgLakh(T.pop) + '</b>' + (T.popN < T.n ? '<small>' + T.popN + ' of ' + T.n + ' have a population</small>' : '') : '<span class="rg-dim">' + (T.n ? 'no population yet' : '—') + '</span>') + '</td>'
+      + '<td data-l="% with quality care">' + (T.pop ? '<b>' + q + '%</b><small>' + rgLakh(T.qpop) + ' people</small>' : '<span class="rg-dim">—</span>') + '</td></tr>'; };
+  return '<div class="rg-scroll"><table class="rg-ctab"><thead><tr><th scope="col">Type</th><th scope="col">Total</th><th scope="col">Enrolled in FAST</th><th scope="col">NQAS accredited</th><th scope="col">Population served</th><th scope="col">% of population with quality care</th></tr></thead><tbody>'
+    + types.map(row).join('') + '</tbody></table></div>';
+}
+function rgGoTile(k) { _rg.tile = k; _rg.status = ''; _rg.q = ''; rgSet('tab', 'registry'); }
+function rgCovCard(title, sub, L, opt) {
+  opt = opt || {}; var S = rgCovStats(L), types = ['chc', 'phc', 'sc', 'uphc'].filter(function (t) { return t !== 'uphc' || (!opt.block && S.t.uphc.n); });
+  var ed = rgEditor(), chip = function (k, n, l) { if (!n) return ''; return ed ? '<button type="button" class="rg-chip" onclick="rgGoTile(\'' + k + '\')">' + rgFmtN(n) + ' ' + l + '</button>' : '<span class="rg-chip">' + rgFmtN(n) + ' ' + l + '</span>'; };
+  var att = chip('nopop', S.nopop, 'with no population') + chip('nogps', S.nogps, 'with no location') + chip('noparent', S.noparent, 'SCs with no PHC / CHC') + chip('unver', S.unver, 'not verified');
+  var q = rgPct(S.prim.qpop, S.prim.pop);
+  return '<section class="nfo-card rg-ccard"><div class="rg-chead"><div><h2>' + rgE(title) + '</h2><small>' + rgE(sub) + '</small></div>' + (opt.back ? '<button type="button" class="hs-link" onclick="' + opt.back + '">‹ Back</button>' : '') + '</div>'
+    + '<div class="rg-kpis"><div class="rg-kpi hero"><small>Enrolled in FAST</small><b>' + rgFmtN(S.en) + ' of ' + rgFmtN(S.n) + '</b><small>' + (S.n ? rgPct(S.en, S.n) + '% of the facilities we know' : 'no facilities yet') + '</small></div>'
+    + '<div class="rg-kpi"><small>NQAS accredited</small><b>' + rgFmtN(S.acc) + '</b><small>' + (S.n ? rgPct(S.acc, S.n) + '% of all facilities' : '') + '</small></div>'
+    + '<div class="rg-kpi"><small>Population with quality care</small><b>' + (q == null ? '—' : q + '%') + '</b><small>' + (S.prim.pop ? rgLakh(S.prim.qpop) + ' of ' + rgLakh(S.prim.pop) + ' (Sub-Centre and UPHC areas)' : 'add population') + '</small></div>'
+    + '<div class="rg-kpi"><small>NQAS Ready in FAST</small><b>' + rgFmtN(S.ready) + '</b><small>graduated "Ready"</small></div></div>'
+    + rgCovTypes(S, types)
+    + (att ? '<div class="rg-att"><b>Needs attention</b>' + att + (ed ? '' : '<small class="rg-dim">Ask your District Admin to add these.</small>') + '</div>' : '')
+    + (opt.extra || '') + '</section>';
+}
+function rgCovBlocks(L, dkey) {
+  var B = {}; L.forEach(function (n) { if (n.closed || n.t === 'uphc') return; var b = n.blk || '~none'; (B[b] = B[b] || []).push(n); });
+  var ks = Object.keys(B).sort(function (a, b) { return (a === '~none') - (b === '~none') || a.localeCompare(b); }); if (!ks.length) return '';
+  return '<div class="rg-cap">Blocks</div><div class="rg-bgrid">' + ks.map(function (b) { var S = rgCovStats(B[b]), q = rgPct(S.prim.qpop, S.prim.pop);
+    var line = ['chc', 'phc', 'sc'].filter(function (t) { return S.t[t].n; }).map(function (t) { return RG_LABEL[t] + ' ' + S.t[t].en + '/' + S.t[t].n; }).join(' · ');
+    return '<button type="button" class="rg-bc' + (S.en ? '' : ' none') + '" onclick="_rg.covBlock=\'' + rgJ(dkey + '|' + b) + '\';rgRender()"><b>' + (b === '~none' ? 'Not linked to a block' : rgE(b)) + '</b><small>' + line + '</small><small>' + (S.acc ? S.acc + ' NQAS accredited · ' : '') + (q == null ? 'no population yet' : q + '% population with quality care') + '</small></button>'; }).join('') + '</div>'
+    + '<small class="rg-dim">Enrolled / all facilities of the block. Pick a block to see it in full.</small>';
+}
+function rgCovRollup(rows, label) {   // HealSol: a line per state or district under the card
+  return '<div class="rg-cap">' + rgE(label) + '</div><div class="rg-scroll"><table class="rg-ctab"><thead><tr><th scope="col">' + rgE(label.replace(/^By /, '').replace(/^\w/, function (c) { return c.toUpperCase(); })) + '</th><th scope="col">Enrolled in FAST</th><th scope="col">NQAS accredited</th><th scope="col">Population served (SC + UPHC)</th><th scope="col">% with quality care</th><th scope="col">NQAS Ready in FAST</th></tr></thead><tbody>'
+    + rows.map(function (r) { var S = r.S, q = rgPct(S.prim.qpop, S.prim.pop);
+      return '<tr class="rg-cr" onclick="' + r.go + '"><td><button type="button" class="rg-rb"><b>' + rgE(r.name) + '</b></button>' + (r.sub ? '<small>' + rgE(r.sub) + '</small>' : '') + '</td><td data-l="Enrolled in FAST"><b>' + rgFmtN(S.en) + '</b> of ' + rgFmtN(S.n) + '</td><td data-l="NQAS accredited">' + rgFmtN(S.acc) + '</td><td data-l="Population (SC + UPHC)">' + (S.prim.pop ? rgLakh(S.prim.pop) : '<span class="rg-dim">—</span>') + '</td><td data-l="% with quality care">' + (q == null ? '<span class="rg-dim">—</span>' : q + '%') + '</td><td data-l="NQAS Ready in FAST">' + S.ready + '</td></tr>'; }).join('')
+    + '</tbody></table></div>';
+}
+function rgCovArea(v) { _rg.covArea = v; _rg.covBlock = ''; rgRender(); }
 function rgCoverageHTML(nodes) {
-  var sc = nodes.filter(function (n) { return !_rg.type || n.t === _rg.type; }), D = {};
-  sc.forEach(function (n) { var k = n.dk; var d = D[k] = D[k] || { k: k, name: n.district || 'No district', state: n.state || '', t: {}, pop: 0, popAll: 0, pct: [], ready: 0, en: 0, n: 0, blocks: {} };
-    var T = d.t[n.t] = d.t[n.t] || { en: 0, n: 0 }; T.n++; d.n++; if (n.code) { T.en++; d.en++; }
-    var prim = n.t === 'sc' || n.t === 'uphc'; if (prim && n.pop) { d.popAll += n.pop; if (n.code) d.pop += n.pop; }
-    if (n.code && n.info && n.info.pct != null) d.pct.push(n.info.pct); if (rgStatus(n) === 'ready') d.ready++;
-    if (n.blk) { var b = d.blocks[n.blk] = d.blocks[n.blk] || { name: n.blk, t: {}, pop: 0, popAll: 0, en: 0, n: 0 }; var bt = b.t[n.t] = b.t[n.t] || { en: 0, n: 0 }; bt.n++; b.n++; if (n.code) { bt.en++; b.en++; } if (prim && n.pop) { b.popAll += n.pop; if (n.code) b.pop += n.pop; } } });
-  var ks = Object.keys(D).sort(function (a, b) { return D[a].state.localeCompare(D[b].state) || D[b].en - D[a].en || D[a].name.localeCompare(D[b].name); });
-  var tot = { en: 0, n: 0, pop: 0, popAll: 0, ready: 0, blocks: 0 }; ks.forEach(function (k) { var d = D[k]; tot.en += d.en; tot.n += d.n; tot.pop += d.pop; tot.popAll += d.popAll; tot.ready += d.ready; tot.blocks += Object.keys(d.blocks).filter(function (b) { return d.blocks[b].en; }).length; });
-  if (!Object.keys(_rg.covOpen).length && ks[0]) _rg.covOpen[ks[0]] = true;
-  var types = RG_TYPES.filter(function (t) { return (!_rg.type || _rg.type === t) && sc.some(function (n) { return n.t === t; }); });
-  var cell = function (T) { if (!T || !T.n) return '<td class="rg-dim">—</td>'; var p = Math.round(100 * T.en / T.n); return '<td><b>' + T.en + '</b> / ' + T.n + '<div class="rg-barx"><i style="width:' + p + '%"></i></div></td>'; };
-  var h = '<div class="rg-kpis"><div class="rg-kpi hero"><small>Facilities enrolled</small><b>' + rgFmtN(tot.en) + ' of ' + rgFmtN(tot.n) + '</b><small>' + (tot.n ? Math.round(100 * tot.en / tot.n) : 0) + '% of the facilities we know</small></div>'
-    + '<div class="rg-kpi"><small>Population covered</small><b>' + (tot.popAll ? rgLakh(tot.pop) : '—') + '</b><small>' + (tot.popAll ? Math.round(100 * tot.pop / tot.popAll) + '% of ' + rgLakh(tot.popAll) + ' (Sub-Centre and UPHC areas)' : 'add population in the registry') + '</small></div>'
-    + '<div class="rg-kpi"><small>Districts</small><b>' + ks.length + '</b><small>' + tot.blocks + ' block' + (tot.blocks === 1 ? '' : 's') + ' with an enrolled facility</small></div>'
-    + '<div class="rg-kpi"><small>NQAS ready</small><b>' + tot.ready + '</b><small>graduated "Ready"</small></div></div>'
-    + '<div class="nfo-card rg-cov"><div class="rg-scroll"><table><thead><tr><th scope="col">State · district</th>' + types.map(function (t) { return '<th scope="col">' + RG_NAME[t] + 's</th>'; }).join('') + '<th scope="col">Population covered</th><th scope="col">Readiness</th></tr></thead><tbody>'
-    + ks.map(function (k, i) { var d = D[k], avg = d.pct.length ? Math.round(d.pct.reduce(function (s, x) { return s + x; }, 0) / d.pct.length) : null, open = !!_rg.covOpen[k];
-      var bl = Object.keys(d.blocks).sort();
-      var sh = '';
-      if (i === 0 || D[ks[i - 1]].state !== d.state) { var SK = ks.filter(function (x) { return D[x].state === d.state; }), ST = { t: {}, en: 0, n: 0, pop: 0, popAll: 0 };
-        SK.forEach(function (x) { var y = D[x]; ST.en += y.en; ST.n += y.n; ST.pop += y.pop; ST.popAll += y.popAll; Object.keys(y.t).forEach(function (t) { var a = ST.t[t] = ST.t[t] || { en: 0, n: 0 }; a.en += y.t[t].en; a.n += y.t[t].n; }); });
-        sh = '<tr class="rg-sth"><td><b>' + rgE(d.state || 'No state') + '</b><small>' + SK.length + ' district' + (SK.length === 1 ? '' : 's') + (rgHS() && d.state ? ' · <button type="button" class="hs-link" onclick="event.stopPropagation();rgOpenState(\'' + rgJ(d.state) + '\')">Open in Registry</button>' : '') + '</small></td>'
-          + types.map(function (t) { return cell(ST.t[t]); }).join('') + '<td>' + (ST.popAll ? '<b>' + rgFmtN(ST.pop) + '</b> of ' + rgFmtN(ST.popAll) : '<span class="rg-dim">—</span>') + '</td><td></td></tr>'; }
-      return sh + '<tr class="rg-cr' + (open ? ' on' : '') + '" onclick="_rg.covOpen[\'' + rgJ(k) + '\']=!_rg.covOpen[\'' + rgJ(k) + '\'];rgRender()"><td><button type="button" class="rg-rb" aria-expanded="' + open + '"><b>' + rgE(d.name) + '</b></button><small>' + rgE(d.state) + (bl.length ? ' · ' + bl.length + ' block' + (bl.length === 1 ? '' : 's') : '') + '</small></td>'
-        + types.map(function (t) { return cell(d.t[t]); }).join('') + '<td>' + (d.popAll ? '<b>' + rgFmtN(d.pop) + '</b> of ' + rgFmtN(d.popAll) + '<small>' + Math.round(100 * d.pop / d.popAll) + '%</small>' : '<span class="rg-dim">no population</span>') + '</td>'
-        + '<td>' + (avg != null ? avg + '%' : '—') + (d.ready ? ' <small>· ' + d.ready + ' ready</small>' : '') + '</td></tr>'
-        + (open && bl.length ? '<tr class="rg-blks"><td colspan="' + (types.length + 3) + '"><div class="rg-cap">Blocks in ' + rgE(d.name) + '</div><div class="rg-bgrid">' + bl.map(function (b) { var B = d.blocks[b];
-            return '<div class="rg-bc' + (B.en ? '' : ' none') + '"><b>' + rgE(B.name) + '</b><small>' + (B.en ? types.filter(function (t) { return B.t[t]; }).map(function (t) { return RG_LABEL[t] + ' ' + B.t[t].en + '/' + B.t[t].n; }).join(' · ') + (B.popAll ? ' · population ' + Math.round(100 * B.pop / B.popAll) + '%' : '') : 'nothing enrolled yet · ' + B.n + ' facilit' + (B.n === 1 ? 'y' : 'ies') + ' in the registry') + '</small></div>'; }).join('') + '</div></td></tr>' : '');
-    }).join('') + '</tbody></table>' + (ks.length ? '' : '<div class="rg-empty">No facilities yet.</div>') + '</div></div>'
-    + '<div class="rg-foot">"n / n" = enrolled / all facilities we know. Population covered adds the Sub-Centre and UPHC areas served by enrolled facilities (PHC and CHC areas overlap them, so they are not added again).' + (rgDist() ? '' : ' District Admins see their district only; MOICs their block.') + '</div>';
-  return h;
+  var live = nodes.filter(function (n) { return !n.closed; }), foot = '<div class="rg-foot">Population served = every facility of that type we know, enrolled or not (the in-charge\'s figure first, else the registry\'s). Quality care = the part of it served by an NQAS-accredited facility. The lines overlap — a Sub-Centre\'s area is inside its PHC\'s, which is inside the CHC\'s block — so they are not added up; the top figure uses Sub-Centre and UPHC areas, which do not overlap.</div>';
+  var stOf = function (L) { return (L[0] || {}).state || ''; };
+  // a block opened from a district card
+  if (_rg.covBlock) { var p = _rg.covBlock.split('|'), b = p.pop(), dk = p.join('|'), L = live.filter(function (n) { return n.dk === dk && (b === '~none' ? !n.blk : rgLow(n.blk) === rgLow(b)) && n.t !== 'uphc'; });
+    var d0 = L[0] || {}; return rgCovCard(b === '~none' ? 'Not linked to a block' : b + ' block', [d0.district, d0.state].filter(Boolean).join(' · '), L, { block: true, back: "_rg.covBlock='';rgRender()" }) + foot; }
+  if (_rg.mine && _rg.mine.scope === 'block') { var a = rgAreas()[0] || {}; return rgCovCard((_rg.mine.block || 'Your') + ' block', [a.district, a.state].filter(Boolean).join(' · ') + ' · MOIC · view only', live.filter(function (n) { return n.t !== 'uphc'; }), { block: true }) + foot; }
+  var D = {}; live.forEach(function (n) { (D[n.dk] = D[n.dk] || []).push(n); });
+  var dCard = function (dk, back) { var L = D[dk] || []; return rgCovCard((L[0] || {}).district || 'No district', stOf(L) || '', L, { back: back, extra: rgCovBlocks(L, dk) }); };
+  if (rgDist()) { var mine = Object.keys(D).filter(function (dk) { return !rgAreas().length || rgAreas().some(function (x) { return rgDk(x.state, x.district) === dk || rgLow(x.district) === dk.split('|')[1]; }); });
+    if (!mine.length) mine = Object.keys(D);
+    return mine.sort().map(function (dk) { return dCard(dk); }).join('') + foot; }
+  // HealSol: all states → a state → a district
+  var area = _rg.covArea || '', SD = {}; live.forEach(function (n) { var st = n.state || 'No state'; (SD[st] = SD[st] || {})[n.dk] = n.district || 'No district'; });
+  var pick = '<div class="rg-filt"><label>Area<select onchange="rgCovArea(this.value)"><option value="">All states</option>' + Object.keys(SD).sort().map(function (st) { var sk = 'S:' + rgLow(st);
+    return '<optgroup label="' + rgE(st) + '"><option value="' + rgE(sk) + '"' + (area === sk ? ' selected' : '') + '>' + rgE(st) + ' · whole state</option>' + Object.keys(SD[st]).sort(function (x, y) { return SD[st][x].localeCompare(SD[st][y]); }).map(function (k) { return '<option value="' + rgE(k) + '"' + (area === k ? ' selected' : '') + '>' + rgE(SD[st][k]) + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></label></div>';
+  if (area && area.indexOf('S:') !== 0) return pick + dCard(area, "rgCovArea('S:" + rgJ(rgLow((D[area] && stOf(D[area])) || '')) + "')") + foot;
+  if (area) { var sk2 = area.slice(2), L2 = live.filter(function (n) { return rgLow(n.state || 'No state') === sk2; }), st2 = stOf(L2) || sk2;
+    var rows = Object.keys(D).filter(function (dk) { return rgLow(stOf(D[dk]) || 'No state') === sk2; }).sort(function (x, y) { return (D[x][0].district || '').localeCompare(D[y][0].district || ''); }).map(function (dk) { return { name: D[dk][0].district || 'No district', S: rgCovStats(D[dk]), go: "rgCovArea('" + rgJ(dk) + "')" }; });
+    return pick + rgCovCard(st2, rows.length + ' district' + (rows.length === 1 ? '' : 's'), L2, { back: "rgCovArea('')", extra: rgCovRollup(rows, 'By district') }) + foot; }
+  var srows = Object.keys(SD).sort().map(function (st) { var L3 = live.filter(function (n) { return (n.state || 'No state') === st; }); return { name: st, sub: Object.keys(SD[st]).length + ' district' + (Object.keys(SD[st]).length === 1 ? '' : 's'), S: rgCovStats(L3), go: "rgCovArea('S:" + rgJ(rgLow(st)) + "')" }; });
+  return pick + rgCovCard('All states', srows.length + ' state' + (srows.length === 1 ? '' : 's') + ' · every facility we know', live, { extra: rgCovRollup(srows, 'By state') }) + foot;
 }
 
 // ── Map ──
@@ -29539,9 +29758,10 @@ function rgMapDraw(nodes) {
 
 // ── Import / download ──
 var RG_COLS = [['t', ['type', 'facility type', 'facility_type']], ['nin', ['nin', 'nin number', 'hfr id', 'hfr', 'facility id (nin)']], ['name', ['name', 'facility name', 'facility_name']], ['state', ['state']], ['district', ['district']],
-  ['block', ['block', 'city', 'block / city', 'block/city', 'city / ward']], ['phc', ['parent phc nin', 'phc nin', 'parent phc']], ['chc', ['parent chc nin', 'chc nin', 'parent chc']], ['lat', ['latitude', 'lat']], ['lng', ['longitude', 'long', 'lng', 'lon']], ['pop', ['population', 'pop', 'catchment population']]];
-var RG_XH = ['Type', 'NIN', 'Name', 'State', 'District', 'Block', 'Parent PHC NIN', 'Parent CHC NIN', 'Latitude', 'Longitude', 'Population'];
-function rgImportPick() { if (!rgHS()) return; var i = document.createElement('input'); i.type = 'file'; i.accept = '.xlsx,.xls,.csv'; i.onchange = function () { var f = i.files && i.files[0]; if (f) rgImportFile(f); }; i.click(); }
+  ['block', ['block', 'city', 'block / city', 'block/city', 'city / ward']], ['phc', ['parent phc nin', 'phc nin', 'parent phc']], ['chc', ['parent chc nin', 'chc nin', 'parent chc']], ['lat', ['latitude', 'lat']], ['lng', ['longitude', 'long', 'lng', 'lon']], ['pop', ['population', 'pop', 'catchment population']],
+  ['acc', ['nqas accredited (year)', 'nqas accredited', 'nqas year', 'accredited', 'nqas certified (year)']], ['closed', ['closed / merged', 'closed', 'status (working / closed / merged)']]];
+var RG_XH = ['Type', 'NIN', 'Name', 'State', 'District', 'Block', 'Parent PHC NIN', 'Parent CHC NIN', 'Latitude', 'Longitude', 'Population', 'NQAS accredited (year)', 'Closed / merged'];
+function rgImportPick() { if (!rgEditor()) return; var i = document.createElement('input'); i.type = 'file'; i.accept = '.xlsx,.xls,.csv'; i.onchange = function () { var f = i.files && i.files[0]; if (f) rgImportFile(f); }; i.click(); }
 async function rgImportFile(f) {
   try { var X = await nfLoadXlsx(), buf = await f.arrayBuffer(), wb = X.read(buf, { type: 'array' }); return rgImportWb(X, wb); }
   catch (e) { console.warn('[RG] import', e); showToast('Could not read this file.', 'err'); }
@@ -29565,9 +29785,16 @@ function rgImportWb(X, wb) {
     var lat = rgNum(g('lat')), lng = rgNum(g('lng')), pop = rgNum(g('pop'));
     if (lat != null || lng != null) { if (lat == null || lng == null || isNaN(lat) || isNaN(lng) || lat < 6 || lat > 38 || lng < 68 || lng > 98) rep.bad.push(rn + ' (' + name + '): GPS outside India — left out'); else { v.lat = Math.round(lat * 1e6) / 1e6; v.lng = Math.round(lng * 1e6) / 1e6; } }
     if (pop != null) { if (isNaN(pop) || pop < 1 || pop > 10000000) rep.bad.push(rn + ' (' + name + '): population not a number — left out'); else v.pop = Math.round(pop); }
+    var acc = rgNum(g('acc')); if (acc != null) { if (isNaN(acc) || acc < 2000 || acc > 2100) rep.bad.push(rn + ' (' + name + '): NQAS accredited is not a year like 2024 — left out'); else v.acc = Math.round(acc); }
+    var cl = rgLow(g('closed')); if (cl) { if (/merg/.test(cl)) v.closed = 'merged'; else if (/clos/.test(cl)) v.closed = 'closed'; }
+    if (rgDistEd()) {   // District Admin: their own district only; state / district filled when the sheet leaves them out
+      var A = rgAreas(); if (A.length === 1) { if (!v.district) v.district = A[0].district; if (!v.state || rgLow(v.district) === rgLow(A[0].district)) v.state = A[0].state || v.state; }
+      if (!rgMyArea(v.state, v.district)) { rep.bad.push(rn + ' (' + name + '): ' + (v.district || 'no district') + ' is not your district — left out'); return; } }
     var key = v.nin ? 'n:' + v.nin : 'm:' + rgLow(name) + '|' + rgLow(v.district); if (rep.seen[key]) { rep.bad.push(rn + ' (' + name + '): appears twice in the file — second one left out'); return; } rep.seen[key] = 1;
     if (v.nin && fByNin[v.nin]) v.code = fByNin[v.nin];
     var rid = (v.nin && byNin[v.nin]) || byName[rgLow(name) + '|' + rgLow(v.district)];
+    if (rid && (R[rid] || {}).code && (v.t !== R[rid].t || (v.nin && v.nin !== rgNin(R[rid].nin)))) { rep.bad.push(rn + ' (' + name + '): enrolled facility — type and NIN stay as they are; left out'); return; }
+    if (rid && (R[rid] || {}).code && v.closed) { rep.bad.push(rn + ' (' + name + '): enrolled facility — cannot be closed; left out'); return; }
     if (!rid) { rep.add.push({ rid: rgNewIdFor(v.nin, rep), v: v }); return; }
     var cur = R[rid] || {}, diff = {}; Object.keys(v).forEach(function (k) { if (String(v[k]) !== String(cur[k] == null ? '' : cur[k])) diff[k] = v[k]; });
     if (Object.keys(diff).length) rep.change.push({ rid: rid, name: cur.name || name, diff: diff, v: Object.assign({}, cur, v) }); else rep.same++;
@@ -29576,7 +29803,7 @@ function rgImportWb(X, wb) {
   return rep;
 }
 function rgNewIdFor(nin, rep) { var R = _rg.R || {}, used = {}; rep.add.forEach(function (a) { used[a.rid] = 1; }); if (nin && !R['N' + nin] && !used['N' + nin]) return 'N' + nin; var id; do { id = 'R' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); } while (R[id] || used[id]); return id; }
-var RG_FN = { t: 'type', nin: 'NIN', name: 'name', state: 'state', district: 'district', block: 'block', phc: 'parent PHC', chc: 'parent CHC', lat: 'GPS', lng: 'GPS', pop: 'population', code: 'enrolled link' };
+var RG_FN = { t: 'type', nin: 'NIN', name: 'name', state: 'state', district: 'district', block: 'block', phc: 'parent PHC', chc: 'parent CHC', lat: 'GPS', lng: 'GPS', pop: 'population', code: 'enrolled link', acc: 'NQAS accredited', closed: 'closed / merged' };
 function rgImpHTML(I) {
   var n = I.add.length + I.change.length;
   return '<div class="nfo-card rg-imp"><div class="rg-imp-h"><b>Import: ' + I.add.length + ' new · ' + I.change.length + ' changed</b><small> · ' + I.same + ' the same' + (I.bad.length ? ' · ' + I.bad.length + ' left out' : '') + '</small></div>'
@@ -29587,10 +29814,18 @@ function rgImpHTML(I) {
 }
 async function rgImportApply() {
   var I = _rg.imp; if (!I) return; var b = document.getElementById('rg-imp-go'); if (b) { b.disabled = true; b.textContent = 'Saving…'; }
-  var now = new Date().toISOString(), by = (typeof nmBy === 'function' && nmBy()) || 'HealSol', upd = {};
+  var now = new Date().toISOString(), by = rgBy() || 'HealSol', upd = {};
   I.add.forEach(function (a) { upd[a.rid] = Object.assign({}, a.v, { src: 'import', at: now, by: by }); });
   I.change.forEach(function (c) { upd[c.rid] = Object.assign({}, c.v, { at: now, by: by }); if (!upd[c.rid].src) upd[c.rid].src = 'import'; });
   var keys = Object.keys(upd), ok = 0;
+  if (rgDistEd()) {   // through the server, one batch (HealSol can undo it as one)
+    var batch = 'U' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), errs = [];
+    for (var j = 0; j < keys.length; j += 400) { var pt = {}; keys.slice(j, j + 400).forEach(function (k) { pt[k] = upd[k]; });
+      try { var res = await nfCall('distRegistrySave', { rows: pt, kind: 'upload', batch: batch }); ok += res.saved || 0; errs = errs.concat(res.errors || []); } catch (e) { errs.push(nfErrText(e)); break; } }
+    _rg.imp = null; showToast(ok + ' facilities saved.' + (errs.length ? ' ' + errs.length + ' left out.' : ''), ok ? 'ok' : 'err');
+    if (errs.length) scAlert('Saved ' + ok + ' of ' + keys.length + '. Left out:\n' + errs.slice(0, 15).join('\n') + (errs.length > 15 ? '\n… and ' + (errs.length - 15) + ' more' : ''), 'Upload', '⚠️');
+    await rgLoad(true); return ok;
+  }
   try {
     for (var i = 0; i < keys.length; i += 300) { var part = {}; keys.slice(i, i + 300).forEach(function (k) { part[k] = upd[k]; }); await db.ref('sc_registry').update(part); ok += Object.keys(part).length; }
   } catch (e) { console.warn('[RG] import save', e); showToast('Saved ' + ok + ' of ' + keys.length + ' — check the connection and import again.', 'err'); }
@@ -29599,18 +29834,22 @@ async function rgImportApply() {
   return ok;
 }
 function rgRows(nodes) {
-  return [RG_XH.concat(['Enrolled (facility ID)', 'Status', 'Location from', 'Population from'])].concat(nodes.slice().sort(function (a, b) { return a.district.localeCompare(b.district) || (a.blk || '').localeCompare(b.blk || '') || a.name.localeCompare(b.name); }).map(function (n) {
-    return [RG_NAME[n.t], n.nin || '', n.name, n.state, n.district, n.blk || '', n.phc || '', n.chc || '', n.lat != null ? n.lat : '', n.lng != null ? n.lng : '', n.pop || '', n.code || '', n.code ? RG_ST[rgStatus(n)][0] : 'Not enrolled',
-      n.lat == null ? '' : n.gsrc === 'in-charge' ? 'In-charge (phone)' : 'Registry', !n.pop ? '' : n.f && n.f.population && n.f.population.n ? 'In-charge' : 'Registry']; }));
+  return [RG_XH.concat(['Enrolled (facility ID)', 'Status', 'Location from', 'Population from', 'Verified'])].concat(nodes.slice().sort(function (a, b) { return a.district.localeCompare(b.district) || (a.blk || '').localeCompare(b.blk || '') || a.name.localeCompare(b.name); }).map(function (n) {
+    return [RG_NAME[n.t], n.nin || '', n.name, n.state, n.district, n.blk || '', n.phc || '', n.chc || '', n.lat != null ? n.lat : '', n.lng != null ? n.lng : '', n.pop || '', n.acc && n.acc !== true ? n.acc : '', n.closed || '', n.code || '', n.code ? RG_ST[rgStatus(n)][0] : 'Not enrolled',
+      n.lat == null ? '' : n.gsrc === 'in-charge' ? 'In-charge (phone)' : 'Registry', !n.pop ? '' : n.f && n.f.population && n.f.population.n ? 'In-charge' : 'Registry', n.ver ? 'Verified ' + String(n.ver.at || '').slice(0, 10) : n.unver ? 'Not verified (from the facility)' : '']; }));
 }
 async function rgDownload(template) {
   try {
     var X = await nfLoadXlsx(), wb = X.utils.book_new();
-    var rows = template ? [RG_XH, ['SC', '1234567890', 'Example Sub-Centre', 'Uttar Pradesh', 'Jhansi', 'Babina', '2234567890', '3234567890', 25.4521, 78.5612, 5200]] : rgRows(rgScope(rgNodes()));
-    var ws = X.utils.aoa_to_sheet(rows); ws['!cols'] = [8, 14, 34, 16, 16, 16, 14, 14, 11, 11, 11, 18, 22, 16, 14].map(function (w) { return { wch: w }; }); X.utils.book_append_sheet(wb, ws, 'Facilities');
+    var all = rgNodes(), rows = template ? [RG_XH, ['SC', '1234567890', 'Example Sub-Centre', 'Uttar Pradesh', 'Jhansi', 'Babina', '2234567890', '3234567890', 25.4521, 78.5612, 5200, 2024, '']] : rgRows(rgHS() ? rgScope(all) : all);
+    var ws = X.utils.aoa_to_sheet(rows); ws['!cols'] = [8, 14, 34, 16, 16, 16, 14, 14, 11, 11, 11, 12, 12, 18, 22, 16, 14, 18].map(function (w) { return { wch: w }; }); X.utils.book_append_sheet(wb, ws, 'Facilities');
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([['NQAS FAST · Facility registry'], ['Columns: ' + RG_XH.join(', ') + '. Type is SC, PHC, CHC or UPHC. NIN is the national facility number (used to match rows). Parent PHC / CHC are given by their NIN.'],
-      ['Latitude 6 to 38 and longitude 68 to 98 (India), in decimal degrees, e.g. 25.4521 and 78.5612. Population is a whole number.'], ['Import it in Facilities → Import list. Every new and changed row is shown before saving; rows already the same are left alone.']]), 'Read me');
-    var name = template ? 'NQAS-FAST-registry-template.xlsx' : 'NQAS-FAST-facility-registry-' + new Date().toISOString().slice(0, 10) + '.xlsx';
+      ['Latitude 6 to 38 and longitude 68 to 98 (India), in decimal degrees, e.g. 25.4521 and 78.5612. Population is a whole number (PHC / CHC: their area as per HMIS).'],
+      ['NQAS accredited (year): the year the facility was NQAS certified, e.g. 2024; leave empty if not. Closed / merged: leave empty for a working facility.'],
+      ['Columns after "Closed / merged" are for reading only (they come from the app).'],
+      ['Upload it in Facilities → ' + (rgHS() ? 'Import list' : 'Upload sheet') + '. Every new and changed row is shown before saving; rows already the same are left alone.']]), 'Read me');
+    var blk = _rg.mine && _rg.mine.scope === 'block', area = rgDistEd() || blk ? ((rgAreas()[0] || {}).district || 'district') + (blk ? '-' + (_rg.mine.block || 'block') : '') : '';
+    var name = template ? 'NQAS-FAST-registry-template.xlsx' : 'NQAS-FAST-facilities-' + (area ? area.replace(/[^A-Za-z0-9]+/g, '-') + '-' : '') + new Date().toISOString().slice(0, 10) + '.xlsx';
     if (typeof nfSaveWb === 'function') await nfSaveWb(X, wb, name); else X.writeFile(wb, name);
     showToast(template ? 'Template downloaded.' : 'Registry downloaded.', 'ok');
   } catch (e) { console.warn('[RG] download', e); showToast('Could not create the Excel file.', 'err'); }
@@ -30172,7 +30411,7 @@ if (typeof HINDI_UI === "object") Object.assign(HINDI_UI, {"Full programme (cont
 "all":"सभी",
 "All Met for the rest of Standard {x}":"मानक {x} के बाकी सभी पूरे",
 "All facilities":"सभी स्वास्थ्य केंद्र",
-"All my facilities":"मेरे सभी स्वास्थ्य केंद्र",
+"All my facilities":"मेरे सभी स्वास्थ्य केंद्र","My block":"मेरा ब्लॉक","My CHC":"मेरा सीएचसी",
 "All types":"सभी प्रकार",
 "Any phase":"कोई भी चरण",
 "Any status":"कोई भी स्थिति",

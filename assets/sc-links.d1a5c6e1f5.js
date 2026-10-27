@@ -348,3 +348,22 @@ async function nfNudge(kind,code){
       if(h) info.insertAdjacentHTML('beforeend','<div class="nfl-drill">'+h+'</div>'); } }catch(e){ console.warn('[SC] drill links',e); }
     return r; };
 })();
+
+// ── CHC MOIC: their CHC dashboard ⇄ their block view, one tap, no new sign-in (27 Oct 2026) ──
+function nfBlockEntry(){ return ((typeof _nfLogin!=='undefined'&&_nfLogin.matches)||[]).find(function(a){ return a.kind==='district'&&/^Block view/.test(a.title||''); })||null; }
+function nfChcEntry(){ return ((typeof _nfLogin!=='undefined'&&_nfLogin.matches)||[]).find(function(a){ return a.kind==='staff'&&a.type==='chc'; })||null; }
+async function nfSwitchEntry(key){
+  try{ clearTimeout(_scSyncTimer); await scFlushSync(); }catch(e){}
+  try{ sessionStorage.setItem('nf_role_switch',key); }catch(e){ return; }
+  if(typeof nfCoverOn==='function') nfCoverOn();
+  location.reload();
+}
+function nfBlockChip(){ var b=nfBlockEntry(); if(!b||typeof _nd==='undefined'||!_nd||!_nd.cfg||_nd.cfg.id!=='chc') return '';
+  return '<button type="button" class="nfmo-chip" id="nf-blk-chip" onclick="nfSwitchEntry(\''+scJs(b.key)+'\')"><i class="ti ti-map-2"></i> '+scEsc(t('My block'))+' <small>'+scEsc(String(b.title||'').replace(/^Block view · /,''))+' ›</small></button>'; }
+function nfChcChip(){ var c=nfChcEntry(); if(!c) return '';
+  return '<button type="button" class="nfmo-chip" id="nf-chc-chip" onclick="nfSwitchEntry(\''+scJs(c.key)+'\')"><i class="ti ti-building-hospital"></i> '+scEsc(t('My CHC'))+' <small>'+scEsc(String(c.title||'').replace(/^[^·]*· /,''))+' ›</small></button>'; }
+(function(){ var hook=function(){ ['ndTodayHTML','nxFaHomeHTML'].forEach(function(fn){
+  var oT=window[fn]; if(typeof oT!=='function'||oT._blk) return;
+  window[fn]=function(){ var h=oT.apply(this,arguments); try{ if(h.indexOf('nf-blk-chip')<0){ var c=nfBlockChip(); if(c) h=c+h; } }catch(e){} return h; }; window[fn]._blk=1; }); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else setTimeout(hook,0);
+})();
