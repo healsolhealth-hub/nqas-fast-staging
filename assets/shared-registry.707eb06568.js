@@ -151,6 +151,7 @@ function rgHeadHTML(nodes) {
   var sub = hs ? 'Every facility we know, enrolled or not · HealSol' : blk ? 'Your block · view only' : ed ? 'Your district · you can add and correct facilities' : 'Your district · view only';
   return '<div class="nfo-top rg-top"><div><h1>Facilities</h1><small>' + sub + '</small></div>'
     + (ed ? '<div class="rg-acts"><button type="button" class="hs-btn" onclick="rgDownload()">' + (hs ? 'Download' : 'Download district sheet') + '</button><button type="button" class="hs-btn" onclick="rgImportPick()">' + (hs ? 'Import list' : 'Upload sheet') + '</button>'
+      + (hs ? '<button type="button" class="hs-btn" id="rg-apply" onclick="rgApplyTree()" title="Make the logins and links of the chosen district match its registry now (also runs on every save and every night)">Apply links &amp; logins</button>' : '')
       + '<button type="button" class="hs-btn" onclick="rgLogOpen()">' + (hs ? 'Registry changes' : 'Recent changes') + '</button>'
       + '<button type="button" class="hs-btn p" onclick="rgEdit(null)">+ Add facility</button></div>'
       : '<div class="rg-acts">' + (blk ? '<button type="button" class="hs-btn" onclick="rgDownload()">Download block sheet</button>' : '') + '<button type="button" class="hs-btn" onclick="rgLoad(true)">Refresh</button></div>') + '</div>'
@@ -522,6 +523,17 @@ function rgTreeLoginsHTML(n, nodes) {
   if (!n.code || n.t !== 'sc') return '';
   var L = (n.f && n.f.links) || {};
   return '<div class="rg-logins"><b>Who sees this Sub-Centre</b><span>' + (L.moMobile ? 'MO: ' + rgE(L.moName || 'Medical Officer') + ' (' + rgE(L.moMobile) + ')' : 'No MO yet — set the PHC and its MO in-charge') + '</span><span>' + (L.moicId ? 'Block view: ' + rgE(L.moicId) : 'No block view yet — set the block (CHC) and its MOIC') + '</span></div>';
+}
+// HealSol "Apply links & logins" (28 Oct 2026): run the tree for the district chosen on the left, without saving a record
+async function rgApplyTree() {
+  var n = rgNodes().filter(function (x) { return x.dk === _rg.dist && x.district; })[0];
+  if (!n) { scAlert('Pick a district on the left first (not the whole state).', 'Apply links & logins', 'ℹ️'); return; }
+  var ok = await scDialog({ title: 'Apply links & logins', icon: '🔗', okLabel: 'Apply', message: 'Make the block logins, MO logins and links of ' + n.district + ' match the registry now?\n\nThis also runs on every save and every night. New logins show their one-time password.' });
+  if (!ok) return;
+  var b = document.getElementById('rg-apply'); if (b) { b.disabled = true; b.textContent = 'Applying…'; }
+  var r = await rgTreeSync(n.state, n.district);
+  if (r) showToast(n.district + ': links and logins match the registry' + ((r.accounts || []).length ? ' · ' + r.accounts.length + ' new login' + (r.accounts.length === 1 ? '' : 's') : '') + '.', 'ok');
+  var b2 = document.getElementById('rg-apply'); if (b2) { b2.disabled = false; b2.textContent = 'Apply links & logins'; }
 }
 async function rgTreeSync(state, district) {
   if (!district) return null; var r = null;

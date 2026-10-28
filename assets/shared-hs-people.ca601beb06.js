@@ -1,0 +1,117 @@
+// ══ Settings tidy-up (28 Oct 2026; HealSol: Partner logos → Partners · People as tabs with counts · Quality Champions →
+//    Recognition) and Programme rules → Self sign-up (free baseline at once, per facility type; off = HealSol approves) ══
+var HSP_TABS = [['sup', 'Supervisors', 'ti-binoculars'], ['dist', 'District Admins', 'ti-map-2'], ['moic', 'MOIC & MO', 'ti-building-hospital'], ['hsa', 'HealSol Admins', 'ti-shield-lock']];
+function hspGroupOf(el) {
+  var id = el.id || '';
+  if (id === 'scd-dist-panel') return 'dist'; if (id === 'nf-plogins') return 'moic'; if (id === 'nf-sec-panel') return 'hsa';
+  if (id === 'nf-ho-card' || (el.querySelector && el.querySelector('#sc-sup-list'))) return 'sup';
+  return '';
+}
+function hspCount(g) {
+  var main = document.querySelector('#admin-app .admin-main'); if (!main) return 0; var n = 0;
+  [].forEach.call(main.children, function (el) { if (el.getAttribute('data-hsp') === g && el.id !== 'nf-ho-card') n += el.querySelectorAll('.scx-sup-row,.nfs-row').length; });
+  return n;
+}
+function hspRender() {
+  var main = document.querySelector('#admin-app .admin-main'); if (!main || typeof _hs === 'undefined') return;
+  if (!_hs.ptab2) _hs.ptab2 = 'sup';
+  var first = null;
+  [].forEach.call(main.children, function (el) { if (el.dataset.nfv !== 'setup' || el.id === 'hs-ppl') return; var g = hspGroupOf(el); if (g) { el.setAttribute('data-hsp', g); if (!first) first = el; } });
+  var head = document.getElementById('hs-ppl');
+  if (!head) { head = document.createElement('div'); head.id = 'hs-ppl'; head.dataset.nfv = 'setup'; head.className = 'hs-ppl'; }
+  head.setAttribute('data-hsg', 'people');
+  if (first && head.nextSibling !== first) main.insertBefore(head, first);
+  head.innerHTML = '<div class="hsp-tiles">' + HSP_TABS.map(function (t) { var n = hspCount(t[0]);
+    return '<button type="button" class="hsp-t' + (_hs.ptab2 === t[0] ? ' on' : '') + '" aria-pressed="' + (_hs.ptab2 === t[0]) + '" onclick="hspSet(\'' + t[0] + '\')"><i class="ti ' + t[2] + '"></i><b>' + n + '</b><span>' + hsE(t[1]) + '</span></button>'; }).join('') + '</div>';
+  document.body.setAttribute('data-hspt', _hs.ptab2);
+}
+function hspSet(t) { _hs.ptab2 = t; hspRender(); try { if (t === 'moic' && typeof nfPLoginsRender === 'function') nfPLoginsRender(); } catch (e) {} }
+// ── Recognition: "Quality Champions" tab in place of Partner logos ──
+function hspChampHost() {
+  var box = document.getElementById('nf-recog'); if (!box) return;
+  var tabs = box.querySelector('.nfr-tabs'); if (!tabs) return;
+  var lb = [].filter.call(tabs.querySelectorAll('button'), function (b) { return /nfrTab\('logos'\)/.test(b.getAttribute('onclick') || ''); })[0];
+  var nC = 0; try { nC = Object.keys((_scq && _scq.champions) || {}).length; } catch (e) {}
+  var cb = '<button type="button" role="tab" class="' + (_nfR.tab === 'champion' ? 'on' : '') + '" onclick="nfrTab(\'champion\')">🤝 Quality Champions <em id="hsp-nchamp">' + (nC || '') + '</em></button>';
+  if (lb) lb.outerHTML = cb;
+  if (_nfR.tab !== 'champion') return;
+  var lad = box.querySelector('.nfr-ladder'); if (!lad) return;
+  while (lad.nextSibling) lad.parentNode.removeChild(lad.nextSibling);
+  var host = document.createElement('div'); host.id = 'hsp-champ'; host.className = 'hsp-champ'; lad.parentNode.appendChild(host);
+  var el = document.getElementById('scq-champ-panel'); if (!el && typeof scqEnsureAdminPanel === 'function') el = scqEnsureAdminPanel();
+  if (el) { el.removeAttribute('data-nfv'); el.removeAttribute('data-hsg'); host.appendChild(el); }
+  try { if (typeof scqRenderChampionAdmin === 'function') scqRenderChampionAdmin(); } catch (e) {}
+  var n = document.querySelectorAll('#scq-champ-list .scx-sup-row').length, em = document.getElementById('hsp-nchamp'); if (em && n) em.textContent = n;
+}
+(function () {
+  if (typeof nfrRender !== 'function') return;
+  var o = nfrRender;
+  nfrRender = async function () {
+    if (_nfR.tab === 'logos' && _nfOv.view === 'recog') _nfR.tab = 'champion';
+    var r = await o.apply(this, arguments);
+    try { var sm = document.querySelector('#nf-recog .nfo-top small'); if (sm) sm.textContent = 'HealSol only · Quality Champions, Quality Leader and Quality Pioneer titles · partner logos are under Partners'; hspChampHost(); } catch (e) { console.warn('[hsp] recog', e); }
+    try { if (_nfOv.view === 'stdon' && typeof _nfD !== 'undefined' && _nfD.tab === 'logos' && typeof nfDAdminRender === 'function') nfDAdminRender(); } catch (e) {}
+    return r;
+  };
+})();
+// ── Partners: a "Partner logos" tab next to Portfolios / Logins / Public page ──
+(function () {
+  if (typeof nfDAdminRender !== 'function') return;
+  var o = nfDAdminRender;
+  nfDAdminRender = async function () {
+    var r = await o.apply(this, arguments);
+    try {
+      var box = document.getElementById('nf-stdon'), tabs = box && box.querySelector('.nfr-tabs'); if (!tabs) return r;
+      if (!_nfImp.logos) { try { _nfImp.logos = await fbGet('shared/sc_impact_logos') || {}; } catch (e) { _nfImp.logos = {}; } }
+      var L = _nfImp.logos || {}, nLive = Object.keys(L).filter(function (k) { return nfrLive(L[k]); }).length, on = _nfD.tab === 'logos';
+      if (!tabs.querySelector('[data-hsp-logos]')) tabs.insertAdjacentHTML('beforeend', '<button type="button" role="tab" data-hsp-logos="1" class="' + (on ? 'on' : '') + '" onclick="_nfD.tab=\'logos\';nfDAdminRender()">🤝 Partner logos <em>' + nLive + '</em></button>');
+      if (on) { [].forEach.call(tabs.querySelectorAll('button'), function (b) { b.classList.toggle('on', !!b.getAttribute('data-hsp-logos')); });
+        while (tabs.nextSibling) tabs.parentNode.removeChild(tabs.nextSibling);
+        var d = document.createElement('div'); d.id = 'hsp-logos'; d.innerHTML = nfrLogosHTML(); tabs.parentNode.appendChild(d); }
+      var sm = box.querySelector('.nfo-top small'); if (sm) sm.textContent = 'HealSol only · view-only dashboards for State Admins and Donors / Partners, the public impact page, and partner logos on impact cards';
+      var h1 = box.querySelector('.nfo-top h1'); if (h1) h1.textContent = 'Partners';
+    } catch (e) { console.warn('[hsp] partners', e); }
+    return r;
+  };
+})();
+// ── Programme rules → Self sign-up ──
+var _hspSU = null;
+async function hspSignupRender(load) {
+  var main = document.querySelector('#admin-app .admin-main'); if (!main) return;
+  var el = document.getElementById('hs-signup');
+  if (!el) { el = document.createElement('div'); el.id = 'hs-signup'; el.dataset.nfv = 'setup'; el.className = 'nfo-card hs-signup'; var r = document.getElementById('hs-rules'); if (r && r.parentNode === main) r.insertAdjacentElement('afterend', el); else main.appendChild(el); }
+  el.setAttribute('data-hsg', 'rules');
+  if (load || !_hspSU) { try { _hspSU = (await fbGet('shared/sc_signup_config')) || {}; } catch (e) { _hspSU = _hspSU || {}; } }
+  var T = [['sc', 'Sub-Centre'], ['uphc', 'UPHC'], ['phc', 'PHC'], ['chc', 'CHC']];
+  el.innerHTML = '<b><i class="ti ti-user-plus"></i> Self sign-up (Join NQAS FAST)</b><p>Off: every sign-up from the login screen waits for your approval in Business → Enquiries &amp; sign-ups. On: that type is enrolled at once and its free baseline starts; you still see it in the list as approved.</p>'
+    + '<div class="hsp-sw">' + T.map(function (t) { var on = _hspSU[t[0]] === true;
+      return '<label class="hsp-swr"><span><b>' + t[1] + '</b><small>' + (on ? 'Free baseline at once' : 'Needs your approval') + '</small></span><span class="hsp-tg"><input type="checkbox" id="hsp-su-' + t[0] + '"' + (on ? ' checked' : '') + ' onchange="hspSignupSet(\'' + t[0] + '\',this.checked)"> Free baseline at once</span></label>'; }).join('') + '</div>';
+}
+async function hspSignupSet(t, on) {
+  var prev = _hspSU || {}, nx = Object.assign({}, prev); nx[t] = !!on;
+  var ok = await fbSet('shared/sc_signup_config', nx);
+  if (ok === false) { showToast('Could not save — check the connection.', 'err'); hspSignupRender(); return; }
+  _hspSU = nx; showToast((t === 'sc' ? 'Sub-Centre' : t.toUpperCase()) + ': ' + (on ? 'free baseline starts at once on sign-up.' : 'sign-ups wait for your approval.'), 'ok'); hspSignupRender();
+}
+// wiring: Settings view
+(function () {
+  if (typeof nfAdminApply !== 'function') return;
+  var o = nfAdminApply;
+  nfAdminApply = function () {
+    var r = o.apply(this, arguments);
+    try { if (typeof hsOn === 'function' && hsOn() && _nfOv.view === 'setup') { if (_hs.stab === 'people') hspRender(); if (_hs.stab === 'rules') hspSignupRender(); } else document.body.removeAttribute('data-hspt'); } catch (e) { console.warn('[hsp]', e); }
+    return r;
+  };
+})();
+// keep the new cards in their tab when Settings re-tags its panels
+(function () {
+  if (typeof hsSetupGroup !== 'function') return;
+  var o = hsSetupGroup;
+  hsSetupGroup = function (el) { if (el && el.id === 'hs-signup') return 'rules'; if (el && el.id === 'hs-ppl') return 'people'; return o.apply(this, arguments); };
+})();
+(function () {
+  var o = hspRender;
+  hspRender = function () { var r = o.apply(this, arguments);
+    try { if (!_hs.plDone && typeof nfPLoginsRender === 'function') { _hs.plDone = 1; Promise.resolve(nfPLoginsRender()).then(function () { try { if (_nfOv.view === 'setup' && _hs.stab === 'people') o(); } catch (e) {} }); } } catch (e) {}
+    return r; };
+})();

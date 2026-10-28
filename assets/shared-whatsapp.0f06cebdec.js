@@ -44,7 +44,7 @@ function nfHelpCardHTML(){
 }
 function nfSupportApply(){
   // login screen link
-  try{ var lead=document.querySelector('.nf-l-body button[onclick="phcOpenLeadModal()"]'), ex=document.getElementById('nf-l-wa');
+  try{ var lead=document.getElementById('jn-join-s')||document.querySelector('.nf-l-body button[onclick="phcOpenLeadModal()"]'), ex=document.getElementById('nf-l-wa');   // 28 Oct: under "Join NQAS FAST"
     if(lead&&!ex&&nfSupportOn()){ var b=document.createElement('button'); b.type='button'; b.id='nf-l-wa'; b.className='nf-l-plain nf-l-wa'; b.onclick=function(){ nfOpenSupport('login'); };
       b.innerHTML=NF_WA_ICON+' '+(_appLang==='hi'?'लॉग इन में समस्या? WhatsApp करें':'Trouble logging in? WhatsApp us'); lead.parentNode.insertBefore(b,lead.nextSibling); }
     if(ex&&!nfSupportOn()) ex.remove();

@@ -1554,6 +1554,8 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 <script src="assets/shared-secure.96c5e9e074.js" onerror="nfAssetFail(this)"></script>
 
 <script id="nf-registration" src="assets/shared-registration.6833f0a40c.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-join-css" rel="stylesheet" href="assets/shared-join.096521446f.css" onerror="nfAssetFail(this)">
+<script id="nf-join" src="assets/shared-join.6ad5ff74c1.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-payments" src="assets/shared-payments.12fb4e5a71.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-rcpt-css">
 .nf-rcpt{font-size:13px;color:#0F172A;max-width:520px;margin:0 auto;}
@@ -1594,7 +1596,7 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 .nf-supset input{border:1.5px solid var(--br,#E2E8F0);border-radius:10px;padding:9px 10px;font:inherit;font-size:13px;}
 .nf-supset button{border:0;border-radius:10px;background:var(--teal,#0F5C52);color:#fff;font:inherit;font-size:13px;font-weight:700;padding:10px 16px;cursor:pointer;}
 </style>
-<script id="nf-wa" src="assets/shared-whatsapp.a6f1e4452b.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-wa" src="assets/shared-whatsapp.0f06cebdec.js" onerror="nfAssetFail(this)"></script>
 
 
 
@@ -2012,7 +2014,58 @@ body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none
 <link id="nf-sc-content-css" rel="stylesheet" href="assets/shared-sc-content.4dd2befa79.css" onerror="nfAssetFail(this)">
 <script id="nf-sc-content" src="assets/shared-sc-content.057fe71840.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-registry-css" rel="stylesheet" href="assets/shared-registry.0152bb4061.css" onerror="nfAssetFail(this)">
-<script id="nf-registry" src="assets/shared-registry.8b381aa894.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-registry" src="assets/shared-registry.707eb06568.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-enq-css">/* ══ Business → Enquiries & sign-ups (28 Oct 2026) ══ */
+.eq{margin-bottom:16px;}
+.eq-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px;}
+.eq-head b{font-size:16px;font-weight:800;display:block;} .eq-head small{font-size:12.5px;color:var(--t2);}
+.eq-hr{display:flex;gap:8px;align-items:center;} .eq-hr select{min-height:38px;border-radius:20px;border:1.5px solid var(--br);background:#fff;font:inherit;font-size:13px;padding:0 12px;}
+.eq-kinds,.eq-types{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;}
+.eq-kinds button{min-height:38px;border-radius:20px;border:1.5px solid var(--br);background:#fff;color:var(--t1);font:inherit;font-size:13px;font-weight:700;padding:0 14px;cursor:pointer;}
+.eq-kinds button.on{background:var(--teal);border-color:var(--teal);color:#fff;} .eq-kinds em,.eq-types em{font-style:normal;opacity:.85;}
+.eq-types > span:first-child{font-size:12px;font-weight:800;color:var(--t2);margin-right:4px;}
+.eq-types button{min-height:34px;border-radius:10px;border:1.5px solid var(--br);background:#fff;color:var(--t1);font:inherit;font-size:12.5px;font-weight:700;padding:0 12px;cursor:pointer;}
+.eq-types button.on{background:var(--teal-dk);border-color:var(--teal-dk);color:#fff;}
+.eq-tn{font-size:12px;color:var(--t2);margin-left:6px;}
+.eq-list{border:1px solid var(--br);border-radius:14px;overflow:hidden;}
+.eq-r{display:grid;grid-template-columns:140px minmax(0,1fr) 170px minmax(0,300px);gap:12px;padding:12px 14px;border-top:1px solid var(--br);align-items:center;background:#fff;}
+.eq-r:first-child{border-top:0;}
+@media(max-width:900px){ .eq-r{grid-template-columns:1fr;gap:6px;} }
+.eq-c1,.eq-c2{display:flex;flex-direction:column;gap:3px;min-width:0;} .eq-c1 small,.eq-c2 small{font-size:12px;color:var(--t2);}
+.eq-c2 b{font-size:14px;} .eq-c2 b i{font-style:normal;font-weight:600;color:var(--t2);}
+.eq-c2 .eq-g{color:#15803D;font-weight:700;} .eq-c2 .eq-a{color:#B45309;font-weight:700;} .eq-c2 .eq-b{color:var(--t1);font-weight:700;} .eq-c2 .eq-m{font-style:italic;}
+.eq-kind{font-size:11.5px;font-weight:800;border-radius:8px;padding:3px 8px;align-self:flex-start;}
+.eq-kind.t{background:var(--teal-lt);color:var(--teal-dk);} .eq-kind.q{background:var(--qi-lt,#EEEBFB);color:#3B2F9A;} .eq-kind.o{background:var(--org-lt);color:#92400E;}
+.eq-st{font-size:12.5px;font-weight:800;} .eq-st.a{color:#B45309;} .eq-st.b{color:#1D4ED8;} .eq-st.g{color:#15803D;} .eq-st.n{color:var(--t2);}
+.eq-c4{display:flex;flex-wrap:wrap;gap:6px;}
+.eq-btn{min-height:36px;border-radius:10px;border:1.5px solid var(--br);background:#fff;color:var(--t1);font:inherit;font-size:12.5px;font-weight:700;padding:0 10px;cursor:pointer;}
+.eq-btn.p{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:800;} .eq-btn.wa{border-color:#16A34A;color:#15803D;} .eq-btn.x{border:0;background:transparent;color:#B91C1C;}
+.eq-btn:disabled{opacity:.6;}
+.eq-empty{padding:18px;text-align:center;color:var(--t2);font-size:13px;}
+.eq-foot{font-size:12px;color:var(--t2);margin-top:8px;} .eq-foot .hs-link{font-size:12px;padding:0;}
+</style>
+<script id="nf-enq" src="assets/shared-enquiries.b52b45dc3b.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-hsp-css">/* ══ Settings tidy-up (28 Oct 2026) ══ */
+body.hs-admin:not([data-hsst="people"]) .admin-main > #hs-ppl{display:none!important;}
+body.hs-admin.nfv-setup[data-hsst="people"][data-hspt="sup"] .admin-main > [data-hsp]:not([data-hsp="sup"]),
+body.hs-admin.nfv-setup[data-hsst="people"][data-hspt="dist"] .admin-main > [data-hsp]:not([data-hsp="dist"]),
+body.hs-admin.nfv-setup[data-hsst="people"][data-hspt="moic"] .admin-main > [data-hsp]:not([data-hsp="moic"]),
+body.hs-admin.nfv-setup[data-hsst="people"][data-hspt="hsa"] .admin-main > [data-hsp]:not([data-hsp="hsa"]){display:none!important;}
+body.hs-admin.nfv-setup[data-hsst="people"] .admin-main > [data-nfv="setup"][data-hsg="people"]:not([data-hsp]):not(#hs-ppl){display:none!important;}
+.hs-ppl{margin:0 0 14px;}
+.hsp-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.hsp-t{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--br);background:var(--bgc,#fff);font:inherit;color:var(--t1);cursor:pointer;text-align:left;}
+.hsp-t i{font-size:18px;color:var(--teal);} .hsp-t b{font-size:22px;font-weight:800;line-height:1.1;} .hsp-t span{font-size:12.5px;color:var(--t2);font-weight:600;}
+.hsp-t.on{border:2px solid var(--teal);background:var(--teal-lt);}
+.hsp-champ{margin-top:12px;}
+.hs-signup p{font-size:12.5px;color:var(--t2);line-height:1.5;margin:6px 0 10px;}
+.hsp-sw{display:flex;flex-direction:column;}
+.hsp-swr{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--br);cursor:pointer;flex-wrap:wrap;}
+.hsp-swr > span:first-child{display:flex;flex-direction:column;} .hsp-swr b{font-size:14px;} .hsp-swr small{font-size:12px;color:var(--t2);}
+.hsp-tg{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--t2);}
+.hsp-tg input{width:22px;height:22px;accent-color:var(--teal);}
+</style>
+<script id="nf-hsp" src="assets/shared-hs-people.ca601beb06.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-day-score">// ══════════════════════════════════════════════════════════════
 // Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".
 // The score of what has been answered on that card — Met 2, Partial 1, Not met 0 — not the facility's readiness.
