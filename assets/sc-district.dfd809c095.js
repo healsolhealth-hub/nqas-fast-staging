@@ -196,7 +196,7 @@ async function scDistrictLogin(){
   var oDash=scRenderMasterDashboard;
   scRenderMasterDashboard=function(){ var r=oDash.apply(this,arguments); try{ scRenderDistrictAdmin(); }catch(e){} return r; };
   var oActor=scActor;
-  scActor=function(){ if(scIsDistrict()) return {name:_scSup.name||_scSup.id,role:'District Admin',id:_scSup.id}; return oActor.apply(this,arguments); };
+  scActor=function(){ if(scIsDistrict()) return {name:_scSup.name||_scSup.id,role:_scSup.scope==='block'?'MOIC':'District Admin',id:_scSup.id}; return oActor.apply(this,arguments); };
   // read-only: no writes, no verification, no peer-review management
   var oWrite=scCanWriteFacility; scCanWriteFacility=function(){ if(scIsDistrict()) return false; return oWrite.apply(this,arguments); };
   var oVer=scAdmCanVerify; scAdmCanVerify=function(){ if(scIsDistrict()) return false; return oVer.apply(this,arguments); };

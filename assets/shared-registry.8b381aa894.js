@@ -170,6 +170,10 @@ function rgRender() {
   if (_rg.tab === 'map') rgMapDraw(nodes);
 }
 function rgDistList(nodes) {
+  if (!rgHS()) { var D = {}; nodes.forEach(function (n) { if (!n.district || n.closed) return; var d = D[n.dk] = D[n.dk] || { name: n.district, n: 0, b: {} }; d.n++; if (n.blk) d.b[n.blk] = (d.b[n.blk] || 0) + 1; });
+    return '<nav class="rg-dl" aria-label="District and blocks">' + Object.keys(D).sort().map(function (k) { var d = D[k];
+      return '<div class="rg-cap">' + rgE(d.name) + '</div><button type="button" class="' + (_rg.dist === k && !_rg.block ? 'on' : '') + '" onclick="rgSet(\'block\',\'\');rgSet(\'dist\',\'' + rgJ(k) + '\')"><span>Whole district</span><em>' + d.n + '</em></button>'
+        + Object.keys(d.b).sort().map(function (b) { return '<button type="button" class="' + (_rg.dist === k && rgLow(_rg.block) === rgLow(b) ? 'on' : '') + '" onclick="_rg.dist=\'' + rgJ(k) + '\';rgSet(\'block\',\'' + rgJ(b) + '\')"><span>' + rgE(b) + ' block</span><em>' + d.b[b] + '</em></button>'; }).join(''); }).join('') + '</nav>'; }
   var S = {}; nodes.forEach(function (n) { if (!n.district) return; var st = n.state || 'Other'; S[st] = S[st] || {}; S[st][n.dk] = S[st][n.dk] || { name: n.district, n: 0 }; S[st][n.dk].n++; });
   return '<nav class="rg-dl" aria-label="States and districts">' + Object.keys(S).sort().map(function (st) {
     var tot = Object.keys(S[st]).reduce(function (a, k) { return a + S[st][k].n; }, 0), sk = 'S:' + rgLow(st);
@@ -217,7 +221,7 @@ function rgStateTree(nodes) {
     var o = kids ? open(k) : false, at = rgAttn(n, byNin);
     rows.push('<tr class="rg-r rg-tf' + (_rg.sel === n.id ? ' on' : '') + '" onclick="rgPick(\'' + rgJ(n.id) + '\')"><td style="padding-left:' + (10 + lvl * 22) + 'px">'
       + (kids ? '<button type="button" class="rg-car sm" aria-expanded="' + o + '" aria-label="' + (o ? 'Close' : 'Open') + ' ' + rgE(n.name) + '" onclick="event.stopPropagation();rgOpenT(\'' + rgJ(k) + '\')"><span aria-hidden="true">' + (o ? '▾' : '▸') + '</span></button>' : '<span class="rg-car-sp"></span>')
-      + '<span class="rg-ty ' + n.t + '">' + RG_LABEL[n.t] + '</span> <button type="button" class="rg-rb" onclick="event.stopPropagation();rgPick(\'' + rgJ(n.id) + '\')">' + rgE(n.name) + '</button> <small class="rg-dim">' + rgE(n.nin || n.code || '') + '</small></td>'
+      + '<span class="rg-ty ' + n.t + '">' + RG_LABEL[n.t] + '</span> <button type="button" class="rg-rb" onclick="event.stopPropagation();rgPick(\'' + rgJ(n.id) + '\')">' + rgE(n.name) + '</button> <small class="rg-dim">' + rgE(n.nin || n.code || '') + '</small>' + rgHeadTag(n) + '</td>'
       + '<td class="rg-dim">' + (kids ? kids : '') + '</td><td>' + rgStatusTxt(n) + at.map(function (x) { return ' <span class="rg-tag a">' + rgE(x) + '</span>'; }).join('') + '</td></tr>'); return o; };
   var sc0 = cnt(all), dks = Object.keys(D).sort(function (a, b) { return D[a].name.localeCompare(D[b].name); });
   var stName = (all[0] || nodes.find(function (n) { return rgLow(n.state) === key; }) || {}).state || key;
@@ -255,7 +259,7 @@ function rgRegistryHTML(nodes) {
   var tile = function (k, l, sub, warn) { return '<button type="button" class="ce-tile' + (warn && cnt[k] ? ' warn2' : '') + (_rg.tile === k ? ' on' : '') + '" aria-pressed="' + (_rg.tile === k) + '" onclick="rgSet(\'tile\',\'' + k + '\')"><span>' + l + '</span><b>' + rgFmtN(cnt[k]) + '</b><small>' + sub + '</small></button>'; };
   var blocks = {}; nodes.forEach(function (n) { if (rgIn(n) && n.blk) blocks[n.blk] = 1; });
   var tree = st && !_rg.flat, T = tree ? rgStateTree(nodes) : null;
-  var h = '<div class="ce-tiles">' + tile('all', 'In the registry', 'in ' + rgE(dn)) + tile('en', 'Enrolled', cnt.all ? Math.round(100 * cnt.en / cnt.all) + '% of the registry' : '')
+  var h = rgSuggestHTML() + '<div class="ce-tiles">' + tile('all', 'In the registry', 'in ' + rgE(dn)) + tile('en', 'Enrolled', cnt.all ? Math.round(100 * cnt.en / cnt.all) + '% of the registry' : '')
     + tile('nogps', 'No location', 'not on the map yet', 1) + tile('nopop', 'No population', 'left out of coverage', 1)
     + tile('noparent', 'SC with no PHC / CHC', 'link them to their parents', 1) + tile('unver', 'Not verified', 'details from the facility itself', 1) + '</div>'
     + (_rg.tile === 'unver' && list.length ? '<div class="rg-verall"><span>' + rgFmtN(list.length) + ' facilit' + (list.length === 1 ? 'y' : 'ies') + ' gave these details themselves (enrolment, their in-charge, a link). Check name, NIN, block, parents, location and population, then verify.</span><button type="button" class="hs-btn p" onclick="rgVerifyMany()">Verify all ' + rgFmtN(list.length) + ' shown</button></div>' : '')
@@ -276,9 +280,11 @@ function rgRegistryHTML(nodes) {
 }
 function rgRow(n, depth) {
   var gps = n.lat != null ? (n.gsrc === 'in-charge' ? 'Set by in-charge' : 'Set') : '<span class="rg-tag a">No location</span>';
-  return '<tr class="rg-r' + (_rg.sel === n.id ? ' on' : '') + '" onclick="rgPick(\'' + rgJ(n.id) + '\')"><td style="padding-left:' + (14 + depth * 20) + 'px"><span class="rg-ty ' + n.t + '">' + RG_LABEL[n.t] + '</span> <button type="button" class="rg-rb" onclick="event.stopPropagation();rgPick(\'' + rgJ(n.id) + '\')">' + rgE(n.name) + '</button></td>'
+  return '<tr class="rg-r' + (_rg.sel === n.id ? ' on' : '') + '" onclick="rgPick(\'' + rgJ(n.id) + '\')"><td style="padding-left:' + (14 + depth * 20) + 'px"><span class="rg-ty ' + n.t + '">' + RG_LABEL[n.t] + '</span> <button type="button" class="rg-rb" onclick="event.stopPropagation();rgPick(\'' + rgJ(n.id) + '\')">' + rgE(n.name) + '</button>' + rgHeadTag(n) + '</td>'
     + '<td class="rg-dim">' + rgE(n.nin || '—') + '</td><td>' + rgStatusTxt(n) + (n.closed ? ' <span class="rg-tag r">' + (n.closed === 'merged' ? 'merged' : 'closed') + '</span>' : '') + (n.unver ? ' <span class="rg-tag a">not verified</span>' : n.ver ? ' <span class="rg-tag g">verified</span>' : '') + (n.acc ? ' <span class="rg-tag g">NQAS ' + (n.acc === true ? '' : n.acc) + '</span>' : '') + '</td><td>' + gps + '</td><td>' + (n.pop ? rgFmtN(n.pop) : '<span class="rg-tag a">Missing</span>') + '</td></tr>';
 }
+function rgHeadTag(n) { var h = n.rec && n.rec.head, ic = n.info && n.info.inCharge; if (n.t !== 'chc' && n.t !== 'phc') return ''; var nm = (h && (h.name || h.mobile)) || ic;
+  return (n.rec && n.rec.bhead ? ' <span class="rg-tag g">Block PHC</span>' : '') + (nm ? ' <small class="rg-dim">' + (n.t === 'chc' ? 'MOIC ' : 'MO ') + rgE(nm) + '</small>' : ' <span class="rg-tag a">no ' + (n.t === 'chc' ? 'MOIC' : 'MO') + '</span>'); }
 function rgRowsHTML(list, nodes) {
   if (!list.length) return '';
   var byName = function (a, b) { return a.name.localeCompare(b.name); };
@@ -303,7 +309,8 @@ function rgRowsHTML(list, nodes) {
 }
 function rgPick(id) { if (_rg.R && _rg.R.NEW && id !== 'NEW') delete _rg.R.NEW; _rg.draft = null; _rg.sel = _rg.sel === id ? null : id; rgRender(); if (_rg.sel && (window.innerWidth || 1280) < 1180) { var s = document.querySelector('.rg-side'); if (s && s.scrollIntoView) s.scrollIntoView({ block: 'start' }); } }
 // form values in the panel survive a redraw (Type change) — kept per record until Save / close
-function rgFormVals() { var o = {}; ['t', 'nin', 'name', 'state', 'district', 'block', 'phc', 'chc', 'lat', 'lng', 'pop', 'acc', 'closed'].forEach(function (k) { var e = document.getElementById('rg-f-' + k); if (e) o[k] = e.value; });
+function rgFormVals() { var o = {}; ['t', 'nin', 'name', 'state', 'district', 'block', 'phc', 'chc', 'lat', 'lng', 'pop', 'acc', 'closed', 'hname', 'hmob'].forEach(function (k) { var e = document.getElementById('rg-f-' + k); if (e) o[k] = e.value; });
+  var bh = document.getElementById('rg-f-bhead'); if (bh) o.bhead = bh.checked;
   var kids = {}; document.querySelectorAll('.rg-kids input[type=checkbox]').forEach(function (c) { kids[c.value + '|' + c.getAttribute('data-k')] = c.checked; }); o.kids = kids; return o; }
 function rgTypeChange(id) { var v = rgFormVals(); _rg.draft = { id: id, v: v }; rgRender(); }
 function rgKidsFilter(box, q) { q = rgLow(q); var el = document.getElementById(box); if (!el) return; el.querySelectorAll('label[data-n]').forEach(function (l) { l.style.display = !q || l.getAttribute('data-n').indexOf(q) >= 0 ? '' : 'none'; }); }
@@ -345,8 +352,8 @@ function rgSideHTML(n, nodes) {
   var val = function (k, dv) { return d && k in d ? d[k] : dv; };
   var sameD = nodes.filter(function (x) { return x.dk === n.dk; });
   var opt = function (v, l, cur) { return '<option value="' + rgE(v) + '"' + (String(cur || '') === String(v) ? ' selected' : '') + '>' + rgE(l) + '</option>'; };
-  var parents = function (pt, cur) { var L = sameD.filter(function (x) { return x.t === pt && x.nin && x.id !== n.id; }).sort(function (a, b) { return a.name.localeCompare(b.name); });
-    return opt('', '— none —', cur) + L.map(function (x) { return opt(x.nin, x.name + ' · ' + x.nin, cur); }).join('') + (cur && !L.some(function (x) { return x.nin === cur; }) ? opt(cur, 'NIN ' + cur + ' (not in the registry)', cur) : ''); };
+  var parents = function (pt, cur) { var L = sameD.filter(function (x) { return x.nin && x.id !== n.id && (x.t === pt || (pt === 'chc' && x.t === 'phc' && x.rec && x.rec.bhead)); }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+    return opt('', '— none —', cur) + L.map(function (x) { return opt(x.nin, x.name + (pt === 'chc' && x.t === 'phc' ? ' (Block PHC)' : '') + (x.blk ? ' · ' + x.blk + ' block' : '') + ' · ' + x.nin, cur); }).join('') + (cur && !L.some(function (x) { return x.nin === cur; }) ? opt(cur, 'NIN ' + cur + ' (not in the registry)', cur) : ''); };
   var noNin = function (pt) { var L = sameD.filter(function (x) { return x.t === pt && !x.nin && x.id !== n.id; }); if (!L.length) return '';
     return '<small class="rg-dim rg-nonin">' + rgE(L.map(function (x) { return x.name; }).join(', ')) + (L.length === 1 ? ' has' : ' have') + ' no NIN, so ' + (L.length === 1 ? 'it is' : 'they are') + ' not in this list. Links use the NIN: open ' + (L.length === 1 ? 'it' : 'each') + ', add the NIN and Save, then come back here.</small>'; };
   var ro = !ed, lock = { state: de, district: de, nin: de && !!n.code };
@@ -364,7 +371,9 @@ function rgSideHTML(n, nodes) {
     + '<div class="rg-2">' + inp('state', 'State', n.state) + inp('district', 'District', n.district) + '</div>'
     + inp('block', t === 'uphc' ? 'City / ward' : 'Block', rec.block || n.block || '')
     + (t === 'sc' ? '<label>Parent PHC<select id="rg-f-phc"' + (ro ? ' disabled' : '') + '>' + parents('phc', val('phc', n.phc)) + '</select></label>' + (hs ? noNin('phc') : '') : '')
-    + (t === 'sc' || t === 'phc' ? '<label>Parent CHC (block)<select id="rg-f-chc"' + (ro ? ' disabled' : '') + '>' + parents('chc', val('chc', n.chc)) + '</select></label>' + (hs ? noNin('chc') : '') : '')
+    + (t === 'sc' || (t === 'phc' && !val('bhead', rec.bhead)) ? '<label>' + (t === 'sc' ? 'Block (CHC or Block PHC)' : 'Under block (CHC or Block PHC)') + '<select id="rg-f-chc"' + (ro ? ' disabled' : '') + '>' + parents('chc', val('chc', n.chc)) + '</select>' + (t === 'sc' ? '<small class="rg-dim">Leave it empty when the PHC is set — the block comes from the PHC.</small>' : '') + '</label>' + (hs ? noNin('chc') : '') : '')
+    + (t === 'phc' ? '<label class="rg-chk"><input type="checkbox" id="rg-f-bhead"' + (val('bhead', rec.bhead) ? ' checked' : '') + (ro ? ' disabled' : '') + ' onchange="rgTypeChange(\'' + I + '\')"> This PHC heads its block (Block PHC)</label>' : '')
+    + (t === 'chc' || t === 'phc' ? rgHeadFields(n, t, val, ro) : '')
     + (ed && t === 'phc' ? kids('sc-phc') : '')
     + (ed && t === 'chc' ? kids('phc-chc') + (hasNin ? rgKidsHTML(n, nodes, 'sc-chc', d && { nin: d.nin, kids: d.kids }) : '') : '')
     + '<div class="rg-2">' + inp('lat', 'Latitude', n.rlat, 'inputmode="decimal" placeholder="e.g. 25.45210"') + inp('lng', 'Longitude', n.rlng, 'inputmode="decimal" placeholder="e.g. 78.56120"') + '</div>'
@@ -374,7 +383,8 @@ function rgSideHTML(n, nodes) {
     + '</div>'
     + (n.unver ? '<div class="rg-warn rg-verbox"><b>Not verified</b> — these details came from the facility itself (' + (n.code ? 'enrolment and its in-charge' : 'a Settings link') + ').' + (ed ? ' Check them, correct anything wrong, then <button type="button" class="hs-link" onclick="rgSave(\'' + I + '\',true)">Save and verify</button>.' : '') + '</div>'
       : n.ver ? '<small class="rg-dim">Verified by ' + rgE(n.ver.by || '') + ' on ' + rgE(String(n.ver.at || '').slice(0, 10)) + '</small>' : '')
-    + rgLoginHTML(n, nodes)
+    + rgTreeLoginsHTML(n, nodes)
+    + (hs && !n.code && n.rid && n.rid !== 'NEW' ? '<div class="rg-enrol"><button type="button" class="hs-btn" onclick="rgEnrol(\'' + I + '\')">Enrol in NQAS FAST</button><small class="rg-dim">Opens the enrolment with this facility\'s details; it stays this record.</small></div>' : '')
     + (ed ? '<div class="rg-sbtn"><button type="button" class="hs-btn p" id="rg-save" onclick="rgSave(\'' + I + '\')">Save</button>' + (hs && n.rid && n.rid !== 'NEW' && !n.code ? '<button type="button" class="hs-btn" onclick="rgDelete(\'' + I + '\')">Delete</button>' : '') + '</div>'
       + (de ? '<small class="rg-dim">Saved straight away and logged. ' + (n.code && t === 'sc' ? 'A new PHC / CHC for this enrolled Sub-Centre goes to HealSol, who updates the MO / MOIC logins.' : 'A facility is never deleted — mark it Closed or Merged.') + '</small>' : '')
       + '<small class="rg-dim">' + (n.rid && n.rid !== 'NEW' ? 'In the registry' + (rec.src ? ' · ' + rgE(rec.src === 'import' ? 'imported' : rec.src === 'link' ? 'from a Settings link' : 'added by hand') : '') + (rec.at ? ' · ' + rgE(String(rec.at).slice(0, 10)) : '') : 'Not in the registry yet — Save adds it') + '</small>'
@@ -409,6 +419,10 @@ async function rgSave(id, verify) {
   if (acc !== null && (isNaN(acc) || acc < 2000 || acc > 2100)) { showToast('NQAS accredited: the year, like 2024 (or leave it empty).', 'err'); return; }
   if (rgDistEd() && !rgMyArea(rec.state, rec.district)) { showToast('You can add and change facilities of your own district only.', 'err'); return; }
   rec.acc = acc != null ? Math.round(acc) : null; rec.closed = !n.code && (v.closed === 'closed' || v.closed === 'merged') ? v.closed : null;
+  var hm = String(v.hmob || '').replace(/\D/g, '').replace(/^(91|0)(?=\d{10}$)/, '');
+  if ((rec.t === 'chc' || rec.t === 'phc') && (hm || String(v.hname || '').trim())) { if (!/^[6-9]\d{9}$/.test(hm)) { showToast((rec.t === 'chc' ? 'MOIC' : 'MO in-charge') + ': enter a 10-digit mobile number.', 'err'); return; } rec.head = { name: String(v.hname || '').trim().slice(0, 80) || (rec.t === 'chc' ? 'MOIC' : 'Medical Officer'), mobile: hm }; }
+  else if (rec.t === 'chc' || rec.t === 'phc') rec.head = null;
+  rec.bhead = rec.t === 'phc' && v.bhead ? true : null; if (rec.bhead) rec.chc = '';
   if ((lat == null) !== (lng == null) || lat !== null && (isNaN(lat) || lat < 6 || lat > 38) || lng !== null && (isNaN(lng) || lng < 68 || lng > 98)) { showToast('Enter both latitude (6–38) and longitude (68–98), or leave both empty.', 'err'); return; }
   if (pop !== null && (isNaN(pop) || pop < 1 || pop > 10000000)) { showToast('Population: a whole number from 1 to 1,00,00,000.', 'err'); return; }
   if (rec.nin && nodes.some(function (x) { return x.id !== n.id && x.nin === rec.nin; })) { showToast('NIN ' + rec.nin + ' already belongs to ' + nodes.find(function (x) { return x.id !== n.id && x.nin === rec.nin; }).name + '.', 'err'); return; }
@@ -436,6 +450,7 @@ async function rgSave(id, verify) {
   var b = document.getElementById('rg-save'); if (b) { b.disabled = true; b.textContent = 'Saving…'; }
   if (rgDistEd()) {   // District Admin: through the server (own district, enrolled facilities protected, logged)
     var res = null; try { res = await nfCall('distRegistrySave', { rows: up, kind: verify ? 'verify' : 'edit', verify: verify ? [rid] : [] }); } catch (e) { showToast(nfErrText(e), 'err'); }
+    if (res) rgAfterTree(res);
     if (!res) { if (b) { b.disabled = false; b.textContent = 'Save'; } return; }
     if (res.errors && res.errors.length) showToast(res.errors.join(' · '), 'err');
     if (res.saved) showToast(rec.name + (verify ? ' saved and verified' : ' saved') + (touched.length ? ' · ' + touched.length + ' linked facilit' + (touched.length === 1 ? 'y' : 'ies') + ' updated' : '') + '.', 'ok');
@@ -445,9 +460,8 @@ async function rgSave(id, verify) {
   if (!ok) { showToast('Could not save — check the connection.', 'err'); if (b) { b.disabled = false; b.textContent = 'Save'; } return; }
   delete _rg.R.NEW; Object.keys(up).forEach(function (k) { _rg.R[k] = up[k]; }); _rg.sel = rid; _rg.draft = null; _rg.dist = rgDk(rec.state, rec.district);
   showToast(rec.name + ' saved' + (touched.length ? ' · ' + touched.length + ' linked facilit' + (touched.length === 1 ? 'y' : 'ies') + ' updated' : '') + '.', 'ok'); rgRender();
-  // enrolled Sub-Centres: keep Settings → PHC & CHC links the same as the registry
-  var codes = []; if (rec.t === 'sc' && rec.code) codes.push(rec.code); touched.forEach(function (q) { if (q.rec.t === 'sc' && q.rec.code) codes.push(q.rec.code); });
-  if (codes.length) await rgSyncLinks(codes);
+  // the tree: block views, MO access and logins follow the registry (28 Oct)
+  await rgTreeSync(rec.state, rec.district);
   return rid;
 }
 // verify every facility shown under "Not verified" (their details as they are)
@@ -494,6 +508,67 @@ async function rgUndo(batch) {
   try { var r = await nfCall('undoRegistryBatch', { batch: batch }); showToast(r.restored + ' put back' + (r.skipped ? ' · ' + r.skipped + ' changed again since, left as they are' : '') + '.', 'ok'); }
   catch (e) { showToast(nfErrText(e), 'err'); return; }
   _rg.log = null; await rgLoad(true); await rgLogOpen();
+}
+// ── the person who heads a CHC (MOIC) / PHC (MO in-charge): their login comes from here (28 Oct 2026) ──
+function rgHeadFields(n, t, val, ro) {
+  var h = (n.rec && n.rec.head) || {}, ic = n.info && n.info.inChargeMob ? { name: n.info.inCharge, mobile: n.info.inChargeMob } : null;
+  var lab = t === 'chc' ? 'MOIC' : 'MO in-charge', I = function (id, l, v, ph, extra) { return '<label>' + l + '<input id="rg-f-' + id + '" ' + (ro ? 'readonly ' : '') + (extra || '') + ' value="' + rgE(v == null ? '' : v) + '" placeholder="' + rgE(ph || '') + '"></label>'; };
+  return '<div class="rg-head"><b>' + lab + (t === 'chc' || val('bhead', n.rec && n.rec.bhead) ? ' · gets the block view' : ' · sees this PHC\'s Sub-Centres') + '</b>'
+    + '<div class="rg-2">' + I('hname', 'Name', val('hname', h.name || ''), ic ? ic.name + ' (in-charge)' : 'e.g. Dr Verma') + I('hmob', 'Mobile', val('hmob', h.mobile || ''), ic ? ic.mobile + ' (in-charge)' : '10-digit mobile', 'inputmode="tel"') + '</div>'
+    + '<small class="rg-dim">' + (ic ? 'Left empty, the enrolled facility\'s in-charge (' + rgE(ic.name || ic.mobile) + ') is the ' + lab + '. ' : '') + 'Saving makes or moves their login; a new one-time password is shown once.</small></div>';
+}
+// who has a login through this record (read only — everything comes from the tree)
+function rgTreeLoginsHTML(n, nodes) {
+  if (!n.code || n.t !== 'sc') return '';
+  var L = (n.f && n.f.links) || {};
+  return '<div class="rg-logins"><b>Who sees this Sub-Centre</b><span>' + (L.moMobile ? 'MO: ' + rgE(L.moName || 'Medical Officer') + ' (' + rgE(L.moMobile) + ')' : 'No MO yet — set the PHC and its MO in-charge') + '</span><span>' + (L.moicId ? 'Block view: ' + rgE(L.moicId) : 'No block view yet — set the block (CHC) and its MOIC') + '</span></div>';
+}
+async function rgTreeSync(state, district) {
+  if (!district) return null; var r = null;
+  try { r = await nfCall('syncTree', { state: state || '', district: district }); } catch (e) { showToast('Saved. Logins will follow tonight (' + nfErrText(e) + ').', 'err'); return null; }
+  if (rgHS()) { try { await rgRefreshLinks(Object.keys((typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {}).filter(function (c) { var f = scMasterFacilities[c] || {}; return rgLow(f.district) === rgLow(district); })); } catch (e) {} }
+  rgAfterTree(r || {}); rgRender(); return r;
+}
+// new logins (one-time passwords) and anything the tree could not decide
+async function rgAfterTree(r) {
+  var acc = (r && r.accounts) || [], con = (r && r.conflicts) || [];
+  if (con.length) scAlert(con.map(function (c) { return '• ' + c.msg; }).join('\n') + '\n\nCorrect the NIN on the facility or in the registry, then save again.', 'Needs a decision', '⚠️');
+  var T = { block: 'Block view login', moic: 'MOIC — sign-in with their mobile', mo: 'MO — sign-in with their mobile' };
+  for (var i = 0; i < acc.length; i++) { var a = acc[i]; nfShowTempPassword(a.name || a.id, a.id, a.tempPassword, (T[a.kind] || 'New login') + (a.block ? ' · ' + a.block + ' block' : a.phc ? ' · ' + a.phc : ''));
+    await new Promise(function (res) { var t = setInterval(function () { if (!document.getElementById('nf-tmp-ov')) { clearInterval(t); res(); } }, 300); }); }
+}
+// HealSol: enrol a facility from its row — the enrolment form already filled; the facility stays this record
+async function rgEnrol(id) {
+  var n = rgNodes().find(function (x) { return x.id === id; }); if (!n || n.code || !rgHS()) return;
+  var LV = NF_LEVELS[n.t] || {}, h = (n.rec && n.rec.head) || {}, progs = (LV.programmes || []).map(function (p) { return { value: p.id, label: p.label }; });
+  var f = [{ type: 'info', value: RG_NAME[n.t] + ' · ' + n.name + (n.nin ? ' · NIN ' + n.nin : '') + ' · ' + [n.blk ? n.blk + ' block' : '', n.district, n.state].filter(Boolean).join(', ') },
+    { key: 'choName', label: (LV.inChargeLabel || 'In-charge') + ' — name', value: h.name || '' }, { key: 'choMobile', label: (LV.inChargeLabel || 'In-charge') + ' — mobile', type: 'tel', value: h.mobile || '', required: true },
+    { key: 'progId', label: 'Programme', type: 'select', value: (progs[0] || {}).value, options: progs }, { key: 'access', label: 'Access', type: 'select', value: 'contract', options: [{ value: 'contract', label: 'Contract (full access)' }, { value: 'trial', label: 'Trial' }] }];
+  if (n.t === 'chc') f.push({ key: 'chcKind', label: 'CHC kind', type: 'select', value: 'fru', options: [{ value: 'fru', label: 'CHC (FRU)' }, { value: 'nonfru', label: 'CHC (Non-FRU)' }] });
+  var v = await scDialog({ title: 'Enrol ' + n.name, icon: '🏥', okLabel: 'Enrol', fields: f, validate: function (x) { return /^\d{10}$/.test(String(x.choMobile || '').replace(/\D/g, '').slice(-10)) ? null : 'Enter the 10-digit mobile number.'; } });
+  if (!v) return;
+  var r = null; try { r = await nfCall('enrollFacility', { rid: n.rid, type: n.t, name: n.name, state: n.state, district: n.district, nin: n.nin || '', choName: v.choName || LV.inChargeLabel, choMobile: String(v.choMobile).replace(/\D/g, '').slice(-10), progId: v.progId, access: v.access, chcKind: v.chcKind }); }
+  catch (e) { showToast(nfErrText(e), 'err'); return; }
+  showToast(n.name + ' enrolled as ' + r.code + '.', 'ok');
+  if (r.tempPassword) { nfShowTempPassword(v.choName || LV.inChargeLabel, r.identifier, r.tempPassword, n.name + ' — ' + (LV.inChargeLabel || 'in-charge') + ' login'); await new Promise(function (res) { var t = setInterval(function () { if (!document.getElementById('nf-tmp-ov')) { clearInterval(t); res(); } }, 300); }); }
+  try { if (typeof scLoadMasterData === 'function') await scLoadMasterData(); } catch (e) {}
+  await rgAfterTree(r); _rg.at = 0; await rgLoad(true);
+}
+// facilities' own "Suggest my PHC / CHC" (CHO on the phone) — HealSol / the District Admin accept here
+function rgSuggestions() {
+  if (rgHS()) { var F = (typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {}; return Object.keys(F).filter(function (c) { return F[c] && F[c].linkProposal && !F[c].migratedTo; }).map(function (c) { var p = F[c].linkProposal; return { code: c, name: F[c].name || c, district: F[c].district || '', phc: p.phc, chc: p.chc, by: p.proposedBy || '' }; }); }
+  return (_rg.mine && _rg.mine.suggest) || [];
+}
+function rgSuggestHTML() {
+  var L = rgSuggestions(); if (!L.length) return '';
+  return '<div class="nfo-card rg-sug"><b>Suggested by facilities · ' + L.length + '</b><small class="rg-dim">A CHO picked their PHC / block. Accept puts it in the tree (and gives the MO / MOIC access); Turn down clears it.</small>'
+    + L.map(function (x) { return '<div class="rg-sugr"><span><b>' + rgE(x.name) + '</b> → ' + [x.phc && x.phc.name ? 'PHC ' + rgE(x.phc.name) : '', x.chc && x.chc.name ? rgE(x.chc.name) + (x.chc.block ? ' (' + rgE(x.chc.block) + ')' : '') : ''].filter(Boolean).join(' · ') + (x.by ? ' <small class="rg-dim">by ' + rgE(x.by) + '</small>' : '') + '</span>'
+      + '<button type="button" class="hs-btn p" onclick="rgSuggest(\'' + rgJ(x.code) + '\',true)">Accept</button><button type="button" class="hs-btn" onclick="rgSuggest(\'' + rgJ(x.code) + '\',false)">Turn down</button></div>'; }).join('') + '</div>';
+}
+async function rgSuggest(code, yes) {
+  var r = null; try { r = await nfCall('acceptSuggestion', { code: code, accept: !!yes }); } catch (e) { showToast(nfErrText(e), 'err'); return; }
+  try { var F = (typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {}; if (F[code]) delete F[code].linkProposal; } catch (e) {}
+  showToast(yes ? 'Accepted — in the tree.' : 'Turned down.', 'ok'); await rgAfterTree(r || {}); _rg.at = 0; await rgLoad(true);
 }
 function rgNewId(nin, extra) { var R = _rg.R || {}, X = extra || {}; if (nin && !R['N' + nin] && !X['N' + nin]) return 'N' + nin; var id; do { id = 'R' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); } while (R[id] || X[id]); return id; }
 
@@ -640,8 +715,7 @@ function rgMapHTML(nodes) {
   var D = {}; nodes.forEach(function (n) { if (n.district) D[n.dk] = n.district; });
   var leg = _rg.color === 'readiness' ? [['70% and above', '#1E6B5E'], ['50–69%', '#D4912A'], ['Below 50%', '#B3402A'], ['No readiness yet', '#9AA8A3']] : ['ok', 'slip', 'behind', 'start', 'ready', 'grad'].map(function (k) { return [RG_ST[k][0], RG_ST[k][1]]; });
   var SD = {}; nodes.forEach(function (n) { if (!n.district) return; var st = n.state || 'Other'; (SD[st] = SD[st] || {})[n.dk] = n.district; });
-  return '<div class="rg-filt rg-mapf"><label>Area<select onchange="rgSet(\'dist\',this.value)"><option value="">All states</option>' + Object.keys(SD).sort().map(function (st) { var sk = 'S:' + rgLow(st);
-      return '<optgroup label="' + rgE(st) + '"><option value="' + rgE(sk) + '"' + (_rg.dist === sk ? ' selected' : '') + '>' + rgE(st) + ' · whole state</option>' + Object.keys(SD[st]).sort(function (x, y) { return SD[st][x].localeCompare(SD[st][y]); }).map(function (k) { return '<option value="' + rgE(k) + '"' + (_rg.dist === k ? ' selected' : '') + '>' + rgE(SD[st][k]) + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></label>'
+  return '<div class="rg-filt rg-mapf">' + rgAreaPick(nodes, SD)
     + '<label>Colour by<select onchange="rgSet(\'color\',this.value)"><option value="status">Programme status</option><option value="readiness"' + (_rg.color === 'readiness' ? ' selected' : '') + '>Readiness</option></select></label>'
     + '<label class="rg-sw"><input type="checkbox" ' + (_rg.showNot ? 'checked ' : '') + 'onchange="rgSet(\'showNot\',this.checked)"> Show facilities not enrolled</label>'
     + '<label class="rg-sw"><input type="checkbox" ' + (_rg.links ? 'checked ' : '') + 'onchange="rgSet(\'links\',this.checked)"> Show links SC → PHC → CHC</label></div>'
@@ -658,6 +732,17 @@ function rgMapHTML(nodes) {
       + (rgHS() ? '<button type="button" class="hs-link" onclick="_rg.tile=\'nogps\';rgSet(\'tab\',\'registry\')">See the list</button>' : '<small class="rg-dim">' + noGeo.slice(0, 8).map(function (n) { return rgE(n.name); }).join(', ') + (noGeo.length > 8 ? ' …' : '') + '</small>') + '</div>' : '')
     + '</aside></div>';
 }
+// the Area list (28 Oct): HealSol — states and districts; District Admin — their district(s) and blocks; MOIC — their block (no list)
+function rgAreaPick(nodes, SD) {
+  if (rgHS()) return '<label>Area<select onchange="rgSet(\'dist\',this.value)"><option value="">All states</option>' + Object.keys(SD).sort().map(function (st) { var sk = 'S:' + rgLow(st);
+      return '<optgroup label="' + rgE(st) + '"><option value="' + rgE(sk) + '"' + (_rg.dist === sk ? ' selected' : '') + '>' + rgE(st) + ' · whole state</option>' + Object.keys(SD[st]).sort(function (x, y) { return SD[st][x].localeCompare(SD[st][y]); }).map(function (k) { return '<option value="' + rgE(k) + '"' + (_rg.dist === k ? ' selected' : '') + '>' + rgE(SD[st][k]) + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></label>';
+  if (_rg.mine && _rg.mine.scope === 'block') { var a = rgAreas()[0] || {}; return '<b class="rg-mapttl">' + rgE((_rg.mine.block || 'Your') + ' block') + (a.district ? ' · ' + rgE(a.district) : '') + '</b>'; }
+  var D = {}; nodes.forEach(function (n) { if (!n.district) return; var d = D[n.dk] = D[n.dk] || { name: n.district, b: {} }; if (n.blk) d.b[n.blk] = 1; });
+  var cur = _rg.block ? 'B:' + _rg.dist + '|' + _rg.block : _rg.dist;
+  return '<label>Area<select onchange="rgAreaSet(this.value)">' + Object.keys(D).sort().map(function (k) { var d = D[k];
+    return '<option value="' + rgE(k) + '"' + (cur === k || (!cur && Object.keys(D).length === 1) ? ' selected' : '') + '>' + rgE(d.name) + ' · whole district</option>' + Object.keys(d.b).sort().map(function (b) { var v = 'B:' + k + '|' + b; return '<option value="' + rgE(v) + '"' + (cur === v ? ' selected' : '') + '>  ' + rgE(b) + ' block</option>'; }).join(''); }).join('') + '</select></label>';
+}
+function rgAreaSet(v) { if (String(v).indexOf('B:') === 0) { var p = v.slice(2).split('|'), b = p.pop(); _rg.dist = p.join('|'); _rg.block = b; _rg.sel = null; rgRender(); } else rgSet('dist', v); }
 function rgLoadLeaflet() {
   if (window.L && window.L.map) return Promise.resolve(window.L);
   if (rgLoadLeaflet._p) return rgLoadLeaflet._p;
@@ -751,10 +836,12 @@ async function rgImportApply() {
   I.change.forEach(function (c) { upd[c.rid] = Object.assign({}, c.v, { at: now, by: by }); if (!upd[c.rid].src) upd[c.rid].src = 'import'; });
   var keys = Object.keys(upd), ok = 0;
   if (rgDistEd()) {   // through the server, one batch (HealSol can undo it as one)
+    _rg.lastTree = null;
     var batch = 'U' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), errs = [];
     for (var j = 0; j < keys.length; j += 400) { var pt = {}; keys.slice(j, j + 400).forEach(function (k) { pt[k] = upd[k]; });
-      try { var res = await nfCall('distRegistrySave', { rows: pt, kind: 'upload', batch: batch }); ok += res.saved || 0; errs = errs.concat(res.errors || []); } catch (e) { errs.push(nfErrText(e)); break; } }
+      try { var res = await nfCall('distRegistrySave', { rows: pt, kind: 'upload', batch: batch }); ok += res.saved || 0; errs = errs.concat(res.errors || []); _rg.lastTree = { accounts: ((_rg.lastTree || {}).accounts || []).concat(res.accounts || []), conflicts: ((_rg.lastTree || {}).conflicts || []).concat(res.conflicts || []) }; } catch (e) { errs.push(nfErrText(e)); break; } }
     _rg.imp = null; showToast(ok + ' facilities saved.' + (errs.length ? ' ' + errs.length + ' left out.' : ''), ok ? 'ok' : 'err');
+    rgAfterTree(_rg.lastTree || {});
     if (errs.length) scAlert('Saved ' + ok + ' of ' + keys.length + '. Left out:\n' + errs.slice(0, 15).join('\n') + (errs.length > 15 ? '\n… and ' + (errs.length - 15) + ' more' : ''), 'Upload', '⚠️');
     await rgLoad(true); return ok;
   }
@@ -763,6 +850,8 @@ async function rgImportApply() {
   } catch (e) { console.warn('[RG] import save', e); showToast('Saved ' + ok + ' of ' + keys.length + ' — check the connection and import again.', 'err'); }
   Object.keys(upd).slice(0, ok).forEach(function (k) { _rg.R[k] = upd[k]; });
   _rg.imp = null; if (ok === keys.length) showToast(ok + ' facilities saved in the registry.', 'ok'); rgRender();
+  var ds = {}; Object.keys(upd).slice(0, ok).forEach(function (k) { var r = upd[k]; if (r.district) ds[rgDk(r.state, r.district)] = r; });
+  for (var dk in ds) await rgTreeSync(ds[dk].state, ds[dk].district);
   return ok;
 }
 function rgRows(nodes) {

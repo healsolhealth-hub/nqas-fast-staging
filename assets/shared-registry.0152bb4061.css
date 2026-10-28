@@ -129,3 +129,16 @@ button.rg-bc{text-align:left;font:inherit;cursor:pointer;display:flex;flex-direc
   .rg-ctab th,.rg-ctab td{display:flex;justify-content:space-between;gap:10px;border:0;padding:4px 4px;}
   .rg-ctab td::before{content:attr(data-l);color:#5D6D68;font-size:12px;}
 }
+
+/* One facility tree (28 Oct 2026): heads, Block PHC, enrol, suggestions */
+.rg-head{border:1px solid #DCE4E1;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:#F8FBFA;}
+.rg-head > b{font-size:13px;}
+.rg-chk{flex-direction:row!important;align-items:center;gap:8px;font-weight:500;}
+.rg-enrol{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
+.rg-sug{margin:0 0 12px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;border-color:#B9D9CF;}
+.rg-sugr{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;border-top:1px solid #E6ECEA;padding-top:8px;} .rg-sugr > span{flex:1;min-width:220px;}
+.rg-mapttl{font-size:14px;align-self:center;}
+.hsr-types{margin:0 0 12px;}
+.hsr-join{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 18px;margin:0 0 14px;border-color:#B9D9CF;background:#F3FAF7;}
+.hsr-join > div{flex:1;min-width:240px;display:flex;flex-direction:column;gap:3px;} .hsr-join small{color:#4F5E59;font-size:12.5px;}
+.nfmo-under{font-size:12.5px;color:var(--t3);margin:-4px 2px 10px;} .nfmo-join{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;}

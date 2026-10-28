@@ -72,8 +72,9 @@ function hsrRenderFac() {
   var role = hsrRole(), behind = all.filter(function (o) { return o.behind; }).length, inprog = all.filter(function (o) { return o.inProg; }).length;
   var blk = hsrBlock();
   box.innerHTML = (blk && typeof nfChcChip === 'function' ? nfChcChip() : '') + '<div class="nfo-top"><div><h1>Facilities</h1><small>' + all.length + ' ' + (blk ? 'in ' + hsE(_scSup.block || _scSup.chcName || 'the') + ' block · view only' : role === 'district' ? 'in your district · view only' : 'assigned to you') + (Object.keys(dist).length ? ' · ' + hsE(Object.keys(dist).sort().join(', ')) : '') + ' · ' + inprog + ' in programme' + (behind ? ' · ' + behind + ' behind schedule' : '') + '</small></div></div>'
+    + (blk ? hsrJoinCard(all) : '') + hsrTypeTabs(all)
     + '<div class="hs-filters"><label class="hs-search"><i class="ti ti-search"></i><input id="hsr-fq" type="search" aria-label="Search facilities" placeholder="Search name, ID, in-charge" value="' + hsE(_nfOv.q || '') + '" oninput="hsrSet(\'q\',this.value)"></label>'
-    + (Object.keys(types).length > 1 ? sel('type', [['', 'All types']].concat(HS_TYPES.filter(function (t) { return types[t]; }).map(function (t) { return [t, hsShort(t)]; }))) : '')
+
     + (Object.keys(dist).length > 1 ? sel('dist', [['', 'All districts']].concat(Object.keys(dist).sort().map(function (d) { return [d, d]; }))) : '')
     + sel('phase', [['', 'Any phase'], ['inprog', 'In programme'], ['notstarted', 'Not started'], ['baseline', 'Baseline'], ['impl', 'Implementation'], ['endline', 'End-line'], ['ready', 'Readiness week'], ['closing', 'Waiting for graduation'], ['graduated', 'Graduated'], ['catchup', 'Catch-up']])
     + sel('status', [['', 'Any status'], ['behind', 'Behind schedule'], ['overdue', 'Overdue actions']].concat(role === 'district' ? [] : [['verify', 'Cards to verify']]))
@@ -106,3 +107,32 @@ function hsrRenderReports() {
       try { document.body.classList.toggle('hs-roles', hsrOn()); if (hsrOn() && hsrRole() !== 'champion') { if (_nfOv.view === 'facilities') hsrRenderFac(); if (_nfOv.view === 'reports') hsrRenderReports(); } } catch (e) {}
       return r; }; }
 })();
+
+// type tabs (28 Oct 2026): All · CHC · PHC · SC (· UPHC) with counts, on the Supervisor / District Admin / MOIC lists
+function hsrTypeTabs(all) {
+  var c = { '': all.length }; all.forEach(function (o) { c[o.type] = (c[o.type] || 0) + 1; });
+  var ts = ['chc', 'phc', 'sc'].concat(c.uphc ? ['uphc'] : []).filter(function (t) { return !hsrBlock() || t !== 'uphc'; });
+  return '<div class="rg-types hsr-types" role="tablist" aria-label="Facility type">' + [['', 'All']].concat(ts.map(function (t) { return [t, hsShort(t)]; })).map(function (x) {
+    return '<button type="button" role="tab" aria-selected="' + ((_hsr.type || '') === x[0]) + '" class="' + ((_hsr.type || '') === x[0] ? 'on' : '') + '" onclick="hsrSet(\'type\',\'' + x[0] + '\')">' + hsE(x[1]) + ' <em>' + (c[x[0]] || 0) + '</em></button>'; }).join('') + '</div>';
+}
+// MOIC of a CHC that is not in NQAS FAST yet: a way to ask (28 Oct 2026)
+function hsrJoinCard(all) {
+  var s = _scSup || {}; if (all.some(function (o) { return o.type === 'chc'; })) return '';
+  return '<div class="nfo-card hsr-join"><div><b>Bring ' + hsE(s.chcName || 'your CHC') + ' into NQAS FAST</b><small>Your block view shows the Sub-Centres and PHCs already in the programme. Your CHC is not enrolled yet — its staff, cards and readiness start once it joins.</small></div>'
+    + '<button type="button" class="hs-btn p" onclick="nfJoinAsk(\'chc\',\'' + hsJ(s.chcName || '') + '\',\'' + hsJ(s.chcNin || '') + '\',\'' + hsJ(s.block || '') + '\')">Request to join</button></div>';
+}
+async function nfJoinAsk(kind, name, nin, block) {
+  var me = (typeof _scSup !== 'undefined' && _scSup) || {}, fac = null;
+  try { if (typeof _nfLogin !== 'undefined' && _nfLogin && _nfLogin.id) me = Object.assign({ mobile: /^\d{10}$/.test(_nfLogin.id) ? _nfLogin.id : '' }, me); } catch (e) {}
+  try { var F = (typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {}; fac = F[Object.keys(F)[0]] || null; } catch (e) {}
+  var v = await scDialog({ title: 'Request to join NQAS FAST', icon: '🏥', okLabel: 'Send request',
+    message: 'HealSol Academy will contact you to bring ' + (name || ('your ' + kind.toUpperCase())) + ' into NQAS FAST.',
+    fields: [{ key: 'name', label: 'Your name', value: me.name || '', required: true }, { key: 'mobile', label: 'Your mobile', type: 'tel', value: me.mobile || '', required: true },
+      { key: 'msg', label: 'Message (optional)', type: 'textarea', value: '' }],
+    validate: function (x) { return /^\d{10}$/.test(String(x.mobile || '').replace(/\D/g, '').slice(-10)) && String(x.name || '').trim() ? null : 'Enter your name and 10-digit mobile number.'; } });
+  if (!v) return;
+  try { await nfCall('submitEnquiry', { orgName: name || kind.toUpperCase(), contactName: v.name, mobile: String(v.mobile).replace(/\D/g, '').slice(-10), district: (fac && fac.district) || me.district || '', state: (fac && fac.state) || me.state || '',
+    designation: kind === 'chc' ? 'MOIC' : 'Medical Officer', source: 'join', ftype: kind, nin: nin || '', block: block || '', message: (v.msg || '') + ' [Request to bring ' + (name || kind.toUpperCase()) + (nin ? ' · NIN ' + nin : '') + (block ? ' · ' + block + ' block' : '') + ' into NQAS FAST]' });
+    showToast('Request sent — HealSol Academy will contact you.', 'ok'); }
+  catch (e) { showToast(typeof nfErrText === 'function' ? nfErrText(e) : 'Could not send.', 'err'); }
+}

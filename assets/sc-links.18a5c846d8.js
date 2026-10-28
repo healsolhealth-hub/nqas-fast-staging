@@ -38,24 +38,41 @@ function nfLinkSummaryHTML(L,prop){
 }
 // ── CHO: Facility dashboard → More → PHC & CHC ─────────────────
 function nfLinkStatus(f){ return f&&f.links?'ok':(f&&f.linkProposal?'wait':'none'); }
+// CHO: "Suggest my PHC / CHC" — picked from the district's list (typed only when missing); the District Admin or HealSol accepts (28 Oct)
 async function nfLinkCho(){
   var f=faFac(), code=scSubAdminCode; if(!code) return;
-  var st=nfLinkStatus(f);
-  var v=await scDialog({title:'PHC & CHC',icon:'🏥',wide:true,okLabel:st==='ok'?'Send changes to HealSol':'Send to HealSol',
-    message:(st==='ok'?'Linked. To change it, edit and send — HealSol confirms the change.':st==='wait'?'Sent — waiting for HealSol to confirm. You can still correct it.':'Which PHC and CHC does '+(f.name||code)+' report to? HealSol checks and confirms it. The MO then sees your Sub-Centre, and the block MOIC gets a view-only login.'),
-    fields:nfLinkFields(nfLinkFlat(f.linkProposal||f.links)),validate:nfLinkCheck});
+  var st=nfLinkStatus(f), rows=[]; try{ var r=await nfCall('parentChoices',{code:code}); rows=(r&&r.rows)||[]; }catch(e){}
+  var cur=f.linkProposal||{}, L=f.links||{}, curP=((cur.phc||L.phc||{}).nin)||'', curC=((cur.chc||L.chc||{}).nin)||'';
+  var phcs=rows.filter(function(x){ return x.t==='phc'; }), heads=rows.filter(function(x){ return x.t==='chc'||x.bhead; });
+  var opt=function(L2,none){ return [{value:'',label:none}].concat(L2.map(function(x){ return {value:x.nin,label:x.name+(x.block?' · '+x.block+' block':'')+(x.t==='phc'&&x.bhead?' (Block PHC)':'')}; })).concat([{value:'_other',label:'Not in the list — type it below'}]); };
+  var v=await scDialog({title:'My PHC & block',icon:'🏥',wide:true,okLabel:'Send',
+    message:(st==='ok'?'Linked. To change it, pick again and send — your District Admin or HealSol confirms.':st==='wait'?'Sent — waiting for confirmation. You can still change it.':'Which PHC does '+(f.name||code)+' report to, and which block (CHC)? Your District Admin or HealSol confirms it. The MO then sees your Sub-Centre, and the block MOIC gets a view-only dashboard.'),
+    fields:[{key:'phc',label:'PHC',type:'select',value:phcs.some(function(x){ return x.nin===curP; })?curP:'',options:opt(phcs,'— choose the PHC —')},
+      {key:'chc',label:'Block (CHC or Block PHC)',type:'select',value:heads.some(function(x){ return x.nin===curC; })?curC:'',options:opt(heads,'— choose the block —')},
+      {type:'info',value:'Not in the list? Type the name and NIN (national facility number).'},
+      {key:'phcName',label:'PHC name (if not in the list)',value:''},{key:'phcNin',label:'PHC NIN (if not in the list)',value:''},
+      {key:'chcName',label:'CHC name (if not in the list)',value:''},{key:'chcNin',label:'CHC NIN (if not in the list)',value:''},{key:'block',label:'Block (if not in the list)',value:''}],
+    validate:function(x){ var nn=function(y){ return String(y||'').replace(/[^0-9A-Za-z]/g,''); };
+      if(!x.phc&&!x.chc) return 'Choose your PHC or your block.';
+      if(x.phc==='_other'&&(!String(x.phcName||'').trim()||nn(x.phcNin).length<6)) return 'Type the PHC name and its NIN (6 or more characters).';
+      if(x.chc==='_other'&&(!String(x.chcName||'').trim()||nn(x.chcNin).length<6)) return 'Type the CHC name and its NIN (6 or more characters).';
+      return null; }});
   if(!v) return;
-  var rec=Object.assign(nfLinkNest(v),{proposedAt:scNowIso(),proposedBy:choState.staffName||scActor().name||'CHO',proposedByMob:choState.staffMobile||null});
+  var by=function(n){ return rows.find(function(x){ return x.nin===n; })||{}; }, nn=function(y){ return String(y||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase(); };
+  var P=v.phc==='_other'?{nin:nn(v.phcNin),name:String(v.phcName).trim()}:v.phc?{nin:v.phc,name:by(v.phc).name||''}:null;
+  var C=v.chc==='_other'?{nin:nn(v.chcNin),name:String(v.chcName).trim(),block:String(v.block||'').trim()}:v.chc?{nin:v.chc,name:by(v.chc).name||'',block:by(v.chc).block||''}:null;
+  if(!C&&P&&by(P.nin).chc){ var b=by(by(P.nin).chc); if(b.nin) C={nin:b.nin,name:b.name||'',block:b.block||''}; }
+  var rec={phc:P,chc:C,proposedAt:scNowIso(),proposedBy:choState.staffName||scActor().name||'CHO',proposedByMob:choState.staffMobile||null};
   try{ await db.ref(scFacilityPath(code)+'/linkProposal').set(scClean(rec)); }catch(e){ showToast('Could not send — check connection.','err'); return; }
   if(typeof scSubAdminData!=='undefined'&&scSubAdminData) scSubAdminData.linkProposal=rec;
-  showToast('Sent to HealSol for confirmation.','ok'); faMore();
+  showToast('Sent — your District Admin or HealSol confirms it.','ok'); faMore();
 }
 (function(){
   if(typeof faMore!=='function') return;
   var oM=faMore;
   faMore=function(){ var r=oM.apply(this,arguments);
     try{ var a=document.getElementById('fa-acct'); if(!a) return r; var f=faFac(), st=nfLinkStatus(f), L=f.links||{};
-      var sub=st==='ok'?((L.phc&&L.phc.name)||'')+(L.chc?' · '+(L.chc.name||'')+(L.chc.block?' ('+L.chc.block+')':''):''):st==='wait'?'Waiting for HealSol to confirm':'Not linked yet — tap to add';
+      var sub=st==='ok'?((L.phc&&L.phc.name)||'')+(L.chc?' · '+(L.chc.name||'')+(L.chc.block?' ('+L.chc.block+')':''):''):st==='wait'?'Waiting for confirmation':'Not linked yet — tap to add';
       a.insertAdjacentHTML('afterbegin','<button type="button" class="nf-row" id="nfl-row" onclick="nfLinkCho()"><i class="ti ti-building-hospital"></i><span>PHC &amp; CHC <span class="nfl-st '+st+'">'+(st==='ok'?'Linked':st==='wait'?'Waiting':'Not set')+'</span><small style="display:block;color:var(--t3);font-size:11.5px;">'+scEsc(sub)+'</small></span><i class="ti ti-chevron-right nf-row-chev"></i></button>');
     }catch(e){ console.warn('[SC] links row',e); }
     return r; };
@@ -65,7 +82,7 @@ var _nfUnits={}, _nfLk={facs:{},view:'',area:'',q:'',all:{},stOpen:{}};
 async function nfEnsureLinks(){
   if(appMode!=='sc-admin') return; var main=document.querySelector('#admin-app .admin-main'); if(!main||document.getElementById('nfl-setup')) return;
   var c=document.createElement('div'); c.id='nfl-setup'; c.className='nf-ho'; c.dataset.nfv='setup';
-  c.innerHTML='<h3><i class="ti ti-building-hospital"></i> PHC &amp; CHC links · MO and MOIC logins</h3><p>Your to-do list for logins. A link gives the PHC&rsquo;s Medical Officer and the block MOIC their logins. Links made here also show in Facilities → Registry, and the other way round. The full network is in Facilities → Registry and Map.</p><div id="nfl-body">Loading…</div>';
+  c.innerHTML='<h3><i class="ti ti-building-hospital"></i> PHC &amp; CHC links · MO and MOIC logins</h3><p>Links are now made once, in the facility tree: <b>Facilities → Registry</b>. Pick each PHC&rsquo;s block (CHC or Block PHC) and each Sub-Centre&rsquo;s PHC, and type the CHC&rsquo;s MOIC and the PHC&rsquo;s MO in-charge on their records — their logins, the block view and the MO&rsquo;s Sub-Centres follow by themselves. District Admins can do the same for their district. Who has which login: Settings → People.</p><div id="nfl-body">Loading…</div>';
   main.appendChild(c); await nfLinksLoad(); nfLinksRender();
 }
 async function nfLinksLoad(){ try{ _nfLk.facs=await fbGet('sc_facilities')||{}; }catch(e){} try{ _nfUnits=await fbGet('sc_units')||{}; }catch(e){} }
@@ -86,7 +103,7 @@ function nflPickLink(){ var v=String((document.getElementById('nfl-pick')||{}).v
   if(!code){ var hits=Object.keys(F).filter(function(k){ return F[k]&&nflLow(F[k].name)===nflLow(v); }); if(hits.length===1) code=hits[0]; }
   if(!code){ showToast('No enrolled Sub-Centre matches "'+v+'". Pick one from the list.','err'); return; }
   nfLinkConfirm(code,false); }
-function nflOpenRegistry(state,district){ try{ nfAdminView('hsfac'); }catch(e){}
+function nflOpenRegistry(state,district){ try{ nfAdminView('hsfac'); }catch(e){} if(!state){ setTimeout(function(){ if(typeof rgSet==='function') rgSet('tab','registry'); },60); return; }
   setTimeout(function(){ if(typeof rgOpenState!=='function') return; if(district){ _rg.tab='registry'; _rg.dist=rgDk(state,district); _rg.sel=null; _rg.open={}; rgRender(); } else rgOpenState(state); },60); }
 function nfLinksRender(){
   var body=document.getElementById('nfl-body'); if(!body) return;
@@ -180,7 +197,7 @@ function nfMoAddEntry(list,mob){
   var phc=list.filter(function(a){ return a.kind==='staff'&&a.type==='phc'; });
   _nfMoEnt={}; mo.concat(phc).forEach(function(a){ _nfMoEnt[a.code]=a; });
   _nfMoCodes=phc.map(function(a){ return a.code; }).concat(mo.map(function(a){ return a.code; }));
-  if(!mo.length||_nfMoCodes.length<2) return list;
+  if(!mo.length||(mo.length===1&&!phc.length)) return list;   // 28 Oct: one Sub-Centre → straight to Today; "My facilities" chip there (PHC line / join card)
   return [{kind:'mo',key:'mo:'+mob,title:'Medical Officer · My facilities',sub:(phc.length?phc.length+' PHC · ':'')+mo.length+' sub-centre'+(mo.length===1?'':'s')+' · verify and support each'}].concat(list);
 }
 function nfMoEntry(code){ var e=_nfMoEnt[code]; return e?{kind:'staff',key:e.key,code:code,type:e.type}:{kind:'staff',key:'staff:'+code,code:code}; }
@@ -224,7 +241,7 @@ function nfMoStats(x,me){
   return {pct:has?A.pct:(A?A.pct:0),hasPct:!!has,base:B,day:d,days:60,ver:ver,mine:mine,blLeft:blLeft,open:open,od:od,cho:nfChoOf(f),res:R,state:comp?comp.state:null,onTime:comp&&comp.pct!=null?comp.pct:null};
 }
 async function nfMoOpen(){
-  if(_nfMoCodes.length<2) return;
+  if(!_nfMoCodes.length) return;
   var old=document.getElementById('nf-mo'); if(old) old.remove();
   var ov=document.createElement('div'); ov.id='nf-mo'; ov.className='nfmo2';
   ov.innerHTML='<div class="nfmo-body" id="nfmo-body"><div class="nfmo-top2"><div><small id="nfmo-k">'+scEsc(t('Medical Officer'))+'</small><h1>'+scEsc(t('My facilities'))+'</h1></div>'
@@ -243,6 +260,8 @@ function nfMoRender(){
   var phcRow=rows.find(function(r){ return r.x.type==='phc'; }), phcName=phcRow?(phcRow.x.f.name||phcRow.x.code):'';
   if(!phcName) rows.some(function(r){ var L=r.x.f.links; if(L&&L.phc){ phcName=L.phc.name; return true; } });
   var k=document.getElementById('nfmo-k'); if(k) k.textContent=t('Medical Officer')+(phcName?' · '+phcName:'');
+  // 28 Oct: the CHC above them — its name only; their PHC not enrolled → a way to ask to join
+  var chcL=null, phcL=null; rows.some(function(r){ var L=r.x.f.links; if(L&&L.chc&&L.chc.name){ chcL=L.chc; phcL=L.phc||null; return true; } if(L&&L.phc&&!phcL) phcL=L.phc; return false; });
   var need=function(r){ return r.s.ver+r.s.od*2+r.s.blLeft+(r.s.state==='r'?3:0); };
   rows.sort(function(a,b){ return (b.x.type==='phc')-(a.x.type==='phc')||need(b)-need(a)||(a.s.pct||0)-(b.s.pct||0); });
   var withPct=rows.filter(function(r){ return r.s.dept?r.s.pct!=null:r.s.hasPct; }), withB=rows.filter(function(r){ return r.s.base!=null; });
@@ -254,6 +273,8 @@ function nfMoRender(){
       +'<div class="nf-hero-ring">'+nfRing(avg||0,avgB,88,9,'#fff','rgba(255,255,255,.2)')+'<span><b>'+(avg==null?'—':avg+'%')+'</b><small>'+scEsc(t('readiness'))+'</small></span></div></div>'
     +'<div class="nf-hero-nums"><div><b class="acc">'+(avgB==null?'—':avgB+'%')+'</b><small>'+scEsc(t('Baseline'))+'</small></div><i></i><div><b>'+(gain==null?'—':(gain>=0?'+':'')+gain)+'</b><small>'+scEsc(t('Growth'))+'</small></div><i></i><div><b>'+ready+'<span style="font-size:13px;opacity:.75;">/'+rows.length+'</span></b><small>'+scEsc(t('NQAS Ready'))+'</small></div></div>'
     +'<div class="fa-nq">'+scEsc(t('Your MO cards'))+': <b>'+mine+' '+scEsc(t('done'))+'</b>'+(nSc?' · '+scEsc(t('fill them in each sub-centre')):'')+'</div></div>';
+  if(chcL) h='<div class="nfmo-under">'+scEsc(t('Under'))+' <b>'+scEsc(chcL.name)+'</b>'+(chcL.block?' · '+scEsc(chcL.block)+' '+scEsc(t('block')):'')+' · '+scEsc(t('view only'))+'</div>'+h;
+  if(!phcRow&&phcL&&phcL.name) h+='<div class="one-card nfmo-join"><div><b>'+scEsc(t('Bring')==='Bring'?'Bring '+phcL.name+' into NQAS FAST':phcL.name+' '+t('into NQAS FAST')+' '+t('Bring'))+'</b><div class="one-dim">'+scEsc(t('Your PHC is not enrolled yet — you support its sub-centres here. Its own cards start once it joins.'))+'</div></div><button type="button" class="nf-l-btn" style="width:auto;padding:10px 16px;" onclick="nfJoinAsk(\'phc\',\''+scJs(phcL.name)+'\',\''+scJs(phcL.nin||'')+'\',\''+scJs((chcL&&chcL.block)||'')+'\')">'+scEsc(t('Request to join'))+'</button></div>';
   h+=oneCounters([[tot('ver'),t('cards to verify'),tot('ver')?'o':''],[tot('od'),t('overdue actions'),tot('od')?'r':''],[tot('blLeft'),t('staff behind on baseline'),'']]);
   h+='<div class="one-sec"><b>'+scEsc(t('Facilities'))+'</b><span>'+scEsc(t('needing you most on top'))+'</span></div><div class="one-card nfmo-list">';
   h+=rows.map(function(r){ var x=r.x, s=r.s, f=x.f, isCur=x.code===cur, pct=s.dept?s.pct:(s.hasPct?s.pct:null), col=pct==null?'#B9C8C3':pct>=70?'#1E6B5E':pct>=50?'#D4912A':'#B3402A';
@@ -290,7 +311,7 @@ async function nfMoSwitch(code){
 (function(){ var hook=function(){ ['ndTodayHTML','nxFaHomeHTML'].forEach(function(fn){
   var oT=window[fn]; if(typeof oT!=='function'||oT._mo) return;
   window[fn]=function(){ var h=oT.apply(this,arguments);
-    try{ if(_nfMoCodes.length>1&&_nd&&_nfMoCodes.indexOf(_nd.code)>=0&&h.indexOf('nfmo-chip')<0) h='<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t('All my facilities'))+' <small>'+_nfMoCodes.length+' ›</small></button>'+h; }catch(e){}
+    try{ if(_nfMoCodes.length>=1&&_nd&&_nfMoCodes.indexOf(_nd.code)>=0&&h.indexOf('nfmo-chip')<0) h='<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t(_nfMoCodes.length>1?'All my facilities':'My facilities'))+' <small>'+_nfMoCodes.length+' ›</small></button>'+h; }catch(e){}
     return h; }; window[fn]._mo=1; }); };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else setTimeout(hook,0);
 })();
@@ -299,8 +320,8 @@ async function nfMoSwitch(code){
   if(typeof nfRenderToday!=='function') return;
   var oT=nfRenderToday;
   nfRenderToday=function(){ var r=oT.apply(this,arguments);
-    try{ var host=document.getElementById('nf-today'); if(host&&_nfMoCodes.length>1&&choState.roleId==='MO'&&!document.getElementById('nfmo-chip')){
-      host.insertAdjacentHTML('afterbegin','<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t('All my facilities'))+' <small>'+_nfMoCodes.length+' ›</small></button>'); } }catch(e){}
+    try{ var host=document.getElementById('nf-today'); if(host&&_nfMoCodes.length>=1&&choState.roleId==='MO'&&!document.getElementById('nfmo-chip')){
+      host.insertAdjacentHTML('afterbegin','<button type="button" class="nfmo-chip" id="nfmo-chip" onclick="nfMoOpen()"><i class="ti ti-building-hospital"></i> '+scEsc(t(_nfMoCodes.length>1?'All my facilities':'My facilities'))+' <small>'+_nfMoCodes.length+' ›</small></button>'); } }catch(e){}
     return r; };
 })();
 
@@ -367,3 +388,11 @@ function nfChcChip(){ var c=nfChcEntry(); if(!c) return '';
   window[fn]=function(){ var h=oT.apply(this,arguments); try{ if(h.indexOf('nf-blk-chip')<0){ var c=nfBlockChip(); if(c) h=c+h; } }catch(e){} return h; }; window[fn]._blk=1; }); };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else setTimeout(hook,0);
 })();
+
+// 28 Oct 2026: the Settings links list is replaced by the facility tree (Facilities → Registry); this card points there
+nfLinksRender=function(){
+  var body=document.getElementById('nfl-body'); if(!body) return;
+  var F=_nfLk.facs||{}, wait=Object.keys(F).filter(function(c){ return F[c]&&F[c].linkProposal&&!F[c].migratedTo; }).length;
+  body.innerHTML='<div class="nfl-ptr"><button type="button" class="hs-btn p" onclick="nflOpenRegistry()">Open Facilities → Registry</button>'
+    +(wait?'<span class="nfl-st wait">'+wait+' suggestion'+(wait===1?'':'s')+' from facilities waiting in the Registry</span>':'<span class="one-dim">No suggestions from facilities waiting.</span>')+'</div>';
+};

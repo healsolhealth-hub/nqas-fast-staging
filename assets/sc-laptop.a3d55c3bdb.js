@@ -180,7 +180,7 @@ function nfAdminShell(){
   var app=document.getElementById('admin-app'); if(!app||!nfAdminRole()) return;
   document.body.classList.add('nf-admin');
   var side=document.getElementById('nfs-side'); if(!side){ side=document.createElement('aside'); side.id='nfs-side'; side.className='nfs-side'; app.insertBefore(side,app.firstChild); }
-  var r=nfAdminRole(), user={name:r==='admin'?'HealSol Admin':((_scSup||{}).name||''),role:r==='admin'?'Administrator':r==='district'?'District Admin · '+((_scSup||{}).facilities||[]).length+' facilities':'Supervisor · '+((_scSup||{}).facilities||[]).length+' facilities',logout:'logoutAdmin()'};
+  var r=nfAdminRole(), user={name:r==='admin'?'HealSol Admin':((_scSup||{}).name||''),role:r==='admin'?'Administrator':r==='district'?((_scSup||{}).scope==='block'?'MOIC · '+((_scSup||{}).block||(_scSup||{}).chcName||'block')+' block':'District Admin · '+((_scSup||{}).facilities||[]).length+' facilities'):'Supervisor · '+((_scSup||{}).facilities||[]).length+' facilities',logout:'logoutAdmin()'};
   side.innerHTML=nfShellHTML(nfAdminItems(),user);
   var leg=document.querySelector('#admin-app .admin-main > [data-nfv="legacy"]');
 }

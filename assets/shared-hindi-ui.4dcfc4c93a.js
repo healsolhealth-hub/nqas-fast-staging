@@ -354,7 +354,7 @@ if (typeof HINDI_UI === "object") Object.assign(HINDI_UI, {"Full programme (cont
 "all":"सभी",
 "All Met for the rest of Standard {x}":"मानक {x} के बाकी सभी पूरे",
 "All facilities":"सभी स्वास्थ्य केंद्र",
-"All my facilities":"मेरे सभी स्वास्थ्य केंद्र","My block":"मेरा ब्लॉक","My CHC":"मेरा सीएचसी",
+"All my facilities":"मेरे सभी स्वास्थ्य केंद्र","My block":"मेरा ब्लॉक","My CHC":"मेरा सीएचसी","Under":"अंतर्गत","block":"ब्लॉक","view only":"केवल देखने के लिए","Bring":"लाएँ","into NQAS FAST":"को NQAS FAST में","Request to join":"जुड़ने का अनुरोध","Your PHC is not enrolled yet — you support its sub-centres here. Its own cards start once it joins.":"आपका पीएचसी अभी नामांकित नहीं है — आप यहाँ इसके उप-केंद्रों की सहायता करते हैं। जुड़ने के बाद इसके अपने कार्ड शुरू होंगे।",
 "All types":"सभी प्रकार",
 "Any phase":"कोई भी चरण",
 "Any status":"कोई भी स्थिति",
