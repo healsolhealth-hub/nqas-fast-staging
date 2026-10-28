@@ -6,14 +6,14 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "b8b9f3676a6f";
+const BUILD = "c4212878bc31";
 const ASSETS = [
  "assets/data-sc-days.0eb3c1d272.js",
  "assets/dept-admin.ee8d5ffab0.js",
  "assets/dept-content.bbcfa094c1.js",
  "assets/dept-core.4ed6e40053.css",
  "assets/dept-core.fa10621186.js",
- "assets/dept-grad.3d65c1e346.js",
+ "assets/dept-grad.1ac7433c09.js",
  "assets/dept-grad.c07401b26c.css",
  "assets/dept-master-ui.e493849b6c.js",
  "assets/dept-master.1ceca8c5a8.css",
@@ -38,7 +38,7 @@ const ASSETS = [
  "assets/sc-cp-progress.02e5f35df1.js",
  "assets/sc-cross-cutting.74584f8128.js",
  "assets/sc-day-placement.9f84827e93.js",
- "assets/sc-district.dfd809c095.js",
+ "assets/sc-district.94320f56ac.js",
  "assets/sc-fadm.1fb01e6ce7.css",
  "assets/sc-fadm.3f3b4d2d74.js",
  "assets/sc-gaps.df1042b0ae.js",
@@ -50,7 +50,7 @@ const ASSETS = [
  "assets/sc-laptop.3b958233dd.css",
  "assets/sc-laptop.a3d55c3bdb.js",
  "assets/sc-linked-checks.0eddd56dc9.js",
- "assets/sc-links.18a5c846d8.js",
+ "assets/sc-links.776611d768.js",
  "assets/sc-links.e145d9c6bb.css",
  "assets/sc-login-3tier.6baeea5ce4.js",
  "assets/sc-looks-met.c2aaaff056.js",
@@ -88,9 +88,10 @@ const ASSETS = [
  "assets/shared-hindi-admin.a43e18db13.js",
  "assets/shared-hindi-dom.82e2be6c6a.js",
  "assets/shared-hindi-ui.4dcfc4c93a.js",
+ "assets/shared-hs-home.e238ffd188.js",
  "assets/shared-hs-home.f2fa190596.css",
- "assets/shared-hs-home.f5e6c6a8f0.js",
- "assets/shared-hs-people.ca601beb06.js",
+ "assets/shared-hs-people.50a096d09d.css",
+ "assets/shared-hs-people.dc3a06542a.js",
  "assets/shared-hs-roles.d381b3e930.js",
  "assets/shared-hs-settings.f1365f98fb.js",
  "assets/shared-impact.9f7d5ac345.js",
@@ -106,8 +107,8 @@ const ASSETS = [
  "assets/shared-pdf.da58c8e364.js",
  "assets/shared-registration.6833f0a40c.js",
  "assets/shared-registry.0152bb4061.css",
- "assets/shared-registry.707eb06568.js",
- "assets/shared-reports.9ec078601e.js",
+ "assets/shared-registry.a19478cbcf.js",
+ "assets/shared-reports.69da7fca0e.js",
  "assets/shared-sc-content.057fe71840.js",
  "assets/shared-sc-content.4dd2befa79.css",
  "assets/shared-sc-draft.672ef4231a.js",

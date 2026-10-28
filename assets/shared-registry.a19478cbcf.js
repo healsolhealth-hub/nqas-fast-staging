@@ -335,17 +335,6 @@ function rgKidsHTML(n, nodes, kind, d) {
     + (cand.length > 8 ? '<input type="search" placeholder="Find…" aria-label="Find in ' + title + '" oninput="rgKidsFilter(\'' + box + '\',this.value)">' : '')
     + (cand.length ? '<div class="rg-kids-l" id="' + box + '">' + rows + '</div>' : '<small class="rg-dim">None in ' + rgE(n.district || 'this district') + ' yet.</small>') + '</div>';
 }
-// enrolled Sub-Centre: who has a login through the Settings link, and whether it matches the registry
-function rgLoginHTML(n, nodes) {
-  if (!n.code || n.t !== 'sc' || !rgHS()) return '';
-  var L = (n.f && n.f.links) || {}, want = rgWant(n), have = { phc: rgNin(L.phc && L.phc.nin), chc: rgNin(L.chc && L.chc.nin) };
-  var same = want.phc === have.phc && want.chc === have.chc, I = rgJ(n.id);
-  var mo = L.moMobile ? 'MO login: ' + rgE(L.moName || 'Medical Officer') + ' ✓' : 'No MO login yet';
-  var moic = L.moicId ? 'MOIC block login: ' + rgE(L.moicId) + ' ✓' : 'No MOIC login yet';
-  return '<div class="rg-logins"><b>Logins (Settings → PHC &amp; CHC links)</b><span>' + mo + '</span><span>' + moic + '</span>'
-    + (!same ? '<div class="rg-warn">Settings has ' + rgE(have.phc || have.chc ? [have.phc && ((nodes.byNin[have.phc] || {}).name || (L.phc && L.phc.name) || 'PHC ' + have.phc), have.chc && ((nodes.byNin[have.chc] || {}).name || (L.chc && L.chc.name) || 'CHC ' + have.chc)].filter(Boolean).join(' · ') : 'no PHC / CHC link') + ', not what the registry says. <button type="button" class="hs-link" onclick="rgSyncOne(\'' + I + '\')">Make it match the registry</button></div>' : '')
-    + '<button type="button" class="hs-btn" onclick="rgLogins(\'' + rgJ(n.code) + '\')">' + (L.moMobile || L.moicId ? 'Change logins' : 'Give logins') + '</button></div>';
-}
 function rgWant(n) { return { phc: rgNin(n.phc), chc: rgNin(n.chc) }; }
 function rgSideHTML(n, nodes) {
   var hs = rgHS(), ed = rgEditor(), de = rgDistEd(), rec = n.rec || {}, f = n.f || {}, g = f.geo, I = rgJ(n.id);
@@ -387,9 +376,9 @@ function rgSideHTML(n, nodes) {
     + rgTreeLoginsHTML(n, nodes)
     + (hs && !n.code && n.rid && n.rid !== 'NEW' ? '<div class="rg-enrol"><button type="button" class="hs-btn" onclick="rgEnrol(\'' + I + '\')">Enrol in NQAS FAST</button><small class="rg-dim">Opens the enrolment with this facility\'s details; it stays this record.</small></div>' : '')
     + (ed ? '<div class="rg-sbtn"><button type="button" class="hs-btn p" id="rg-save" onclick="rgSave(\'' + I + '\')">Save</button>' + (hs && n.rid && n.rid !== 'NEW' && !n.code ? '<button type="button" class="hs-btn" onclick="rgDelete(\'' + I + '\')">Delete</button>' : '') + '</div>'
-      + (de ? '<small class="rg-dim">Saved straight away and logged. ' + (n.code && t === 'sc' ? 'A new PHC / CHC for this enrolled Sub-Centre goes to HealSol, who updates the MO / MOIC logins.' : 'A facility is never deleted — mark it Closed or Merged.') + '</small>' : '')
-      + '<small class="rg-dim">' + (n.rid && n.rid !== 'NEW' ? 'In the registry' + (rec.src ? ' · ' + rgE(rec.src === 'import' ? 'imported' : rec.src === 'link' ? 'from a Settings link' : 'added by hand') : '') + (rec.at ? ' · ' + rgE(String(rec.at).slice(0, 10)) : '') : 'Not in the registry yet — Save adds it') + '</small>'
-      + (hs && (t === 'sc' || t === 'phc' || t === 'chc') ? '<small class="rg-dim">Links made here also update Settings → PHC &amp; CHC links for enrolled Sub-Centres, and the other way round.</small>' : '') : '');
+      + (de ? '<small class="rg-dim">Saved straight away and logged. ' + (n.code && t === 'sc' ? 'Its MO and block view follow at once (the facility tree).' : 'A facility is never deleted — mark it Closed or Merged.') + '</small>' : '')
+      + '<small class="rg-dim">' + (n.rid && n.rid !== 'NEW' ? 'In the registry' + (rec.src ? ' · ' + rgE(rec.src === 'import' ? 'imported' : rec.src === 'link' ? 'from a Settings link (before 28 Oct)' : rec.src === 'signup' ? 'from a sign-up' : 'added by hand') : '') + (rec.at ? ' · ' + rgE(String(rec.at).slice(0, 10)) : '') : 'Not in the registry yet — Save adds it') + '</small>'
+      + '' : '');
   return h;
 }
 function rgEdit(id) {
@@ -584,40 +573,10 @@ async function rgSuggest(code, yes) {
 }
 function rgNewId(nin, extra) { var R = _rg.R || {}, X = extra || {}; if (nin && !R['N' + nin] && !X['N' + nin]) return 'N' + nin; var id; do { id = 'R' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); } while (R[id] || X[id]); return id; }
 
-// ── registry → Settings → PHC & CHC links (enrolled Sub-Centres) ──
-// The Settings link gives the MO and the block MOIC their logins. A link made in the registry is sent there too:
-// the PHC's MO and the CHC's MOIC already on file come along, so nobody types the same link twice.
-async function rgSyncLinks(codes) {
-  var nodes = rgNodes(), byNin = nodes.byNin || {}, U = _rg.U || {}, done = 0, errs = [], shows = [];
-  for (var i = 0; i < codes.length; i++) {
-    var n = nodes.find(function (x) { return x.code === codes[i]; }); if (!n || !n.f) continue;
-    var L = n.f.links || {}, want = rgWant(n), have = { phc: rgNin(L.phc && L.phc.nin), chc: rgNin(L.chc && L.chc.nin) };
-    if (want.phc === have.phc && want.chc === have.chc) continue;
-    try {
-      if (!want.phc && !want.chc) { await nfCall('unlinkFacility', { code: n.code, fromRegistry: true }); done++; continue; }
-      if (want.phc && want.phc.length < 6 || want.chc && want.chc.length < 6) { errs.push(n.name + ': the NIN is too short for a login link (6 or more)'); continue; }
-      var pu = U[want.phc] || {}, cu = U[want.chc] || {}, pn = byNin[want.phc] || {}, cn = byNin[want.chc] || {};
-      var keepMo = want.phc === have.phc && L.moMobile;
-      var P = want.phc ? { nin: want.phc, name: pn.name || pu.name || (L.phc && L.phc.name) || '', moName: keepMo ? L.moName : (pu.mo && pu.mo.name) || '', moMobile: keepMo ? L.moMobile : (pu.mo && pu.mo.mobile) || '' } : {};
-      var C = want.chc ? { nin: want.chc, name: cn.name || cu.name || (L.chc && L.chc.name) || '', block: cn.block || cu.block || n.blk || '', moicName: (cu.moic && cu.moic.name) || '', moicMobile: (cu.moic && cu.moic.mobile) || '' } : {};
-      var r = await nfCall('linkFacility', { code: n.code, phc: P, chc: C, fromRegistry: true }); done++;
-      if (r && ((r.mo && r.mo.tempPassword) || (r.moic && r.moic.tempPassword))) shows.push([n.f, r, { phc: P, chc: C }]);
-    } catch (e) { errs.push(n.name + ': ' + (e && e.message || 'could not update the login link')); }
-  }
-  if (done) showToast('Settings → PHC & CHC links updated for ' + done + ' Sub-Centre' + (done === 1 ? '' : 's') + '.', 'ok');
-  if (errs.length) showToast(errs.join(' · '), 'err');
-  try { if (typeof nfLinksLoad === 'function') { await nfLinksLoad(); if (typeof nfLinksRender === 'function') nfLinksRender(); } } catch (e) {}
-  await rgRefreshLinks(codes);
-  for (var j = 0; j < shows.length; j++) { if (typeof nfLinkResult !== 'function') break; nfLinkResult(shows[j][0], shows[j][1], shows[j][2]);
-    await new Promise(function (res) { var t = setInterval(function () { if (!document.getElementById('nfl-res')) { clearInterval(t); res(); } }, 300); }); }
-  rgRender();
-}
 // the HealSol facility list is read once at sign-in: refresh the links of the facilities just changed
 async function rgRefreshLinks(codes) { var F = (typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {}, U = await Promise.all(codes.map(function (c) { return fbGet('sc_facilities/' + c + '/links').catch(function () { return undefined; }); }));
   codes.forEach(function (c, i) { if (F[c] && U[i] !== undefined) { if (U[i]) F[c].links = U[i]; else delete F[c].links; } });
   try { var u = await fbGet('sc_units'); if (u) _rg.U = u; } catch (e) {} }
-function rgSyncOne(id) { var n = rgNodes().find(function (x) { return x.id === id; }); if (n && n.code) rgSyncLinks([n.code]); }
-async function rgLogins(code) { if (typeof nfLinkConfirm !== 'function') return; try { await nfLinksLoad(); } catch (e) {} await nfLinkConfirm(code, false); await rgRefreshLinks([code]); _rg.at = 0; await rgLoad(true); }
 async function rgDelete(id) {
   var n = rgNodes().find(function (x) { return x.id === id; }); if (!n || !n.rid || n.code) return;
   if (!(await showConfirm('Delete ' + n.name + ' from the registry? Enrolled facilities are not affected.', '🗑️', 'Delete from the registry', 'Delete', 'var(--red)'))) return;

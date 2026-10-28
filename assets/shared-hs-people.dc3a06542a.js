@@ -115,3 +115,37 @@ async function hspSignupSet(t, on) {
     try { if (!_hs.plDone && typeof nfPLoginsRender === 'function') { _hs.plDone = 1; Promise.resolve(nfPLoginsRender()).then(function () { try { if (_nfOv.view === 'setup' && _hs.stab === 'people') o(); } catch (e) {} }); } } catch (e) {}
     return r; };
 })();
+// ── Programme rules → NQAS criteria, one row per facility type (consistency review item 23, 28 Oct 2026) ──
+//  Sub-Centre: shared/nqas_criteria (overall, Area of Concern, Standard minimums — the same editor as Content → Checkpoints).
+//  UPHC / PHC / CHC: shared/dept_criteria/byType/{type} {overall, aoc, dept, stdDefault} (else the shared marks, else 70 / 70 / 70 / 50).
+var _hspCr = null;
+async function hspCritRender(load) {
+  var main = document.querySelector('#admin-app .admin-main'); if (!main) return;
+  var el = document.getElementById('hs-crit');
+  if (!el) { el = document.createElement('div'); el.id = 'hs-crit'; el.dataset.nfv = 'setup'; el.className = 'nfo-card hs-crit'; var r = document.getElementById('hs-rules'); if (r && r.parentNode === main) r.insertAdjacentElement('afterend', el); else main.appendChild(el); }
+  el.setAttribute('data-hsg', 'rules');
+  if (load || !_hspCr) { try { _hspCr = (await fbGet('shared/dept_criteria')) || {}; } catch (e) { _hspCr = _hspCr || {}; } try { if (typeof scCritLoad === 'function') await scCritLoad(); } catch (e) {} }
+  var sc = (typeof _scCrit !== 'undefined' && _scCrit) || {}, nStd = Object.keys(sc.std || {}).length;
+  var val = function (t, k, d) { var a = (_hspCr.byType || {})[t] || {}; return a[k] != null ? a[k] : _hspCr[k] != null ? _hspCr[k] : d; };
+  var inp = function (t, k, d, lab) { return '<label class="hsc-in"><span>' + lab + '</span><input type="number" min="0" max="100" inputmode="numeric" id="hsc-' + t + '-' + k + '" value="' + hsE(val(t, k, d)) + '" aria-label="' + hsE((NF_LEVELS[t] || {}).short + ' ' + lab) + '">%</label>'; };
+  el.innerHTML = '<b><i class="ti ti-target"></i> NQAS criteria</b><p>The minimums a facility must reach to meet NQAS — used by every readiness screen, the reports and graduation. Results already saved keep the marks they were scored with.</p>'
+    + '<div class="hsc-rows"><div class="hsc-r"><span class="hsc-t"><b>Sub-Centre</b><small>' + (sc.overall != null ? 'Overall ' + sc.overall + '% · every Area of Concern ' + (sc.aoc != null ? sc.aoc : 70) + '% · every Standard ' + sc.stdDefault + '%' + (nStd ? ' · ' + nStd + ' Standards with their own minimum' : '') : 'Loading…') + '</small></span>'
+    + '<button type="button" class="hs-btn" onclick="hspCritSc()">Edit</button></div>'
+    + ['uphc', 'phc', 'chc'].map(function (t) { return '<div class="hsc-r"><span class="hsc-t"><b>' + hsE((NF_LEVELS[t] || {}).short || t) + '</b><small>overall · every Area of Concern · every department · every Standard</small></span><span class="hsc-f">'
+      + inp(t, 'overall', 70, 'Overall') + inp(t, 'aoc', 70, 'Area of Concern') + inp(t, 'dept', 70, 'Department') + inp(t, 'stdDefault', 50, 'Standard') + '</span></div>'; }).join('')
+    + '</div><div class="hsc-act"><button type="button" class="hs-btn p" onclick="hspCritSave()">Save UPHC / PHC / CHC criteria</button></div>';
+}
+async function hspCritSc() { try { if (typeof scCritLoad === 'function') await scCritLoad(); if (typeof scCritEdit === 'function') await scCritEdit(); } catch (e) { console.warn('[hsp] crit', e); } hspCritRender(true); }
+async function hspCritSave() {
+  var by = {}, bad = '';
+  ['uphc', 'phc', 'chc'].forEach(function (t) { var o = {}; ['overall', 'aoc', 'dept', 'stdDefault'].forEach(function (k) { var e = document.getElementById('hsc-' + t + '-' + k), v = e ? Math.round(+e.value) : NaN;
+    if (!(v >= 0 && v <= 100) || e.value === '') bad = bad || ((NF_LEVELS[t] || {}).short + ': enter 0–100'); else o[k] = v; }); by[t] = o; });
+  if (bad) { showToast(bad, 'err'); return; }
+  var nx = Object.assign({}, _hspCr || {}, { byType: by, at: new Date().toISOString() });
+  if (await fbSet('shared/dept_criteria', nx) === false) { showToast('Could not save — check the connection.', 'err'); return; }
+  _hspCr = nx; try { if (typeof _ndCrit !== 'undefined') _ndCrit = nx; } catch (e) {} showToast('NQAS criteria saved for UPHC, PHC and CHC.', 'ok'); hspCritRender();
+}
+(function () {
+  var o = hsSetupGroup; hsSetupGroup = function (el) { if (el && el.id === 'hs-crit') return 'rules'; return o.apply(this, arguments); };
+  var a = nfAdminApply; nfAdminApply = function () { var r = a.apply(this, arguments); try { if (hsOn() && _nfOv.view === 'setup' && _hs.stab === 'rules') { hspCritRender(); var p = document.querySelector('#hs-rules p'); if (p && /set in Content/.test(p.textContent)) p.textContent = 'Timeline — grace days after the last day, catch-up, on-time thresholds — is set separately for Sub-Centres, UPHCs, PHCs and CHCs. NQAS criteria are just below.'; } } catch (e) {} return r; };
+})();

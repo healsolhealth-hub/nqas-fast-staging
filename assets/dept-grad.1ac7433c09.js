@@ -23,7 +23,7 @@ async function ndGradLoad() {
   try { _ndCrit = await fbGet('shared/dept_criteria'); } catch (e) { _ndCrit = null; }
 }
 function ndCrit() {
-  var p = _nd.cfg.passMark || {}, k = _ndCrit || {}, n = function (key, d) { return k[key] != null && !isNaN(+k[key]) ? +k[key] : d; };
+  var p = _nd.cfg.passMark || {}, k = _ndCrit || {}, kt = (k.byType || {})[_nd.cfg.id] || {}, n = function (key, d) { return kt[key] != null && !isNaN(+kt[key]) ? +kt[key] : k[key] != null && !isNaN(+k[key]) ? +k[key] : d; };   // 28 Oct: per type first
   return { overall: n('overall', p.overall || 70), aoc: n('aoc', p.aoc || 70), dept: n('dept', p.dept || 70), std: n('stdDefault', ND_GRAD.std) };
 }
 function ndProgDay() { return _nd.fac.startDate ? nfDeptDayNo(_nd.fac.startDate) : 0; }   // the programme day by date (not the catch-up day)

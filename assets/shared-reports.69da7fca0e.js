@@ -188,7 +188,7 @@ function nfRepFacility(code) {
   if (typeof _nfDs !== 'undefined' && !_nfDs.map[code] && typeof nfDeptSumLive === 'function') nfDeptSumLive(code).then(function (s) { _nfDs.map[code] = s; go(); }, go); else go();
 }
 function nfDeptFacilityReportHTML(code) {
-  var o = hsInfo(code), f = o.f, s = o.s || {}, cfg = NF_LEVELS[o.type] || {}, r = rpRes(o), crit = (typeof _ndCrit !== 'undefined' && _ndCrit) || {}, stdMin = crit.stdDefault || 50, mark = crit.overall || 70;
+  var o = hsInfo(code), f = o.f, s = o.s || {}, cfg = NF_LEVELS[o.type] || {}, r = rpRes(o), crit = (function () { var k = (typeof _ndCrit !== 'undefined' && _ndCrit) || {}; return Object.assign({}, k, (k.byType || {})[o.type] || {}); })(), stdMin = crit.stdDefault || 50, mark = crit.overall || 70;
   var k = function (v, l, c) { return '<div><b style="color:' + (c || '#13201F') + '">' + v + '</b><small>' + l + '</small></div>'; }, acts = s.acts || {};
   var body = '<div class="kp">' + k(o.pct == null ? '—' : o.pct + '%', 'Readiness now', o.pct == null ? '#94A3B8' : nfRptColor(o.pct)) + k(o.base == null ? '—' : o.base + '%', 'Baseline', o.base == null ? '#94A3B8' : nfRptColor(o.base))
     + k(o.pct != null && o.base != null ? (o.pct - o.base >= 0 ? '+' : '') + (o.pct - o.base) : '—', 'Change since baseline') + k((s.assessed || 0) + ' / ' + (s.total || 0), 'Checkpoints scored') + k(o.cov == null ? '—' : o.cov + '%', 'Checklist checked')

@@ -323,7 +323,7 @@ function hsSetupGroup(el) {
   if (el.querySelector('#pricing-list')) return 'pricing';
   if (id === 'nf-supset') return 'support';
   if (id === 'nf-certset' || id === 'hs-rules') return 'rules';
-  return 'enrol';   // enrol form, access key, PHC & CHC links
+  return 'enrol';   // enrol form, access key
 }
 function hsTagSetup() { var main = document.querySelector('#admin-app .admin-main'); if (!main) return; [].forEach.call(main.children, function (el) { if (el.dataset.nfv === 'setup') el.dataset.hsg = hsSetupGroup(el); }); }
 function hsSetTab(t) {
