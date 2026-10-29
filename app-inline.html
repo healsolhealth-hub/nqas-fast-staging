@@ -30518,6 +30518,15 @@ body.hs-admin.nfv-setup[data-hsst="people"] .admin-main > [data-nfv="setup"][dat
   body.nf-stage.nf-admin .nfs-side .nfs-nav{bottom:20px;}
   body.nf-stage.nf-admin #admin-app .admin-main{padding-bottom:110px!important;}
 }
+.hs-fresh{border-color:#FCA5A5;}
+.hs-fresh .hsf-t{color:#B91C1C;display:flex;gap:6px;align-items:center;}
+.hs-fresh p{font-size:12.5px;color:var(--t2);line-height:1.5;margin:6px 0 10px;}
+.hsf-f{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--t2);margin:8px 0;}
+.hsf-f input[type=text],.hsf-f input:not([type]){min-height:38px;border:1.5px solid var(--br);border-radius:10px;padding:0 10px;font:inherit;max-width:320px;}
+.hsf-ok{color:#15803D;font-size:12px;font-weight:700;}
+.hsf-b{margin-top:8px;} .hsf-p{margin-top:12px;border-top:1px solid var(--br);padding-top:10px;} .hsf-p table{margin:6px 0 10px;width:100%;}
+.hsf-go{background:#B91C1C!important;border-color:#B91C1C!important;color:#fff!important;} .hsf-go:disabled{opacity:.45;}
+.hsf-done{color:#15803D;}
 </style>
 <script id="nf-hsp">// ══ Settings tidy-up (28 Oct 2026; HealSol: Partner logos → Partners · People as tabs with counts · Quality Champions →
 //    Recognition) and Programme rules → Self sign-up (free baseline at once, per facility type; off = HealSol approves) ══
@@ -30693,6 +30702,58 @@ function hspLabelTables(root) {
   if (typeof nfrRender === 'function') { var o = nfrRender; nfrRender = async function () { var r = await o.apply(this, arguments); try { hspLabelTables(document.getElementById('nf-recog')); hspLabelTables(document.getElementById('nf-stdon')); hspScrollTabs(); } catch (e) {} return r; }; }
   if (typeof nfDAdminRender === 'function') { var d = nfDAdminRender; nfDAdminRender = async function () { var r = await d.apply(this, arguments); try { hspLabelTables(document.getElementById('nf-stdon')); hspScrollTabs(); } catch (e) {} return r; }; }
   if (typeof hsEnsureTabs === 'function') { var e = hsEnsureTabs; hsEnsureTabs = function () { var r = e.apply(this, arguments); try { hspTabsRow(); hspScrollTabs(); } catch (x) {} return r; }; }
+})();
+// ── Danger zone → Start fresh (29 Oct 2026): clear demo data before go-live; keep HealSol Admins, content, settings, Registry lists ──
+var _hspFr = { plan: null, shared: null, file: '', busy: false };
+var HSF_LBL = { sc_facilities: 'Facilities', sc_pcards: 'Staff cards (UPHC / PHC / CHC)', sc_dcards: 'Department cards', sc_dactions: 'Department actions', sc_progress: 'Staff cards (Sub-Centre)', sc_cpprog: 'Checkpoint progress',
+  sc_corrective: 'Corrective actions', sc_review_sessions: 'Peer review sessions', sc_live_sessions: 'Live sessions', sc_units: 'PHC / CHC units (old links)', sc_registry_log: 'Registry change log', sc_nin_index: 'NIN index',
+  sc_moic_by_mob: 'MOIC mobiles', sc_summary: 'Nightly summaries', sc_impact: 'Impact records', sc_impact_public: 'Public impact cards', sc_impact_pid: 'Impact card IDs', sc_impact_img: 'Impact card images', sc_pioneers: 'Quality Pioneers',
+  sc_portfolios: 'State / donor portfolios', sc_viewers: 'State / donor logins', sc_views: 'State / donor dashboards', sc_public_stats: 'Public page figures', sc_dirty: 'Pending summary updates', sc_supervisors: 'Supervisors',
+  sc_district_admins: 'District Admins and MOIC block views', sc_champions: 'Quality Champions', sc_staff_index: 'Staff logins index', sc_payments: 'Payments and receipts', sc_certs: 'Certificates', sc_cert_public: 'Public certificate pages',
+  sc_secure: 'Counters and rate limits', sc_audit: 'Audit log', 'shared/sc_leads': 'Enquiries and sign-ups' };
+function hspFreshRender() {
+  var main = document.querySelector('#admin-app .admin-main'); if (!main) return;
+  var el = document.getElementById('hs-fresh');
+  if (!el) { el = document.createElement('div'); el.id = 'hs-fresh'; el.dataset.nfv = 'setup'; el.className = 'nfo-card hs-fresh'; main.appendChild(el); }
+  el.setAttribute('data-hsg', 'danger');
+  var P = _hspFr.plan, row = function (a, b) { return '<tr><td>' + hsE(a) + '</td><td>' + hsE(String(b)) + '</td></tr>'; };
+  var h = '<b class="hsf-t"><i class="ti ti-alert-triangle"></i> Start fresh (before go-live)</b>'
+    + '<p>Deletes every facility and everything that belongs to it (cards, progress, actions, sessions, certificates, payments, impact records), every login except the HealSol Admins, enquiries, counters and logs. Keeps the HealSol Admins, all content and settings, and the Registry lists. Export a backup of the database first (Firebase console → Realtime Database → ⋮ → Export JSON).</p>'
+    + '<label class="hsf-f"><span>Copy content and settings from staging (optional): the staging database\'s <b>shared</b> node, exported as JSON</span><input type="file" accept=".json,application/json" onchange="hspFreshFile(this)"></label>'
+    + (_hspFr.file ? '<small class="hsf-ok">Loaded: ' + hsE(_hspFr.file) + '</small>' : '')
+    + '<div class="hsf-b"><button type="button" class="hs-btn" onclick="hspFreshCheck()"' + (_hspFr.busy ? ' disabled' : '') + '>Check what would be deleted</button></div>';
+  if (P && P.dryRun) {
+    h += '<div class="hsf-p"><b>Project: ' + hsE(P.project) + '</b><table class="nfo-t"><tbody>'
+      + P.wipe.concat(P.shared).map(function (w) { return row(HSF_LBL[w.path] || w.path, w.n + ' to delete'); }).join('')
+      + row('Sign-ins deleted', P.users.delete) + row('Sign-ins kept (HealSol Admins)', P.users.keep) + row('Registry records kept', P.registry.rows + (P.registry.links ? ' (' + P.registry.links + ' lose their link to a deleted facility)' : ''))
+      + (P.copy.length ? row('Copied from staging', P.copy.join(', ')) : '') + (P.skip.length ? row('Not copied', P.skip.join(', ')) : '') + '</tbody></table>'
+      + '<label class="hsf-f"><span>Type the project name <b>' + hsE(P.project) + '</b> to start fresh</span><input id="hsf-confirm" autocomplete="off" oninput="var b=document.getElementById(\'hsf-go\'); if(b) b.disabled=this.value.trim()!==\'' + hsJ(P.project) + '\'"></label>'
+      + '<div class="hsf-b"><button type="button" class="hs-btn hsf-go" id="hsf-go" disabled onclick="hspFreshRun()">Start fresh now</button></div></div>';
+  } else if (P && P.done) h += '<div class="hsf-p hsf-done"><b>Done.</b> ' + P.usersDeleted + ' sign-ins deleted' + (P.copy.length ? ' · copied from staging: ' + hsE(P.copy.join(', ')) : '') + '. Reload the page to see the fresh app.</div>';
+  el.innerHTML = h;
+}
+function hspFreshFile(inp) {
+  var f = inp.files && inp.files[0]; if (!f) return;
+  var rd = new FileReader(); rd.onload = function () { try { var j = JSON.parse(rd.result); if (j && j.shared && typeof j.shared === 'object' && !j.cp_master) j = j.shared; _hspFr.shared = j; _hspFr.file = f.name + ' · ' + Object.keys(j).length + ' settings'; _hspFr.plan = null; hspFreshRender(); }
+    catch (e) { showToast('That file is not a JSON export.', 'err'); } }; rd.readAsText(f);
+}
+async function hspFreshCheck() {
+  _hspFr.busy = true; hspFreshRender();
+  try { _hspFr.plan = await nfCall('startFresh', { mode: 'dry', importShared: _hspFr.shared || undefined }); } catch (e) { showToast(typeof nfErrText === 'function' ? nfErrText(e) : 'Could not check.', 'err'); }
+  _hspFr.busy = false; hspFreshRender();
+}
+async function hspFreshRun() {
+  var c = (document.getElementById('hsf-confirm') || {}).value || '', P = _hspFr.plan || {};
+  if (c.trim() !== P.project) return;
+  var ok = await scDialog({ title: 'Start fresh on ' + P.project + '?', icon: '⚠️', okLabel: 'Yes, start fresh', message: 'This cannot be undone except from your backup export. Every facility and every login except the HealSol Admins will be deleted.' }); if (!ok) return;
+  var b = document.getElementById('hsf-go'); if (b) { b.disabled = true; b.textContent = 'Working…'; }
+  try { _hspFr.plan = await nfCall('startFresh', { mode: 'run', confirm: c.trim(), importShared: _hspFr.shared || undefined }); showToast('Started fresh — reload the page.', 'ok'); }
+  catch (e) { showToast(typeof nfErrText === 'function' ? nfErrText(e) : 'Could not start fresh.', 'err'); }
+  hspFreshRender();
+}
+(function () {
+  var o = hsSetupGroup; hsSetupGroup = function (el) { if (el && el.id === 'hs-fresh') return 'danger'; return o.apply(this, arguments); };
+  var a = nfAdminApply; nfAdminApply = function () { var r = a.apply(this, arguments); try { if (hsOn() && _nfOv.view === 'setup' && _hs.stab === 'danger' && !document.getElementById('hs-fresh')) hspFreshRender(); } catch (e) {} return r; };
 })();
 </script>
 <script id="nf-day-score">// ══════════════════════════════════════════════════════════════
