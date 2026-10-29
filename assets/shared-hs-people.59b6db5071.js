@@ -149,3 +149,27 @@ async function hspCritSave() {
   var o = hsSetupGroup; hsSetupGroup = function (el) { if (el && el.id === 'hs-crit') return 'rules'; return o.apply(this, arguments); };
   var a = nfAdminApply; nfAdminApply = function () { var r = a.apply(this, arguments); try { if (hsOn() && _nfOv.view === 'setup' && _hs.stab === 'rules') { hspCritRender(); var p = document.querySelector('#hs-rules p'); if (p && /set in Content/.test(p.textContent)) p.textContent = 'Timeline — grace days after the last day, catch-up, on-time thresholds — is set separately for Sub-Centres, UPHCs, PHCs and CHCs. NQAS criteria are just below.'; } } catch (e) {} return r; };
 })();
+// ── phone (28 Oct, HealSol screenshots of Partners / Recognition): Settings tabs on one scrolling row; tables become cards ──
+function hspTabsRow() {
+  var st = document.getElementById('hs-stabs'); if (!st || st.querySelector('.hs-strow')) return;
+  var row = document.createElement('div'); row.className = 'hs-strow'; row.setAttribute('role', 'tablist');
+  [].slice.call(st.querySelectorAll(':scope > button')).forEach(function (b) { row.appendChild(b); }); st.appendChild(row); st.removeAttribute('role');
+}
+// keep the chosen tab in view on a phone (Settings row and the inner Partners / Recognition tabs)
+function hspScrollTabs() {
+  if (window.innerWidth >= 900) return;
+  [].forEach.call(document.querySelectorAll('#hs-stabs .hs-strow, #nf-stdon .nfr-tabs, #nf-recog .nfr-tabs'), function (row) {
+    var on = row.querySelector('button.on'); if (!on) return; try { row.scrollLeft = Math.max(0, on.offsetLeft - row.offsetLeft - 24); } catch (e) {} });
+}
+function hspLabelTables(root) {
+  [].forEach.call((root || document).querySelectorAll('table.nfr-t'), function (t) {
+    var hd = [].map.call(t.querySelectorAll('thead th'), function (th) { return (th.textContent || '').trim(); });
+    [].forEach.call(t.querySelectorAll('tbody tr'), function (tr) { [].forEach.call(tr.children, function (td, i) { if (!td.hasAttribute('data-label')) td.setAttribute('data-label', hd[i] || ''); }); });
+  });
+}
+(function () {
+  var a = nfAdminApply; nfAdminApply = function () { var r = a.apply(this, arguments); try { if (hsOn()) { hspTabsRow(); setTimeout(function () { hspTabsRow(); hspScrollTabs(); }, 450); hspLabelTables(document.querySelector('#admin-app .admin-main')); hspScrollTabs(); } } catch (e) {} return r; };
+  if (typeof nfrRender === 'function') { var o = nfrRender; nfrRender = async function () { var r = await o.apply(this, arguments); try { hspLabelTables(document.getElementById('nf-recog')); hspLabelTables(document.getElementById('nf-stdon')); hspScrollTabs(); } catch (e) {} return r; }; }
+  if (typeof nfDAdminRender === 'function') { var d = nfDAdminRender; nfDAdminRender = async function () { var r = await d.apply(this, arguments); try { hspLabelTables(document.getElementById('nf-stdon')); hspScrollTabs(); } catch (e) {} return r; }; }
+  if (typeof hsEnsureTabs === 'function') { var e = hsEnsureTabs; hsEnsureTabs = function () { var r = e.apply(this, arguments); try { hspTabsRow(); hspScrollTabs(); } catch (x) {} return r; }; }
+})();
