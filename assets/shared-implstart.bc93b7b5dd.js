@@ -177,3 +177,25 @@ function isWaitChip(w) {
         else { t = isT('Implementation starts on ' + isFmt(w.on, true), 'कार्यान्वयन ' + isFmt(w.on, true) + ' से'); s = isT('Your team’s cards open again on that day.', 'उस दिन आपकी टीम के कार्ड फिर खुलेंगे।'); btn = ''; }
         var top = app.querySelector('.nx') || app; top.insertAdjacentHTML('afterbegin', '<div class="ndu-ban" id="is-faban"><span class="ndu-bi">📅</span><span><b>' + isE(t) + '</b><small>' + isE(s) + '</small></span>' + (btn && typeof nduGoUnlock === 'function' ? '<button type="button" onclick="nduGoUnlock()">' + isE(btn) + '</button>' : '') + '</div>'); } } } catch (e) {}
     return r; }; })();
+// Sub-Centre headers (20 Nov 2026, staging review): while waiting / choosing / starting, no "Week 3 · Day 15 / 60" and no
+// "Implementation · Day 15 · 0/9 to work on today" banner on a closed card — they say what is really happening.
+function isWaitLabel(w) {
+  if (!w) return '';
+  if (w.k === 'pick') return isT('Baseline done · choose Day 8', 'बेसलाइन पूरी · दिन 8 चुनें');
+  if (w.k === 'starting') return isT('Day 8 starts ' + isFmt(w.on), 'दिन 8: ' + isFmt(w.on));
+  return isT('Baseline done · paused ' + w.d + ' day' + (w.d === 1 ? '' : 's'), 'बेसलाइन पूरी · ' + w.d + ' दिन से रुका');
+}
+(function () { if (typeof nfCardsHead !== 'function') return; var o = nfCardsHead;
+  nfCardsHead = function () { var r = o.apply(this, arguments); try { var w = nfWait(isScFac()), c = document.querySelector('#nf-cards-head .nf-chip'); if (w && c) c.textContent = isWaitLabel(w); } catch (e) {} return r; }; })();
+(function () { if (typeof nfRenderToday !== 'function') return; var o = nfRenderToday;
+  nfRenderToday = function () { var r = o.apply(this, arguments);
+    try { var w = nfWait(isScFac()), k = document.querySelector('.nf-hero-k'), t = document.querySelector('.nf-hero-t'); if (w && k && t) { k.textContent = isWaitLabel(w);
+      t.textContent = w.k === 'pick' ? isT('Programme confirmed — choose when Day 8 starts', 'कार्यक्रम पक्का — दिन 8 कब शुरू हो, चुनें') : w.k === 'starting' ? isT('Implementation starts on ' + isFmt(w.on, true), 'कार्यान्वयन ' + isFmt(w.on, true) + ' से') : isT('Implementation is paused — no days are lost', 'कार्यान्वयन रुका है — कोई दिन नहीं छूटेगा'); } } catch (e) {}
+    return r; }; })();
+(function () { if (typeof renderCard !== 'function') return; var o = renderCard;
+  renderCard = function (di) { var r = o.apply(this, arguments);
+    try { if (nfWait(isScFac()) && !phcCheckAccess(di)) { var c = document.getElementById('card-container'); if (c) c.querySelectorAll('.scd-banner').forEach(function (b) { b.remove(); }); } } catch (e) {}
+    return r; }; })();
+(function () { if (typeof scb2RenderWsMini !== 'function') return; var o = scb2RenderWsMini;
+  scb2RenderWsMini = function () { var r = o.apply(this, arguments);
+    try { var w = nfWait(isScFac()), s = document.querySelector('#scb2-ws-mini .scb2-sub'); if (w && s) s.textContent = isWaitLabel(w); } catch (e) {} return r; }; })();
