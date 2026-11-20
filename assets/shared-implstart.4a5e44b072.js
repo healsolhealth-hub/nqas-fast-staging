@@ -129,13 +129,13 @@ async function isCommitDialog(code) {
   try { var r = await nfCall('commitProgramme', { codes: codes, kind: v.kind, org: v.org, payBy: v.payBy, ref: v.ref });
     (r.done || []).forEach(function (x) { if (F[x.code]) { F[x.code].officePay = { commit: true, kind: v.kind, org: v.org, until: v.payBy, ref: v.ref || null }; if (x.pick) F[x.code].implPick = { since: isToday() }; } });
     showToast('Commitment recorded for ' + (r.done || []).length + ' facilit' + ((r.done || []).length === 1 ? 'y' : 'ies') + ((r.skipped || []).length ? ' · ' + r.skipped.length + ' skipped (already paid)' : '') + '.', 'ok');
-    if (typeof scRenderMasterDashboard === 'function') try { scRenderMasterDashboard(); } catch (e) {}
+    if (typeof scRenderMasterDashboard === 'function') try { scRenderMasterDashboard(); } catch (e) {} if (typeof hsRenderFac === 'function' && document.getElementById('hs-fq')) try { hsRenderFac(); } catch (e) {}
   } catch (e) { showToast(nfErrText(e), 'err'); }
 }
 async function isEndCommit(code) {
   var F = (typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {}, f = F[code] || {}, op = f.officePay || {};
-  var ok = await scDialog({ title: 'End this commitment?', icon: '✋', okLabel: 'End commitment', message: (f.name || code) + '\nCommitted by ' + (op.org || '—') + ', payment expected by ' + (op.until || '—') + '.\n\nIf the facility has not paid, its cards after the baseline lock again.' }); if (!ok) return;
-  try { await nfCall('endCommitment', { code: code }); if (F[code]) { F[code].officePay = null; F[code].implPick = null; } showToast('Commitment ended.', 'ok'); if (typeof scRenderMasterDashboard === 'function') try { scRenderMasterDashboard(); } catch (e) {} } catch (e) { showToast(nfErrText(e), 'err'); }
+  var ok = await scDialog({ title: 'End this commitment?', icon: '✋', okLabel: 'End commitment', message: (f.name || code) + '\nCommitted by ' + (op.org || '—') + ', payment expected by ' + (op.until || '—') + '.\n\n' + (f.implFrom && f.implFrom > isToday() ? 'Day ' + (isBase(f) + 1) + ' was set for ' + isFmt(f.implFrom, true) + '. That date is cancelled and the facility goes back to waiting (its clock is paused again).' : f.implFrom ? 'Implementation is already running. If the facility has not paid, its cards after the baseline lock again.' : 'The facility goes back to waiting. Its cards after the baseline stay locked until it pays.') }); if (!ok) return;
+  try { await nfCall('endCommitment', { code: code }); if (F[code]) { var g = F[code]; g.officePay = null; g.implPick = null; if (g.implFrom && g.implFrom > isToday()) { g.startDate = g.baselineStart || g.startDate; g.implFrom = null; g.baselineStart = null; } } showToast('Commitment ended.', 'ok'); if (typeof scRenderMasterDashboard === 'function') try { scRenderMasterDashboard(); } catch (e) {} if (typeof hsRenderFac === 'function' && document.getElementById('hs-fq')) try { hsRenderFac(); } catch (e) {} } catch (e) { showToast(nfErrText(e), 'err'); }
 }
 (function () { if (typeof nfFacMenu !== 'function') return; var o = nfFacMenu;
   nfFacMenu = function (btn, code) { var r = o.apply(this, arguments);

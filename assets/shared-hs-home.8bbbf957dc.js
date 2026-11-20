@@ -64,8 +64,15 @@ function hsInfo(code, f0, agg0, prog0) {   // f0 / agg0 / prog0: the Champion's 
   o.grad14 = !o.grad && d != null && d >= 1 && o.days - d <= 13;   // the Programme list's window (incl. past the last day, waiting)
   var ti = typeof nfTrialInfo === 'function' ? nfTrialInfo(f) : null; o.trial = ti; o.payDue = !!(ti && ti.ended);
   o.access = f.subscriptionStatus === 'paid' ? 'Paid' + (dept ? '' : ' · ' + (String(f.progId || '').indexOf('12B') >= 0 ? '12B' : '12A')) : f.subscriptionStatus === 'trial' ? (o.payDue ? 'Trial ended' : 'Trial') : 'Contract';
+  // implementation after payment / commitment (20 Nov 2026): what the facility is waiting for, and who has committed
+  try { o.wait = typeof nfWait === 'function' ? nfWait(f) : null; } catch (e) { o.wait = null; }
+  if (o.wait) { o.behind = false; o.onTime = null; }
+  if (f.subscriptionStatus !== 'paid' && f.officePay && f.officePay.commit) { o.payDue = false; o.access = 'Committed · ' + (f.officePay.org || 'District / partner'); }
   return o;
 }
+function hsWaitCell(o) { var w = o.wait, n = (typeof isBase === 'function' ? isBase(o.f) : 7) + 1;
+  return w.k === 'wait' ? 'Waiting · ' + w.d + ' day' + (w.d === 1 ? '' : 's') + '<small>baseline done, not paid</small>'
+    : w.k === 'pick' ? 'Choose Day ' + n + '<small>confirmed, date not chosen</small>' : 'Day ' + n + ' on ' + hsE(hsShortDate(w.on)) + '<small>implementation starting</small>'; }
 var HS_PHASE = { notstarted: 'Not started', baseline: 'Baseline', impl: 'Implementation', endline: 'End-line', ready: 'Readiness week', closing: 'Waiting for graduation', graduated: 'Graduated', catchup: 'Catch-up' };
 function hsResult(o) {   // the result column: graduation result, else the NQAS check by the type's own rules
   if (o.loading && !o.grad) return '<span class="nfo-chip grey">Loading…</span>';
@@ -220,7 +227,7 @@ function hsRenderFac() {
   h += '<div class="nfo-card hs-tw"><table class="nfo-t hs-ft hs-rt"><thead><tr><th>Facility</th><th>Day · phase</th><th>Readiness (baseline → now)</th><th>Result</th><th class="c">On time</th><th class="c">Overdue actions</th><th>Access</th><th></th></tr></thead><tbody>'
     + (sorted.length ? sorted.map(function (o) { var ch = o.pct != null && o.base != null ? o.pct - o.base : null;
       return '<tr class="nfo-row' + (o.behind || o.payDue ? ' hs-warn' : '') + '" onclick="scDrillIn(\'' + hsJ(o.code) + '\')"><td data-l=""><b>' + hsE(o.name) + '</b> ' + hsTypeChip(o.type) + (o.f.suspended ? ' <span class="nfo-chip grey">Paused</span>' : '') + '<small>' + hsE([o.district || o.code, o.inCharge ? o.inChargeLabel + ' ' + o.inCharge : 'No ' + o.inChargeLabel + ' yet'].join(' · ')) + '</small></td>'
-        + '<td data-l="Day">' + (o.phase === 'notstarted' ? 'Not started<small>' + (o.f.startDate ? 'starts ' + hsE(hsShortDate(o.f.startDate)) : 'start date not set') + '</small>' : 'Day ' + (o.phase === 'catchup' ? o.days : o.day) + '<small>' + hsE(HS_PHASE[o.phase]) + (o.phase === 'graduated' && o.grad ? ' ' + hsE(hsShortDate(String(o.grad.at || '').slice(0, 10))) : '') + '</small>') + '</td>'
+        + '<td data-l="Day">' + (o.wait ? hsWaitCell(o) : o.phase === 'notstarted' ? 'Not started<small>' + (o.f.startDate ? 'starts ' + hsE(hsShortDate(o.f.startDate)) : 'start date not set') + '</small>' : 'Day ' + (o.phase === 'catchup' ? o.days : o.day) + '<small>' + hsE(HS_PHASE[o.phase]) + (o.phase === 'graduated' && o.grad ? ' ' + hsE(hsShortDate(String(o.grad.at || '').slice(0, 10))) : '') + '</small>') + '</td>'
         + '<td data-l="Readiness">' + (o.pct == null ? '<span class="hs-dim">' + (o.loading ? 'Loading…' : o.phase === 'notstarted' ? '—' : 'No cards yet') + '</span>' : (o.base != null ? o.base + '% → ' : '') + '<b>' + o.pct + '%</b>' + (ch != null ? ' <b class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch + '</b>' : '') + (o.cov != null ? '<small>' + o.cov + '% checked</small>' : '')) + '</td>'
         + '<td data-l="Result">' + hsResult(o) + '</td><td data-l="On time" class="c' + (o.behind ? ' red' : '') + '">' + (o.onTime == null ? '—' : o.onTime + '%') + '</td><td data-l="Overdue actions" class="c' + (o.overdue ? ' red' : '') + '">' + (o.overdue || 0) + '</td>'
         + '<td data-l="Access" class="' + (o.payDue ? 'red' : '') + '">' + hsE(o.access) + '</td><td data-l="" class="hs-fdot"><button type="button" class="hs-dots" aria-label="Manage ' + hsE(o.name) + '" onclick="event.stopPropagation();nfFacMenu(this,\'' + hsJ(o.code) + '\')">⋯</button></td></tr>'; }).join('')
