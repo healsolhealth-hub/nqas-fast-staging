@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NQAS | FAST impact · HealSol Academy</title>
+<meta name="description" content="How many people, facilities and health staff NQAS | FAST reaches — updated every night.">
+<!-- 19 Nov 2026 (canvas "Impact & Verify pages"): the public Impact page. Wix thehealsol.com/impact shows it with Embed a Site.
+     Data: impactStats?format=json (functions/publicstats.js ← sc_public_stats, written every night). No facility names; people only
+     if they did not switch "Show my name" off; partner logos only with a permission on record. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#135A55;--teal2:#2E8B7E;--ink:#10302B;--mut:#4F625D;--line:#DCE4E1;--bg:#F4F8F7;--gold:#B45309;--green:#15803D;}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Poppins,"Noto Sans Devanagari",system-ui,sans-serif;}
+a{color:var(--teal);} a:hover{color:#0B3B37;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
+header{background:#fff;border-bottom:1px solid #E2EAE7;}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:12px;padding-bottom:12px;}
+.logos{display:flex;align-items:center;gap:16px;} .logos img:first-child{height:44px;width:auto;} .logos img:last-child{height:28px;width:auto;}
+.hdr-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;font:inherit;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;border:0;}
+.btn.p{background:var(--teal);color:#fff;} .btn.p:hover{background:#0B3B37;color:#fff;}
+.btn.o{background:#fff;color:var(--teal);border:1.5px solid var(--teal);}
+.lang{display:flex;border:1px solid #C9D6D2;border-radius:10px;overflow:hidden;}
+.lang button{height:42px;padding:0 14px;border:0;background:#fff;color:var(--ink);font:inherit;font-size:14px;cursor:pointer;}
+.lang button[aria-pressed="true"]{background:var(--teal);color:#fff;font-weight:600;}
+.hero{background:var(--teal);color:#fff;text-align:center;}
+.hero .wrap{padding-top:52px;padding-bottom:64px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;color:#F2C48D;}
+.big.lh{font-size:clamp(30px,6vw,52px);letter-spacing:0;line-height:1.15;}
+.hero .btn.w{background:#fff;color:var(--teal);margin-top:8px;} .hero .btn.w:hover{background:#E3F1EC;color:#0B3B37;}
+body.launch #tiles,body.launch #where-sec,body.launch #ppl-sec,body.launch #upd,body.launch .join{display:none!important;}
+body.launch main.wrap{padding-top:28px;}
+.big{font-size:clamp(48px,9vw,88px);line-height:1;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+.hero .lead{font-size:clamp(17px,2.2vw,22px);font-weight:500;max-width:720px;}
+.hero small{font-size:14px;color:#CFE3DE;}
+main.wrap{display:flex;flex-direction:column;gap:40px;padding-bottom:40px;}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:-30px;}
+.tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:3px;}
+.tile b{font-size:30px;line-height:1.1;} .tile span{font-size:14px;font-weight:600;} .tile small{font-size:12.5px;color:var(--mut);}
+.tile.gr b{color:var(--green);} .tile.gd b{color:var(--gold);}
+h2{margin:0;font-size:clamp(21px,2.6vw,26px);}
+.sec{display:flex;flex-direction:column;gap:14px;}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;} .sec-h span{font-size:14px;color:var(--mut);}
+.tw{background:#fff;border:1px solid var(--line);border-radius:16px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:14.5px;}
+th{text-align:left;padding:12px 16px;font-size:12px;letter-spacing:.04em;color:var(--mut);background:#F7FAF9;border-bottom:1px solid var(--line);white-space:nowrap;}
+td{padding:14px 16px;border-bottom:1px solid #EEF2F1;} tr:last-child td{border-bottom:0;} .r{text-align:right;}
+.bar{display:flex;align-items:center;gap:10px;} .bar i{display:block;height:10px;border-radius:5px;background:var(--teal);min-width:4px;}
+.chips{display:flex;gap:8px;flex-wrap:wrap;}
+.chips button{min-height:40px;padding:0 16px;border:1px solid #C9D6D2;border-radius:20px;background:#fff;color:var(--ink);font:inherit;font-size:14px;cursor:pointer;}
+.chips button[aria-pressed="true"]{border-color:var(--teal);background:#E3F1EC;color:var(--teal);font-weight:600;}
+.ppl{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.pc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;gap:14px;align-items:flex-start;}
+.av{width:48px;height:48px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.av.champion{background:#FBF1E2;color:#8A4409;} .av.pioneer,.av.leader{background:#E8EEF9;color:#1E3A8A;} .av.achiever{background:#E3F1EC;color:var(--teal);}
+.pc div{display:flex;flex-direction:column;gap:3px;min-width:0;} .pc b{font-size:16px;} .pc .lv{font-size:13.5px;font-weight:600;} .pc .wh{font-size:13px;color:var(--mut);}
+.pc a{font-size:13.5px;font-weight:600;padding:6px 0;}
+.more{align-self:center;background:none;border:0;font:inherit;font-size:14.5px;font-weight:600;color:var(--teal);text-decoration:underline;min-height:44px;padding:0 14px;cursor:pointer;}
+.logos-row{display:flex;gap:14px;flex-wrap:wrap;}
+.logo-c{width:180px;height:84px;border:1px solid var(--line);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;padding:10px;}
+.logo-c img{max-width:100%;max-height:100%;object-fit:contain;}
+.check{background:#fff;border:2px solid var(--teal);border-radius:18px;padding:22px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;}
+.check > div:first-child{flex:1 1 300px;display:flex;flex-direction:column;gap:4px;} .check p{margin:0;font-size:14px;color:var(--mut);}
+.check form{flex:1 1 420px;min-width:0;max-width:100%;display:flex;gap:10px;flex-wrap:wrap;}
+.check input{flex:1 1 220px;min-width:0;width:100%;box-sizing:border-box;height:50px;border:1.5px solid #C9D6D2;border-radius:12px;padding:0 14px;font:inherit;font-size:16px;text-transform:uppercase;}
+.check .err{flex-basis:100%;font-size:13px;color:#8A1C1C;min-height:0;margin:0;}
+.join{background:#FBF1E2;border:1px solid #F0DDBF;border-radius:18px;padding:22px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;}
+.join > div{flex:1 1 300px;display:flex;flex-direction:column;gap:4px;} .join p{margin:0;font-size:14px;color:#5A3410;}
+footer{background:#fff;border-top:1px solid #E2EAE7;}
+footer .wrap{padding-top:20px;padding-bottom:20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--mut);}
+.sr{position:absolute;left:-9999px;}
+.note{font-size:12.5px;color:var(--mut);}
+.empty{background:#fff;border:1px dashed #C9D6D2;border-radius:14px;padding:18px;font-size:14px;color:var(--mut);text-align:center;}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #F2AE68;outline-offset:2px;}
+@media(max-width:640px){
+  .logos img:first-child{height:36px;} .logos img:last-child{height:20px;}
+  .hdr-r .btn.o{display:none;}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr));} .tile b{font-size:24px;}
+  thead{display:none;} tr{display:block;padding:12px 14px;border-bottom:1px solid #EEF2F1;} td{display:block;border:0;padding:2px 0;} td.r{text-align:left;}
+  td[data-l]::before{content:attr(data-l) ' · ';font-size:12px;color:var(--mut);}
+  .logo-c{width:calc(50% - 7px);height:70px;}
+}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="logos"><img src="qi-logo.jpg" alt="Qi FAST"><img src="healsol.png" alt="HealSol Academy"></div>
+  <div class="hdr-r">
+    <a class="btn o" href="#check" data-t="checkTop">Check a certificate</a>
+    <a class="btn p" id="join-top" href="#" target="_blank" rel="noopener" data-t="join">Join NQAS | FAST</a>
+    <div class="lang" role="group" aria-label="Language"><button type="button" id="l-en" aria-pressed="true" onclick="setLang('en')">English</button><button type="button" id="l-hi" aria-pressed="false" onclick="setLang('hi')">हिंदी</button></div>
+  </div>
+</div></header>
+
+<section class="hero"><div class="wrap">
+  <span class="eyebrow" data-t="eyebrow">NQAS | FAST IMPACT</span>
+  <b class="big" id="pop">—</b>
+  <span class="lead" data-t="popLead">people live in the areas of the facilities on NQAS | FAST</span>
+  <small id="upd"></small>
+  <a class="btn w" id="join-hero" href="#" target="_blank" rel="noopener" data-t="join" hidden>Join NQAS | FAST</a>
+</div></section>
+
+<main class="wrap">
+  <div class="tiles" id="tiles"></div>
+
+  <section class="sec" id="where-sec">
+    <div class="sec-h"><h2 data-t="where">Where we work</h2><span id="where-n"></span></div>
+    <div class="tw"><table><thead><tr><th data-t="thState">STATE</th><th data-t="thFac">FACILITIES</th><th class="r" data-t="thDist">DISTRICTS</th><th class="r" data-t="thReady">NQAS READY</th><th class="r" data-t="thPeople">PEOPLE</th></tr></thead><tbody id="states"></tbody></table></div>
+    <span class="note" data-t="noNames">No facility names are shown on this page.</span>
+  </section>
+
+  <section class="sec" id="ppl-sec">
+    <div class="sec-h"><h2 data-t="ppl">People making it happen</h2><span data-t="pplNote">Shown unless they switched “Show my name” off</span></div>
+    <div class="chips" role="group" aria-label="Show" id="chips"></div>
+    <div class="ppl" id="ppl"></div>
+    <button type="button" class="more" id="more" onclick="S.n+=12;paintPeople()" data-t="more">Show more people</button>
+  </section>
+
+  <section class="sec" id="partners-sec">
+    <h2 data-t="partners">Working together with</h2>
+    <div class="logos-row" id="partners"></div>
+  </section>
+
+  <section class="check" id="check">
+    <div><h2 data-t="chkH">Check a certificate, poster or picture</h2><p data-t="chkP">Type the number printed under the QR code, or scan the QR with your phone camera.</p></div>
+    <form onsubmit="doCheck(event)">
+      <label for="cn" class="sr" data-t="chkL">Number to check</label>
+      <input id="cn" type="text" maxlength="40" placeholder="NQF-SC-2026-00001" autocapitalize="characters">
+      <button type="submit" class="btn p" data-t="chkB">Check</button>
+      <p class="err" id="cerr" role="alert"></p>
+    </form>
+  </section>
+
+  <section class="join">
+    <div><h2 data-t="joinH">Bring NQAS | FAST to your facility</h2><p data-t="joinP">Sign up your facility, join as staff, or ask for your district — it takes a few minutes.</p></div>
+    <a class="btn p" id="join-bot" href="#" target="_blank" rel="noopener" data-t="join">Join NQAS | FAST</a>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <span data-t="foot">Based on the NQAS standards · numbers worked out by HealSol Academy from programme data, every night</span>
+  <a id="learn" href="https://app.thehealsol.com/" target="_blank" rel="noopener" data-t="learn">Learn about NQAS | FAST →</a>
+</div></footer>
+
+<script>
+(function () {
+  var STAGE = location.hostname === 'staging.thehealsol.com';
+  var API = 'https://asia-south1-' + (STAGE ? 'healsol-nqas-uphc' : 'healsol-nqas') + '.cloudfunctions.net/impactStats?format=json';
+  var APP = STAGE ? 'https://staging.thehealsol.com/' : 'https://app.thehealsol.com/';
+  var VERIFY = STAGE ? 'https://staging.thehealsol.com/' : 'https://www.thehealsol.com/verify';
+  window.S = { d: null, lang: 'en', f: 'all', n: 9 };
+  try { var l = localStorage.getItem('nq_imp_lang'); if (l === 'hi' || l === 'en') S.lang = l; } catch (e) {}
+  try { var q = new URLSearchParams(location.search).get('l'); if (q === 'hi' || q === 'en') S.lang = q; } catch (e) {}
+  var T = {
+    en: { eyebrow: 'NQAS | FAST IMPACT', popLead: 'people live in the areas of the facilities on NQAS | FAST', checkTop: 'Check a certificate', join: 'Join NQAS | FAST',
+      where: 'Where we work', thState: 'STATE', thFac: 'FACILITIES', thDist: 'DISTRICTS', thReady: 'NQAS READY', thPeople: 'PEOPLE', noNames: 'No facility names are shown on this page.',
+      ppl: 'People making it happen', pplNote: 'Shown unless they switched “Show my name” off', more: 'Show more people', partners: 'Working together with',
+      chkH: 'Check a certificate, poster or picture', chkP: 'Type the number printed under the QR code, or scan the QR with your phone camera.', chkL: 'Number to check', chkB: 'Check',
+      joinH: 'Bring NQAS | FAST to your facility', joinP: 'Sign up your facility, join as staff, or ask for your district — it takes a few minutes.',
+      foot: 'Based on the NQAS standards · numbers worked out by HealSol Academy from programme data, every night', learn: 'Learn about NQAS | FAST →',
+      upd: 'Updated every night · ', fac: 'Facilities enrolled', facS: ' started the programme', ready: 'NQAS Ready', readyS: 'ready for assessment', cert: 'NQAS certified', certS: 'after the national assessment',
+      reached: 'People with quality care', reachedS: 'served by Ready / certified facilities', staff: 'Staff recognised', staffS: 'Starters to Champions', gain: 'Average gain', gainS: 'readiness points since baseline',
+      states: ' states · ', dists: ' districts', all: 'All', champion: 'Quality Champions', pioneer: 'Pioneers & Leaders', achiever: 'Achievers',
+      lv: { champion: 'Quality Champion', leader: 'Quality Leader', pioneer: 'Pioneer', achiever: 'Achiever' }, verify: 'Verify →', none: 'No one to show here yet.', loading: 'Loading…',
+      fail: 'The numbers could not be loaded. Please try again in a moment.', launchH: 'Launching 20 November 2026', liveH: 'Now open for facilities', launchP: 'Be one of the first facilities on NQAS | FAST. Sub-centres, UPHCs, PHCs and CHCs can join now.', badNo: 'Type the number printed under the QR code, e.g. NQF-SC-2026-00001.' },
+    hi: { eyebrow: 'NQAS | FAST का प्रभाव', popLead: 'लोग NQAS | FAST से जुड़े केंद्रों के क्षेत्रों में रहते हैं', checkTop: 'प्रमाणपत्र जाँचें', join: 'NQAS | FAST से जुड़ें',
+      where: 'हम कहाँ काम करते हैं', thState: 'राज्य', thFac: 'केंद्र', thDist: 'ज़िले', thReady: 'NQAS तैयार', thPeople: 'लोग', noNames: 'इस पेज पर किसी केंद्र का नाम नहीं दिखाया जाता।',
+      ppl: 'बदलाव लाने वाले लोग', pplNote: 'जिन्होंने “मेरा नाम दिखाएँ” बंद नहीं किया', more: 'और लोग दिखाएँ', partners: 'हमारे साथ',
+      chkH: 'प्रमाणपत्र, पोस्टर या चित्र जाँचें', chkP: 'QR कोड के नीचे छपा नंबर लिखें, या फ़ोन के कैमरे से QR स्कैन करें।', chkL: 'जाँचने के लिए नंबर', chkB: 'जाँचें',
+      joinH: 'अपने केंद्र में NQAS | FAST लाएँ', joinP: 'अपना केंद्र जोड़ें, स्टाफ़ के रूप में जुड़ें, या अपने ज़िले के लिए पूछें — कुछ ही मिनट लगते हैं।',
+      foot: 'NQAS मानकों पर आधारित · आँकड़े HealSol Academy हर रात कार्यक्रम के डेटा से निकालती है', learn: 'NQAS | FAST के बारे में जानें →',
+      upd: 'हर रात अपडेट · ', fac: 'जुड़े केंद्र', facS: ' ने कार्यक्रम शुरू किया', ready: 'NQAS तैयार', readyS: 'मूल्यांकन के लिए तैयार', cert: 'NQAS प्रमाणित', certS: 'राष्ट्रीय मूल्यांकन के बाद',
+      reached: 'गुणवत्तापूर्ण देखभाल पाने वाले लोग', reachedS: 'तैयार / प्रमाणित केंद्रों के क्षेत्र में', staff: 'सम्मानित स्टाफ़', staffS: 'स्टार्टर से चैंपियन तक', gain: 'औसत सुधार', gainS: 'बेसलाइन से तैयारी के अंक',
+      states: ' राज्य · ', dists: ' ज़िले', all: 'सभी', champion: 'क्वालिटी चैंपियन', pioneer: 'पायनियर व लीडर', achiever: 'अचीवर',
+      lv: { champion: 'क्वालिटी चैंपियन', leader: 'क्वालिटी लीडर', pioneer: 'पायनियर', achiever: 'अचीवर' }, verify: 'जाँचें →', none: 'अभी यहाँ दिखाने को कोई नहीं।', loading: 'लोड हो रहा है…',
+      fail: 'आँकड़े लोड नहीं हो सके। थोड़ी देर में फिर कोशिश करें।', launchH: '20 नवंबर 2026 को शुरुआत', liveH: 'अब केंद्रों के लिए खुला', launchP: 'NQAS | FAST से जुड़ने वाले पहले केंद्रों में शामिल हों। उप-केंद्र, UPHC, PHC और CHC अभी जुड़ सकते हैं।', badNo: 'QR कोड के नीचे छपा नंबर लिखें, जैसे NQF-SC-2026-00001।' } };
+  function t(k) { return (T[S.lang] || T.en)[k] || T.en[k] || ''; }
+  function e(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function n(x) { try { return Number(x || 0).toLocaleString('en-IN'); } catch (er) { return String(x || 0); } }
+  function stars(k) { k = Math.max(0, Math.min(5, Number(k) || 0)); return k ? ' · ' + new Array(k + 1).join('★') : ''; }
+  function initials(nm) { var w = String(nm || '').replace(/^(Dr\.?|Mr\.?|Ms\.?|Mrs\.?)\s+/i, '').split(/\s+/).filter(Boolean); return ((w[0] || '?')[0] + (w[1] ? w[1][0] : '')).toUpperCase(); }
+  var popShown = 0;
+  function countTo(target) {
+    var el = document.getElementById('pop'), reduce = false;
+    try { reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (er) {}
+    if (reduce || !window.requestAnimationFrame) { el.textContent = n(target); popShown = target; return; }
+    var t0 = null, from = popShown, dur = 1600;
+    function step(ts) { if (!t0) t0 = ts; var p = Math.min(1, (ts - t0) / dur), v = Math.round(from + (target - from) * (1 - Math.pow(1 - p, 3))); el.textContent = n(v); if (p < 1) requestAnimationFrame(step); else popShown = target; }
+    requestAnimationFrame(step);
+  }
+  window.setLang = function (l) { S.lang = l; try { localStorage.setItem('nq_imp_lang', l); } catch (er) {} paint(); };
+  window.paintPeople = function () {
+    var d = S.d || {}, all = d.recognised || [], f = S.f, list = all.filter(function (p) { return f === 'all' || p.level === f || (f === 'pioneer' && p.level === 'leader'); });
+    var ch = document.getElementById('chips'), opts = [['all', t('all')], ['champion', t('champion')], ['pioneer', t('pioneer')], ['achiever', t('achiever')]];
+    ch.innerHTML = opts.filter(function (o) { return o[0] === 'all' || all.some(function (p) { return p.level === o[0] || (o[0] === 'pioneer' && p.level === 'leader'); }); })
+      .map(function (o) { return '<button type="button" aria-pressed="' + (f === o[0]) + '" onclick="S.f=\'' + o[0] + '\';S.n=9;paintPeople()">' + e(o[1]) + '</button>'; }).join('');
+    var box = document.getElementById('ppl');
+    box.innerHTML = list.length ? list.slice(0, S.n).map(function (p) {
+      var lv = (t('lv') || {})[p.level] || p.level, wh = [p.role && p.role !== lv ? p.role : '', [p.district, p.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ');
+      return '<div class="pc"><span class="av ' + e(p.level) + '" aria-hidden="true">' + e(initials(p.name)) + '</span><div><b>' + e(p.name) + '</b><span class="lv">' + e(lv + (p.year ? ' · ' + p.year : '') + stars(p.stars)) + '</span>'
+        + (wh ? '<span class="wh">' + e(wh) + '</span>' : '') + '<a href="' + e(VERIFY + (VERIFY.indexOf('?') >= 0 ? '&' : '?') + 'cert=IMP-' + encodeURIComponent(p.id)) + '" target="_blank" rel="noopener" aria-label="' + e(t('verify') + ' ' + p.name) + '">' + e(t('verify')) + '</a></div></div>'; }).join('')
+      : '<div class="empty">' + e(t('none')) + '</div>';
+    document.getElementById('more').style.display = list.length > S.n ? '' : 'none';
+  };
+  function paint() {
+    document.documentElement.lang = S.lang;
+    document.getElementById('l-en').setAttribute('aria-pressed', S.lang === 'en'); document.getElementById('l-hi').setAttribute('aria-pressed', S.lang === 'hi');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-t]'), function (x) { x.textContent = t(x.getAttribute('data-t')); });
+    var d = S.d;
+    if (!d) return;
+    // Launch mode (19 Nov 2026): until a facility has started and people are counted, show the launch message, not a row of zeros
+    var launch = !(Number(d.people) > 0 && Number(d.started) > 0), pop = document.getElementById('pop');
+    document.body.classList.toggle('launch', launch); pop.classList.toggle('lh', launch); document.getElementById('join-hero').hidden = !launch;
+    if (launch) { pop.textContent = t(new Date() < new Date('2026-11-20T00:00:00+05:30') ? 'launchH' : 'liveH'); document.querySelector('[data-t="popLead"]').textContent = t('launchP'); }
+    document.getElementById('upd').textContent = t('upd') + (d.updatedAt ? new Date(d.updatedAt).toLocaleDateString(S.lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+    var st = d.staff || {}, tl = function (v, l, s, c) { return '<div class="tile ' + (c || '') + '"><b>' + e(v) + '</b><span>' + e(l) + '</span>' + (s ? '<small>' + e(s) + '</small>' : '') + '</div>'; };
+    document.getElementById('tiles').innerHTML = tl(n(d.facilities), t('fac'), n(d.started) + t('facS')) + tl(n(d.ready), t('ready'), t('readyS'), 'gr') + tl(n(d.certified), t('cert'), t('certS'), 'gd')
+      + tl(n(d.peopleReady), t('reached'), t('reachedS')) + tl(n(d.staffRecognised), t('staff'), t('staffS')) + tl(d.avgGain != null ? (d.avgGain >= 0 ? '+' : '') + d.avgGain : '—', t('gain'), t('gainS'));
+    document.getElementById('where-n').textContent = S.lang === 'hi' ? n(d.states) + t('states') + n(d.districts) + t('dists') : n(d.states) + (d.states === 1 ? ' state · ' : ' states · ') + n(d.districts) + (d.districts === 1 ? ' district' : ' districts');
+    var bs = d.byState || [], mx = Math.max.apply(null, [1].concat(bs.map(function (x) { return x.facilities || 0; })));
+    document.getElementById('states').innerHTML = bs.length ? bs.map(function (x) {
+      return '<tr><td data-l=""><b>' + e(x.name) + '</b></td><td data-l="' + e(t('thFac')) + '"><div class="bar"><i style="width:' + Math.max(4, Math.round(180 * (x.facilities || 0) / mx)) + 'px"></i>' + n(x.facilities) + '</div></td><td class="r" data-l="' + e(t('thDist')) + '">' + n(x.districts) + '</td><td class="r" data-l="' + e(t('thReady')) + '">' + n((x.ready || 0) + (x.certified || 0)) + '</td><td class="r" data-l="' + e(t('thPeople')) + '">' + n(x.pop) + '</td></tr>'; }).join('')
+      : '<tr><td colspan="5">' + e(t('none')) + '</td></tr>';
+    paintPeople();
+    var ps = d.partners || []; document.getElementById('partners-sec').style.display = ps.length ? '' : 'none';
+    document.getElementById('partners').innerHTML = ps.map(function (x) { return '<div class="logo-c"><img src="' + e(x.img) + '" alt="' + e(x.name) + '" loading="lazy"></div>'; }).join('');
+  }
+  window.doCheck = function (ev) {
+    if (ev) ev.preventDefault();
+    var v = String(document.getElementById('cn').value || '').trim().toUpperCase().replace(/\s+/g, ''), er = document.getElementById('cerr');
+    if (!/^(NQF|FAC|IMP)-[A-Z0-9-]{4,30}$/.test(v)) { er.textContent = t('badNo'); return; } er.textContent = '';
+    var url = VERIFY + (VERIFY.indexOf('?') >= 0 ? '&' : '?') + 'cert=' + encodeURIComponent(v), w = null;
+    try { w = window.open(url, '_blank'); if (w) { try { w.opener = null; } catch (x) {} } } catch (er2) {}   // not 'noopener': the browser then answers null and this page would move too
+    if (!w) { try { window.top.location.href = url; } catch (er3) { location.href = url; } }
+  };
+  ['join-top', 'join-bot', 'join-hero'].forEach(function (id) { var a = document.getElementById(id); if (a) a.href = APP + '?join=1'; });
+  document.getElementById('learn').href = APP;
+  paint(); document.getElementById('pop').textContent = '—';
+  fetch(API).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (d) { S.d = d; paint(); if (!document.body.classList.contains('launch')) countTo(Number(d.people) || 0); })
+    .catch(function () { document.getElementById('upd').textContent = t('fail'); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.thehealsol.qifast",
+      "sha256_cert_fingerprints": [
+        "31:2E:4C:E3:6B:86:39:12:FC:DC:E4:34:BA:24:1B:3E:91:DB:B8:21:7C:C6:4C:EF:07:03:F9:A0:A7:B3:E7:09"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.thehealsol.nqasfast",
+      "sha256_cert_fingerprints": [
+        "BD:F7:2D:DB:74:8E:DF:BF:18:13:5D:CF:AE:A8:6D:4D:C6:EC:AE:51:EC:A2:53:56:30:2C:9F:57:3B:4C:8E:8D"
+      ]
+    }
+  }
+]

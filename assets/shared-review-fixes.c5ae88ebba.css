@@ -1,0 +1,78 @@
+/* ═══ Screen review fixes (15 Nov 2026) ═══ */
+
+/* 1 · long admin menus: first 3 + More on a phone */
+@media(max-width:899px){
+  body.nf-ovf-on .nfs-nav button.nf-ovf{display:none!important;}
+  body.nf-ovf-on .nfs-nav button[data-v=more]{display:flex!important;}
+}
+
+/* 2 · facility lists fit the phone (Supervisor, District, Block, HealSol) */
+@media (max-width:700px){
+  body.nf-admin .admin-main table.hs-ft.hs-rt, .hs-rt{min-width:0!important;width:100%!important;display:block;}
+  .hs-rt tbody{display:block;}
+  .hs-rt tr.nfo-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;}
+  .hs-rt tr.nfo-row td{min-width:0;white-space:normal;overflow-wrap:anywhere;}
+  .hs-rt tr:not(.nfo-row):not(.hs-grp){display:block;} .hs-rt tr:not(.nfo-row):not(.hs-grp) td{display:block;text-align:left;padding:14px 4px;}
+  .nfo-tw:has(.hs-rt){overflow-x:visible;}
+}
+
+/* 3 · HealSol Facilities totals: small tiles on a phone */
+@media (max-width:700px){
+  body.nf-admin .admin-main table.hs-tt, table.hs-tt{min-width:0!important;width:100%!important;display:block;}
+  .hs-tt thead{display:none;} .hs-tt tbody{display:block;}
+  .hs-tt tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;padding:12px 2px;border-bottom:1px solid var(--br,#DCE4E1);}
+  .hs-tt td{border:0!important;padding:0!important;text-align:left!important;font-size:15px;font-weight:700;min-width:0;}
+  .hs-tt td:first-child{grid-column:1 / -1;font-size:13px;}
+  .hs-tt td[data-l]::before{content:attr(data-l);display:block;font-size:10.5px;color:#5B6B66;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .hs-tw{overflow-x:visible!important;}
+}
+
+/* 5 · Supervisor / District Overview on a computer: the facility table gets the full width */
+body.nfv-overview:not(.hs-admin) .nfo-grid{grid-template-columns:minmax(0,1fr);}
+body.nfv-overview:not(.hs-admin) .nfo-side{order:-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:start;}
+
+/* 8 · HealSol Today on a phone: counts 2 × 2 */
+@media (max-width:700px){ .hs-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;} .hs-kpi{padding:12px 14px;} .hs-kpi b{font-size:24px;} }
+
+/* 9 · staff headers: role on its own line, "Day 30 / 60" and "Week 5" kept together */
+#nf-dept-app .nx-top small .nx-who{flex-basis:100%;}
+.nf-hero-k .nw{white-space:nowrap;}
+
+/* 10 · staff app on a computer: bottom bar as wide as the screen content */
+@media (min-width:640px){ body.nf-staff #nf-nav{max-width:560px;margin:0 auto;border-left:1px solid var(--br);border-right:1px solid var(--br);} }
+
+/* 12 · Programme rules as tabs */
+.hs-rtabs{display:none;}
+body.hs-admin.nfv-setup[data-hsst="rules"] .hs-rtabs{display:flex;flex-direction:column;gap:2px;background:#fff;border:1px solid var(--br,#DCE4E1);border-radius:16px;padding:10px;}
+body.hs-admin.nfv-setup[data-hsst="rules"] .admin-main > [data-hsg="rules"][data-rk]:not([data-rkon]){display:none!important;}
+.hs-rt-g{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5B6B66;padding:10px 10px 4px;}
+.hs-rtabs button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:1px;width:100%;min-height:48px;padding:8px 12px;border-radius:10px;cursor:pointer;}
+.hs-rtabs button b{font-size:14px;font-weight:500;color:var(--t1,#10302B);} .hs-rtabs button small{font-size:12px;color:#5B6B66;}
+.hs-rtabs button:hover{background:#EEF4F2;} .hs-rtabs button:focus-visible{outline:2px solid #1E6B5E;outline-offset:2px;}
+.hs-rtabs button.on{background:#E3F0EC;} .hs-rtabs button.on b{font-weight:600;color:#14514A;}
+@media (min-width:900px){
+  body.hs-admin.nfv-setup[data-hsst="rules"] .admin-main{display:grid;grid-template-columns:270px minmax(0,1fr);column-gap:22px;align-items:start;}
+  body.hs-admin.nfv-setup[data-hsst="rules"] .admin-main > *{grid-column:1 / -1;}
+  body.hs-admin.nfv-setup[data-hsst="rules"] .admin-main > .hs-rtabs{grid-column:1;grid-row:span 20;position:sticky;top:12px;}
+  body.hs-admin.nfv-setup[data-hsst="rules"] .admin-main > [data-hsg="rules"][data-rkon]{grid-column:2;margin-top:0;}
+}
+@media (max-width:899px){
+  body.hs-admin.nfv-setup[data-hsst="rules"] .hs-rtabs{flex-direction:row;overflow-x:auto;gap:8px;padding:10px 4px;border:0;background:none;scrollbar-width:none;margin-bottom:6px;}
+  .hs-rtabs .hs-rt-g{display:none;}
+  .hs-rtabs button{width:auto;flex:none;min-height:44px;justify-content:center;padding:0 16px;border-radius:22px;border:1px solid var(--br,#DCE4E1);background:#fff;}
+  .hs-rtabs button small{display:none;} .hs-rtabs button b{font-size:13px;white-space:nowrap;}
+  .hs-rtabs button.on{background:#1E6B5E;border-color:#1E6B5E;} .hs-rtabs button.on b{color:#fff;}
+}
+
+/* 14 · in-charges: one bottom menu; their own Today · Cards · Progress · Me just above it */
+#nf-dept-app .nx-nav.nx-ic button{min-width:0;flex:1;}
+#nf-dept-app .nx-icsub{position:fixed;left:0;right:0;bottom:76px;z-index:6;display:flex;gap:4px;padding:6px 10px;background:#F4F8F7;border-top:1px solid var(--nx-br,#E2E8F0);}
+#nf-dept-app .nx-icsub button{flex:1;height:36px;border:0;border-radius:18px;background:none;font:inherit;font-size:13px;font-weight:500;color:#475569;cursor:pointer;}
+#nf-dept-app .nx-icsub button.on{background:#fff;color:var(--nx-t,#1E6B5E);font-weight:600;box-shadow:0 1px 3px rgba(15,40,35,.12);}
+body.nd-ic-mine #nf-dept-app{padding-bottom:134px;}
+@media (min-width:640px){ #nf-dept-app .nx-icsub{max-width:580px;margin:0 auto;border-left:1px solid var(--nx-br,#E2E8F0);border-right:1px solid var(--nx-br,#E2E8F0);} }
+
+/* 15 · long lists: the most urgent first */
+#nf-dept-app .nx-top10,.nfg-top10{font-size:12.5px;font-weight:600;color:#5B6B66;padding:2px 4px;}
+#nf-dept-app button.nx-more{display:block;width:100%;border:0;background:none;font:inherit;font-weight:600;color:var(--nx-t,#1E6B5E);padding:12px;cursor:pointer;}
+@media (max-width:700px){ .hs-rt tr.nfo-row td.hs-fdot{position:absolute;right:6px;top:8px;} .hs-rt tr.nfo-row{position:relative;} }

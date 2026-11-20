@@ -1,8 +1,8 @@
 {
-  "name": "NQAS | FAST · HealSol Academy",
+  "name": "Qi FAST · HealSol",
   "id": "./",
-  "short_name": "NQAS FAST",
-  "description": "Get your facility NQAS-ready — daily checklists, verification, readiness and recognition.",
+  "short_name": "Qi FAST",
+  "description": "NQAS | FAST in the Qi FAST app — get your facility NQAS-ready with daily checklists, verification, readiness and recognition.",
   "lang": "en-IN",
   "start_url": "./",
   "scope": "./",
@@ -12,8 +12,12 @@
   "theme_color": "#1E6B5E",
   "categories": ["medical", "education", "productivity"],
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+    { "src": "icons/qi-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/qi-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/qi-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "related_applications": [
+    { "platform": "play", "id": "com.thehealsol.qifast", "url": "https://play.google.com/store/apps/details?id=com.thehealsol.qifast" }
+  ],
+  "prefer_related_applications": true
 }

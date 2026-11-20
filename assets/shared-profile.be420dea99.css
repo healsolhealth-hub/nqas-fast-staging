@@ -1,0 +1,180 @@
+/* Facility Profile (3 Nov 2026) */
+body.fpo-open{overflow:hidden}
+#fpo-ov{position:fixed;inset:0;z-index:9000;background:#F0F4F3;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:'Poppins',sans-serif;color:#111827}
+.fpo-page{max-width:520px;margin:0 auto;padding-bottom:28px}
+.fpo-cover{background:linear-gradient(150deg,#144D44,#2A8A79);color:#fff;padding:14px 18px 20px}
+.fpo-topb{display:flex;justify-content:space-between;align-items:center;font-size:11px;opacity:.95}
+.fpo-x{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:20px;padding:5px 12px;font:600 12px 'Poppins',sans-serif;cursor:pointer}
+.fpo-name{font-size:21px;font-weight:700;line-height:1.25;margin:14px 0 0}
+.fpo-meta{font-size:12px;opacity:.92;margin-top:4px}
+.fpo-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.fpo-chips span{font-size:10.5px;font-weight:600;border-radius:20px;padding:3px 9px;background:rgba(255,255,255,.18)}
+.fpo-chips span.o{background:#F5A623;color:#3b2600}
+.fpo-hello{margin-top:14px;background:rgba(255,255,255,.12);border-radius:14px;padding:10px 12px;font-size:12.5px;line-height:1.45}
+.fpo-hello b{font-size:14px;display:block}
+.fpo-card{background:#fff;border-radius:16px;margin:12px 14px 0;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.fpo-card h3{font-size:14px;color:#144D44;display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px}
+.fpo-card h3 small{font-size:11px;color:#6B7280;font-weight:500;text-align:right}
+.fpo-ed{background:none;border:0;color:#1E6B5E;font:600 11.5px 'Poppins',sans-serif;cursor:pointer;padding:2px 0}
+.fpo-facts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.fpo-facts div{background:#E8F5F2;border-radius:12px;padding:8px;text-align:center}
+.fpo-facts b{display:block;font-size:17px;color:#144D44}
+.fpo-facts small{font-size:10px;color:#374151}
+.fpo-dim{font-size:12px;color:#6B7280;margin:8px 0 0;line-height:1.45}
+.fpo-upd{font-size:10.5px;color:#6B7280;margin:8px 0 0}
+.fpo-jr{display:flex;align-items:center;gap:12px}
+.fpo-ring{--p:0;width:84px;height:84px;border-radius:50%;background:conic-gradient(#1E6B5E calc(var(--p)*1%),#E5E7EB 0);display:flex;align-items:center;justify-content:center;flex:none}
+.fpo-ring i{width:66px;height:66px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-style:normal}
+.fpo-ring b{font-size:18px;color:#144D44}.fpo-ring small{font-size:9px;color:#6B7280}
+.fpo-jt{font-size:12px;color:#374151;line-height:1.55;margin:0}
+.fpo-jt b{color:#16A34A}.fpo-jt b.up{color:#16A34A}.fpo-jt b.dn{color:#DC2626}
+.fpo-steps{display:flex;gap:4px;margin-top:12px}
+.fpo-steps div{flex:1;font-size:9.5px;text-align:center;color:#6B7280}
+.fpo-steps div:before{content:"";display:block;height:6px;border-radius:4px;background:#E5E7EB;margin-bottom:4px}
+.fpo-steps .d{color:#144D44;font-weight:600}.fpo-steps .d:before{background:#1E6B5E}
+.fpo-steps .c{color:#D4891A;font-weight:700}.fpo-steps .c:before{background:#F5A623}
+.fpo-mem,.fpo-lead{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:6px 0}
+.fpo-lead{border-bottom:1px solid #F1F1F1;padding:8px 0}
+.fpo-av{width:34px;height:34px;border-radius:50%;background:#F1ECF9;color:#6D4AA8;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12.5px;flex:none}
+.fpo-mn{flex:1;line-height:1.25;min-width:0}.fpo-mn small{display:block;color:#6B7280;font-size:10.5px}
+.fpo-lv{font-size:10.5px;color:#6D4AA8;font-weight:600;text-align:right;line-height:1.3}
+.fpo-st{color:#F5A623;letter-spacing:1px}
+.fpo-more{background:none;border:0;color:#1E6B5E;font:600 12px 'Poppins',sans-serif;cursor:pointer;padding:6px 0 0}
+.fpo-go{display:block;width:calc(100% - 28px);margin:14px 14px 0;background:#1E6B5E;color:#fff;border:0;border-radius:12px;padding:13px;font:600 14px 'Poppins',sans-serif;cursor:pointer}
+.fpo-ghost{display:block;width:100%;margin-top:10px;background:#fff;color:#1E6B5E;border:1.5px solid #1E6B5E;border-radius:12px;padding:11px;font:600 13px 'Poppins',sans-serif;cursor:pointer}
+.fpo-imp{background:linear-gradient(150deg,#fff,#FEF3E0);border:1px solid #F8DDB0}
+.fpo-care{font-size:15px;font-weight:700;color:#144D44;line-height:1.35}
+.fpo-nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.fpo-nums div{background:#fff;border-radius:12px;padding:8px 6px;text-align:center;border:1px solid #F3E2C4}
+.fpo-nums b{display:block;font-size:18px;color:#D4891A}
+.fpo-nums small{font-size:10px;color:#374151;line-height:1.2;display:block}
+.fpo-share{display:flex;gap:8px;margin-top:12px}
+.fpo-share button{flex:1;font:600 12px 'Poppins',sans-serif;border-radius:10px;padding:9px;background:#fff;color:#1E6B5E;border:1.5px solid #1E6B5E;cursor:pointer}
+.fpo-share button.wa{background:#25D366;border-color:#25D366;color:#fff}
+.fpo-ms{display:flex;gap:10px;align-items:center;font-size:12.5px;padding:5px 0}
+.fpo-ms > span{width:30px;height:30px;border-radius:50%;background:#DCFCE7;display:flex;align-items:center;justify-content:center;flex:none}
+.fpo-ms.me > span{background:#F1ECF9}
+.fpo-ms b{font-weight:600}
+.fpo-next{font-size:11.5px;color:#D4891A;margin:8px 0 0;font-weight:600}
+.fpo-certs{display:flex;gap:6px;flex-wrap:wrap}
+.fpo-cert{font:400 11px 'Poppins',sans-serif;border:1px dashed #D1D5DB;border-radius:10px;padding:6px 9px;color:#374151;background:#fff}
+.fpo-cert b{color:#144D44}
+.fpo-cert.add{cursor:pointer;color:#1E6B5E;font-weight:600;border-color:#1E6B5E}
+.fpo-cx{background:none;border:0;color:#9CA3AF;font-size:14px;cursor:pointer;padding:0 0 0 4px}
+.fpo-seg{display:flex;background:#E8F5F2;border-radius:10px;padding:3px;margin-bottom:10px}
+.fpo-seg button{flex:1;border:0;background:none;font:500 11.5px 'Poppins',sans-serif;padding:7px 4px;border-radius:8px;color:#144D44;cursor:pointer}
+.fpo-seg button.on{background:#fff;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.fpo-sub{font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 2px}
+.fpo-md{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;background:#FEF3C7}
+.fpo-md.g{background:#DCFCE7}.fpo-md.v{background:#F1ECF9}
+.fpo-v{font-weight:700;color:#16A34A;font-size:13px;text-align:right}
+.fpo-v small{display:block;font-weight:500;color:#6B7280;font-size:10px}
+.fpo-v.st{color:#F5A623;font-size:12px}
+.fpo-you{background:#E8F5F2;border-radius:12px;padding:10px 12px;font-size:12px;color:#144D44;margin-top:10px}
+.fpo-opt{display:flex;align-items:center;gap:8px;font-size:12px;color:#374151;margin-top:10px}
+.fpo-partner{margin:16px 14px 0;text-align:center;font-size:10.5px;color:#6B7280;border-top:1px solid #E5E7EB;padding-top:10px}
+.fpo-partner b{color:#144D44}.fpo-partner small{display:block;margin-top:4px}
+.fpo-partner img{height:28px;margin:4px 4px 0;vertical-align:middle}
+.fpo-chip{display:inline-block;margin-top:6px;background:#E8F5F2;color:#1E6B5E;border:0;border-radius:20px;padding:4px 11px;font:600 11.5px 'Poppins',sans-serif;cursor:pointer}
+.fpo-chiprow{padding:4px 0 2px}
+/* Demo facilities card (Settings → Programme rules) */
+.dm-st{font-size:12.5px;background:#F3F4F6;border-radius:10px;padding:8px 10px;margin:8px 0}
+.dm-st.ok{background:#DCFCE7;color:#14532D}
+.dm-pw label{display:block;font-size:12.5px;font-weight:600;color:#374151}
+.dm-pw input{display:block;width:100%;max-width:340px;margin-top:4px;padding:9px 10px;border:1px solid #D1D5DB;border-radius:8px;font:inherit}
+.dm-pw small{display:block;color:#6B7280;font-size:11.5px;margin-top:4px}
+.dm-msg{font-size:12.5px;color:#1E6B5E;margin:8px 0;min-height:1em}.dm-msg.err{color:#B91C1C}
+.dm-tab{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+.dm-tab th,.dm-tab td{text-align:left;padding:6px 8px;border-bottom:1px solid #E5E7EB}
+.dm-tab th{font-size:11px;color:#6B7280;text-transform:uppercase}
+.dm-tip{font-size:12px;color:#374151;margin-top:8px}
+/* Programme start date (4 Nov 2026) */
+.sd-now{font-size:13px;color:#111827;margin:6px 0}
+.sd-row{display:flex;gap:8px;align-items:stretch;margin:8px 0}
+.sd-in{flex:1;min-width:0;padding:10px 12px;border:1.5px solid #CFE3DE;border-radius:12px;font:inherit;font-size:15px;background:#F9FBFA}
+.sd-btn{background:#1E6B5E;color:#fff;border:0;border-radius:12px;padding:10px 16px;font:700 13.5px 'Poppins',sans-serif;cursor:pointer}
+.sd-btn.ghost{background:#fff;color:#1E6B5E;border:1.5px solid #1E6B5E;margin-top:10px;width:100%}
+.sd-dim{font-size:12px;color:#6B7280;line-height:1.5;margin:6px 0 0}
+.sd-req{border-radius:10px;padding:9px 11px;font-size:12.5px;margin-top:10px;background:#F3F4F6;color:#374151}
+.sd-req small{display:block;margin-top:4px;color:#4B5563}
+.sd-req.w{background:#FEF3C7;color:#78350F}.sd-req.ok{background:#DCFCE7;color:#14532D}.sd-req.no{background:#FEE2E2;color:#7F1D1D}
+.sd-reqs .sd-ri{border-top:1px solid #E5E7EB;padding:10px 0}
+.sd-reqs .sd-ri small{color:#6B7280}
+.sd-rl{font-size:12.5px;color:#374151;margin-top:3px}
+/* Demo & test facilities (4 Nov 2026) */
+.nf-hid-line{font-size:12.5px;color:#6B7280;margin:8px 2px 0;display:flex;align-items:center;gap:6px}
+.nf-hid-line button{background:none;border:0;color:#1E6B5E;font:700 12.5px inherit;cursor:pointer;text-decoration:underline;padding:0}
+.nf-hid-tag{font-size:10px;font-weight:800;border-radius:6px;padding:1px 6px;margin-left:4px}
+.nf-hid-tag.d{background:#E0E7FF;color:#3730A3}.nf-hid-tag.t{background:#FEF3C7;color:#92400E}
+.nf-hid-box{max-width:620px;width:calc(100% - 32px)}
+/* Push notifications (4 Nov 2026) */
+.np-ask{position:fixed;left:12px;right:12px;bottom:84px;z-index:9500;max-width:460px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:14px;display:flex;gap:12px;font-family:'Poppins',sans-serif;border:1px solid #E5E7EB}
+.np-bell{font-size:26px;line-height:1}
+.np-ask b{display:block;font-size:14px;color:#144D44}.np-ask small{display:block;font-size:12px;color:#4B5563;margin-top:3px;line-height:1.4}
+.np-btns{display:flex;gap:8px;margin-top:10px}
+.np-btns button{border-radius:10px;padding:8px 14px;font:700 13px 'Poppins',sans-serif;cursor:pointer;border:1.5px solid #1E6B5E}
+.np-yes{background:#1E6B5E;color:#fff}.np-no{background:#fff;color:#1E6B5E}
+.np-me{background:#fff;border-radius:16px;margin:12px 0;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.np-me-h{display:flex;align-items:center;gap:10px}.np-me-h>span{font-size:20px}.np-me-h>div{flex:1}
+.np-me-h b{display:block;font-size:13.5px}.np-me-h small{color:#6B7280;font-size:11.5px}
+.np-tg{width:46px;height:26px;border-radius:13px;border:0;background:#D1D5DB;position:relative;cursor:pointer;flex:none}
+.np-tg i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.np-tg.on{background:#1E6B5E}.np-tg.on i{left:23px}
+.np-test{margin-top:8px;background:none;border:0;color:#1E6B5E;font:700 12px 'Poppins',sans-serif;cursor:pointer;padding:0}
+.np-ann{margin-top:14px;border-top:1px solid #E5E7EB;padding-top:12px}
+.np-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.np-grid label,.np-st{font-size:12px;font-weight:600;color:#374151;display:block}
+.np-grid input,.np-grid textarea,.np-st input{display:block;width:100%;margin-top:3px;padding:8px;border:1px solid #D1D5DB;border-radius:8px;font:inherit;font-weight:400}
+.np-groups{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0;font-size:12.5px}
+.np-st{margin-bottom:6px;max-width:420px}
+@media (max-width:640px){.np-grid{grid-template-columns:1fr}}
+/* Promotions carousel + One HealSol (4 Nov 2026) */
+.pm-host:empty{display:none}
+.pm-car{margin:12px 14px 0;position:relative}
+.nf-page .pm-car,.nx .pm-car{margin:12px 0 0}
+.pm-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:0;border-radius:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pm-track::-webkit-scrollbar{display:none}
+.pm-sl{--pmc:#1E6B5E;flex:0 0 100%;scroll-snap-align:start;position:relative;background:var(--pmc);color:#fff;border-radius:16px;min-height:118px;display:flex;overflow:hidden;font-family:'Poppins',sans-serif}
+.pm-sl img{width:38%;object-fit:cover;flex:none}
+.pm-tx{padding:14px 34px 14px 16px;display:flex;flex-direction:column;gap:4px;justify-content:center;min-width:0}
+.pm-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;opacity:.85}
+.pm-tx b{font-size:14.5px;line-height:1.3}
+.pm-tx small{font-size:12px;opacity:.92;line-height:1.4}
+.pm-tx button{align-self:flex-start;margin-top:6px;background:#fff;color:var(--pmc);border:0;border-radius:20px;padding:6px 14px;font:700 12px 'Poppins',sans-serif;cursor:pointer}
+.pm-x{position:absolute;top:6px;right:8px;background:rgba(255,255,255,.2);border:0;color:#fff;width:24px;height:24px;border-radius:50%;font-size:15px;line-height:1;cursor:pointer}
+.pm-dots{display:flex;justify-content:center;gap:5px;margin-top:6px}
+.pm-dots i{width:6px;height:6px;border-radius:3px;background:#CBD5E1;transition:width .2s}
+.pm-dots i.on{width:16px;background:#1E6B5E}
+.pm-one{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;padding:12px 14px;margin:12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,.07);text-decoration:none;color:#111827;font-family:'Poppins',sans-serif}
+.pm-one-i{font-size:24px}.pm-one>span:nth-child(2){flex:1;min-width:0}
+.pm-one b{display:block;font-size:13.5px;color:#6D4AA8}.pm-one small{display:block;font-size:11.5px;color:#6B7280}
+.pm-one-b{font:700 12px 'Poppins',sans-serif;color:#6D4AA8;white-space:nowrap}
+.pm-adm{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.pm-row{display:flex;align-items:center;gap:10px;border:1px solid #E5E7EB;border-radius:10px;padding:8px 10px;flex-wrap:wrap}
+.pm-dot{width:12px;height:12px;border-radius:50%;flex:none}
+.pm-rt{flex:1;min-width:200px}.pm-rt b{display:block;font-size:13px}.pm-rt small{display:block;font-size:11.5px;color:#6B7280}.pm-st{color:#1E6B5E!important}
+.pm-ra{display:flex;gap:4px;flex-wrap:wrap}
+/* Google Play app + Delete my account (4 Nov 2026) */
+.pl-note .pl-p{margin:0 0 8px;font-size:13.5px;line-height:1.5;color:var(--t2,#475654)}.pl-note .pl-sm{font-size:12px;color:var(--t3,#6B7A78)}
+.nf-play .nf-l-legal a[href*="#about"]{display:none}
+.pl-del{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 2px 8px;padding-top:12px;border-top:1px solid var(--br,#E2EAE8)}
+.pl-del-b{background:none;border:0;color:#B42318;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;padding:6px 0;cursor:pointer}
+.pl-del-l{font-size:12.5px;color:var(--t3,#6B7A78)}
+/* Play app: report / certificate viewer (5 Nov 2026) */
+.pl-view{position:fixed;inset:0;z-index:100000;background:#fff;display:flex;flex-direction:column;overflow:hidden}
+.pl-vbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));background:#14514A}
+.pl-vbar button{border:0;border-radius:10px;font:inherit;font-size:14px;font-weight:700;padding:9px 14px;cursor:pointer}
+.pl-vx{background:rgba(255,255,255,.14);color:#fff}.pl-vp{background:#fff;color:#14514A;display:inline-flex;align-items:center;gap:6px}
+.pl-vf{flex:1;width:100%;border:0;background:#fff}
+/* stars on light cards (6 Nov 2026): drawn stars, half star filled half */
+.fpo-st .nfi-st{font-size:13px;letter-spacing:1px;color:#F59E0B;white-space:nowrap}
+.fpo-st .nfi-st i{color:#E5E7EB}
+.fpo-st .nfi-half{background:linear-gradient(90deg,#F59E0B 50%,#E5E7EB 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.nfi-tag .nfi-st{font-size:11px;letter-spacing:0;color:#F59E0B} .nfi-tag .nfi-st i{color:#E5E7EB}
+.nfi-tag .nfi-half{background:linear-gradient(90deg,#F59E0B 50%,#E5E7EB 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fpo-ms b{min-width:0}
+.fpo-card .nfi-st,.fpo-lead .nfi-st{font-size:13px;letter-spacing:1px;color:#F59E0B;white-space:nowrap} .fpo-card .nfi-st i,.fpo-lead .nfi-st i{color:#E5E7EB}
+.fpo-card .nfi-half,.fpo-lead .nfi-half{background:linear-gradient(90deg,#F59E0B 50%,#E5E7EB 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* "← Facility home" at the top of Readiness / Staff / More (6 Nov 2026) */
+.nx-tabbk{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:#1E6B5E;font:inherit;font-size:14px;font-weight:700;padding:6px 2px 10px;cursor:pointer}
+.nx-tabbk .ti{font-size:18px}

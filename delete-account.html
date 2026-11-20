@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete your account · NQAS | FAST</title>
+<meta name="description" content="How to delete your NQAS | FAST account and personal data (HealSol Academy).">
+<meta name="theme-color" content="#1E6B5E">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{--teal:#1E6B5E;--teal-dk:#14514A;--t1:#1B2A28;--t2:#475654;--t3:#6B7A78;--br:#E2EAE8;--bg:#F0F4F3;--card:#fff;--red:#B42318}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t1);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+header{background:var(--teal-dk);color:#fff;padding:22px 16px 18px}
+header .in,main{max-width:720px;margin:0 auto}
+header h1{margin:0 0 4px;font-size:22px}
+header p{margin:0;opacity:.85;font-size:13.5px}
+header a{color:#fff}
+main{padding:16px 16px 40px}
+section{background:var(--card);border:1px solid var(--br);border-radius:16px;padding:18px;margin:0 0 16px}
+h2{margin:0 0 8px;font-size:18px;color:var(--teal-dk)}
+p,li{color:var(--t2)}
+ul,ol{padding-left:20px;margin:6px 0}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px;color:var(--t1)}
+input,textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--br);border-radius:10px;background:#fff;color:var(--t1)}
+textarea{min-height:70px;resize:vertical}
+.chk{display:flex;gap:8px;align-items:flex-start;margin:14px 0;font-size:14px;color:var(--t2)}
+.chk input{width:auto;margin-top:4px}
+button{background:var(--red);color:#fff;border:0;border-radius:12px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%}
+button:disabled{opacity:.6;cursor:default}
+.msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:14px;display:none}
+.msg.ok{display:block;background:#E8F5F2;color:var(--teal-dk)}
+.msg.err{display:block;background:#FEECEB;color:var(--red)}
+footer{text-align:center;font-size:12.5px;color:var(--t3);padding:0 16px 30px}
+a{color:var(--teal)}
+</style>
+</head>
+<body>
+<header><div class="in">
+  <h1>Delete your NQAS | FAST account</h1>
+  <p>NQAS | FAST by HealSol Academy (HEALSOL HEALTHCARE PRIVATE LIMITED) · <a href="./">Back to the app</a></p>
+</div></header>
+<main>
+
+<section>
+  <h2>In the app</h2>
+  <ol>
+    <li>Sign in to NQAS | FAST (Google Play app or app.thehealsol.com).</li>
+    <li>Open <b>Me</b> (bottom bar).</li>
+    <li>At the bottom, tap <b>Delete my account</b>, tick the box and tap <b>Send request</b>.</li>
+  </ol>
+  <p>Can't sign in? Use the form below, or write to <a href="mailto:info@thehealsol.com?subject=Delete%20my%20NQAS%20FAST%20account">info@thehealsol.com</a> / WhatsApp <a href="https://wa.me/918384063112">+91 83840 63112</a> from your registered mobile number.</p>
+</section>
+
+<section>
+  <h2>What is deleted, and what is kept</h2>
+  <ul>
+    <li><b>Deleted within 30 days:</b> your login, and your personal details — name, mobile number and email address — and your name on cards, actions and comments.</li>
+    <li><b>Kept, without your name:</b> the facility's programme records (checklists, scores, actions, evidence). They belong to the facility's NQAS work and stay with the facility; they are kept for up to 3 years after the programme cycle ends, matching the NQAS certification period.</li>
+    <li><b>Kept as the law requires:</b> payment and invoice records (for tax purposes, normally 8 years).</li>
+  </ul>
+  <p>We confirm on your mobile number when it is done. See the <a href="legal.html#privacy">Privacy Policy</a>.</p>
+</section>
+
+<section>
+  <h2>Request deletion</h2>
+  <form id="f" autocomplete="on">
+    <label for="mob">Registered mobile number</label>
+    <input id="mob" name="tel" type="tel" inputmode="numeric" maxlength="14" placeholder="10-digit mobile number" required>
+    <label for="nm">Your name</label>
+    <input id="nm" name="name" type="text" maxlength="80" required>
+    <label for="fac">Facility name</label>
+    <input id="fac" type="text" maxlength="100" placeholder="e.g. Rampur AAM-SC, Agra" required>
+    <label for="why">Reason (optional)</label>
+    <textarea id="why" maxlength="300"></textarea>
+    <div class="chk"><input id="ok" type="checkbox"><label for="ok" style="margin:0;font-weight:400">I want my NQAS | FAST account and personal details deleted.</label></div>
+    <button id="go" type="submit">Send deletion request</button>
+    <div class="msg" id="msg" role="status"></div>
+  </form>
+</section>
+
+</main>
+<footer>© 2026 HEALSOL HEALTHCARE PRIVATE LIMITED · <a href="legal.html#contact">Contact</a></footer>
+<script>
+(function(){
+  var F=document.getElementById('f'),B=document.getElementById('go'),M=document.getElementById('msg');
+  function say(t,ok){ M.textContent=t; M.className='msg '+(ok?'ok':'err'); }
+  F.addEventListener('submit',async function(e){
+    e.preventDefault();
+    var mob=String(document.getElementById('mob').value||'').replace(/\D/g,'').slice(-10), nm=document.getElementById('nm').value.trim(), fac=document.getElementById('fac').value.trim();
+    if(!/^[6-9]\d{9}$/.test(mob)) return say('Enter your 10-digit registered mobile number.');
+    if(!nm||!fac) return say('Enter your name and facility.');
+    if(!document.getElementById('ok').checked) return say('Tick the box to confirm.');
+    B.disabled=true; B.textContent='Sending…';
+    try{
+      var r=await fetch('https://asia-south1-healsol-nqas.cloudfunctions.net/submitEnquiry',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({data:{source:'delete',orgName:fac,contactName:nm,mobile:mob,message:String(document.getElementById('why').value||'').slice(0,300)}})});
+      var j=await r.json().catch(function(){ return {}; });
+      if(!r.ok||j.error) throw new Error((j.error&&j.error.message)||'Could not send.');
+      F.reset(); say('Request sent. Reference '+((j.result&&j.result.ref)||'')+'. We will confirm on '+mob+' within 30 days.',true);
+    }catch(err){ say((err&&err.message)||'Could not send. Write to info@thehealsol.com instead.'); }
+    B.disabled=false; B.textContent='Send deletion request';
+  });
+})();
+</script>
+</body>
+</html>

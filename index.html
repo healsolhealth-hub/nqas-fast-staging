@@ -8,15 +8,20 @@
 <meta name="theme-color" content="#1E6B5E"/>
 <link rel="manifest" href="manifest.webmanifest"/>
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<link rel="apple-touch-icon" href="icons/qi-apple-touch-icon.png"/>
 <link rel="preconnect" href="https://www.gstatic.com"/>
 <script id="nf-asset-fallback">// Step 5: the published page keeps big blocks in assets/…; each of those tags calls this if it cannot load (for example
 // an upload without the assets folder). The page then opens app-inline.html — the same app as one file — instead.
-function nfAssetFail(el){ try{ console.warn('[NQAS] asset missing:',el&&(el.src||el.href)); location.replace('app-inline.html'+location.search+location.hash); }catch(e){} }
+// 4 Nov 2026: first reload once (a new version was just published and this browser still had the old page), and only then
+// open the one-file copy — that copy is 15 MB and freezes slow phones.
+function nfAssetFail(el){ try{ console.warn('[NQAS] asset missing:',el&&(el.src||el.href));
+  var k='nf_asset_retry', t=+(sessionStorage.getItem(k)||0);
+  if(!t||Date.now()-t>60000){ sessionStorage.setItem(k,String(Date.now())); var u=location.pathname+(location.search?location.search+'&':'?')+'v='+Date.now()+location.hash; location.replace(u); return; }
+  location.replace('app-inline.html'+location.search+location.hash); }catch(e){ try{ location.replace('app-inline.html'); }catch(x){} } }
 </script>
 <!-- Razorpay checkout: loaded when someone pays (shared/payments.js) -->
 <title>NQAS | FAST · HealSol Academy</title>
-<script id="nf-level" src="assets/types-settings.c9093f9dc9.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-level" src="assets/types-settings.7241570a21.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-assets">var NF_ASSETS={"uphc-checklist":"assets/data-uphc-checklist.09cb37887b.json","phc-checklist":"assets/data-phc-checklist.0f179b7980.json","chc-checklist":"assets/data-chc-checklist.1d22f2ed41.json","uphc-hindi":"assets/data-uphc-hindi.29e9e07d2c.json","phc-hindi":"assets/data-phc-hindi.32c71d43c3.json","chc-hindi":"assets/data-chc-hindi.fa7c99a1ef.json","uphc-fix":"assets/data-uphc-fix.a1e44c80ea.json","phc-fix":"assets/data-phc-fix.4875d574ef.json","chc-fix":"assets/data-chc-fix.ad0f694a2c.json","sc-checkpoints":"assets/data-sc-checkpoints.faf119347a.js","sign-font":"assets/vendor-sign-font.245deebf21.js","pdf-fonts":"assets/vendor-pdf-fonts.d24cedb333.js","sc-fix":"assets/data-sc-how-to-fix.370427c0e7.js"};</script>
 <script id="nf-data-loader">// Data files loaded on demand (phase 3): a facility type's checklist is fetched only when a facility of that type opens.
 // NF_ASSETS (written by app/build.js): name → 'assets/data-<name>.<hash>.json' (published page) or '#nf-data-<name>'
@@ -74,9 +79,32 @@ function nfScDataReady(){
 #login-screen:not(.nf-on){background:#EEF3F2;}
 #login-screen:not(.nf-on) > *{visibility:hidden;animation:nfBootShow 0s 6s forwards;}
 @keyframes nfBootShow{to{visibility:visible;}}
+/* Opening screen (6 Nov 2026) — same light background as the Android splash, so opening looks like one smooth step */
+#nf-boot{position:fixed;inset:0;z-index:2147483000;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-family:Poppins,system-ui,sans-serif;color:#14514A;transition:opacity .2s;}
+#nf-boot img{border-radius:18px;box-shadow:0 6px 18px rgba(20,81,74,.18);margin-bottom:8px;}
+#nf-boot b{font-size:20px;font-weight:700;letter-spacing:.2px;}
+#nf-boot small{font-size:12.5px;color:#5B6B68;}
+#nf-boot i{width:22px;height:22px;border-radius:50%;border:3px solid #D5E6E2;border-top-color:#1E6B5E;margin-top:18px;animation:nfBootSpin .8s linear infinite;}
+#nf-boot span{font-size:12.5px;color:#5B6B68;}
+@keyframes nfBootSpin{to{transform:rotate(360deg);}}
+
+/* Qi FAST (Play app) opening screen — option A, clean white (12 Nov 2026) */
+#nf-boot.qi{justify-content:space-between;padding:0 24px 28px;box-sizing:border-box;}
+#nf-boot.qi .qi-b{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+#nf-boot.qi img{border-radius:0;box-shadow:none;margin:0;width:210px;height:auto;}
+#nf-boot.qi p{margin:0;font-size:15px;font-weight:600;line-height:1.4;color:#10302B;text-align:center;}
+#nf-boot.qi .qi-bar{width:120px;height:4px;border-radius:9px;background:#F4E3CC;overflow:hidden;position:relative;}
+#nf-boot.qi .qi-bar span{position:absolute;top:0;bottom:0;left:-45%;width:45%;border-radius:9px;background:linear-gradient(90deg,#F37321,#F5B91A);animation:qiBar 1.1s ease-in-out infinite;font-size:0;}
+@keyframes qiBar{to{left:100%;}}
+#nf-boot.qi .qi-by{font-size:11.5px;font-weight:500;color:#5B7570;}
+@media (prefers-reduced-motion:reduce){#nf-boot.qi .qi-bar span{animation:none;left:0;width:55%;}}
 </style>
 </head>
 <body>
+<!-- Opening screen (6 Nov 2026): shown from the very first moment until the app knows whether you are signed in —
+     never a blank page or the login form flashing for people who are already signed in. Removed by nfBootOff() (shared/secure.js). -->
+<div id="nf-boot" role="status" aria-live="polite"><img src="data:image/png;base64,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" width="72" height="72" alt=""><b>NQAS | FAST</b><small>HealSol Academy</small><i></i><span>Opening…</span></div>
+<script>(function(){try{if(/[?&]src=play\b/.test(location.search||'')||/^android-app:\/\/com\.thehealsol\.(?:nqasfast|qifast)(\/|$)/.test(document.referrer||''))sessionStorage.setItem('nf_play','1');if(sessionStorage.getItem('nf_play')==='1'){var b=document.getElementById('nf-boot');if(b){b.className='qi';b.innerHTML='<div class="qi-b"><img src="icons/qi-logo.jpg" alt="Qi FAST" width="210" height="109"><p>Quality accreditation,<br>made simple</p><div class="qi-bar" aria-hidden="true"><span></span></div></div><small class="qi-by">by HealSol Academy</small>';}document.title='Qi FAST \u00b7 HealSol Academy';}}catch(e){}})();setTimeout(function(){var b=document.getElementById('nf-boot');if(b)b.remove();},12000);</script>
 
 <!-- LOGIN SCREEN -->
 <div id="login-screen" class="login-screen">
@@ -808,8 +836,8 @@ function nfScDataReady(){
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
-<script src="assets/sc-login-3tier.6baeea5ce4.js" onerror="nfAssetFail(this)"></script>
-<script src="assets/data-sc-days.0eb3c1d272.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-login-3tier.2923158b47.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/data-sc-days.2a41e8c5d9.js" onerror="nfAssetFail(this)"></script>
 
 <div class="report-modal-overlay" id="rpt-filter-modal">
   <div class="report-modal" style="max-width:560px;padding:0;overflow:hidden;">
@@ -958,7 +986,28 @@ function nfScDataReady(){
     <div style="padding:20px;overflow-y:auto;" id="demo-convert-body"></div>
   </div>
 </div>
-<script src="assets/sc-v2-core.329f5d3321.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-v2-core.91f954bf9d.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hide">// ══════════════════════════════════════════════════════════════
+// DEMO & TEST FACILITIES OUT OF HEALSOL'S NUMBERS (4 Nov 2026)
+//   HealSol's screens (Today, Facilities, Registry, Coverage, Map, Programme, Business, Reports, downloads) all work from
+//   scMasterFacilities. Right after it is loaded for HealSol, demo facilities (showcase) and facilities marked as test
+//   (testFac) are moved to _nfHidden, so no list, count, chart or to-do includes them. They are opened on purpose with
+//   nfHidOpen(code) (Facilities → "demo & test facilities", Settings → Demo facilities). Loaded right after sc/v2-core.js,
+//   so every other module sees the filtered list. Supervisors / District Admins see only what they are assigned.
+// ══════════════════════════════════════════════════════════════
+var _nfHidden = {}, _nfHiddenProg = {}, _nfHidOpen = {};
+function nfIsHiddenFac(f) { return !!(f && (f.showcase || f.testFac)); }
+function nfHideSplit() {
+  var F = (typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {}, P = (typeof scMasterProgress !== 'undefined' && scMasterProgress) || {};
+  Object.keys(F).forEach(function (c) { if (nfIsHiddenFac(F[c]) && !_nfHidOpen[c]) { _nfHidden[c] = F[c]; if (P[c]) _nfHiddenProg[c] = P[c]; delete F[c]; delete P[c]; } });
+  Object.keys(_nfHidden).forEach(function (c) { if (F[c] && !nfIsHiddenFac(F[c])) delete _nfHidden[c]; });
+}
+(function () {
+  if (typeof scLoadMasterData !== 'function') return; var o = scLoadMasterData;
+  scLoadMasterData = async function () { var r = await o.apply(this, arguments);
+    try { if (typeof appMode !== 'undefined' && appMode === 'sc-admin') { _nfHidden = {}; _nfHiddenProg = {}; nfHideSplit(); } } catch (e) { console.warn('[hide-demo]', e); } return r; };
+})();
+</script>
 <!-- ══════════════════════════════════════════════════════════════
      BUILD 1 — SC simplification
      · Single CHO login: My Cards + Facility Dashboard tabs
@@ -1365,19 +1414,20 @@ function scMdNext(di){
 
 <!-- ══ BUILD 4.1 — Foundation (brand, bundled fonts & icons) ══ -->
 <link rel="stylesheet" href="assets/vendor-poppins-font.0ea9314335.css" onerror="nfAssetFail(this)">
-<script src="assets/shared-brand.1b47ef65ba.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-brand.caf29d94d7.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-play-brand.5ff1546d4a.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ BUILD 4.2 — single login ══ -->
-<link rel="stylesheet" href="assets/shared-one-login.6f478da916.css" onerror="nfAssetFail(this)">
-<script src="assets/shared-one-login.39388a85bf.js" onerror="nfAssetFail(this)"></script>
+<link rel="stylesheet" href="assets/shared-one-login.772ed79108.css" onerror="nfAssetFail(this)">
+<script src="assets/shared-one-login.973a9e8d61.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ BUILD 4.3 — staff app (Today · Cards · Progress · Me) ══ -->
-<link rel="stylesheet" href="assets/sc-staff-app.e0189e484b.css" onerror="nfAssetFail(this)">
-<script src="assets/sc-staff-app.14042a7974.js" onerror="nfAssetFail(this)"></script>
+<link rel="stylesheet" href="assets/sc-staff-app.4f4b2c6a3d.css" onerror="nfAssetFail(this)">
+<script src="assets/sc-staff-app.dfc9643785.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ BUILD 4.4 — laptop dashboards ══ -->
 <link rel="stylesheet" href="assets/sc-laptop.3b958233dd.css" onerror="nfAssetFail(this)">
-<script src="assets/sc-laptop.a3d55c3bdb.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-laptop.2c57667b0d.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Readiness redesign + separate service dropdowns ══ -->
 <style>
@@ -1413,10 +1463,10 @@ function scMdNext(di){
 
 <!-- ══ HealSol business indicators ══ -->
 <link rel="stylesheet" href="assets/shared-business-ind.d97663522b.css" onerror="nfAssetFail(this)">
-<script src="assets/shared-business-ind.a9e4d359b8.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-business-ind.e7f5246e8b.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Branded PDF reports ══ -->
-<script src="assets/shared-pdf-reports.1da837fa8c.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-pdf-reports.1d3126482f.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Phases: Baseline · Implementation · Endline ══ -->
 <link rel="stylesheet" href="assets/sc-phases.07a2a34a96.css" onerror="nfAssetFail(this)">
@@ -1480,7 +1530,7 @@ function nfStdToggle(hostId){ _nfStdOpen[hostId]=!_nfStdOpen[hostId]; var t=docu
 body.nf-staff #scb2-ws-mini{display:none!important;}
 #nf-tt{margin-top:18px;}
 .nftt-tabs{display:flex;background:var(--bg);border-radius:14px;padding:4px;gap:4px;}
-.nftt-tabs button{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--t2);padding:9px 6px;border-radius:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;}
+.nftt-tabs button{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--t2);padding:8px 4px;border-radius:11px;cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px 5px;white-space:normal;line-height:1.2;text-align:center;min-height:46px;overflow-wrap:anywhere;}
 .nftt-tabs button.on{background:#fff;color:var(--teal);box-shadow:var(--shadow-sm);}
 .nftt-tabs b{font-size:11px;background:var(--teal-lt);color:var(--teal);border-radius:10px;padding:1px 7px;} .nftt-tabs b.r{background:var(--red-dk);color:#fff;}
 .nftt-pane{margin-top:10px;}
@@ -1551,11 +1601,11 @@ function nfReleaseLayers(){
 .nfs-card .scx-btn{align-self:flex-start;} td.pw{font-family:monospace;font-weight:700;color:var(--teal-dk);}
 html.nf-secure #sc-add-pwd{display:none!important;}
 .ti-database-export{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M4 6c0 1.657 3.582 3 8 3s8 -1.343 8 -3s-3.582 -3 -8 -3s-8 1.343 -8 3%22 /%3E%3Cpath d=%22M4 6v6c0 1.657 3.582 3 8 3c1.118 0 2.183 -.086 3.15 -.241%22 /%3E%3Cpath d=%22M20 12v-6%22 /%3E%3Cpath d=%22M4 12v6c0 1.657 3.582 3 8 3c.157 0 .312 -.002 .466 -.005%22 /%3E%3Cpath d=%22M16 19h6%22 /%3E%3Cpath d=%22M19 16l3 3l-3 3%22 /%3E%3C/svg%3E")}.ti-id{--ti:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22black%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E%3Cpath d=%22M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z%22 /%3E%3Cpath d=%22M9 10m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0%22 /%3E%3Cpath d=%22M15 8l2 0%22 /%3E%3Cpath d=%22M15 12l2 0%22 /%3E%3Cpath d=%22M7 16l10 0%22 /%3E%3C/svg%3E")}</style>
-<script src="assets/shared-secure.96c5e9e074.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/shared-secure.613bbaaa24.js" onerror="nfAssetFail(this)"></script>
 
 <script id="nf-registration" src="assets/shared-registration.6833f0a40c.js" onerror="nfAssetFail(this)"></script>
-<link id="nf-join-css" rel="stylesheet" href="assets/shared-join.096521446f.css" onerror="nfAssetFail(this)">
-<script id="nf-join" src="assets/shared-join.6ad5ff74c1.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-join-css" rel="stylesheet" href="assets/shared-join.dc1f2976b7.css" onerror="nfAssetFail(this)">
+<script id="nf-join" src="assets/shared-join.48f0f1fcac.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-payments" src="assets/shared-payments.12fb4e5a71.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-rcpt-css">
 .nf-rcpt{font-size:13px;color:#0F172A;max-width:520px;margin:0 auto;}
@@ -1578,8 +1628,8 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 <script id="nf-biz-report" src="assets/shared-biz-report.7d0c383ae8.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-qr" src="assets/vendor-qrcode.fabb956c75.js" onerror="nfAssetFail(this)"></script>
 
-<link id="nf-cert-css" rel="stylesheet" href="assets/shared-cert.50af794399.css" onerror="nfAssetFail(this)">
-<script id="nf-cert" src="assets/shared-cert.210bb0517e.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-cert-css" rel="stylesheet" href="assets/shared-cert.3b1db0651a.css" onerror="nfAssetFail(this)">
+<script id="nf-cert" src="assets/shared-cert.d1a45ad5ab.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-wa-css">
 /* WhatsApp: help card, help links, one-tap message buttons */
 .nf-help{display:flex;gap:12px;align-items:center;margin-top:12px;border-radius:20px;padding:14px 16px;background:#fff;border:1px solid var(--br,#E2E8F0);}
@@ -1596,7 +1646,7 @@ html.nf-secure #sc-add-pwd{display:none!important;}
 .nf-supset input{border:1.5px solid var(--br,#E2E8F0);border-radius:10px;padding:9px 10px;font:inherit;font-size:13px;}
 .nf-supset button{border:0;border-radius:10px;background:var(--teal,#0F5C52);color:#fff;font:inherit;font-size:13px;font-weight:700;padding:10px 16px;cursor:pointer;}
 </style>
-<script id="nf-wa" src="assets/shared-whatsapp.0f06cebdec.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-wa" src="assets/shared-whatsapp.a1352a77c3.js" onerror="nfAssetFail(this)"></script>
 
 
 
@@ -1621,8 +1671,8 @@ function nfProBadge(f,cls){ var t=nfProTier(f); if(!t) return '';
   return '<span class="nf-pro'+(cls?' '+cls:'')+'" title="'+(f.subscriptionStatus==='paid'?'Paid subscription':'Full programme (contract)')+' · package '+t+'"><i class="p">PRO</i><i class="t">'+t+'</i></span>'; }
 </script>
 <link id="nf-biz-dash-css" rel="stylesheet" href="assets/shared-biz-dash.c8831fea1d.css" onerror="nfAssetFail(this)">
-<script id="nf-pdf" src="assets/shared-pdf.da58c8e364.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-biz-dash" src="assets/shared-biz-dash.1058fd58bd.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-pdf" src="assets/shared-pdf.105ae69b9e.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-biz-dash" src="assets/shared-biz-dash.2a97492abd.js" onerror="nfAssetFail(this)"></script>
 
 <style>
 .nf-bizrep{background:var(--card,#fff);border:1px solid var(--br,#E2E8F0);border-radius:16px;padding:16px 18px;margin:0 0 14px;}
@@ -1637,7 +1687,9 @@ function nfProBadge(f,cls){ var t=nfProTier(f); if(!t) return '';
 function nfWithin(p,ms){ return new Promise(function(res,rej){ var tm=setTimeout(function(){ var e=new Error('timeout'); e.nfTimeout=true; rej(e); },ms);
   Promise.resolve(p).then(function(v){ clearTimeout(tm); res(v); },function(e){ clearTimeout(tm); rej(e); }); }); }
 var _nfCover={el:null,dash:false,timer:null};
+function nfBootOff(){ var b=document.getElementById('nf-boot'); if(b){ b.style.opacity='0'; setTimeout(function(){ if(b.parentNode) b.remove(); },220); } }
 function nfCoverOn(){
+  setTimeout(nfBootOff,30);   // the "Opening…" cover takes over from the opening screen
   _nfCover.dash=false; _nfCover.pending=false;
   var c=_nfCover.el||document.getElementById('nf-open-cover-el');
   if(!c){ c=document.createElement('div'); c.id='nf-open-cover-el';
@@ -1705,6 +1757,7 @@ function nfCoverDone(){
     if(ignore){ ignore--; return; }
     if(depth>0) depth--;
     if(closeTop()){ push(); return; }                                  // stay on this screen
+    var st=window.nfBackSteps||[]; for(var i=0;i<st.length;i++){ try{ if(st[i]()) return; }catch(e){} }   // department app, dashboards: one screen back (6 Nov 2026)
     if(document.body.classList.contains('nf-fadm')){ if(typeof window.nfFaBack==='function') window.nfFaBack(); return; }   // Facility dashboard: tab → Home → My cards
     if(typeof nfIsStaff==='function'&&nfIsStaff()&&tabs.length&&typeof nfTab==='function'){
       silent=true; try{ nfTab(tabs.pop()); }finally{ silent=false; }
@@ -1757,8 +1810,8 @@ function nfCoverDone(){
 }
 </style>
 <!-- ══ Facility Admin dashboard — new look (Home · Staff · Readiness · More) ══ -->
-<link id="nf-fadm-css" rel="stylesheet" href="assets/sc-fadm.1fb01e6ce7.css" onerror="nfAssetFail(this)">
-<script id="nf-fadm" src="assets/sc-fadm.3f3b4d2d74.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-fadm-css" rel="stylesheet" href="assets/sc-fadm.5bedb6f3f4.css" onerror="nfAssetFail(this)">
+<script id="nf-fadm" src="assets/sc-fadm.dfad8a8bb9.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Action Plan → tell each staff member on WhatsApp ══ -->
 <style id="nf-plan-wa-css">
@@ -1771,7 +1824,7 @@ function nfCoverDone(){
 .nfpw-row small{font-size:11.5px;color:var(--t3);} .nfpw-row small.od{color:var(--red-dk);}
 .nfpw-row.sent .nf-wa-btn{opacity:.55;} .nfpw-ok{font-size:11px;color:var(--green-dk);font-weight:600;}
 </style>
-<script id="nf-plan-wa" src="assets/sc-plan-wa.4a4291bea8.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-plan-wa" src="assets/sc-plan-wa.6779c88a70.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Quality Champion: "Looks met?" on Not Met MoV items ══ -->
 <style id="nf-lm-css">
@@ -1788,7 +1841,7 @@ function nfCoverDone(){
 
 <!-- ══ Baseline review (Days 1–7): Quality Champion / Supervisor correct baseline MoV scores; one verified baseline ══ -->
 <link id="nf-bl-css" rel="stylesheet" href="assets/sc-baseline-review.cba584c030.css" onerror="nfAssetFail(this)">
-<script id="nf-bl" src="assets/sc-baseline-review.9bd6ffb924.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-bl" src="assets/sc-baseline-review.fe49dd9480.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ HealSol Admin: view only for facility work; hand over a facility to another Supervisor / Champion ══ -->
 <style id="nf-ho-css">
@@ -1819,7 +1872,7 @@ function nfCoverDone(){
 .nfpw-lang{display:inline-flex;background:var(--bg);border-radius:20px;padding:3px;margin:8px 0 2px;}
 .nfpw-lang button{border:0;background:transparent;font:inherit;font-size:12px;font-weight:600;color:var(--t3);padding:5px 14px;border-radius:16px;cursor:pointer;} .nfpw-lang button.on{background:var(--teal);color:#fff;}
 </style>
-<script id="nf-gaps" src="assets/sc-gaps.df1042b0ae.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-gaps" src="assets/sc-gaps.8a4a1631c2.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 2b: weekly focus plan (max 3 per person), role Leads, shared / group actions ══ -->
 <style id="nf-wp-css">
@@ -1843,7 +1896,7 @@ function nfCoverDone(){
 
 <!-- ══ Step 3: PHC / CHC links · MO PHC overview · MOIC block view ══ -->
 <link id="nf-links-css" rel="stylesheet" href="assets/sc-links.e145d9c6bb.css" onerror="nfAssetFail(this)">
-<script id="nf-links" src="assets/sc-links.776611d768.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-links" src="assets/sc-links.128b1d1d45.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ How to fix (per MoV item) + linked checks (contradiction notes) ══ -->
 
@@ -1914,21 +1967,21 @@ function nfCoverDone(){
 <script id="nf-grad" src="assets/sc-graduation.5fcd31094e.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 2 of CQI: nightly facility summaries (server runs this app's own scoring) · light dashboards at scale · block · refresh ══ -->
-<script id="nf-sum" src="assets/sc-summary.0ba9eaf152.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-sum" src="assets/sc-summary.15830c67e5.js" onerror="nfAssetFail(this)"></script>
 
 <!-- ══ Step 3 of CQI: Social impact — levels, stars, shareable card with QR, Verify page, partner strip ══ -->
-<link id="nf-imp-css" rel="stylesheet" href="assets/shared-impact.b1cba457b4.css" onerror="nfAssetFail(this)">
-<script id="nf-imp" src="assets/shared-impact.9f7d5ac345.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-imp-css" rel="stylesheet" href="assets/shared-impact.cf89da6a80.css" onerror="nfAssetFail(this)">
+<script id="nf-imp" src="assets/shared-impact.497ea52277.js" onerror="nfAssetFail(this)"></script>
 
 <link id="nf-dash-css" rel="stylesheet" href="assets/shared-dashboards.9030b996af.css" onerror="nfAssetFail(this)">
-<script id="nf-dash" src="assets/shared-dashboards.6389b2bdbd.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dash" src="assets/shared-dashboards.538fcc6c83.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-css" rel="stylesheet" href="assets/dept-core.4ed6e40053.css" onerror="nfAssetFail(this)">
-<link id="nf-dept-screens-css" rel="stylesheet" href="assets/dept-screens.f9291d80a9.css" onerror="nfAssetFail(this)">
+<link id="nf-dept-screens-css" rel="stylesheet" href="assets/dept-screens.2c800245d3.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-plan" src="assets/dept-plan.e35a7f99c9.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept" src="assets/dept-core.fa10621186.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept" src="assets/dept-core.298f55fad5.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-review" src="assets/dept-review.28e080f175.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-content" src="assets/dept-content.bbcfa094c1.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-dept-screens" src="assets/dept-screens.1ab0b095db.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-content" src="assets/dept-content.216868c381.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-dept-screens" src="assets/dept-screens.9c78e4007c.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-dept-master-css" rel="stylesheet" href="assets/dept-master.1ceca8c5a8.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-master" src="assets/dept-master.8cc7ea5f67.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-dept-master-ui" src="assets/dept-master-ui.e493849b6c.js" onerror="nfAssetFail(this)"></script>
@@ -1937,7 +1990,7 @@ function nfCoverDone(){
 <link id="nf-dept-grad-css" rel="stylesheet" href="assets/dept-grad.c07401b26c.css" onerror="nfAssetFail(this)">
 <script id="nf-dept-grad" src="assets/dept-grad.1ac7433c09.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-hs-home-css" rel="stylesheet" href="assets/shared-hs-home.f2fa190596.css" onerror="nfAssetFail(this)">
-<script id="nf-hs-home" src="assets/shared-hs-home.e238ffd188.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hs-home" src="assets/shared-hs-home.13d0658677.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-hs-settings-css">/* HealSol Settings refinements (21 Oct 2026) */
 .hsx-pick{display:block!important;max-height:280px;overflow-y:auto;border:1px solid var(--br);border-radius:10px;padding:6px 8px;}
 .hsx-grp+.hsx-grp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--br);}
@@ -1978,7 +2031,7 @@ body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none
 <script id="nf-one-ui" src="assets/shared-one-ui.c255a0db58.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-vocab" src="assets/shared-vocab.22993a26fc.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-fac-page" src="assets/shared-fac-page.f6d63b3ce5.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-fac-ready" src="assets/shared-fac-ready.3755ce3545.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-fac-ready" src="assets/shared-fac-ready.abcc07b2cb.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-fac-sc" src="assets/shared-fac-sc.5e2a4ee502.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-hs-roles" src="assets/shared-hs-roles.d381b3e930.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-reports-css">/* Reports — one dialog for every report (23 Oct 2026) */
@@ -2014,7 +2067,7 @@ body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none
 <link id="nf-sc-content-css" rel="stylesheet" href="assets/shared-sc-content.4dd2befa79.css" onerror="nfAssetFail(this)">
 <script id="nf-sc-content" src="assets/shared-sc-content.057fe71840.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-registry-css" rel="stylesheet" href="assets/shared-registry.0152bb4061.css" onerror="nfAssetFail(this)">
-<script id="nf-registry" src="assets/shared-registry.a19478cbcf.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-registry" src="assets/shared-registry.a1047f8ae0.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-enq-css">/* ══ Business → Enquiries & sign-ups (28 Oct 2026) ══ */
 .eq{margin-bottom:16px;}
 .eq-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px;}
@@ -2043,10 +2096,77 @@ body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none
 .eq-btn:disabled{opacity:.6;}
 .eq-empty{padding:18px;text-align:center;color:var(--t2);font-size:13px;}
 .eq-foot{font-size:12px;color:var(--t2);margin-top:8px;} .eq-foot .hs-link{font-size:12px;padding:0;}
+.eq-kind.g{background:#FEF3C7;color:#92400E;}
+.eq-wa-pre{white-space:pre-wrap;font:inherit;font-size:13px;line-height:1.5;background:#F7FAF9;border:1px solid var(--br);border-radius:12px;padding:12px;margin:10px 0;max-height:260px;overflow:auto;}
 </style>
-<script id="nf-enq" src="assets/shared-enquiries.b52b45dc3b.js" onerror="nfAssetFail(this)"></script>
-<link id="nf-hsp-css" rel="stylesheet" href="assets/shared-hs-people.3edc650740.css" onerror="nfAssetFail(this)">
-<script id="nf-hsp" src="assets/shared-hs-people.5cfb83bc29.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-enq" src="assets/shared-enquiries.106de16b0e.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-bankpay-css" rel="stylesheet" href="assets/shared-bankpay.9b74de7822.css" onerror="nfAssetFail(this)">
+<script id="nf-bankpay" src="assets/shared-bankpay.dfa3d0f99e.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-invoices" src="assets/shared-invoices.02ba7a9c9b.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-hsp-css" rel="stylesheet" href="assets/shared-hs-people.27b03a54f6.css" onerror="nfAssetFail(this)">
+<script id="nf-hsp" src="assets/shared-hs-people.9db514dd1d.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-launch" src="assets/shared-launch.8c644d0f13.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-offers" src="assets/shared-offers.34751fff03.js" onerror="nfAssetFail(this)"></script>
+<style id="nd-unlock-css">/* UPHC / PHC / CHC Unlock card (3 Nov 2026) */
+.ndu-card{margin:12px 0;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 10px 30px -18px rgba(0,0,0,.4);border:1px solid var(--br,#E2EAE8);}
+.ndu-hd{background:linear-gradient(135deg,#7C2D12,#C2410C);color:#fff;text-align:center;padding:20px 18px;}
+.ndu-lk{font-size:30px;} .ndu-hd b{display:block;font-size:16.5px;font-weight:800;margin-top:4px;} .ndu-hd small{display:block;font-size:12.5px;opacity:.92;margin-top:4px;line-height:1.45;}
+.ndu-body{padding:14px 16px;} .ndu-wait{padding:12px;text-align:center;font-size:12.5px;color:var(--t3,#64748B);}
+.ndu-k{font-size:11.5px;font-weight:800;color:var(--t3,#64748B);letter-spacing:.4px;margin-bottom:2px;}
+.ndu-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #EEF2F1;font-size:13px;} .ndu-row b{white-space:nowrap;}
+.ndu-tot{display:flex;justify-content:space-between;align-items:flex-end;padding:12px 0 4px;} .ndu-tot>span:first-child{font-size:12px;font-weight:800;color:var(--t3,#64748B);}
+.ndu-tot>span:last-child{text-align:right;} .ndu-tot small{display:block;font-size:11.5px;color:var(--t3,#64748B);} .ndu-tot b{font-size:21px;color:var(--teal-dk,#14514A);}
+.ndu-pay{width:100%;padding:13px;border-radius:12px;font-size:14px;margin-top:6px;}
+.ndu-staff{background:#F7FAF9;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.5;}
+.ndu-ban{margin:0 0 12px;border-radius:16px;background:linear-gradient(135deg,#7C2D12,#C2410C);color:#fff;padding:14px 16px;display:flex;gap:12px;align-items:center;}
+.ndu-bi{font-size:26px;} .ndu-ban>span:nth-child(2){flex:1;} .ndu-ban b{display:block;font-size:14.5px;} .ndu-ban small{font-size:12px;opacity:.92;}
+.ndu-ban button{background:#fff;color:#9A3412;border:0;border-radius:10px;padding:9px 12px;font:inherit;font-weight:800;font-size:13px;cursor:pointer;}
+.ndu-soft{margin:0 0 12px;border-radius:14px;background:#FFF7ED;border:1px solid #FCD9A8;padding:10px 14px;font-size:13px;color:#7C2D12;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.ndu-soft small{display:block;font-size:12px;} .ndu-soft button{background:#C2410C;color:#fff;border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;font-size:12.5px;white-space:nowrap;cursor:pointer;}
+</style>
+<script id="nd-unlock" src="assets/dept-unlock.122201474a.js" onerror="nfAssetFail(this)"></script>
+<link id="fpo-css" rel="stylesheet" href="assets/shared-profile.be420dea99.css" onerror="nfAssetFail(this)">
+<script id="fpo-js" src="assets/shared-profile.7819df7a1c.js" onerror="nfAssetFail(this)"></script>
+<script id="dm-js" src="assets/shared-demo.2ebfee440a.js" onerror="nfAssetFail(this)"></script>
+<script id="sd-js" src="assets/shared-startdate.643905932c.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-hide-ui" src="assets/shared-hide-demo-ui.4b2f5a9239.js" onerror="nfAssetFail(this)"></script>
+<script id="np-js" src="assets/shared-push.827fb3f07d.js" onerror="nfAssetFail(this)"></script>
+<script id="nd-perf" src="assets/dept-perf.8cb12ed429.js" onerror="nfAssetFail(this)"></script>
+<script id="sc-perf" src="assets/sc-perf.1a028d2c56.js" onerror="nfAssetFail(this)"></script>
+<script id="pm-js" src="assets/shared-promos.86d79bb8da.js" onerror="nfAssetFail(this)"></script>
+<script id="pl-js" src="assets/shared-play.cb2e293f2e.js" onerror="nfAssetFail(this)"></script>
+<script id="bk-steps-js" src="assets/shared-back-steps.e2d664b3e4.js" onerror="nfAssetFail(this)"></script>
+<style id="ot-css">/* WhatsApp code screen (6 Nov 2026) — above the opening screen and the cover */
+.ot-ov{position:fixed;inset:0;z-index:2147483100;background:rgba(15,40,36,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:Poppins,system-ui,sans-serif;overflow-y:auto}
+.ot-card{background:#fff;border-radius:20px;max-width:380px;width:100%;padding:22px 20px 18px;box-shadow:0 20px 50px rgba(0,0,0,.28);text-align:center;color:#14514A}
+.ot-ic{font-size:34px;line-height:1;margin-bottom:6px}
+.ot-card h2{margin:0 0 6px;font-size:18px;font-weight:700;color:#14514A}
+.ot-sub{margin:4px 0 10px;font-size:13.5px;line-height:1.5;color:#475654;text-align:center}
+.ot-lbl{display:block;text-align:left;font-size:13px;font-weight:600;margin:8px 0 4px;color:#1B2A28}
+.ot-in{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:11px 12px;border:1.5px solid #CFDCD9;border-radius:12px;background:#fff;color:#1B2A28}
+.ot-in:focus{outline:none;border-color:#1E6B5E;box-shadow:0 0 0 3px rgba(30,107,94,.15)}
+.ot-code{text-align:center;font-size:26px;letter-spacing:.45em;font-weight:700;padding-left:.45em}
+.ot-btn{display:block;width:100%;min-height:46px;margin-top:12px;border:0;border-radius:14px;background:#1E6B5E;color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.ot-btn.sm{width:auto;display:inline-block;padding:0 22px;margin-top:0}
+.ot-btn:disabled{opacity:.6;cursor:default}
+.ot-link{background:none;border:0;color:#1E6B5E;font:inherit;font-size:13.5px;font-weight:600;padding:10px 8px;cursor:pointer;min-height:40px}
+.ot-link:disabled{color:#8A9997;cursor:default}
+.ot-row{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 8px;margin-top:6px}
+.ot-err{display:none;margin-top:10px;padding:8px 10px;border-radius:10px;background:#FEECEB;color:#B42318;font-size:13px;text-align:left}
+.ot-help{margin:8px 0 0;font-size:12px;line-height:1.45;color:#6B7A78}
+.ot-spin{width:34px;height:34px;margin:14px auto;border:3px solid #D6E6E2;border-top-color:#1E6B5E;border-radius:50%;animation:ot-sp .8s linear infinite}
+@keyframes ot-sp{to{transform:rotate(360deg)}}
+#hs-otp .ot-sw{display:flex;gap:10px;align-items:flex-start;margin:8px 0;cursor:pointer}
+#hs-otp .ot-sw input{margin-top:4px}
+#hs-otp .ot-sw small{display:block;color:#6B7A78;font-size:12px}
+#hs-otp .ot-subs{padding-left:22px}
+#hs-otp .ot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0}
+#hs-otp .ot-grid label{font-size:12.5px;font-weight:600;color:#1B2A28}
+#hs-otp .ot-grid .ot-in{margin-top:4px;font-size:14px;padding:9px 10px}
+</style>
+<script id="ot-js" src="assets/shared-otp.dfe8af10c9.js" onerror="nfAssetFail(this)"></script>
+<link id="qi-css" rel="stylesheet" href="assets/shared-qi-start.2220ec1eff.css" onerror="nfAssetFail(this)">
+<script id="qi-js" src="assets/shared-qi-start.0c0a500d2c.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-day-score">// ══════════════════════════════════════════════════════════════
 // Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".
 // The score of what has been answered on that card — Met 2, Partial 1, Not met 0 — not the facility's readiness.
@@ -2115,7 +2235,7 @@ function nfDeptCardScore(dept, day, mob) {
       if(window.caches) caches.keys().then(function(ks){ ks.forEach(function(k){ if(/^nqf-/.test(k)) caches.delete(k); }); }).catch(function(){});
       return;
     }
-    if(/[?&]nosw\b/.test(q)) return;
+    if(/[?&]nosw\b/.test(q)||(typeof NF_SAFE!=='undefined'&&NF_SAFE)) return;
     if(!(location.protocol==='https:'||h==='localhost'||h==='127.0.0.1')) return;
     if(!document.querySelector('link[rel="manifest"]')) return;
     var go=function(){ navigator.serviceWorker.register('sw.js').catch(function(e){ console.warn('[PWA] service worker not registered:',e&&e.message); }); };
@@ -2132,6 +2252,213 @@ function nfDeptCardScore(dept, day, mob) {
 .hiw-prev li span{color:#4F5E59;} .hiw-prev li em{color:#8A5A12;font-style:normal;font-size:12px;} .hiw-none{color:#5D6D68;font-size:13px;align-self:center;}
 </style>
 <script id="nf-hindi-admin" src="assets/shared-hindi-admin.a43e18db13.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-review-fixes-css" rel="stylesheet" href="assets/shared-review-fixes.c5ae88ebba.css" onerror="nfAssetFail(this)">
+<script id="nf-review-fixes" src="assets/shared-review-fixes.c3f0ee2481.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-hs-pages-css">/* HealSol Enquiries and Payments pages (15 Nov 2026) */
+body.nf-admin:not(.nfv-hsenq) .admin-main > [data-nfv="hsenq"],body.nf-admin:not(.nfv-hspay) .admin-main > [data-nfv="hspay"]{display:none!important;}
+#hs-enqv,#hs-payv{display:flex;flex-direction:column;gap:14px;}
+.hsp-tabs{display:flex;gap:4px;border-bottom:1px solid var(--br,#DCE4E1);overflow-x:auto;scrollbar-width:none;}
+.hsp-tabs button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:10px 16px 12px;border-bottom:3px solid transparent;flex:none;min-height:44px;}
+.hsp-tabs button b{font-size:14.5px;font-weight:600;color:#3C5A55;white-space:nowrap;} .hsp-tabs button small{font-size:12px;color:#5B6B66;white-space:nowrap;}
+.hsp-tabs button em{font-style:normal;font-size:12px;font-weight:700;border-radius:9px;padding:1px 7px;background:#E3EAE8;color:#3C5A55;}
+.hsp-tabs button em.hot{background:#F37321;color:#fff;}
+.hsp-tabs button.on{border-bottom-color:#1E6B5E;} .hsp-tabs button.on b{color:#14514A;}
+.hsp-tabs button:focus-visible{outline:2px solid #1E6B5E;outline-offset:-2px;}
+.hsp-k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5B6B66;margin-top:2px;}
+.hsp-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.hsp-tile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:12px 16px;border-radius:14px;border:1px solid var(--br,#DCE4E1);background:#fff;min-height:80px;}
+.hsp-tile small{font-size:13px;color:#476B64;} .hsp-tile b{font-size:24px;line-height:1.15;color:#10302B;} .hsp-tile span{font-size:12px;font-weight:600;color:#B45309;}
+.hsp-tile.zero b{color:#8AA39E;} .hsp-tile.on{border:2px solid #1E6B5E;background:#F1F8F5;}
+.hsp-tile:focus-visible{outline:2px solid #1E6B5E;outline-offset:2px;}
+.hsp-set{display:flex;flex-direction:column;justify-content:center;gap:6px;} .hsp-set small{font-size:12.5px;color:#476B64;} .hsp-set > div{display:flex;gap:6px;flex-wrap:wrap;}
+.hsp-chip{height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--br,#DCE4E1);background:#fff;font:inherit;font-size:13px;cursor:pointer;color:#10302B;}
+.hsp-chip.on{background:#1E6B5E;border-color:#1E6B5E;color:#fff;}
+.hsp-eq[data-g="soon"] .eq-kinds,.hsp-eq[data-g="soon"] .eq-types,.hsp-eq[data-g="other"] .eq-kinds,.hsp-eq[data-g="other"] .eq-types{display:none;}
+.hsp-eq .eq-head b{display:none;} .hsp-eq .eq-head{justify-content:flex-end;}
+.hsp-note{margin:0;font-size:13.5px;color:#476B64;}
+.hsp-body{display:flex;flex-direction:column;gap:12px;}
+.hsp-body > .nfo-card:first-of-type{margin-top:0;}
+.hsp-dl{white-space:nowrap;} .hsp-dl .eq-btn{margin-left:6px;}
+.hsp-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:4px 0 6px;}
+.hsp-strip button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;border:1px solid var(--br,#DCE4E1);background:#fff;min-height:60px;}
+.hsp-strip button > .ti{width:38px;height:38px;flex:none;border-radius:12px;background:#E6F2EF;color:#1E6B5E;display:flex;align-items:center;justify-content:center;font-size:19px;}
+.hsp-strip button span{display:flex;flex-direction:column;flex:1;min-width:0;} .hsp-strip b{font-size:14.5px;} .hsp-strip small{font-size:12.5px;color:#476B64;}
+.hsp-strip em{font-style:normal;font-weight:600;font-size:13px;color:#1E6B5E;}
+.hsp-strip button:focus-visible{outline:2px solid #1E6B5E;outline-offset:2px;}
+@media(max-width:899px){
+  body.hs-admin .nfs-nav button[data-v=hspay],body.hs-admin .nfs-nav button[data-v=hsenq]{display:none!important;}
+}
+@media(max-width:700px){
+  .hsp-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .hsp-strip{grid-template-columns:1fr;}
+}
+</style>
+<script id="nf-hs-pages" src="assets/shared-hs-pages.69e3f4fdd7.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-sp-css" rel="stylesheet" href="assets/shared-settings-panels.bdc5b8ccfb.css" onerror="nfAssetFail(this)">
+<script id="nf-sp" src="assets/shared-settings-panels.265369271f.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-cert-design" src="assets/shared-cert-design.8bb45407bd.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-acct-css">/* Accountant login: Payments only (15 Nov 2026) */
+#ac-app{display:none;position:fixed;inset:0;z-index:9000;background:#F3F6F5;overflow:auto;-webkit-overflow-scrolling:touch;color:#10302B;font-family:'Poppins','NF Poppins',system-ui,sans-serif;}
+body.ac-on{overflow:hidden;}
+.ac-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px;background:#fff;border-bottom:1px solid #DCE4E1;position:sticky;top:0;z-index:2;}
+.ac-brand{display:flex;align-items:center;gap:12px;min-width:0;} .ac-brand > .ti{width:40px;height:40px;flex:none;border-radius:12px;background:#E6F2EF;color:#1E6B5E;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.ac-brand div{display:flex;flex-direction:column;min-width:0;} .ac-brand b{font-size:17px;} .ac-brand small{font-size:12.5px;color:#476B64;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ac-hr{display:flex;align-items:center;gap:8px;}
+.ac-main{max-width:1100px;margin:0 auto;padding:16px 24px 40px;display:flex;flex-direction:column;gap:14px;}
+.ac-foot{margin:4px 0 0;font-size:12.5px;color:#5B6B66;line-height:1.5;}
+.ac-load{padding:60px 20px;text-align:center;color:#5B6B66;}
+/* proforma: cancelling and "keep open" stay with HealSol */
+#ac-app [onclick^="ivOfficeTime"],#ac-app [onclick^="ivCancel"]{display:none!important;}
+#ac-app .eq-hr{display:none;} #ac-app .ac-s{display:none;}
+@media(max-width:700px){ #ac-app .hsp-tabs button{padding:10px 10px 12px;} #ac-app .ac-l{display:none;} #ac-app .ac-s{display:inline;} .ac-top{padding:10px 16px;} .ac-main{padding:12px 16px 32px;} .ac-hr .hs-btn{padding:0 12px;} }
+</style>
+<script id="nf-acct" src="assets/shared-accountant.a3886b11ca.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-assess-css" rel="stylesheet" href="assets/shared-assess.a09970a869.css" onerror="nfAssetFail(this)">
+<script id="nf-assess" src="assets/shared-assess.7905e88e71.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-getapp-css">/* Get the Qi FAST app (17 Nov 2026) — shared/getapp.js */
+.ga-card{margin:14px 0 4px;padding:14px;border-radius:18px;background:#FFF8F0;border:1px solid #F1D9BF;display:flex;flex-direction:column;gap:12px;}
+.ga-row{display:flex;gap:12px;align-items:center;}
+.ga-logo{width:76px;height:40px;object-fit:contain;background:#fff;border-radius:10px;padding:4px;flex-shrink:0;}
+.ga-tx{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.ga-tx b{font-size:14.5px;font-weight:700;color:#10302B;}
+.ga-tx small{font-size:12px;line-height:1.4;color:#5B4A38;}
+.ga-btn{min-height:48px;border-radius:14px;background:#10302B;color:#fff!important;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14.5px;font-weight:600;}
+.ga-btn:focus-visible,.ga-side a:focus-visible{outline:3px solid #F2AE68;outline-offset:2px;}
+.ga-foot{display:flex;align-items:center;justify-content:center;gap:8px;padding:6px 16px 18px;font-size:11px;color:#56675F;}
+.ga-foot img{height:24px;width:auto;}
+#login-screen.nf-on > #ga-side{display:none!important;}
+@media(min-width:1000px){
+  #login-screen.nf-on.ga-qr{flex-direction:row;justify-content:center;align-items:flex-start;gap:28px;}
+  #login-screen.nf-on.ga-qr > #ga-side{display:flex!important;}
+}
+.ga-side{width:300px;flex-shrink:0;box-sizing:border-box;background:#FFF8F0;border:1px solid #F1D9BF;border-radius:24px;padding:28px 24px;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:var(--shadow-lg);}
+.ga-slogo{width:140px;height:74px;object-fit:contain;background:#fff;border-radius:12px;padding:6px;}
+.ga-side b{font-size:17px;font-weight:700;color:#10302B;}
+.ga-side small{font-size:13px;line-height:1.5;color:#5B4A38;}
+.ga-qrimg{width:150px;height:150px;background:#fff;border-radius:12px;padding:8px;}
+.ga-side a{font-size:13px;font-weight:600;color:#135C52;}
+</style>
+<script id="nf-getapp" src="assets/shared-getapp.8fe42b80ef.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-tourcodes-css">/* App tour access codes (18 Nov 2026) — shared/tourcodes.js */
+.tc-new{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:14px;align-items:end;padding:14px 0;border-top:1px solid #EEF2F1;margin-top:10px;}
+.tc-new .tc-tours{grid-column:1 / -1;} .tc-new > .hs-btn{justify-self:start;}
+.tc-new .sp-fld input{height:44px;border:1px solid #C9D6D2;border-radius:10px;padding:0 12px;font:inherit;font-size:14.5px;}
+.tc-tours{border:0;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;}
+.tc-tours legend{font-size:13.5px;font-weight:500;color:#10302B;padding:0;margin-bottom:6px;}
+.tc-tours label{display:flex;align-items:center;gap:6px;font-size:13.5px;min-height:28px;}
+.tc-tours input{width:18px;height:18px;accent-color:#1E6B5E;}
+.tc-tw{border:1px solid #DCE4E1;border-radius:14px;overflow-x:auto;margin-top:6px;}
+.tc-tb{width:100%;border-collapse:collapse;}
+.tc-tb th{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#4F625D;text-align:left;padding:10px 12px;border-bottom:1px solid #DCE4E1;background:#F7FAF9;}
+.tc-tb td{font-size:13.5px;padding:10px 12px;border-bottom:1px solid #EEF2F1;vertical-align:top;}
+.tc-tb td small{display:block;font-size:12px;color:#4F625D;}
+.tc-code{letter-spacing:1px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.tc-off td{color:#5B6B66;}
+.tc-st{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:12px;white-space:nowrap;}
+.tc-st.ok{background:#E3F1EC;color:#1E6B5E;} .tc-st.warn{background:#FBF1E2;color:#8A4409;} .tc-st.off{background:#EEF2F1;color:#4F625D;}
+.tc-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-width:96px;}
+.tc-sr{position:absolute;left:-9999px;}
+.tc-p{font-size:13.5px;color:#4F625D;}
+.tc-log{margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+.tc-log h3{margin:0;font-size:15px;font-weight:600;}
+.tc-log ul{list-style:none;margin:0;padding:0;width:100%;max-height:320px;overflow:auto;border:1px solid #EEF2F1;border-radius:12px;}
+.tc-log li{display:flex;flex-direction:column;padding:8px 12px;border-bottom:1px solid #EEF2F1;font-size:13.5px;}
+.tc-log li span{font-size:12.5px;color:#4F625D;}
+@media(max-width:900px){
+  .tc-new{grid-template-columns:1fr;}
+  .tc-tb{min-width:0;} .tc-tb thead{display:none;} .tc-tb tr{display:block;padding:10px 12px;border-bottom:1px solid #EEF2F1;}
+  .tc-tb td{display:flex;gap:10px;padding:3px 0;border:0;} .tc-tb td[data-l]::before{content:attr(data-l);min-width:64px;font-size:12px;color:#4F625D;}
+  .tc-acts{justify-content:flex-start;padding-top:6px!important;}
+}
+</style>
+<script id="nf-tourcodes" src="assets/shared-tourcodes.6848cfe516.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-qimove-css">/* Use the Qi FAST app — Android browser page (18 Nov 2026) — shared/qimove.js */
+html.qm-lock,html.qm-lock body{overflow:hidden!important;}
+.qm-ov{position:fixed;inset:0;z-index:2147483000;background:#F4F8F7;overflow-y:auto;font-family:inherit;color:#10302B;}
+.qm-in{max-width:440px;min-height:100%;margin:0 auto;box-sizing:border-box;padding:28px 24px 20px;display:flex;flex-direction:column;}
+.qm-logo{display:flex;justify-content:center;padding-top:28px;}
+.qm-logo img{width:220px;height:115px;object-fit:contain;border-radius:16px;background:#fff;}
+.qm-in h1{margin:30px 0 0;font-size:28px;line-height:1.2;font-weight:700;text-align:center;color:#10302B;}
+.qm-lead{margin:12px 0 0;font-size:16px;line-height:1.5;color:#3E524D;text-align:center;}
+.qm-pts{list-style:none;margin:24px 0 0;padding:0;display:flex;flex-direction:column;gap:10px;}
+.qm-pts li{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #DCE4E1;border-radius:14px;padding:12px 14px;font-size:15px;}
+.qm-pts svg{flex-shrink:0;}
+.qm-sp{flex:1 1 auto;min-height:24px;}
+.qm-acts{display:flex;flex-direction:column;gap:12px;}
+.qm-open{height:56px;border-radius:14px;background:#1E6B5E;color:#fff!important;font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;}
+.qm-sm{margin:0;text-align:center;font-size:13px;color:#4F625D;}
+.qm-cont{align-self:center;background:none;border:0;font:inherit;font-size:15px;color:#1E6B5E;text-decoration:underline;padding:12px 16px;min-height:44px;cursor:pointer;}
+.qm-open:focus-visible,.qm-cont:focus-visible{outline:3px solid #F2AE68;outline-offset:2px;}
+.qm-foot{margin:8px 0 0;text-align:center;font-size:12px;color:#4F625D;}
+</style>
+<script id="nf-qimove" src="assets/shared-qimove.d9cef5b7f6.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-paypage-css" rel="stylesheet" href="assets/shared-paypage.48e914e699.css" onerror="nfAssetFail(this)">
+<script id="nf-paypage" src="assets/shared-paypage.5309fbbd94.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-paylinks-admin-css">/* HealSol: Payments → Payment links (18 Nov 2026) — shared/paylinks-admin.js */
+.pla-top{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px;}
+.pla-col{flex:1 1 300px;max-width:420px;display:flex;flex-direction:column;gap:10px;}
+.pla-form{flex:999 1 480px;min-width:0;background:#fff;border:1px solid #DCE4E1;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
+.pla-h{font-size:15px;font-weight:700;color:#10302B;}
+.pla-p{margin:0;font-size:13px;color:#4F625D;line-height:1.45;}
+.pla-req{background:#fff;border:1px solid #DCE4E1;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;}
+.pla-req small{font-size:12.5px;color:#4F625D;} .pla-q{font-style:italic;color:#2F4540;}
+.pla-ra{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.pla-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.pla-fld{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#10302B;}
+.pla-fld input,.pla-addr input,.pla-opts textarea{height:42px;border:1px solid #C9D6D2;border-radius:10px;padding:0 12px;font:inherit;font-size:14px;font-weight:400;box-sizing:border-box;width:100%;}
+.pla-opts textarea{height:auto;padding:10px 12px;margin:8px 0;}
+.pla-addr{display:flex;gap:8px;} .pla-addr input{flex:1 1 auto;}
+.pla-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.pla-chip{display:inline-flex;align-items:center;gap:6px;background:#E3F1EC;color:#10302B;border-radius:16px;padding:4px 4px 4px 12px;font-size:13px;font-weight:500;}
+.pla-chip small{color:#4F625D;font-weight:400;}
+.pla-chip button{width:28px;height:28px;border:0;border-radius:14px;background:#fff;color:#10302B;font-size:16px;cursor:pointer;}
+.pla-go{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13.5px;color:#2F4540;}
+.pla-links{display:flex;flex-direction:column;gap:10px;}
+.pla-tw{border:1px solid #DCE4E1;border-radius:14px;overflow-x:auto;}
+.pla-t{width:100%;border-collapse:collapse;}
+.pla-t th{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#4F625D;text-align:left;padding:10px 12px;border-bottom:1px solid #DCE4E1;background:#F7FAF9;}
+.pla-t td{font-size:13.5px;padding:10px 12px;border-bottom:1px solid #EEF2F1;vertical-align:top;}
+.pla-t td small{display:block;font-size:12px;color:#4F625D;}
+.pla-opts{margin-top:14px;background:#fff;border:1px solid #DCE4E1;border-radius:14px;padding:12px 16px;}
+.pla-opts summary{font-size:14px;font-weight:600;cursor:pointer;min-height:32px;display:flex;align-items:center;}
+@media(max-width:900px){
+  .pla-g{grid-template-columns:1fr;} .pla-col{max-width:none;}
+  .pla-t thead{display:none;} .pla-t tr{display:block;padding:10px 12px;border-bottom:1px solid #EEF2F1;}
+  .pla-t td{display:flex;flex-wrap:wrap;gap:4px 10px;padding:3px 0;border:0;} .pla-t td[data-l]::before{content:attr(data-l);min-width:64px;font-size:12px;color:#4F625D;}
+}
+.pla-t td.pla-act{text-align:right;} .pla-t td.pla-act .tc-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+@media(max-width:900px){ .pla-t td.pla-act .tc-acts{justify-content:flex-start;} }
+</style>
+<script id="nf-paylinks-admin" src="assets/shared-paylinks-admin.91e860033b.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-verifylinks-css">/* Verify ↔ Impact (19 Nov 2026) — shared/verifylinks.js */
+.vl-box{max-width:520px;margin:14px auto 0;padding:0 14px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box;}
+.vl-imp{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#135A55;color:#fff!important;border-radius:16px;padding:16px;text-decoration:none;min-height:44px;}
+.vl-imp span{display:flex;flex-direction:column;gap:2px;} .vl-imp b{font-size:16px;} .vl-imp small{font-size:13px;color:#CFE3DE;} .vl-imp i{font-size:22px;}
+.vl-chk{background:#fff;border:1px solid #DCE4E1;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.vl-chk label{font-size:15px;font-weight:700;color:#10302B;}
+.vl-row{display:flex;gap:8px;} .vl-row input{flex:1 1 auto;min-width:0;height:46px;border:1.5px solid #C9D6D2;border-radius:10px;padding:0 12px;font:inherit;font-size:15px;text-transform:uppercase;}
+.vl-row button{height:46px;padding:0 16px;border:0;border-radius:10px;background:#135A55;color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer;}
+.vl-err{font-size:12.5px;color:#8A1C1C;min-height:0;}
+.vl-imp:focus-visible,.vl-row button:focus-visible{outline:3px solid #F2AE68;outline-offset:2px;}
+</style>
+<script id="nf-verifylinks" src="assets/shared-verifylinks.c143f90b05.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-implstart-css">/* Implementation start after payment (20 Nov 2026) — shared/implstart.js */
+.is-card{background:#fff;border:1px solid #DCE4E1;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;margin:8px 0 14px;font-size:14px;color:#10302B;}
+.is-card p{margin:0;font-size:13.5px;line-height:1.5;color:#334A45;}
+.is-h{font-size:17px;line-height:1.3;}
+.is-ok{display:flex;gap:10px;align-items:flex-start;background:#DCFCE7;border:1px solid #A7E3BE;border-radius:12px;padding:12px;color:#14532D;}
+.is-ok.c{background:#EEF2FF;border-color:#C7D2FE;color:#312E81;}
+.is-ok i{font-size:22px;flex-shrink:0;} .is-ok span{display:flex;flex-direction:column;gap:2px;} .is-ok b{font-size:14.5px;} .is-ok small{font-size:12.5px;}
+.is-l{font-size:13px;font-weight:600;}
+.is-sel{height:48px;border:1.5px solid #1E6B5E;border-radius:12px;padding:0 12px;font:inherit;font-size:15px;background:#fff;color:#10302B;width:100%;box-sizing:border-box;}
+.is-tl{background:#F0F4F3;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:13px;}
+.is-tl div{display:flex;justify-content:space-between;gap:10px;} .is-tl span{color:#4F625D;} .is-tl b{text-align:right;}
+.is-err{font-size:12.5px;color:#8A1C1C;} .is-err:empty{display:none;}
+.is-btn{height:48px;border:0;border-radius:12px;background:#1E6B5E;color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer;}
+.is-btn:disabled{opacity:.6;cursor:default;}
+.is-btn:focus-visible,.is-sel:focus-visible{outline:3px solid #F2AE68;outline-offset:2px;}
+</style>
+<script id="nf-implstart" src="assets/shared-implstart.28bf9cf82a.js" onerror="nfAssetFail(this)"></script>
 
 </body>
 </html>

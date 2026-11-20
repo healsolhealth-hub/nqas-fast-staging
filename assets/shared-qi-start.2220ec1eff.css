@@ -1,0 +1,43 @@
+/* Qi FAST start screen (Play app) */
+#qi-ov{position:fixed;inset:0;z-index:2147482000;background:#F1F5F4;overflow-y:auto;font-family:Poppins,system-ui,sans-serif;color:#10302B}
+#qi-ov .qi-in{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:14px 18px 18px;box-sizing:border-box}
+#qi-ov .qi-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#qi-ov .qi-logo{height:52px;width:auto;border-radius:8px}
+#qi-ov .qi-lang{display:flex;background:#E3ECEA;border-radius:999px;padding:3px}
+#qi-ov .qi-lang button{border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:#14514A;min-width:44px;min-height:34px;border-radius:999px;cursor:pointer}
+#qi-ov .qi-body{flex:1;display:flex;flex-direction:column;gap:10px;padding-top:14px}
+#qi-ov .qi-hero{background:#14514A;color:#fff;border-radius:22px;padding:20px 20px 22px;margin-bottom:6px}
+#qi-ov .qi-hero h1{margin:0 0 6px;font-size:23px;line-height:1.25;font-weight:700}
+#qi-ov .qi-hero p{margin:0;font-size:14.5px;line-height:1.5;color:#D6EEE6}
+#qi-ov h2{margin:4px 0 2px;font-size:19px;font-weight:700;line-height:1.3}
+#qi-ov .qi-sub{margin:0 0 4px;font-size:14px;line-height:1.5;color:#476B64}
+#qi-ov .qi-dots{display:flex;gap:6px;margin-top:4px}
+#qi-ov .qi-dots span{width:22px;height:5px;border-radius:9px;background:#CFDDD9}
+#qi-ov .qi-dots span.on{background:#1E6B5E}
+#qi-ov .qi-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1.5px solid #D5E3DF;border-radius:16px;padding:13px 14px;min-height:64px;font:inherit;color:inherit;cursor:pointer}
+#qi-ov .qi-card:active{transform:scale(.99)}
+#qi-ov .qi-card.ok{border-color:#9CCBBC}
+#qi-ov .qi-card.big{padding:16px;min-height:78px}
+#qi-ov .qi-card>.ti{font-size:28px;color:#1E6B5E;flex-shrink:0}
+#qi-ov .qi-card .qi-go{font-size:20px;color:#8AA6A0}
+#qi-ov .qi-card-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+#qi-ov .qi-card-t b{font-size:16px;font-weight:700}
+#qi-ov .qi-card-t small{font-size:12.5px;line-height:1.4;color:#5B7570}
+#qi-ov .qi-badge{flex-shrink:0;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px}
+#qi-ov .qi-badge.ok{background:#1E6B5E;color:#fff}
+#qi-ov .qi-badge.soon{background:#FBE7CF;color:#8A4B0C}
+#qi-ov .qi-back{align-self:flex-start;border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:#1E6B5E;min-height:40px;padding:0 4px;cursor:pointer}
+#qi-ov .qi-link{border:0;background:none;font:inherit;font-size:14.5px;font-weight:600;color:#1E6B5E;min-height:44px;margin-top:4px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+#qi-ov .qi-btn{display:block;width:100%;min-height:48px;margin-top:10px;border:0;border-radius:14px;background:#1E6B5E;color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+#qi-ov .qi-btn:disabled{opacity:.6}
+#qi-ov .qi-form{display:flex;flex-direction:column}
+#qi-ov .qi-form label{font-size:13px;font-weight:600;margin:10px 0 4px}
+#qi-ov .qi-form input,#qi-ov .qi-form textarea{font:inherit;font-size:15px;padding:10px 12px;border:1.5px solid #CFDCD9;border-radius:12px;background:#fff;color:#10302B;width:100%;box-sizing:border-box}
+#qi-ov .qi-form input:focus,#qi-ov .qi-form textarea:focus{outline:none;border-color:#1E6B5E;box-shadow:0 0 0 3px rgba(30,107,94,.15)}
+#qi-ov .qi-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+#qi-ov .qi-err{display:none;margin-top:10px;padding:8px 10px;border-radius:10px;background:#FEECEB;color:#B42318;font-size:13px}
+#qi-ov .qi-thanks{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-top:30px}
+#qi-ov .qi-thanks .qi-sub{text-align:center}
+#qi-ov .qi-tick{width:72px;height:72px;border-radius:50%;background:#1E6B5E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:38px}
+#qi-ov .qi-foot{text-align:center;font-size:12px;color:#6B7A78;padding-top:14px}
+.nf-l-top .qi-prog{border:1.5px solid #D5E3DF;background:#fff;border-radius:999px;font:inherit;font-size:12.5px;font-weight:600;color:#14514A;min-height:34px;padding:0 12px;margin-left:auto;margin-right:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
