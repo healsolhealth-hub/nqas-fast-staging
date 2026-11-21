@@ -556,9 +556,10 @@ function nfScDataReady(){
           </label>
           <label id="enroll-access-trial-lbl" style="flex:1;display:flex;align-items:center;gap:7px;padding:10px 12px;border:1.5px solid var(--br);border-radius:10px;cursor:pointer;">
             <input type="radio" name="enroll-access" id="enroll-access-trial" value="trial" onchange="enrollAccessToggle()"/>
-            <span style="font-size:12px;font-weight:700;color:var(--t1);">Start on 7-day Trial</span>
+            <span style="font-size:12px;font-weight:700;color:var(--t1);">Start on trial <span style="color:var(--t3);font-weight:600;">(baseline first)</span></span>
           </label>
         </div>
+        <div id="fb-enroll-note" class="fb-en" role="status" aria-live="polite"></div>
       </div>
       <button onclick="scEnrollFacility()" style="width:100%;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;">
         <i class="ti ti-circle-plus" style="font-size:14px;"></i> Enroll Facility
@@ -2438,9 +2439,12 @@ html.qm-lock,html.qm-lock body{overflow:hidden!important;}
 .bg-l{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}.bg-l li{font-size:13.5px;line-height:1.4;padding:8px 10px;border-radius:10px;background:#FFF7ED}
 .bg-l small{display:block;font-size:12px;color:#9A3412}
 .bg-n{margin:0;font-size:12px;line-height:1.45;color:var(--t3,#4F625D)}
+.fb-en{margin-top:8px;font-size:12px;line-height:1.45;color:var(--t2,#334A45)}.fb-en:empty{display:none}.fb-en small{color:var(--t3)}.fb-en i{color:var(--teal)}
 </style>
-<script id="nf-freebl" src="assets/shared-freebl.515ebace1b.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-blgate" src="assets/shared-blgate.b2c21e31cc.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-freebl" src="assets/shared-freebl.5fc4b02137.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-blgate" src="assets/shared-blgate.6fae3d3841.js" onerror="nfAssetFail(this)"></script>
+<link id="nf-outreach-css" rel="stylesheet" href="assets/shared-outreach.b979f28d1e.css" onerror="nfAssetFail(this)">
+<script id="nf-outreach" src="assets/shared-outreach.5d51daacb0.js" onerror="nfAssetFail(this)"></script>
 
 </body>
 </html>
