@@ -69,7 +69,7 @@ async function scStaffLogin(){
     choState.facility.district = facData.district || '';
     choState.facility.state    = facData.state || '';
     choState.facility.subscriptionStatus = facData.subscriptionStatus || null;
-    choState.facility.officePay=facData.officePay||null; choState.facility.implPick=facData.implPick||null; choState.facility.freeBl=facData.freeBl||null; choState.facility.blPaid=facData.blPaid||null; choState.facility.implFrom=facData.implFrom||null; choState.facility.baselineStart=facData.baselineStart||null; choState.facility.block=facData.block||''; choState.facility.nin=facData.nin||''; choState.facility.geo=facData.geo||null; if(facData.population) choState.facility.population=facData.population;   // 2 Nov 2026: invoices · 3 Nov: location, population
+    choState.facility.officePay=facData.officePay||null; choState.facility.implPick=facData.implPick||null; choState.facility.freeBl=facData.freeBl||null; choState.facility.blPaid=facData.blPaid||null; choState.facility.blDoneOn=facData.blDoneOn||null; choState.facility.implFrom=facData.implFrom||null; choState.facility.baselineStart=facData.baselineStart||null; choState.facility.block=facData.block||''; choState.facility.nin=facData.nin||''; choState.facility.geo=facData.geo||null; if(facData.population) choState.facility.population=facData.population;   // 2 Nov 2026: invoices · 3 Nov: location, population
     choState.facility.progId   = facData.progId || 'nqas_12A';
     if(facData.startDate) choState.startDate = facData.startDate;
     // Mark setup done — all facility data loaded from Firebase
@@ -158,7 +158,7 @@ window.addEventListener('load', async function(){
           choState.facility.district = facData.district||'';
           choState.facility.state    = facData.state||'';
           choState.facility.subscriptionStatus = facData.subscriptionStatus||null;
-          choState.facility.officePay=facData.officePay||null; choState.facility.implPick=facData.implPick||null; choState.facility.freeBl=facData.freeBl||null; choState.facility.blPaid=facData.blPaid||null; choState.facility.implFrom=facData.implFrom||null; choState.facility.baselineStart=facData.baselineStart||null; choState.facility.block=facData.block||''; choState.facility.nin=facData.nin||''; choState.facility.geo=facData.geo||null; if(facData.population) choState.facility.population=facData.population;   // 2 Nov 2026: invoices · 3 Nov: location, population
+          choState.facility.officePay=facData.officePay||null; choState.facility.implPick=facData.implPick||null; choState.facility.freeBl=facData.freeBl||null; choState.facility.blPaid=facData.blPaid||null; choState.facility.blDoneOn=facData.blDoneOn||null; choState.facility.implFrom=facData.implFrom||null; choState.facility.baselineStart=facData.baselineStart||null; choState.facility.block=facData.block||''; choState.facility.nin=facData.nin||''; choState.facility.geo=facData.geo||null; if(facData.population) choState.facility.population=facData.population;   // 2 Nov 2026: invoices · 3 Nov: location, population
           choState.facility.progId   = facData.progId||'nqas_12A';
           if(facData.startDate) choState.startDate = facData.startDate;
           await scStartApp();

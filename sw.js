@@ -6,7 +6,7 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "9c99192adba0";
+const BUILD = "6b3a0eabc014";
 const ASSETS = [
  "assets/data-sc-days.f202fca2e5.js",
  "assets/dept-admin.ee8d5ffab0.js",
@@ -54,7 +54,7 @@ const ASSETS = [
  "assets/sc-linked-checks.0eddd56dc9.js",
  "assets/sc-links.128b1d1d45.js",
  "assets/sc-links.e145d9c6bb.css",
- "assets/sc-login-3tier.d3bec85d3c.js",
+ "assets/sc-login-3tier.2b04745c6d.js",
  "assets/sc-looks-met.c2aaaff056.js",
  "assets/sc-perf.1a028d2c56.js",
  "assets/sc-phases.07a2a34a96.css",
@@ -67,7 +67,7 @@ const ASSETS = [
  "assets/sc-staff-app.4f4b2c6a3d.css",
  "assets/sc-staff-app.dfc9643785.js",
  "assets/sc-summary.15830c67e5.js",
- "assets/sc-v2-core.7a8a90cc95.js",
+ "assets/sc-v2-core.1e43ca8ea7.js",
  "assets/sc-v2.bfc3486435.css",
  "assets/sc-week-plan.126d067680.js",
  "assets/shared-accountant.a3886b11ca.js",
@@ -80,6 +80,7 @@ const ASSETS = [
  "assets/shared-biz-dash.6781dbeb60.js",
  "assets/shared-biz-dash.c8831fea1d.css",
  "assets/shared-biz-report.7d0c383ae8.js",
+ "assets/shared-blgate.b2c21e31cc.js",
  "assets/shared-brand.caf29d94d7.js",
  "assets/shared-business-ind.0814bee156.js",
  "assets/shared-business-ind.d97663522b.css",
@@ -90,6 +91,7 @@ const ASSETS = [
  "assets/shared-content-shell.ba4570feab.js",
  "assets/shared-dashboards.538fcc6c83.js",
  "assets/shared-dashboards.9030b996af.css",
+ "assets/shared-day-score.6043d84372.js",
  "assets/shared-demo.2ebfee440a.js",
  "assets/shared-enquiries.106de16b0e.js",
  "assets/shared-fac-page.7d7df7d9b9.css",
@@ -111,7 +113,7 @@ const ASSETS = [
  "assets/shared-hs-settings.f1365f98fb.js",
  "assets/shared-impact.497ea52277.js",
  "assets/shared-impact.cf89da6a80.css",
- "assets/shared-implstart.1446744e81.js",
+ "assets/shared-implstart.72f9a99a9d.js",
  "assets/shared-invoices.02ba7a9c9b.js",
  "assets/shared-join.9428db2918.js",
  "assets/shared-join.dc1f2976b7.css",

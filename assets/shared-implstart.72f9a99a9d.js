@@ -23,7 +23,7 @@ function nfWait(f, startDate) {
   if (f.implPick) return { k: 'pick', since: f.implPick.since || null };
   var st = f.subscriptionStatus, b = isBase(f), d = isDayNo(s, today), op = f.officePay;
   var open = !st || st === 'paid' || st === 'contract' || isCommit(f) || !!(op && op.until && op.until >= today);
-  if (d > b && !f.implFrom && !open) return { k: 'wait', d: d - b - 1, since: isAdd(s, b) };
+  if (d > b && !f.implFrom && !open) { var since = f.blDoneOn && f.blDoneOn > isAdd(s, b - 1) ? isAdd(f.blDoneOn, 1) : isAdd(s, b); return { k: 'wait', d: Math.max(0, isDayNo(since, today) - 1), since: since }; }   // from the day after the baseline was finished
   return null;
 }
 

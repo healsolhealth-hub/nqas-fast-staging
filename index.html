@@ -836,7 +836,7 @@ function nfScDataReady(){
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
-<script src="assets/sc-login-3tier.d3bec85d3c.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-login-3tier.2b04745c6d.js" onerror="nfAssetFail(this)"></script>
 <script src="assets/data-sc-days.f202fca2e5.js" onerror="nfAssetFail(this)"></script>
 
 <div class="report-modal-overlay" id="rpt-filter-modal">
@@ -986,7 +986,7 @@ function nfScDataReady(){
     <div style="padding:20px;overflow-y:auto;" id="demo-convert-body"></div>
   </div>
 </div>
-<script src="assets/sc-v2-core.7a8a90cc95.js" onerror="nfAssetFail(this)"></script>
+<script src="assets/sc-v2-core.1e43ca8ea7.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-hide">// ══════════════════════════════════════════════════════════════
 // DEMO & TEST FACILITIES OUT OF HEALSOL'S NUMBERS (4 Nov 2026)
 //   HealSol's screens (Today, Facilities, Registry, Coverage, Map, Programme, Business, Reports, downloads) all work from
@@ -2167,63 +2167,7 @@ body.hs-roles .admin-main > .sc-report-bar, body.hs-roles #nf-dsrep{display:none
 <script id="ot-js" src="assets/shared-otp.dfe8af10c9.js" onerror="nfAssetFail(this)"></script>
 <link id="qi-css" rel="stylesheet" href="assets/shared-qi-start.2220ec1eff.css" onerror="nfAssetFail(this)">
 <script id="qi-js" src="assets/shared-qi-start.0c0a500d2c.js" onerror="nfAssetFail(this)"></script>
-<script id="nf-day-score">// ══════════════════════════════════════════════════════════════
-// Today's score on the staff cards (HealSol 21 Oct, every facility type): "Today's score 70% · 14 of 20 checked".
-// The score of what has been answered on that card — Met 2, Partial 1, Not met 0 — not the facility's readiness.
-// ══════════════════════════════════════════════════════════════
-function nfScoreLine(sum, n, of, label) {
-  if (!of) return '';
-  var pct = n ? Math.round(100 * sum / (2 * n)) : null;
-  return '<div class="nf-dscore"><b>' + scEsc(label) + (pct == null ? '' : ' ' + pct + '%') + '</b><span>' + n + ' of ' + of + ' checked' + (pct == null ? ' — answer a checkpoint to see the score' : '') + '</span></div>';
-}
-// ── Sub-Centre staff app ──
-function nfScDayScore(di) {
-  var own = []; try { own = scMyCpIdx(di); } catch (e) { return null; }
-  var c = getCHOCard(di) || {}, sum = 0, n = 0;
-  own.forEach(function (ci) { var s = scNormScore((c.cpScores || [])[ci]); if (s !== null) { n++; sum += s; } });
-  return { sum: sum, n: n, of: own.length };
-}
-(function () {
-  if (typeof nfRenderToday === 'function') {
-    var oT = nfRenderToday;
-    nfRenderToday = function () { var r = oT.apply(this, arguments);
-      try { var host = document.getElementById('nf-today'), cta = host && host.querySelector('.nf-cta'); if (cta && !host.querySelector('.nf-dscore')) {
-        var x = nfScDayScore(scb1TodayIdx()); if (x && x.of) cta.insertAdjacentHTML('afterend', nfScoreLine(x.sum, x.n, x.of, _appLang === 'hi' ? 'आज का स्कोर' : 'Today\'s score')); } } catch (e) {}
-      return r; };
-  }
-  if (typeof renderCard === 'function') {
-    var oC = renderCard;
-    renderCard = function (di) { var r = oC.apply(this, arguments);
-      try { if (typeof nfIsStaff === 'function' && nfIsStaff()) { var cont = document.getElementById('card-container'), body = cont && cont.querySelector('.cbody');
-        if (body && !body.querySelector('.nf-dscore')) { var x = nfScDayScore(di); if (x && x.of) body.insertAdjacentHTML('afterbegin', nfScoreLine(x.sum, x.n, x.of, (_appLang === 'hi' ? 'दिन ' : 'Day ') + (di + 1) + (_appLang === 'hi' ? ' स्कोर' : ' score'))); } } } catch (e) {}
-      return r; };
-  }
-})();
-// ── UPHC · PHC · CHC staff app ──
-function nfDeptCardScore(dept, day, mob) {
-  var ids = ndMyIds(dept, day, mob); if (!ids.length) return null;
-  var s = (ndPc(dept, day)[mob] || {}).s || {}, sum = 0, n = 0;
-  ids.forEach(function (i) { if (s[i] !== undefined && s[i] !== null) { n++; sum += +s[i]; } });
-  return { sum: sum, n: n, of: ids.length };
-}
-(function () {
-  if (typeof ndRender === 'function') {
-    var oR = ndRender;
-    ndRender = function () { var r = oR.apply(this, arguments);
-      try { if (_nd && !_nd.view && (_nd.tab === 'today' || !_nd.tab) && !_nd.card && !_nd.screen) { var app = document.getElementById('nf-dept-app'), cta = app && app.querySelector('.nx-hero .nx-cta');
-        if (cta && !app.querySelector('.nf-dscore')) { var me = ndMob(), day = ndDay(), sum = 0, n = 0, of = 0;
-          ndCardDepts(day > 100 ? day : Math.min(day, _nd.cfg.days)).forEach(function (d) { if (!ndFills(d.id, me)) return; var x = nfDeptCardScore(d.id, day, me); if (x) { sum += x.sum; n += x.n; of += x.of; } });
-          if (of) cta.insertAdjacentHTML('afterend', nfScoreLine(sum, n, of, 'Today\'s score')); } } } catch (e) {}
-      return r; };
-  }
-  if (typeof ndDayCardHTML === 'function') {
-    var oD = ndDayCardHTML;
-    ndDayCardHTML = function (dept, day) { var h = oD.apply(this, arguments);
-      try { var me = ndMob(); if (!_nd.view && ndFills(dept, me)) { var x = nfDeptCardScore(dept, day, me); if (x) h = h.replace('<div class="nx-aoc">', nfScoreLine(x.sum, x.n, x.of, 'Day ' + day + ' score') + '<div class="nx-aoc">'); } } catch (e) {}
-      return h; };
-  }
-})();
-</script>
+<script id="nf-day-score" src="assets/shared-day-score.6043d84372.js" onerror="nfAssetFail(this)"></script>
 <script id="nf-pwa">// PWA (Step 5): register the service worker (site/sw.js) in a real browser on https (or localhost). Not in tests (no
 // serviceWorker there), not on a page without the manifest. ?nosw skips it once; ?nosw=reset removes it and its caches.
 (function(){
@@ -2458,7 +2402,7 @@ html.qm-lock,html.qm-lock body{overflow:hidden!important;}
 .is-btn:disabled{opacity:.6;cursor:default;}
 .is-btn:focus-visible,.is-sel:focus-visible{outline:3px solid #F2AE68;outline-offset:2px;}
 </style>
-<script id="nf-implstart" src="assets/shared-implstart.1446744e81.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-implstart" src="assets/shared-implstart.72f9a99a9d.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-freebl-css">/* Free baseline + two-part price (21 Nov 2026) */
 .fb-join{margin:10px 0 4px;padding:12px 14px;border-radius:12px;background:#F0F4F3;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.5;color:#334A45}
 .fb-join b{font-size:13px;color:#10302B}.fb-join.ok b{color:#135A55}
@@ -2485,8 +2429,18 @@ html.qm-lock,html.qm-lock body{overflow:hidden!important;}
 .fb-tys{border:0;padding:0;margin:8px 0;display:flex;gap:12px;flex-wrap:wrap}.fb-tys legend{font-size:11px;font-weight:800;color:var(--t3);margin-bottom:4px}
 .fb-chk{margin-top:12px;padding:12px;border-radius:12px;background:var(--bg2,#F0F4F3)}.fb-chk>b{font-size:13px}
 .fb-cr{font-size:12.5px;margin-top:8px;line-height:1.45}.fb-cr small{color:var(--t3)}
+/* baseline first / choose Day 1 (blgate.js) */
+.bg-card{display:flex;flex-direction:column;gap:12px}
+.bg-h{background:#7C2D12;color:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.bg-h span{font-size:11px;font-weight:800;letter-spacing:.06em;color:#FED7AA}.bg-h b{font-size:18px;line-height:1.25}.bg-h small{font-size:13px;line-height:1.45;color:#FFEDD5}
+.bg-b{background:var(--bgc,#fff);border:1px solid var(--br,#DCE4E1);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.bg-k{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--t3,#4F625D)}
+.bg-l{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}.bg-l li{font-size:13.5px;line-height:1.4;padding:8px 10px;border-radius:10px;background:#FFF7ED}
+.bg-l small{display:block;font-size:12px;color:#9A3412}
+.bg-n{margin:0;font-size:12px;line-height:1.45;color:var(--t3,#4F625D)}
 </style>
 <script id="nf-freebl" src="assets/shared-freebl.515ebace1b.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-blgate" src="assets/shared-blgate.b2c21e31cc.js" onerror="nfAssetFail(this)"></script>
 
 </body>
 </html>
