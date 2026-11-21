@@ -222,3 +222,20 @@ async function fbFacDialog(code) {
     if (typeof hsRenderFac === 'function' && document.getElementById('hs-fq')) hsRenderFac(); }
   catch (e) { showToast(nfErrText(e), 'err'); }
 }
+
+// ══ Cards while the baseline fee is unpaid (staging test 21 Nov 2026): every card waits; the locked card shows the payment ══
+(function () { if (typeof phcCheckAccess !== 'function') return; var o = phcCheckAccess;
+  phcCheckAccess = function () { try { if (typeof choState !== 'undefined' && fbNeedsBl(choState.facility)) return false; } catch (e) {} return o.apply(this, arguments); }; })();
+(function () {
+  if (typeof nduLocked === 'function') { var o = nduLocked; nduLocked = function () { try { if (typeof _nd !== 'undefined' && _nd && !_nd.view && fbNeedsBl(_nd.fac)) return true; } catch (e) {} return o.apply(this, arguments); }; }
+  if (typeof nduOpen === 'function') { var p = nduOpen; nduOpen = function () { try { if (typeof _nd !== 'undefined' && _nd && fbNeedsBl(_nd.fac)) return false; } catch (e) {} return p.apply(this, arguments); }; }
+})();
+(function () { if (typeof renderUpgradeCard !== 'function') return; var o = renderUpgradeCard;
+  renderUpgradeCard = async function (container) {
+    try { var f = (typeof choState !== 'undefined' && choState.facility) || {}, code = (typeof choState !== 'undefined' && choState.facilityCode) || '';
+      if (container && code && fbNeedsBl(f) && typeof sdMount === 'function') { container.innerHTML = '<div class="fb-wrap"></div>'; sdMount(container.firstChild, code); return; } } catch (e) { console.warn('[freebl]', e); }
+    return o.apply(this, arguments); }; })();
+(function () { if (typeof nduFill !== 'function') return; var o = nduFill;
+  nduFill = async function () {
+    try { var card = document.getElementById('ndu-card'); if (card && _nd && _nd.fac && fbNeedsBl(_nd.fac) && typeof sdMount === 'function') { card.innerHTML = '<div class="fb-wrap"></div>'; sdMount(card.firstChild, _nd.code); return; } } catch (e) { console.warn('[freebl]', e); }
+    return o.apply(this, arguments); }; })();

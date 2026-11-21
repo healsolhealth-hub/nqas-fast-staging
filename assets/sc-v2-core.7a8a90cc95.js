@@ -1843,7 +1843,7 @@ async function scStaffRefresh(btn){
     choState.facility.name=fac.name||choState.facility.name;
     choState.facility.district=fac.district||''; choState.facility.state=fac.state||'';
     choState.facility.subscriptionStatus=fac.subscriptionStatus||null;
-    choState.facility.officePay=fac.officePay||null; choState.facility.implPick=fac.implPick||null; choState.facility.implFrom=fac.implFrom||null; choState.facility.baselineStart=fac.baselineStart||null; choState.facility.block=fac.block||''; choState.facility.nin=fac.nin||''; choState.facility.geo=fac.geo||null; if(fac.population) choState.facility.population=fac.population;   // 2 Nov 2026: invoices · 3 Nov: location, population
+    choState.facility.officePay=fac.officePay||null; choState.facility.implPick=fac.implPick||null; choState.facility.freeBl=fac.freeBl||null; choState.facility.blPaid=fac.blPaid||null; choState.facility.implFrom=fac.implFrom||null; choState.facility.baselineStart=fac.baselineStart||null; choState.facility.block=fac.block||''; choState.facility.nin=fac.nin||''; choState.facility.geo=fac.geo||null; if(fac.population) choState.facility.population=fac.population;   // 2 Nov 2026: invoices · 3 Nov: location, population
     choState.facility.progId=choState.progId;
     if(fac.startDate) choState.startDate=fac.startDate;
     if(progChanged) choState.cards={};
