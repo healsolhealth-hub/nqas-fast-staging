@@ -86,10 +86,16 @@ async function ppOpen() {
   if (ppPlay()) return;
   var it = _pp.intent || { list: 1 };
   _pp.view = it.ask ? 'ask' : 'main'; ppShell('<div class="pp-empty">Loading…</div>');
-  try { _pp.data = await nfCall('payList', it.link ? { link: it.link } : {}); }
+  try { _pp.data = await nfCall('payList', it.link ? { link: it.link } : (_pp.part ? { part: _pp.part } : {})); }
   catch (e) { ppShell('<div class="pp-msg err"><b>Could not open the payment page</b><p>' + ppE(nfErrText(e)) + '</p><button type="button" class="pp-b2" onclick="ppOpen()">Try again</button></div>'); return; }
   _pp.sel = {}; ppDue().forEach(function (f) { if (f.price) _pp.sel[f.code] = 1; });   // everything waiting is ticked to start with
   ppRender();
+}
+// 21 Nov 2026 (two-part price): a facility without a free baseline pays the baseline fee before Day 1 — or the full programme at once
+function ppPartSwitch(list) {
+  var any = (list || []).some(function (f) { return f && f.price && (f.price.part === 'bl' || f.price.part === 'full'); }); if (!any) return '';
+  return _pp.part === 'full' ? '<p class="pp-sm">Full programme: baseline and implementation together. <button type="button" class="pp-link" onclick="_pp.part=null;ppOpen()">Pay only the baseline now</button></p>'
+    : '<p class="pp-sm">' + ((list || []).length > 1 ? 'Facilities that have not paid their baseline: baseline fee now, implementation fee from Day 8.' : 'Baseline fee now; the implementation fee is paid before Day 8.') + ' <button type="button" class="pp-link" onclick="_pp.part=\'full\';ppOpen()">Pay the full programme now instead</button></p>';
 }
 function ppDue() { return ((_pp.data || {}).facs || []).filter(function (f) { return f.status === 'due' || f.status === 'office'; }); }
 function ppSingle() { var d = _pp.data || {}, r = (d.me || {}).roles || []; return !d.link && r.length === 1 && r[0] === 'incharge' && (d.facs || []).length <= 1; }
@@ -136,7 +142,7 @@ function ppOneHTML() {
   if (f.status === 'paid' || f.status === 'active') return top + '<div class="pp-msg"><b>' + (f.status === 'paid' ? 'Already paid' : 'Full access is already open') + '</b><p>There is nothing to pay. Receipts are in the app under Me → Payment receipts.</p><button type="button" class="pp-b2" onclick="ppClose()">Back to the app</button></div>' + ppLinksHTML();
   if (!f.price) return top + '<div class="pp-msg"><b>The price is not set yet</b><p>Ask HealSol for a payment link — they will send it on WhatsApp.</p></div>' + ppAskLink('Ask for a payment link');
   _pp.last = { codes: [f.code], total: f.price.total };
-  return top + '<div class="pp-box"><span class="pp-k">Plan</span><b class="pp-big">' + ppE(f.price.label) + '</b>' + ppAmt(f.price.base, f.price.gst, f.price.total) + '</div>'
+  return top + '<div class="pp-box"><span class="pp-k">Plan</span><b class="pp-big">' + ppE(f.price.label) + '</b>' + ppAmt(f.price.base, f.price.gst, f.price.total) + ppPartSwitch([f]) + '</div>'
     + (f.checking ? '<p class="pp-info">A bank transfer you sent is being checked by HealSol. You can still pay online.</p>' : '')
     + ppMethods('pp-pm1') + ppBill(false)
     + '<div class="pp-acts"><button type="button" class="pp-b1" id="pp-go" onclick="ppPay([\'' + ppE(f.code) + '\'])">Pay ' + ppM(f.price.total) + '</button><p class="pp-err" id="pp-err" role="alert"></p><p class="pp-sm">Receipt and GST invoice right after payment. The facility unlocks on its own.</p>' + ppAskLink() + '</div>' + ppLinksHTML();
@@ -152,7 +158,7 @@ function ppManyHTML() {
     + rows.map(function (f) { var can = (f.status === 'due' || f.status === 'office') && f.price;
       return '<tr class="' + (can ? '' : 'pp-off') + '"><td class="pp-c">' + (can ? '<input type="checkbox" aria-label="' + ppE(f.name) + '"' + (_pp.sel[f.code] ? ' checked' : '') + ' onchange="ppTick(\'' + ppE(f.code) + '\',this.checked)">' : '') + '</td><td data-l="Facility"><b>' + ppE(f.name) + '</b><small>' + ppE([f.block ? f.block + ' block' : '', f.district].filter(Boolean).join(', ')) + '</small></td><td data-l="Type">' + ppE(f.typeLabel) + '</td><td data-l="Status">' + ppStatus(f) + '</td><td data-l="Price" class="pp-r">' + (f.price ? ppM(f.price.total) + '<small>incl. GST</small>' : (f.status === 'due' ? '<small>Ask for a link</small>' : '—')) + '</td></tr>'; }).join('')
     + '</tbody></table></div>' : '<div class="pp-empty">' + (_pp.filt === 'due' ? 'No facility is waiting for payment.' : 'No facilities on your list yet.') + '</div>';
-  var side = '<div class="pp-side"><b class="pp-big">' + sel.length + ' facilit' + (sel.length === 1 ? 'y' : 'ies') + ' selected</b>' + ppAmt(base, gst, tot, true) + ppMethods('pp-pmN') + ppBill(false)
+  var side = '<div class="pp-side"><b class="pp-big">' + sel.length + ' facilit' + (sel.length === 1 ? 'y' : 'ies') + ' selected</b>' + ppAmt(base, gst, tot, true) + ppPartSwitch(due) + ppMethods('pp-pmN') + ppBill(false)
     + '<button type="button" class="pp-b1" id="pp-go"' + (sel.length ? '' : ' disabled') + ' onclick="ppPay(_pp.last.codes)">Pay ' + ppM(tot) + '</button><p class="pp-err" id="pp-err" role="alert"></p>'
     + '<p class="pp-sm">One GST invoice for all. Each facility unlocks as soon as the payment is confirmed.</p>' + ppAskLink('Need a different plan or price? Ask for a payment link') + '</div>';
   return '<div class="pp-many"><div class="pp-main"><div class="pp-hd"><h2>Facilities on your list</h2><div class="pp-flt" role="group" aria-label="Show"><button type="button" class="' + (_pp.filt === 'due' ? 'on' : '') + '" aria-pressed="' + (_pp.filt === 'due') + '" onclick="_pp.filt=\'due\';ppRender()">Waiting for payment (' + due.length + ')</button><button type="button" class="' + (_pp.filt === 'all' ? 'on' : '') + '" aria-pressed="' + (_pp.filt === 'all') + '" onclick="_pp.filt=\'all\';ppRender()">All (' + all.length + ')</button></div></div>'
@@ -214,7 +220,7 @@ async function ppPay(codes, link) {
   if (typeof Razorpay === 'undefined') { ppErr(PP_BLOCKED); return; }
   var btn = document.getElementById('pp-go'), label = btn ? btn.textContent : ''; _pp.busy = true; if (btn) { btn.disabled = true; btn.textContent = 'Preparing payment…'; }
   var o;
-  try { o = await nfCall('payOrder', link ? { link: link, billTo: billOn ? bill : null } : { codes: codes, billTo: billOn ? bill : null }); }
+  try { o = await nfCall('payOrder', link ? { link: link, billTo: billOn ? bill : null } : { codes: codes, billTo: billOn ? bill : null, part: _pp.part || null }); }
   catch (e) { ppErr(nfErrText(e)); _pp.busy = false; if (btn) { btn.disabled = false; btn.textContent = label; } return; }
   _pp.busy = false; if (btn) { btn.disabled = false; btn.textContent = label; }
   var rzp = new Razorpay({ key: o.keyId, order_id: o.orderId, amount: o.amount, currency: o.currency || 'INR', name: 'HealSol Academy', description: (o.label || 'NQAS | FAST programme') + ' (incl. 18% GST)',
@@ -232,7 +238,7 @@ function ppDoneHTML() {
   if (D.pending) return '<div class="pp-msg"><span class="pp-okc">' + PP_ICON.ok + '</span><b>Payment received</b><p>Your payment (' + ppE(D.pending) + ') was received. It is confirmed automatically within a few minutes — the facilities unlock then. If anything is still locked after an hour, send this payment ID to HealSol Academy.</p><button type="button" class="pp-b2" onclick="ppClose()">Back to the app</button></div>';
   if (D.utr) return '<div class="pp-msg"><span class="pp-okc">' + PP_ICON.ok + '</span><b>Thank you — HealSol will confirm</b><p>We have your UTR ' + ppE(D.utr) + '. HealSol checks it in the bank account, then the facilities unlock and the tax invoice is made. You can see it under Me → Payment receipts.</p><button type="button" class="pp-b2" onclick="ppClose()">Back to the app</button></div>';
   var r = D.receipt || {}, n = r.n || D.n || 1;
-  return '<div class="pp-msg"><span class="pp-okc">' + PP_ICON.ok + '</span><b>Payment successful</b><p>' + (n > 1 ? n + ' facilities are' : ppE(r.facilityName || 'The facility') + ' is') + ' unlocked. Receipt ' + ppE(r.receiptNo || '') + (r.invoice ? ' · tax invoice ' + ppE(r.invoice.no) : '') + '.</p>'
+  return '<div class="pp-msg"><span class="pp-okc">' + PP_ICON.ok + '</span><b>Payment successful</b><p>' + (r.part === 'bl' && n === 1 ? ppE(r.facilityName || 'The facility') + ' can now choose its Day 1 (baseline paid).' : (n > 1 ? n + ' facilities are' : ppE(r.facilityName || 'The facility') + ' is') + ' unlocked.') + ' Receipt ' + ppE(r.receiptNo || '') + (r.invoice ? ' · tax invoice ' + ppE(r.invoice.no) : '') + '.</p>'
     + '<div class="pp-acts">' + (r.invoice && typeof ivDownload === 'function' ? '<button type="button" class="pp-b1" onclick="ivDownload(ivDoc(\'tax\',_pp.done.receipt),this)">Download tax invoice (PDF)</button>' : '') + '<button type="button" class="pp-b2" onclick="ppClose();location.reload()">Back to the app</button></div></div>';
 }
 
@@ -243,7 +249,7 @@ async function ppProforma(codes, link) {
   if (!link && (!codes || !codes.length)) { ppErr('Tick at least one facility.'); return; }
   var gs = ppGstState(bill.gstin); if (gs && bill.state && gs !== bill.state) { ppErr('This GSTIN is registered in ' + gs + ', but the state chosen is ' + bill.state + '. Choose ' + gs + ', or set the state to Automatic.'); return; }
   var btn = document.getElementById('pp-go'), label = btn ? btn.textContent : ''; _pp.busy = true; if (btn) { btn.disabled = true; btn.textContent = 'Making the proforma…'; }
-  try { var r = await nfCall('payProforma', link ? { link: link, billTo: bill } : { codes: codes, billTo: bill }); _pp.pf = r; ppGo('bank'); }
+  try { var r = await nfCall('payProforma', link ? { link: link, billTo: bill } : { codes: codes, billTo: bill, part: _pp.part || null }); _pp.pf = r; ppGo('bank'); }
   catch (e) { ppErr(nfErrText(e)); }
   finally { _pp.busy = false; if (btn && document.body.contains(btn)) { btn.disabled = false; btn.textContent = label; } }
   try { if (typeof bpCfg === 'function') { await bpCfg(); if (_pp.view === 'bank') ppRender(); } } catch (e) {}

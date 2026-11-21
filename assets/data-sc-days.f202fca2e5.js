@@ -2114,8 +2114,9 @@ async function phcLoadPricing(force){
   try{cfg=await fbGet('shared/sc_pricing_config');}catch(e){}
   var base=_phcAllPriceableItems();
   var priceMap={};
-  if(cfg&&cfg.items)cfg.items.forEach(function(it){priceMap[it.id]=it.price;});
-  base.forEach(function(it){it.price=(priceMap[it.id]!==undefined)?priceMap[it.id]:null;});
+  var blMap={};
+  if(cfg&&cfg.items)cfg.items.forEach(function(it){priceMap[it.id]=it.price; if(it.blPrice!=null) blMap[it.id]=it.blPrice;});
+  base.forEach(function(it){it.price=(priceMap[it.id]!==undefined)?priceMap[it.id]:null; it.blPrice=(blMap[it.id]!==undefined)?blMap[it.id]:null;});
   _phcPricingCache={items:base};
   return _phcPricingCache;
 }
@@ -2133,15 +2134,25 @@ async function adminRenderPricingPanel(){
   var GRP={package:'Packages',base:'Base price (core departments)',addon:'Add-on price per optional department — added for each department the CHC has',catchup:'Catch-up'}, last='';
   cfg.items.forEach(function(it){
     var t=it.type||'sc', key=t+'|'+it.grp;
-    if(key!==last){ last=key; var h=document.createElement('div');h.className='pr-grp';h.setAttribute('data-pt',t);h.textContent=GRP[it.grp]||'';cont.appendChild(h); }
+    if(key!==last){ last=key; var h=document.createElement('div');h.className='pr-grp';h.setAttribute('data-pt',t);h.textContent=GRP[it.grp]||'';cont.appendChild(h);
+      if(it.grp==='package'||it.grp==='base'){ var hh=document.createElement('div');hh.className='pr-2h';hh.setAttribute('data-pt',t);hh.innerHTML='<div style="flex:1"></div><span>Implementation fee</span><span>Baseline fee</span>';cont.appendChild(hh); } }
     var row=document.createElement('div');row.className='pricing-row';row.setAttribute('data-pt',t);
     var lbl=document.createElement('div');lbl.style.cssText='flex:1;font-size:12px;font-weight:700;color:var(--t1);';lbl.textContent=it.label;
     if(it.hint){ var sm=document.createElement('small');sm.style.cssText='display:block;font-weight:600;color:var(--t3);font-size:10.5px;';sm.textContent=it.hint;lbl.appendChild(sm); }
     var rupee=document.createElement('span');rupee.style.cssText='font-size:12px;color:var(--t3);';rupee.textContent='₹';
     var inp=document.createElement('input');inp.type='number';inp.min='0';inp.placeholder='Not set';
     inp.value=(it.price!==null&&it.price!==undefined)?it.price:'';inp.dataset.itemId=it.id;
-    row.appendChild(lbl);row.appendChild(rupee);row.appendChild(inp);cont.appendChild(row);
+    row.appendChild(lbl);row.appendChild(rupee);row.appendChild(inp);
+    // 21 Nov 2026 (two-part price): the baseline fee, paid before Day 1 by a facility without a free baseline. Empty = no baseline fee
+    // (such a facility stays free). With a free baseline only the implementation fee is due.
+    if(it.grp==='package'||it.grp==='base'){ var r2=document.createElement('span');r2.style.cssText='font-size:12px;color:var(--t3);';r2.textContent='₹';
+      var bi=document.createElement('input');bi.type='number';bi.min='0';bi.placeholder='No fee';bi.setAttribute('aria-label','Baseline fee — '+it.label);bi.value=(it.blPrice!==null&&it.blPrice!==undefined)?it.blPrice:'';bi.dataset.blId=it.id;
+      inp.setAttribute('aria-label','Implementation fee — '+it.label); row.appendChild(r2);row.appendChild(bi); }
+    cont.appendChild(row);
   });
+  ['sc','uphc','phc','chc'].forEach(function(t){ var n=document.createElement('div');n.className='pr-grp';n.setAttribute('data-pt',t);n.style.cssText='font-weight:600;text-transform:none;letter-spacing:0;';
+    n.textContent='Implementation fee: paid before Day 8 (Day 15 for a CHC) — with a free baseline this is the whole price. Baseline fee: paid before Day 1, only by facilities without a free baseline (Settings → Free baseline). Prices before GST.';
+    cont.appendChild(n); });
   var note=document.createElement('div');note.className='pr-grp';note.setAttribute('data-pt','chc');note.style.cssText='font-weight:600;text-transform:none;letter-spacing:0;';
   note.textContent='A CHC pays its base price (FRU or Non-FRU, chosen at enrolment) plus the add-on of each optional department it has. The enrolment form shows the total.';
   cont.appendChild(note);
@@ -2162,7 +2173,8 @@ async function adminSavePricing(){
   var cont=document.getElementById('pricing-list');if(!cont)return;
   var items=[];
   cont.querySelectorAll('input[data-item-id]').forEach(function(inp){
-    var v=inp.value.trim();items.push({id:inp.dataset.itemId,label:_phcPriceLabel(inp.dataset.itemId),price:v===''?null:Number(v)});
+    var v=inp.value.trim(), b=cont.querySelector('input[data-bl-id="'+inp.dataset.itemId+'"]'), bv=b?b.value.trim():'';
+    var it={id:inp.dataset.itemId,label:_phcPriceLabel(inp.dataset.itemId),price:v===''?null:Number(v)}; if(bv!=='') it.blPrice=Number(bv); items.push(it);
   });
   var ok=await fbSet('shared/sc_pricing_config',{items:items});
   _phcPricingCache=null;

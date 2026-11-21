@@ -6,9 +6,9 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "c53b78c8c88a";
+const BUILD = "8293caecb42c";
 const ASSETS = [
- "assets/data-sc-days.2a41e8c5d9.js",
+ "assets/data-sc-days.f202fca2e5.js",
  "assets/dept-admin.ee8d5ffab0.js",
  "assets/dept-content.216868c381.js",
  "assets/dept-core.298f55fad5.js",
@@ -76,7 +76,7 @@ const ASSETS = [
  "assets/shared-back-steps.e2d664b3e4.js",
  "assets/shared-bankpay.9b74de7822.css",
  "assets/shared-bankpay.dfa3d0f99e.js",
- "assets/shared-base.296e41553e.css",
+ "assets/shared-base.5275096455.css",
  "assets/shared-biz-dash.6781dbeb60.js",
  "assets/shared-biz-dash.c8831fea1d.css",
  "assets/shared-biz-report.7d0c383ae8.js",
@@ -96,6 +96,7 @@ const ASSETS = [
  "assets/shared-fac-page.f6d63b3ce5.js",
  "assets/shared-fac-ready.abcc07b2cb.js",
  "assets/shared-fac-sc.5e2a4ee502.js",
+ "assets/shared-freebl.d16518219a.js",
  "assets/shared-getapp.8fe42b80ef.js",
  "assets/shared-hide-demo-ui.4b2f5a9239.js",
  "assets/shared-hindi-admin.a43e18db13.js",
@@ -110,9 +111,9 @@ const ASSETS = [
  "assets/shared-hs-settings.f1365f98fb.js",
  "assets/shared-impact.497ea52277.js",
  "assets/shared-impact.cf89da6a80.css",
- "assets/shared-implstart.4a5e44b072.js",
+ "assets/shared-implstart.1446744e81.js",
  "assets/shared-invoices.02ba7a9c9b.js",
- "assets/shared-join.48f0f1fcac.js",
+ "assets/shared-join.9428db2918.js",
  "assets/shared-join.dc1f2976b7.css",
  "assets/shared-launch.8c644d0f13.js",
  "assets/shared-offers.34751fff03.js",
@@ -124,7 +125,7 @@ const ASSETS = [
  "assets/shared-paylinks-admin.91e860033b.js",
  "assets/shared-payments.12fb4e5a71.js",
  "assets/shared-paypage.48e914e699.css",
- "assets/shared-paypage.5309fbbd94.js",
+ "assets/shared-paypage.65f124fc1e.js",
  "assets/shared-pdf-reports.1d3126482f.js",
  "assets/shared-pdf.105ae69b9e.js",
  "assets/shared-play-brand.5ff1546d4a.js",

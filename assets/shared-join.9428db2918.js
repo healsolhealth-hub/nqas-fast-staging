@@ -108,6 +108,7 @@ function jnFac(){
   return jnTop("jnGo('who')",'Step 1 of 2')
     +'<div class="nf-l-hi">'+jE(jt('Your facility'))+'</div><div class="nf-l-sub">'+jE(jt('Find it in the national list so its NIN, block and links come with it.'))+'</div>'
     +'<div class="nf-l-lbl">'+jE(jt('Facility type *'))+'</div><div class="jn-seg">'+seg+'</div>'
+    +(typeof fbJoinNote==='function'?fbJoinNote(_jn.type,_jn.state,_jn.district):'')
     +'<div class="jn-2"><div><label class="nf-l-lbl" for="jn-st">'+jE(jt('State *'))+'</label><select class="jn-in" id="jn-st" onchange="jnSet(\'state\',this.value,1)">'+jnOpts(jnStates(),_jn.state)+'</select></div>'
     +'<div><label class="nf-l-lbl" for="jn-di">'+jE(jt('District *'))+'</label><select class="jn-in" id="jn-di" onchange="jnSet(\'district\',this.value,1)">'+jnOpts(jnDistricts(_jn.state),_jn.district,'—')+'</select></div></div>'
     +((L.blocks||[]).length?'<label class="nf-l-lbl" for="jn-bl">'+jE(jt('Block'))+'</label><select class="jn-in" id="jn-bl" onchange="jnSet(\'block\',this.value,1)">'+jnOpts(L.blocks,_jn.block,jt('All blocks'))+'</select>':'')
@@ -143,7 +144,7 @@ function jnYou(){
     +'<div class="jn-sum"><div class="jn-kick">'+jE(jt('CHECK BEFORE SENDING'))+'</div>'+row('Facility',s.name+' · '+(jnLv(_jn.type).short||_jn.type.toUpperCase()))+row('NIN',s.nin)
       +row('Where',[s.block?s.block+' '+jt('Block').toLowerCase():'',_jn.district,_jn.state].filter(Boolean).join(' · '))+row('Under',s.under)+row('Package',jnPkgLabel())+'</div>'
     +'<label class="nf-l-chk jn-agree"><input type="checkbox" id="jn-ag"'+(_jn.agree?' checked':'')+' onchange="_jn.agree=this.checked"> <span>'+jE(jt('I am the in-charge of this facility, and HealSol Academy may call or WhatsApp me about it.'))+'</span></label>'
-    +jnErr()+'<button type="button" class="nf-l-btn" id="jn-send" onclick="jnSend()"'+(_jn.busy?' disabled':'')+'>'+jE(jt(open?'Register — no-cost baseline':'Send for approval'))+'</button>'+jnConsent()
+    +jnErr()+'<button type="button" class="nf-l-btn" id="jn-send" onclick="jnSend()"'+(_jn.busy?' disabled':'')+'>'+jE(jt(open?((typeof fbJoinFree!=='function'||fbJoinFree(_jn.type,_jn.state,_jn.district))?'Register — no-cost baseline':'Register'):'Send for approval'))+'</button>'+jnConsent()
     +'<div class="jn-hint" style="text-align:center">'+jE(jt('HealSol Academy checks every new facility, then sends your login.'))+'</div>';
 }
 async function jnSend(){
