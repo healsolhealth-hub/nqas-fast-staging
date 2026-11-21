@@ -141,7 +141,7 @@ async function fbRender() {
       + [['free', 'Free'], ['until', 'Free until…'], ['paid', 'Baseline fee']].map(function (o) { return '<option value="' + o[0] + '"' + (x.mode === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'
       + (x.mode === 'until' ? '<input class="bp-i" type="date" aria-label="Free until (' + FB_NAMES[t] + ')" value="' + fbE(x.until) + '" onchange="_fb.edit.types.' + t + '.until=this.value">' : '') + '</div>'; };
   var rules = Object.keys(C.rules).sort(function (a, b) { var A = C.rules[a], B = C.rules[b]; return (A.state + A.district).localeCompare(B.state + B.district); });
-  box.innerHTML = '<div class="bp-h"><i class="ti ti-gift"></i> Free baseline' + (saved ? '' : ' <span class="bp-tag">Defaults — not saved yet</span>') + '</div>'
+  box.innerHTML = '<div class="bp-h"><i class="ti ti-calendar-check"></i> Free baseline' + (saved ? '' : ' <span class="bp-tag">Defaults — not saved yet</span>') + '</div>'
     + '<div class="bp-sub">Checked on the day a facility is approved, and kept by that facility. Without a free baseline, the facility pays the baseline fee (or a District / partner commits) before Day 1, and the implementation fee before Day 8 (Day 15 for a CHC). A facility whose package has no baseline fee (above) stays free.</div>'
     + '<div class="fb-k2">ALL INDIA (DEFAULT)</div><div class="fb-tg">' + FB_TYPES.map(typeCard).join('') + '</div>'
     + '<div class="fb-k2">EXCEPTIONS (A DISTRICT BEATS A STATE)</div>'
@@ -209,7 +209,7 @@ async function fbCheck() {
   nfFacMenu = function (btn, code) { var r = o.apply(this, arguments);
     try { var m = document.getElementById('mfc-menu'), f = ((typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {})[code] || {};
       if (!m || f.subscriptionStatus !== 'trial' || (f.startDate && f.startDate <= fbToday())) return r;
-      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.innerHTML = '<i class="ti ti-gift"></i>' + fbE(fbIsFree(f) ? 'Free baseline: yes — change' : 'Free baseline: no — change');
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.innerHTML = '<i class="ti ti-calendar-check"></i>' + fbE(fbIsFree(f) ? 'Free baseline: yes — change' : 'Free baseline: no — change');
       b.setAttribute('onclick', "document.getElementById('mfc-menu').remove();fbFacDialog('" + String(code).replace(/'/g, "\\'") + "')"); m.appendChild(b); } catch (e) {}
     return r; }; })();
 async function fbFacDialog(code) {
