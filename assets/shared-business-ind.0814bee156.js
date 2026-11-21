@@ -12,7 +12,7 @@ function nfMonthKey(iso){ return iso?String(iso).slice(0,7):''; }
 function nfBlDays(t){ try{ var L=(typeof NF_LEVELS!=='undefined'&&NF_LEVELS[t||'sc'])||{}; return (L.plan&&L.plan.base)||7; }catch(e){ return 7; } }
 function nfTrialInfo(f){
   if(!f||f.subscriptionStatus!=='trial') return null;
-  var start=f.startDate||(f.trialStartDate?String(f.trialStartDate).slice(0,10):null); if(!start) return null;
+  var start=f.startDate; if(!/^\d{4}-\d{2}-\d{2}$/.test(start||'')) return null;   // 21 Nov 2026: no start date = baseline not begun, so the trial cannot have ended (was: counted from sign-up)
   var p=start.split('-'), end=new Date(+p[0],+p[1]-1,+p[2]+nfBlDays(f.type)), today=new Date(); today.setHours(0,0,0,0);
   var over=Math.floor((today-end)/86400000);
   return {ended:over>=0,daysOver:over,endISO:end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0')};

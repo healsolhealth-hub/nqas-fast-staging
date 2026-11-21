@@ -115,7 +115,7 @@ function nfBizData(){
 }
 // ── the report's sheets (Excel = all; PDF = Summary, Monthly, Money to collect, Payments, By type, By district) ──
 function nfBizStatusTxt(s){ return {paid:'Paid',contract:'Contract',trial:'On trial',ended:'Trial ended (not paid)'}[s]||s; }
-function nfBizWhy(r){ if(r.status==='ended') return 'Trial ended '+(r.trialOver===0?'today':r.trialOver+' day'+(r.trialOver===1?'':'s')+' ago')+' — not paid'; if(r.status==='trial') return r.trialOver>=0?'Trial ends today':'Trial ends in '+(-r.trialOver)+' day'+(r.trialOver===-1?'':'s'); return ''; }
+function nfBizWhy(r){ if(r.status==='ended') return 'Trial ended '+(r.trialOver===0?'today':r.trialOver+' day'+(r.trialOver===1?'':'s')+' ago')+' — not paid'; if(r.status==='trial') return r.trialOver==null?'Not started — no start date yet':r.trialOver>=0?'Trial ends today':'Trial ends in '+(-r.trialOver)+' day'+(r.trialOver===-1?'':'s'); return ''; }
 function nfBizSheets(D){
   var out=[], C=!!_nfBd.contacts, add=function(name,rows,widths){ out.push({name:name,rows:rows,widths:widths}); };
   var tl=D.type?nfBizTypeLbl(D.type)+'s only':'All facility types';
