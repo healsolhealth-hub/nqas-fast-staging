@@ -239,3 +239,47 @@ async function fbFacDialog(code) {
   nduFill = async function () {
     try { var card = document.getElementById('ndu-card'); if (card && _nd && _nd.fac && fbNeedsBl(_nd.fac) && typeof sdMount === 'function') { card.innerHTML = '<div class="fb-wrap"></div>'; sdMount(card.firstChild, _nd.code); return; } } catch (e) { console.warn('[freebl]', e); }
     return o.apply(this, arguments); }; })();
+
+// ══ HealSol: record a payment from the facility's ⋯ menu (staging test 21 Nov 2026: the "Confirm payment" form was only on
+//    self sign-ups). For a facility whose baseline fee is unpaid it asks which part was paid: the baseline fee or the full programme. ══
+async function fbRecordPay(code) {
+  if (typeof openDemoConvertModal !== 'function') return;
+  await openDemoConvertModal(code);
+  var f = ((typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {})[code] || {}; if (!fbNeedsBl(f)) return;
+  var tot = document.getElementById('nf-mp-total'); if (!tot) return;
+  var r; try { r = await nfCall('priceFor', { code: code }); } catch (e) { return; }
+  var opts = [['bl', 'Baseline fee only', r.price], ['full', 'Full programme (baseline + implementation)', r.full]].filter(function (o) { return o[2]; });
+  if (!opts.length) return;
+  var w = document.createElement('div');
+  w.innerHTML = '<label class="nf-mp-l" for="nf-mp-part">What was paid</label><select id="nf-mp-part" class="nf-mp-i">' + opts.map(function (o) { return '<option value="' + o[0] + '" data-t="' + o[2].total + '">' + fbE(o[1] + ' — ' + fbM(o[2].total)) + '</option>'; }).join('') + '</select>';
+  tot.previousElementSibling.parentNode.insertBefore(w, tot.previousElementSibling);
+  tot.value = opts[0][2].total;
+  document.getElementById('nf-mp-part').onchange = function () { tot.value = this.options[this.selectedIndex].getAttribute('data-t'); };
+  var go = document.getElementById('demo-convert-confirm-btn'); if (go) go.onclick = function () { fbSaveManual(code); };
+}
+async function fbSaveManual(code) {
+    var sel = document.getElementById('nf-mp-part');
+    var v = function (id) { return ((document.getElementById(id) || {}).value || '').trim(); }, err = document.getElementById('nf-mp-err'), btn = document.getElementById('demo-convert-confirm-btn');
+    var show = function (m) { if (err) { err.textContent = m; err.style.display = m ? 'block' : 'none'; } };
+    if (!(Number(v('nf-mp-total')) > 0)) return show('Enter the amount received.');
+    if (!v('nf-mp-ref')) return show('Enter the payment reference — it appears on the receipt and in the report.');
+    show(''); if (btn) { btn.disabled = true; btn.textContent = 'Recording…'; }
+    try { var part = sel.value, r = await nfCall('confirmManualPayment', { code: code, total: Number(v('nf-mp-total')), method: v('nf-mp-method'), reference: v('nf-mp-ref'), paidOn: v('nf-mp-date'), part: part });
+      fbLocal(code, Object.assign({ blPaid: { at: r.receipt.paidAt, receiptNo: r.receipt.receiptNo } }, part === 'full' ? { subscriptionStatus: 'paid' } : {}));
+      closeDemoConvertModal(); try { if (typeof hsRenderFac === 'function' && document.getElementById('hs-fq')) hsRenderFac(); scRenderMasterDashboard(); } catch (e) {}
+      showToast('Payment recorded — ' + r.receipt.receiptNo + (part === 'bl' ? ' · the facility can now choose Day 1' : ''), 'ok'); if (typeof nfShowReceipt === 'function') nfShowReceipt(r.receipt); }
+    catch (e) { show(nfErrText(e)); }
+    finally { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-check"></i> Record payment & unlock'; } }
+}
+(function () { if (typeof nfFacMenu !== 'function') return; var o = nfFacMenu;
+  nfFacMenu = function (btn, code) { var r = o.apply(this, arguments);
+    try { var m = document.getElementById('mfc-menu'), f = ((typeof scMasterFacilities !== 'undefined' && scMasterFacilities) || {})[code] || {};
+      if (!m || f.subscriptionStatus !== 'trial' || typeof openDemoConvertModal !== 'function' || !document.getElementById('demo-convert-overlay')) return r;
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.innerHTML = '<i class="ti ti-credit-card"></i>Record a payment (bank / UPI / link)';
+      b.setAttribute('onclick', "document.getElementById('mfc-menu').remove();fbRecordPay('" + String(code).replace(/'/g, "\\'") + "')"); m.appendChild(b); } catch (e) {}
+    return r; }; })();
+// the day banner ("Baseline audit · Day 1 / 7 · 0/85 answered today") does not fit while nothing has started
+(function () { if (typeof renderCard !== 'function') return; var o = renderCard;
+  renderCard = function () { var r = o.apply(this, arguments);
+    try { if (typeof choState !== 'undefined' && fbNeedsBl(choState.facility)) { var c = document.getElementById('card-container'); if (c) c.querySelectorAll('.scd-banner').forEach(function (b) { b.remove(); }); } } catch (e) {}
+    return r; }; })();
