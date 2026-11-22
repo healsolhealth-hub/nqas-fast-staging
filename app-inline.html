@@ -32508,9 +32508,45 @@ async function dmBuildDept(t, start) {
   if (t === 'phc') fac.certs = { c1: { name: 'Kayakalp', note: '2024 · commendation', at: dmIso(start, 0) } };
   return { fac: fac, data: { sc_pcards: pc, sc_dcards: dc, sc_dactions: act } };
 }
+// ── Community Outreach, Referral Linkages and the VHSND / UHND plan (22 Nov 2026): demo villages / wards near each facility,
+//    a few ASHAs in the team without app login, referral levels and the session days. The server writes this month's sessions
+//    (held up to yesterday, one postponed) every night, so the plan always looks lived-in.
+var DM_OUT = {
+  sc: { v: [['Rampur', 1040, 210, 0.5, 'm'], ['Chandpur', 720, 140, 2.5, 'm'], ['Nagla Bhoj', 610, 118, 3.2, 'Saroj Devi'], ['Bhagwanpur', 820, 160, 4.1, 'Saroj Devi'], ['Majra Tola', 430, 82, 5.0, 'Phoolwati'], ['Kheri Kalan', 580, 110, 6.3, 'Phoolwati']],
+    up: [['PHC', 'Demo PHC Bichpuri', 'phc', '9999900021'], ['CHC', 'Demo CHC Fatehabad', 'chc', '9999900031'], ['DH', 'Demo District Hospital', 'dh', '9999900051']] },
+  uphc: { v: [['Ward 4 · Civil Lines', 9800, 1950, 0.8, 'Anita Saxena'], ['Ward 7 · Raja Mandi', 8600, 1720, 1.6, 'Anita Saxena'], ['Ward 9 · Pratap Pura', 9100, 1810, 2.1, 'Rubina Begum'], ['Ward 12 · Sadar Bazar', 8300, 1660, 2.4, 'Rubina Begum'], ['Ward 15 · Belanganj', 7900, 1580, 3.0, 'Kusum Lata'], ['Ward 18 · Lohamandi', 8300, 1650, 3.4, 'Kusum Lata']],
+    up: [['DH', 'Demo District Hospital', 'dh', '9999900051'], ['MC', 'Demo Medical College', 'mc', '9999900052']] },
+  phc: { v: [['Bichpuri', 2600, 520, 0.4, 'Kiran Devi'], ['Lakawali', 2100, 410, 2.8, 'Kiran Devi'], ['Barara', 2400, 470, 3.5, 'Shakuntala'], ['Mehra Nahargang', 2200, 430, 4.2, 'Shakuntala'], ['Rohta', 2500, 490, 5.1, 'Guddi Devi'], ['Nagla Padi', 1900, 370, 5.8, 'Guddi Devi'], ['Sihani', 2300, 450, 6.4, 'Rajni'], ['Magtai', 2100, 410, 7.0, 'Rajni'], ['Kakua', 2200, 440, 7.6, 'Usha Rani'], ['Bainpur', 1800, 350, 8.3, 'Usha Rani'], ['Ichchhapur', 2400, 470, 8.9, 'Saroj Devi'], ['Dhanauli', 2000, 390, 9.5, 'Saroj Devi'], ['Pathauli', 2300, 450, 10.2, 'Meera'], ['Nainana Jat', 2700, 530, 11.0, 'Meera']],
+    up: [['CHC', 'Demo CHC Fatehabad', 'chc', '9999900031'], ['DH', 'Demo District Hospital', 'dh', '9999900051']] },
+  chc: { v: [], up: [['DH', 'Demo District Hospital', 'dh', '9999900051'], ['MC', 'Demo Medical College', 'mc', '9999900052']] } };
+var DM_REF_GEO = { PHC: DM_GEO.phc, CHC: DM_GEO.chc, DH: [27.1800, 78.0150], MC: [27.1867, 78.0151] };
+function dmOutreach(t, start) {
+  var O = DM_OUT[t], F = DM_FAC[t], g = DM_GEO[t], asha = F.staff.find(function (x) { return x[2] === 'ASHA' || x[2] === 'USHA'; }), team = {}, V = {}, days = [3, 6], i = 0;
+  O.v.forEach(function (r, k) {
+    var who = r[4], ashas = null, others = null;
+    if (who === 'm' && asha) ashas = { [asha[0]]: true };
+    else { var aid = 'dm' + (dmH(t + who) + 1000); team[aid] = { name: who, role: t === 'uphc' ? 'USHA' : 'ASHA', at: dmIso(start, 0) }; others = { [aid]: true }; }
+    var ang = (dmH(t + r[0]) / 1000) * 2 * Math.PI, d = Math.max(0.4, r[3]) / 111;   // about r[3] km away
+    var v = { name: r[0], pop: r[1], hh: r[2], km: r[3], awc: String(100 + k * 7 + (dmH(r[0]) % 5)), aww: ['Geeta', 'Savitri', 'Rani', 'Kamla', 'Pushpa', 'Lalita', 'Sudha'][k % 7] + ' Devi',
+      geo: { lat: Math.round((g[0] + d * Math.sin(ang)) * 1e5) / 1e5, lng: Math.round((g[1] + d * Math.cos(ang) / Math.cos(g[0] * Math.PI / 180)) * 1e5) / 1e5, by: 'demo', at: dmIso(start, 0) },
+      slot: { n: Math.floor(i / days.length) + 1, d: days[i % days.length] }, at: dmIso(start, 0) };
+    if (ashas) v.ashas = ashas; if (others) v.others = others; i++;
+    V['v' + (k + 1)] = v;
+  });
+  var up = {}; O.up.forEach(function (u, k) { var gg = DM_REF_GEO[u[0]]; up[String(k + 1)] = { name: u[1], t: u[2], phone: u[3], wa: u[3], h24: true,   // demo numbers only (the 99999 000xx demo series), never a real hospital's
+    svc: u[2] === 'phc' ? { del: true, emg: true } : u[2] === 'chc' ? { csec: true, blood: true, sncu: true, bite: true } : { csec: true, blood: true, sncu: true, emg: true },
+    km: Math.round(Math.hypot(gg[0] - g[0], (gg[1] - g[1]) * Math.cos(g[0] * Math.PI / 180)) * 111 * 1.25 * 10) / 10, lat: gg[0], lng: gg[1] }; if (u[0] === 'PHC') up[String(k + 1)].nin = DM_FAC.phc.nin; if (u[0] === 'CHC') up[String(k + 1)].nin = DM_FAC.chc.nin; });
+  var out = { referral: { up: up, amb: { e: '108', m: '102' }, at: dmIso(start, 0) } };
+  if (O.v.length) { out.villages = V; out.vhsnd = { days: { 3: true, 6: true }, from: '10:00', to: '14:00', svc: { imm: true, anc: true, gm: true, thr: true, fp: true, ncd: true, cou: true }, at: dmIso(start, 0) }; }
+  if (Object.keys(team).length) out.team = team;
+  return out;
+}
+function dmPopOf(t, start) { var O = DM_OUT[t], p = 0, h = 0; O.v.forEach(function (r) { p += r[1]; h += r[2]; }); return O.v.length ? { n: p, villages: O.v.length, households: h, at: dmIso(start, 0), src: 'outreach' } : null; }
 async function dmBuild() {
   var start = dmStart(), T = { base: start, fac: {}, data: { sc_progress: {}, sc_pcards: {}, sc_dcards: {}, sc_dactions: {} }, people: DM_PEOPLE };
-  var put = function (t, r) { var c = DM_CODES[t]; T.fac[c] = r.fac; Object.keys(r.data).forEach(function (k) { T.data[k][c] = r.data[k]; }); };
+  T.data.sc_outreach = {};
+  var put = function (t, r) { var c = DM_CODES[t]; T.fac[c] = r.fac; Object.keys(r.data).forEach(function (k) { T.data[k][c] = r.data[k]; });
+    T.data.sc_outreach[c] = dmOutreach(t, start); var p = dmPopOf(t, start); if (p) T.fac[c].population = p; };
   put('sc', dmBuildSc(start));
   for (var t of ['uphc', 'phc', 'chc']) put(t, await dmBuildDept(t, start));
   return T;
@@ -38126,7 +38162,7 @@ button.co-li{cursor:pointer}
 .co-prof{display:flex;flex-direction:column;gap:8px;padding:10px}
 .co-prof .co-nav{border:0;background:#F0F4F3;padding:12px}
 /* Today */
-.co-tw{display:flex;flex-direction:column;gap:10px;margin:12px 14px 0}
+.co-tw{display:flex;flex-direction:column;gap:10px;margin:12px 0 0}
 .co-today{background:#fff;border:1px solid #DCE4E1;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-family:Poppins,system-ui,sans-serif;color:#10302B}
 .co-today .co-li{padding:8px 0;border-bottom:1px solid #F3F6F5}
 .co-today .co-li:last-child{border-bottom:0}
