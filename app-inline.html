@@ -37325,7 +37325,8 @@ function plaBadge() { try { var t = document.querySelector('#hs-payv .hsp-tabs b
 <script id="nf-verifylinks">// ── Verify ↔ Impact (19 Nov 2026; canvas "Impact & Verify pages") ─────────────────────────────────────────────
 // Every check result (certificate NQF-…, staff picture IMP-…, facility poster FAC-…) gets, under it:
 //   "See NQAS | FAST impact" (thehealsol.com/impact) with the headline number, and "Check another number".
-// app.thehealsol.com/?join=1 opens the Join (registration) screen — the Impact page's "Join NQAS | FAST" button.
+// app.thehealsol.com/?join=1 opens the Join (registration) screen — the Impact page's "Join NQAS | FAST" button;
+// app.thehealsol.com/?join=champion opens the "Become a Quality Champion" form straight away (23 Nov 2026).
 var NF_IMPACT_URL = (typeof NF_STAGE !== 'undefined' && NF_STAGE) ? location.origin + '/impact/' : 'https://www.thehealsol.com/impact';
 var NF_IMPACT_API = 'https://asia-south1-' + ((typeof NF_STAGE !== 'undefined' && NF_STAGE) ? 'healsol-nqas-uphc' : 'healsol-nqas') + '.cloudfunctions.net/impactStats?format=json';
 function vlE(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -37351,12 +37352,13 @@ function vlAdd() {
   try { if (/[?&]cert=/.test(location.search || '')) { var tries = 0, t = setInterval(function () { vlAdd(); if (++tries > 120) clearInterval(t); }, 250); } } catch (e) {}   // keeps checking for 30 s: the result can replace the page after the links were added
   // ?join=1 → the Join screen (only for someone not signed in)
   try {
-    if (/[?&]join=1\b/.test(location.search || '')) {
+    var jm = /[?&]join=(1|champion|champ)\b/.exec(location.search || ''), jstep = jm && /^champ/.test(jm[1]) ? 'champ' : 'who';   // 23 Nov 2026: ?join=champion → the Quality Champion form
+    if (jm) {
       try { history.replaceState(null, '', location.pathname + (location.hash || '')); } catch (e) {}
       var k = 0, j = setInterval(function () {
         var signed = false; try { signed = !!(typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length && firebase.auth().currentUser); } catch (e) {}
         if (signed || ++k > 60) { clearInterval(j); return; }
-        if (typeof jnOpen === 'function' && document.getElementById('nf-login')) { clearInterval(j); jnOpen('who'); }
+        if (typeof jnOpen === 'function' && document.getElementById('nf-login')) { clearInterval(j); jnOpen(jstep); }
       }, 250);
     }
   } catch (e) {}
