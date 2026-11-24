@@ -39205,6 +39205,9 @@ body.nf-fadm .bls-nav.bls-fixed{bottom:0;padding-bottom:calc(10px + env(safe-are
 @keyframes blsFall{0%{transform:translateY(0) rotate(0);}100%{transform:translateY(70vh) rotate(260deg);opacity:0;}}
 @media (prefers-reduced-motion:reduce){.bls-conf{display:none;} .bls-ddt,.bls-num.done{animation:none;}}
 .bls-ddb button.bls-ddl{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5);}
+
+/* The next card slides in from the right; keep it inside the screen so the page never gets wider and jumps (24 Nov) */
+.bls,#card-container{overflow-x:clip;}
 </style>
 <script id="nf-bls">// ══════════════════════════════════════════════════════════════
 // SIMPLE BASELINE (23 Nov 2026; canvas "Simple baseline", approved; question and split sheets reviewed by HealSol)
