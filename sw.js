@@ -6,7 +6,7 @@
 // • Nothing else is touched: Firebase database / sign-in / functions, App Check, Razorpay, WhatsApp, the card page.
 // Emergency switch: open the app with ?nosw=reset (removes this worker and its caches on that phone), or publish a sw.js
 // that only unregisters itself.
-const BUILD = "94ee04625262";
+const BUILD = "29eb7146153a";
 const ASSETS = [
  "assets/data-sc-bl-data.6ea4835e81.js",
  "assets/data-sc-days.f202fca2e5.js",
@@ -30,8 +30,8 @@ const ASSETS = [
  "assets/sc-baseline-review.28bef89449.css",
  "assets/sc-baseline-review.f599b9985d.js",
  "assets/sc-baseline7.d38d5e0f28.js",
- "assets/sc-bl-simple.148e3f5887.js",
- "assets/sc-bl-simple.33600657e7.css",
+ "assets/sc-bl-simple.343895358d.css",
+ "assets/sc-bl-simple.a82b4d10eb.js",
  "assets/sc-build1.176238c84a.js",
  "assets/sc-build2.7bf047c30a.js",
  "assets/sc-build2.9b9d0fc3cf.css",
@@ -52,6 +52,8 @@ const ASSETS = [
  "assets/sc-healsol-view.fdd1503355.js",
  "assets/sc-hierarchy.4d51074fef.js",
  "assets/sc-how-to-fix.7dbba620cc.js",
+ "assets/sc-impl-fix.43b606c8f2.js",
+ "assets/sc-impl-fix.76b7a176e1.css",
  "assets/sc-implementation.8bce442784.js",
  "assets/sc-laptop.2c57667b0d.js",
  "assets/sc-laptop.3b958233dd.css",
@@ -69,7 +71,7 @@ const ASSETS = [
  "assets/sc-review-inbox.1806590a5c.js",
  "assets/sc-review.54a1bc1306.js",
  "assets/sc-staff-app.4f4b2c6a3d.css",
- "assets/sc-staff-app.dfc9643785.js",
+ "assets/sc-staff-app.ab9f557935.js",
  "assets/sc-summary.15830c67e5.js",
  "assets/sc-v2-core.1e43ca8ea7.js",
  "assets/sc-v2.bfc3486435.css",
@@ -96,7 +98,7 @@ const ASSETS = [
  "assets/shared-dashboards.538fcc6c83.js",
  "assets/shared-dashboards.9030b996af.css",
  "assets/shared-day-score.6043d84372.js",
- "assets/shared-demo.0f594fee14.js",
+ "assets/shared-demo.47cee4562c.js",
  "assets/shared-enquiries.106de16b0e.js",
  "assets/shared-fac-page.7d7df7d9b9.css",
  "assets/shared-fac-page.f6d63b3ce5.js",
@@ -122,6 +124,8 @@ const ASSETS = [
  "assets/shared-join.9428db2918.js",
  "assets/shared-join.dc1f2976b7.css",
  "assets/shared-launch.8c644d0f13.js",
+ "assets/shared-learn.c204077d11.js",
+ "assets/shared-learn.eebfd50660.css",
  "assets/shared-offers.34751fff03.js",
  "assets/shared-one-login.772ed79108.css",
  "assets/shared-one-login.973a9e8d61.js",
@@ -151,9 +155,9 @@ const ASSETS = [
  "assets/shared-reports.69da7fca0e.js",
  "assets/shared-review-fixes.c3f0ee2481.js",
  "assets/shared-review-fixes.c5ae88ebba.css",
- "assets/shared-sc-content.057fe71840.js",
  "assets/shared-sc-content.4dd2befa79.css",
- "assets/shared-sc-draft.672ef4231a.js",
+ "assets/shared-sc-content.806bf5ef80.js",
+ "assets/shared-sc-draft.1950bf019b.js",
  "assets/shared-secure.613bbaaa24.js",
  "assets/shared-settings-panels.265369271f.js",
  "assets/shared-settings-panels.bdc5b8ccfb.css",
