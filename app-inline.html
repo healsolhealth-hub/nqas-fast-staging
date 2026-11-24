@@ -39095,6 +39095,50 @@ var SC_LC = {"B-001.1":{"q":"Are the facility's name, its service packages and o
 .bls-spacer{height:96px;}
 @media (min-width:640px){ .bls-nav.bls-fixed{max-width:560px;margin:0 auto;} }
 body.nf-fadm .bls-nav.bls-fixed{bottom:0;padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+
+/* checkpoint colour, number badge and slide-in (24 Nov 2026) */
+.bls-card.bls-acc{padding:0;overflow:hidden;}
+.bls-band{display:block;height:6px;background:var(--acc);}
+.bls-chd{display:flex;gap:12px;align-items:flex-start;background:var(--acc-t);padding:14px 16px;}
+.bls-num{width:40px;height:40px;border-radius:12px;background:var(--acc);color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;}
+.bls-chm{min-width:0;flex:1;} .bls-acc .bls-k{color:var(--acc);} .bls-acc .bls-cpt{margin:4px 0 0;}
+.bls-cbody{padding:2px 16px 16px;} .bls-cbody > :first-child{border-top:0;margin-top:0;}
+.bls-acc .bls-m{color:var(--acc);background:var(--acc-t);}
+.bls-slide.in-r{animation:blsInR .24s ease-out;} .bls-slide.in-l{animation:blsInL .24s ease-out;}
+@keyframes blsInR{from{transform:translateX(42px);opacity:.25;}to{transform:none;opacity:1;}}
+@keyframes blsInL{from{transform:translateX(-42px);opacity:.25;}to{transform:none;opacity:1;}}
+@media (prefers-reduced-motion:reduce){.bls-slide.in-r,.bls-slide.in-l{animation:none;}}
+/* the row of dots under the progress bar */
+.bls-map{display:flex;align-items:center;gap:8px;margin:-2px 2px 12px;}
+.bls-dots{flex:1;display:flex;gap:5px;align-items:center;overflow:hidden;min-width:0;}
+.bls-d{width:12px;height:12px;border-radius:50%;flex:none;background:#DCE4E1;}
+.bls-d.a{background:#2E8B57;} .bls-d.s{background:#E9A23B;}
+.bls-d.cur{width:22px;height:22px;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(16,48,43,.12);}
+.bls-dm{font-size:11.5px;color:var(--t3,#5C706C);flex:none;}
+.bls-mapb{flex:none;min-height:34px;padding:0 12px;border-radius:17px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);font:inherit;font-size:12px;font-weight:600;cursor:pointer;}
+.bls-resume{display:flex;align-items:center;gap:10px;background:#10302B;color:#fff;border-radius:14px;padding:8px 8px 8px 14px;margin:0 0 12px;font-size:13px;}
+.bls-resume .ti{color:#CDE6DE;font-size:18px;} .bls-resume span{flex:1;}
+.bls-resume button{min-height:36px;border:0;background:transparent;color:#CDE6DE;font:inherit;font-size:12.5px;font-weight:600;text-decoration:underline;cursor:pointer;padding:0 6px;}
+/* review: where things stand */
+.bls-where{background:#E6F2EF;border-radius:16px;padding:14px;margin:10px 0 12px;display:flex;flex-direction:column;gap:10px;}
+.bls-where b{font-size:14px;font-weight:600;line-height:1.4;color:var(--t1);}
+.bls-where div{display:flex;gap:8px;} .bls-where button{flex:1;min-height:44px;border-radius:12px;border:1.5px solid var(--teal);background:#fff;color:var(--teal);font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.bls-where button.p{background:var(--teal);color:#fff;}
+/* all checkpoints sheet */
+#bls-map{position:fixed;inset:0;z-index:2000;}
+.blsm-bg{position:absolute;inset:0;background:rgba(16,48,43,.45);}
+.blsm-sheet{position:absolute;left:0;right:0;bottom:0;max-height:86vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;box-sizing:border-box;max-width:560px;margin:0 auto;}
+.blsm-grab{align-self:center;width:40px;height:5px;border-radius:3px;background:#DCE4E1;}
+.blsm-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;} .blsm-h b{display:block;font-size:17px;color:var(--t1);} .blsm-h small{font-size:12.5px;color:var(--t3,#5C706C);}
+.blsm-x{width:44px;height:44px;border-radius:50%;border:1px solid var(--br);background:#fff;font-size:18px;color:var(--t1);flex:none;cursor:pointer;}
+.blsm-key{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--t2);} .blsm-key span{display:flex;align-items:center;gap:6px;}
+.blsm-key i{width:12px;height:12px;border-radius:4px;display:inline-block;} .blsm-key i.a{background:#2E8B57;} .blsm-key i.s{background:#FBEFD5;border:1.5px solid #E9A23B;} .blsm-key i.n{background:#fff;border:1.5px solid #C8D3D0;} .blsm-key i.c{background:#10302B;}
+.blsm-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;}
+.bls-mt{min-height:44px;border-radius:12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;background:#fff;color:#3E5551;border:1.5px solid #C8D3D0;}
+.bls-mt.a{background:#2E8B57;color:#fff;border:0;} .bls-mt.s{background:#FBEFD5;color:#8A5410;border-color:#E9A23B;} .bls-mt.cur{background:#10302B;color:#fff;border:0;box-shadow:0 0 0 3px #CDE6DE;}
+.blsm-n{display:flex;justify-content:space-between;font-size:13px;background:#F5F7F6;border-radius:12px;padding:10px 12px;color:var(--t2);} .blsm-n b{color:var(--t1);}
+.blsm-rev{min-height:50px;border-radius:14px;border:0;background:var(--teal);color:#fff;font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;}
+.blsm-f{font-size:11.5px;color:var(--t3,#5C706C);text-align:center;margin-top:-8px;}
 </style>
 <script id="nf-bls">// ══════════════════════════════════════════════════════════════
 // SIMPLE BASELINE (23 Nov 2026; canvas "Simple baseline", approved; question and split sheets reviewed by HealSol)
@@ -39194,12 +39238,18 @@ function blsTheme(di) { try { return blsT(SC_BASELINE[di].title, SC_BASELINE[di]
 function blsRender(di) {
   var cont = document.getElementById('card-container'); if (!cont) return;
   var c = getCHOCard(di), mine = blsMine(di), hi = blsHi();
-  if (_bls.di !== di) { _bls = { di: di, i: 0, review: false, want: null }; var first = mine.findIndex(function (ci) { return !blsSlideDone(di, ci); }); _bls.i = first < 0 ? 0 : first; _bls.review = first < 0 && mine.length > 0; }
+  if (_bls.di !== di) { var mem = blsMem(di); _bls = { di: di, i: 0, review: false, want: null, dir: 0, resumed: false }; var first = mine.findIndex(function (ci) { return !blsSlideDone(di, ci); });
+    if (first < 0 && mine.length) _bls.review = true;
+    else if (mine.length && mem.seen != null && mem.seen >= mine.length - 1) { _bls.review = true; _bls.i = first < 0 ? 0 : first; }
+    else if (mem.last != null && mem.last > 0 && mem.last < mine.length) { _bls.i = mem.last; _bls.resumed = true; }
+    else _bls.i = first < 0 ? 0 : first; }
   if (_bls.want != null) { var w = mine.indexOf(_bls.want); if (w >= 0) { _bls.i = w; _bls.review = false; } _bls.want = null; }
   var head = '<div class="bls-hd"><small>' + blsE(blsT('BASELINE · DAY ', 'बेसलाइन · दिन ') + (di + 1) + blsT(' OF ', ' / ') + blsBaseN()) + '</small><b>' + blsE(blsTheme(di)) + '</b></div>';
   if (c.taskDone) { cont.innerHTML = '<div class="bls">' + head + blsDoneHTML(di) + '</div>'; return; }
   if (!mine.length) { cont.innerHTML = '<div class="bls">' + head + '<div class="bls-card"><p>' + blsE(blsT('No checkpoints are assigned to your role on this day. Your colleagues answer them.', 'इस दिन आपकी भूमिका के लिए कोई चेकपॉइंट नहीं है। आपके साथी इनका उत्तर देंगे।')) + '</p></div></div>'; return; }
   if (_bls.i >= mine.length) { _bls.i = mine.length - 1; _bls.review = true; }
+  if (!_bls.review) blsMemSet(di, _bls.i); else blsMemSet(di, mine.length - 1, true);
+  blsMapClose();
   var body = _bls.review ? blsReviewHTML(di, mine) : blsSlideHTML(di, mine);
   var sent = c.sentBackAt ? '<div class="bls-warn">' + blsE(blsT('Your reviewer sent this day back — please check your answers again.', 'समीक्षक ने यह दिन वापस भेजा है — कृपया अपने उत्तर फिर जाँचें।')) + (c.sentBackNote ? ' ' + blsE(c.sentBackNote) : '') + '</div>' : '';
   cont.innerHTML = '<div class="bls">' + head + sent + body + '</div>';
@@ -39208,8 +39258,37 @@ function blsRender(di) {
     sl.addEventListener('touchstart', function (e) { var p = e.touches[0]; x0 = p.clientX; y0 = p.clientY; }, { passive: true });
     sl.addEventListener('touchend', function (e) { if (x0 == null) return; var p = e.changedTouches[0], dx = p.clientX - x0, dy = p.clientY - y0; x0 = null; if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) blsGo(dx < 0 ? 1 : -1); }, { passive: true }); }
 }
+// each checkpoint takes the next colour, so a swipe is plainly a new checkpoint (HealSol, 24 Nov 2026)
+var BLS_ACC = [['#1E6B5E', '#E6F2EF'], ['#2B5A9B', '#E8EEF8'], ['#74468A', '#F1E9F5'], ['#8A5410', '#F6EDE0'], ['#A23E5A', '#F7E6EC']];
+function blsBuzz() { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} }
+// where this person got to on each day (this phone only): seen = furthest checkpoint seen, last = where they were
+function blsMemKey(di) { var u = ''; try { u = (firebase.auth().currentUser || {}).uid || ''; } catch (e) {} return 'blsNav:' + (choState.facilityCode || '') + ':' + u + ':' + (choState.progId || '') + ':' + di; }
+function blsMem(di) { try { return JSON.parse(localStorage.getItem(blsMemKey(di)) || '{}') || {}; } catch (e) { return {}; } }
+function blsMemSet(di, i, all) { try { var m = blsMem(di); m.seen = Math.max(m.seen == null ? -1 : m.seen, i); if (!all) m.last = i; localStorage.setItem(blsMemKey(di), JSON.stringify(m)); } catch (e) {} }
+function blsCpState(di, ci, idx, seen) { var A = ((getCHOCard(di).blAns || {})[ci]) || {}, S = blsSlotsMine(getDay(di).cps[ci]), a = S.filter(function (s) { return blsDone1(s, A[s.id]); }).length;
+  return a === S.length ? 'a' : (a > 0 || idx <= seen) ? 's' : 'n'; }
+function blsMapRow(di, mine) {
+  var seen = blsMem(di).seen; seen = seen == null ? -1 : seen; var W = 11, st = Math.max(0, Math.min(_bls.i - 5, mine.length - W)), en = Math.min(mine.length, st + W), h = '';
+  if (st > 0) h += '<span class="bls-dm">' + st + '+</span>';
+  for (var k = st; k < en; k++) h += k === _bls.i ? '<span class="bls-d cur" style="background:' + BLS_ACC[k % BLS_ACC.length][0] + '">' + (k + 1) + '</span>' : '<span class="bls-d ' + blsCpState(di, mine[k], k, seen) + '"></span>';
+  if (en < mine.length) h += '<span class="bls-dm">+' + (mine.length - en) + '</span>';
+  return '<div class="bls-map"><div class="bls-dots" aria-hidden="true">' + h + '</div><button type="button" class="bls-mapb" onclick="blsMapOpen()">' + blsE(blsT('All checkpoints', 'सभी चेकपॉइंट')) + '</button></div>';
+}
+function blsMapClose() { var o = document.getElementById('bls-map'); if (o) o.remove(); }
+function blsMapOpen() {
+  var di = _bls.di; if (di == null) return; var mine = blsMine(di), seen = blsMem(di).seen; seen = seen == null ? -1 : seen; var n = { a: 0, s: 0, n: 0 };
+  var tiles = mine.map(function (ci, k) { var t = blsCpState(di, ci, k, seen); n[t]++;
+    return '<button type="button" class="bls-mt ' + t + (k === _bls.i && !_bls.review ? ' cur' : '') + '" onclick="blsJump(' + k + ')" aria-label="' + blsE(blsT('Checkpoint ', 'चेकपॉइंट ') + (k + 1)) + '">' + (k + 1) + '</button>'; }).join('');
+  blsMapClose(); var o = document.createElement('div'); o.id = 'bls-map'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+  o.innerHTML = '<div class="blsm-bg" onclick="blsMapClose()"></div><div class="blsm-sheet"><i class="blsm-grab"></i><div class="blsm-h"><div><b>' + blsE(blsT('Day ' + (di + 1) + ' · all checkpoints', 'दिन ' + (di + 1) + ' · सभी चेकपॉइंट')) + '</b><small>' + blsE(blsT('Tap a number to go straight to it', 'सीधे जाने के लिए नंबर छुएँ')) + '</small></div><button type="button" class="blsm-x" onclick="blsMapClose()" aria-label="' + blsE(blsT('Close', 'बंद करें')) + '"><i class="ti ti-x"></i></button></div>'
+    + '<div class="blsm-key"><span><i class="a"></i>' + blsE(blsT('Answered', 'उत्तर दिया')) + '</span><span><i class="s"></i>' + blsE(blsT('Skipped / part done', 'छोड़ा / अधूरा')) + '</span><span><i class="n"></i>' + blsE(blsT('Not seen yet', 'अभी नहीं देखा')) + '</span><span><i class="c"></i>' + blsE(blsT('You are here', 'आप यहाँ हैं')) + '</span></div>'
+    + '<div class="blsm-grid">' + tiles + '</div>'
+    + '<div class="blsm-n"><span><b>' + n.a + '</b> ' + blsE(blsT('answered', 'उत्तर दिए')) + '</span><span><b>' + n.s + '</b> ' + blsE(blsT('skipped', 'छोड़े')) + '</span><span><b>' + n.n + '</b> ' + blsE(blsT('to go', 'बाकी')) + '</span></div>'
+    + '<button type="button" class="blsm-rev" onclick="blsMapClose();blsToReview()">' + blsE(blsT('Go to review & submit', 'जाँचें और जमा करें पर जाएँ')) + '</button><small class="blsm-f">' + blsE(blsT('Submit unlocks when every checkpoint is answered', 'सभी चेकपॉइंट का उत्तर देने पर जमा खुलेगा')) + '</small></div>';
+  document.body.appendChild(o);
+}
 function blsProg(di, mine) { var n = mine.filter(function (ci) { return blsSlideDone(di, ci); }).length, tot = mine.length;
-  return '<div class="bls-prog"><div class="bls-pt"><b>' + n + blsT(' of ', ' / ') + tot + '</b><span>' + blsE(blsT('answered', 'उत्तर दिए')) + '</span><em>' + blsE(blsT('Checkpoint ' + (_bls.i + 1), 'चेकपॉइंट ' + (_bls.i + 1))) + '</em></div><div class="bls-pb"><i style="width:' + Math.round(n / Math.max(1, tot) * 100) + '%"></i></div></div>'; }
+  return '<div class="bls-prog"><div class="bls-pt"><b>' + n + blsT(' of ', ' / ') + tot + '</b><span>' + blsE(blsT('answered', 'उत्तर दिए')) + '</span><em>' + blsE(blsT('Checkpoint ' + (_bls.i + 1) + ' of ' + tot, 'चेकपॉइंट ' + (_bls.i + 1) + ' / ' + tot)) + '</em></div><div class="bls-pb"><i style="width:' + Math.round(n / Math.max(1, tot) * 100) + '%"></i></div></div>'; }
 // button words by answer type (staff) — HealSol master sheet, "Button wording"
 var BLS_BTN = {
   disp: [['Displayed', 'लगा है'], ['Not displayed', 'नहीं लगा']], avail: [['Available & working', 'उपलब्ध और चालू'], ['Not available', 'उपलब्ध नहीं / ख़राब']],
@@ -39258,8 +39337,10 @@ function blsSlideHTML(di, mine) {
   var ci = mine[_bls.i], d = getDay(di), cp = d.cps[ci], A = ((getCHOCard(di).blAns || {})[ci]) || {}, S = blsSlotsMine(cp);
   var rows = S.map(function (s) { return blsRowHTML(di, ci, s, A[s.id], S.length === 1); }).join('');
   var nItems = S.length;
-  return blsProg(di, mine)
-    + '<div class="bls-slide"><div class="bls-card"><span class="bls-k">' + blsE(cp.id || '') + (nItems > 1 ? ' · ' + blsE(blsT(nItems + ' THINGS TO CHECK', 'जाँचने की ' + nItems + ' बातें')) : '') + '</span><div class="bls-cpt">' + (typeof getCPText === 'function' ? getCPText(cp) : blsE(cp.t)) + '</div>' + rows + '</div></div>'
+  var acc = BLS_ACC[_bls.i % BLS_ACC.length], anim = _bls.dir > 0 ? ' in-r' : _bls.dir < 0 ? ' in-l' : '';
+  var resumed = _bls.resumed ? '<div class="bls-resume"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CDE6DE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path><path d="M12 8v4l3 2"></path></svg><span>' + blsE(blsT('Picked up where you left off', 'जहाँ छोड़ा था वहीं से')) + '</span><button type="button" onclick="blsJump(0)">' + blsE(blsT('Start from 1', '1 से शुरू करें')) + '</button></div>' : '';
+  return resumed + blsProg(di, mine) + blsMapRow(di, mine)
+    + '<div class="bls-slide' + anim + '"><div class="bls-card bls-acc" style="--acc:' + acc[0] + ';--acc-t:' + acc[1] + '"><i class="bls-band"></i><div class="bls-chd"><span class="bls-num">' + (_bls.i + 1) + '</span><div class="bls-chm"><span class="bls-k">' + blsE(cp.id || '') + (nItems > 1 ? ' · ' + blsE(blsT(nItems + ' THINGS TO CHECK', 'जाँचने की ' + nItems + ' बातें')) : '') + '</span><div class="bls-cpt">' + (typeof getCPText === 'function' ? getCPText(cp) : blsE(cp.t)) + '</div></div></div><div class="bls-cbody">' + rows + '</div></div></div>'
     + '<p class="bls-swipe">' + blsE(blsT('‹ swipe for the previous / next checkpoint ›', '‹ पिछले / अगले चेकपॉइंट के लिए स्वाइप करें ›')) + '</p>'
     + '<div class="bls-spacer"></div><div class="bls-nav bls-fixed"><button type="button" class="bls-back" onclick="blsGo(-1)"' + (_bls.i === 0 ? ' disabled' : '') + '>‹ ' + blsE(blsT('Back', 'वापस')) + '</button><button type="button" class="bls-next' + (_bls.i < mine.length - 1 && !blsSlideDone(di, ci) ? ' skip' : '') + '" onclick="blsGo(1)">' + blsE(_bls.i === mine.length - 1 ? blsT('Review & submit', 'जाँचें और जमा करें') : blsSlideDone(di, ci) ? blsT('Next', 'आगे') : blsT('Skip for now', 'अभी छोड़ें')) + ' ›</button></div>';
 }
@@ -39282,9 +39363,11 @@ function blsGo(step) {
   var di = _bls.di; if (di == null) return; var mine = blsMine(di);
   if (_bls.review) { if (step < 0) { _bls.review = false; _bls.i = mine.length - 1; } }
   else { var n = _bls.i + step; if (n < 0) return; if (n >= mine.length) { _bls.review = true; } else _bls.i = n; }
+  _bls.dir = step; _bls.resumed = false; blsBuzz();
   blsRender(di); try { var cc = document.getElementById('card-container'); if (cc && cc.scrollIntoView) cc.scrollIntoView({ block: 'start' }); } catch (e) {}
 }
-function blsJump(i) { _bls.review = false; _bls.i = i; blsRender(_bls.di); }
+function blsJump(i) { _bls.dir = i > _bls.i || _bls.review ? 1 : i < _bls.i ? -1 : 0; _bls.review = false; _bls.i = i; _bls.resumed = false; blsBuzz(); blsRender(_bls.di); try { var cc = document.getElementById('card-container'); if (cc && cc.scrollIntoView) cc.scrollIntoView({ block: 'start' }); } catch (e) {} }
+function blsToReview() { _bls.review = true; _bls.dir = 0; _bls.resumed = false; blsRender(_bls.di); }
 function blsReviewHTML(di, mine) {
   var c = getCHOCard(di), d = getDay(di), hi = blsHi(), met = 0, not = 0, ns = 0, qa = 0, open = 0;
   var rows = mine.map(function (ci, i) {
@@ -39300,7 +39383,9 @@ function blsReviewHTML(di, mine) {
   var list = (nOpen ? '<div class="bls-lh">' + blsE(blsT('Skipped — still to answer (' + nOpen + ')', 'छोड़े गए — उत्तर बाकी (' + nOpen + ')')) + '</div>' + rows.filter(function (r) { return r.open; }).map(function (r) { return r.h; }).join('') + '<div class="bls-lh">' + blsE(blsT('Answered', 'उत्तर दिए')) + '</div>' : '')
     + rows.filter(function (r) { return !r.open; }).map(function (r) { return r.h; }).join('');
   var tiles = '<div class="bls-tiles"><div class="y"><b>' + met + '</b><small>' + blsE(blsT('Met', 'पूरा')) + '</small></div><div class="n"><b>' + not + '</b><small>' + blsE(blsT('Not met', 'पूरा नहीं')) + '</small></div><div class="q"><b>' + ns + '</b><small>' + blsE(blsT('Not sure', 'पता नहीं')) + '</small></div>' + (qa ? '<div class="w"><b>' + qa + '</b><small>' + blsE(blsT('lists & questions', 'सूची और प्रश्न')) + '</small></div>' : '') + '</div>';
-  return '<div class="bls-rev"><b class="bls-rh">' + blsE(blsT('Review & submit', 'जाँचें और जमा करें')) + '</b>' + tiles + '<div class="bls-card bls-list">' + list + '</div>'
+  var firstOpen = mine.findIndex(function (ci) { return !blsSlideDone(di, ci); });
+  var where = nOpen ? '<div class="bls-where"><b>' + blsE(blsT('You have seen all ' + mine.length + ' checkpoints. ' + nOpen + ' still to answer, then you can submit Day ' + (di + 1) + '.', 'आपने सभी ' + mine.length + ' चेकपॉइंट देख लिए। ' + nOpen + ' का उत्तर बाकी है, फिर दिन ' + (di + 1) + ' जमा कर सकते हैं।')) + '</b><div><button type="button" class="p" onclick="blsJump(' + firstOpen + ')">' + blsE(blsT('Answer the ' + nOpen + ' skipped', 'छोड़े गए ' + nOpen + ' का उत्तर दें')) + '</button><button type="button" onclick="blsMapOpen()">' + blsE(blsT('All checkpoints', 'सभी चेकपॉइंट')) + '</button></div></div>' : '';
+  return '<div class="bls-rev"><b class="bls-rh">' + blsE(blsT('Review & submit', 'जाँचें और जमा करें')) + '</b>' + where + tiles + '<div class="bls-card bls-list">' + list + '</div>'
     + '<p class="bls-dim">' + blsE(blsT('Tap any line to change it before you submit. There is no score here.', 'जमा करने से पहले कोई भी पंक्ति छूकर बदलें। यहाँ कोई स्कोर नहीं है।')) + '</p>'
     + (open ? '<div class="bls-warn">' + blsE(blsT(open + ' answer' + (open === 1 ? '' : 's') + ' still needed.', open + ' उत्तर अभी बाकी।')) + '</div>' : '')
     + '<button type="button" class="bls-submit" onclick="blsSubmit(' + di + ')"' + (open ? ' disabled' : '') + '>' + blsE(blsT('Submit Day ' + (di + 1), 'दिन ' + (di + 1) + ' जमा करें')) + '</button>'
