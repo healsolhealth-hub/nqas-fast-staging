@@ -40072,6 +40072,21 @@ function blsItemGap(s, str, i) {
     return '<div class="bls-row">' + txt + '<div class="bls-items">' + body + '</div></div>';
   };
 })();
+
+// 26 Nov 2026 (live release): answers saved before the item rows changed shape (e.g. one answer per drug, now one per form)
+// no longer line up with the rows. On a day not yet submitted, such a line is cleared so staff answer it again with the new
+// rows; a submitted day keeps its saved scores untouched.
+function blsShapeFix(di) {
+  var c = getCHOCard(di), d = getDay(di); if (!c || !d || !d.cps || c.taskDone || !c.blAns) return 0;
+  var n = 0;
+  d.cps.forEach(function (cp, ci) { var A = c.blAns[ci]; if (!cp || !A) return; var hit = false;
+    blsSlots(cp).forEach(function (s) { if (s.kind !== 'list' || !s.items) return; var v = A[s.id]; if (v == null || v === '') return;
+      if (String(v).length !== s.items.length) { delete A[s.id]; hit = true; n++; } });
+    if (hit) { try { blsApply(di, ci); } catch (e) {} } });
+  if (n) { try { saveCHOState(); } catch (e) {} }
+  return n;
+}
+(function () { var orig = blsRender; blsRender = function (di) { try { if (!(_bls && _bls.di === di)) blsShapeFix(di); } catch (e) {} return orig.apply(this, arguments); }; })();
 </script>
 <style id="nf-imf-css">/* implementation as Fix → Re-check (24 Nov 2026) */
 .imf-hero .imf-hk{display:flex;justify-content:space-between;gap:10px;position:relative;}
@@ -40370,6 +40385,7 @@ function imfAnsText(s, raw) {   // what an answer said, in the staff member's wo
   if (raw === undefined || raw === null || raw === '') return imfT('Not answered', 'उत्तर नहीं');
   var hi = typeof blsHi === 'function' && blsHi();
   if (s.kind === 'mcq') return /^o/.test(String(raw)) && blsVal(s, raw) === 1 ? imfT('Answered right', 'सही उत्तर') : imfT('Answer was not right', 'उत्तर सही नहीं था');
+  if (s.kind === 'list' && String(raw).length !== (s.items || []).length) return imfT('Some items were missing (answered before the list was split by item)', 'कुछ चीज़ें कम थीं (सूची बँटने से पहले का उत्तर)');
   if (s.kind === 'list') { var str = String(raw), out = (s.items || []).map(function (x, i) { var g = typeof blsItemGap === 'function' ? blsItemGap(s, str, i) : (str.charAt(i) === '0' ? '' : null); return g === null ? null : x.n + (g ? ' (' + g + ')' : ''); }).filter(function (x) { return x !== null; }); return out.length ? imfT('Not in place: ', 'मौजूद नहीं: ') + out.join(', ') : imfT('All in place', 'सब मौजूद'); }
   if (s.kind === 'sample') return imfT(raw + ' of 5 records complete', '5 में से ' + raw + ' रिकॉर्ड पूरे');
   if (s.kind === 'ind') return imfT('Not recorded for every month', 'हर महीने दर्ज नहीं');
