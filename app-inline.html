@@ -1545,6 +1545,11 @@ textarea.scx-in{resize:vertical;min-height:70px;}
 .scx-vfac-hd span{font-weight:700;font-size:10.5px;color:var(--t3);margin-left:4px;}
 #scx-adm-vq-badge{top:-7px;right:-7px;}
 .scx-chk.scx-off{display:none!important;}
+/* 26 Nov 2026: find a checkpoint in a verification card */
+.scx-vfind{display:flex;align-items:center;gap:8px;min-height:44px;margin:8px 0 2px;border:1.5px solid var(--br);border-radius:12px;background:#fff;padding:0 10px;}
+.scx-vfind:focus-within{border-color:var(--teal,#1E6B5E);} .scx-vfind i{color:var(--t3);font-size:16px;}
+.scx-vfind input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:13px;color:var(--t1);min-height:40px;}
+.scx-vfind-n{display:block;font-size:11.5px;color:var(--t3);margin-bottom:4px;} .scx-vfind-n:empty{display:none;}
 </style>
 
 <style id="nf-boot-css">
@@ -7667,7 +7672,7 @@ function scVCpRowHTML(ctx,mob,di,ci,rec,interactive,tag){
   var note=gr&&gr.closed?' · re-attempt closed at Full (was '+(gr.orig===0?'Zero':'Half')+')':'';
   var v=scCpvValid(rec,ci), stale=scCpvStale(rec,ci);
   var jc=scJs(ctx.code), jm=scJs(mob);
-  var h='<div class="scx-vp-cp'+(v?' done':'')+'" id="'+scVId(ctx.code,mob,di,ci)+'">'+scScoreTag(sc)+'<div style="flex:1;min-width:0;">'
+  var h='<div class="scx-vp-cp'+(v?' done':'')+'" id="'+scVId(ctx.code,mob,di,ci)+'" data-f="'+scEsc([cp.id,getCPText(cp),cp.t,cp.me,scCpRoleText(cp)].join(' ').toLowerCase())+'">'+scScoreTag(sc)+'<div style="flex:1;min-width:0;">'
     +(tag?'<span class="scx-vtag '+tag.cls+'">'+tag.txt+'</span>':'')
     +'<div>'+scEsc(getCPText(cp))+'</div><div class="scx-vp-meta">'+scEsc(scCpRoleText(cp))+(cp.me?' · '+scEsc(cp.me):'')+scEsc(note)+'</div>';
   if(v){
@@ -7685,6 +7690,14 @@ function scVCpRowHTML(ctx,mob,di,ci,rec,interactive,tag){
     h+='<div class="scx-vp-meta" style="color:#15803D;">Accepted after sample verification</div>';
   }
   return h+'</div></div>';
+}
+function scVFind(inp){
+  var box=inp.closest('.scx-vp-staff'); if(!box) return; var q=String(inp.value||'').trim().toLowerCase(), n=box.querySelector('.scx-vfind-n');
+  var res=q.length<2?null:q.split(/\s+/).map(function(w){ return new RegExp('(^|[^a-z0-9])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')); });
+  var rows=[].slice.call(box.querySelectorAll('.scx-vp-cp')), hit=0;
+  rows.forEach(function(r){ var ok=!res||res.every(function(re){ return re.test(r.getAttribute('data-f')||''); }); r.style.display=ok?'':'none'; if(ok) hit++;
+    if(ok&&res){ var d=r.closest('details'); if(d) d.open=true; } });
+  if(n) n.textContent=res?(hit?hit+' of '+rows.length+' checkpoints match “'+inp.value.trim()+'”':'Nothing matches “'+inp.value.trim()+'” in this card. Try a checkpoint ID like E-135, or one word.'):'';
 }
 function scVProgressHTML(done,total,sampled){
   var pct=total?Math.round(done/total*100):0;
@@ -7715,6 +7728,8 @@ function scVStaffHTML(ctx,mob,di){
       +'. The other '+plan.optional.length+' Full score'+(plan.optional.length===1?' is':'s are')+' accepted when you complete.</div>';
   }
   h+='<div id="'+bid+'-prog">'+scVProgressHTML(done,plan.required.length,plan.sampled)+'</div>';
+  // 26 Nov 2026: find a checkpoint in this card (Champions and other verifiers)
+  if(plan.idx.length>=6) h+='<label class="scx-vfind"><i class="ti ti-search" aria-hidden="true"></i><input type="search" autocomplete="off" aria-label="Find a checkpoint in this card" placeholder="Find in this card — ID or words, e.g. E-135" oninput="scVFind(this)"/></label><small class="scx-vfind-n"></small>';
   h+=plan.required.map(function(ci){
     var s=scNormScore((rec.cpScores||[])[ci]);
     var tag=plan.sampled?((s!==2||(rec.gapRetries||{})['c'+ci])?{cls:'gap',txt:'Gap / re-attempt'}:{cls:'rnd',txt:'Random sample'}):null;
@@ -7739,7 +7754,7 @@ function scVRefreshBlock(ctx,mob,di){
     var inp=r.querySelector('.scx-cpv-in'); if(!inp) return;
     keep[r.id]={v:inp.value,on:[].map.call(r.querySelectorAll('.scx-m.on'),function(b){ return b.getAttribute('data-m'); })};
   });
-  var ta=el.querySelector('.scx-vp-ta'), taV=ta?ta.value:'';
+  var ta=el.querySelector('.scx-vp-ta'), taV=ta?ta.value:''; var fi=el.querySelector('.scx-vfind input'), fiV=fi?fi.value:'';
   var opt=el.querySelector('.scx-vopt'), optOpen=opt?opt.open:false;
   var tmp=document.createElement('div'); tmp.innerHTML=scVStaffHTML(ctx,mob,di);
   var neu=tmp.firstChild; if(!neu){ el.remove(); return true; }
@@ -7748,7 +7763,7 @@ function scVRefreshBlock(ctx,mob,di){
     var r=document.getElementById(id); if(!r) return; var inp=r.querySelector('.scx-cpv-in'); if(inp) inp.value=keep[id].v;
     keep[id].on.forEach(function(m){ var b=r.querySelector('.scx-m[data-m="'+m+'"]'); if(b) b.classList.add('on'); });
   });
-  var ta2=neu.querySelector('.scx-vp-ta'); if(ta2) ta2.value=taV;
+  var ta2=neu.querySelector('.scx-vp-ta'); if(ta2) ta2.value=taV; var fi2=neu.querySelector('.scx-vfind input'); if(fi2&&fiV){ fi2.value=fiV; scVFind(fi2); }
   var opt2=neu.querySelector('.scx-vopt'); if(opt2&&optOpen) opt2.open=true;
   return true;
 }
@@ -39227,6 +39242,31 @@ body.nf-fadm .bls-nav.bls-fixed{bottom:0;padding-bottom:calc(10px + env(safe-are
 .bls-pick{border-left:0;padding:0;} .bls-ib.bls-all{min-height:36px;border-radius:18px;padding:4px 14px;min-width:0;}
 .bls-pk-f{display:flex;justify-content:space-between;align-items:center;gap:8px;} .bls-pk-f small{flex:1;}
 .bls-ib.bls-all:not(.on){border:1.5px solid var(--teal,#1E6B5E);color:var(--teal,#1E6B5E);}
+
+/* 26 Nov 2026: chips keep their size when ticked (tick is a corner badge, same border width), "All N" on its own line */
+.bls-chp{position:relative;border-width:1.5px;}
+.bls-chp.on{border-width:1.5px;border-color:#10302B;box-shadow:inset 0 0 0 1px #10302B;}
+.bls-chp.on::after{content:'✓';position:absolute;top:-6px;right:-5px;width:16px;height:16px;border-radius:50%;background:#1E6B5E;color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:700;}
+.bls-chp.miss.on::after{content:'✕';background:#8A5410;}
+.bls-chps>.bls-ib.bls-all{flex:1 0 100%;margin-top:2px;}
+
+/* 26 Nov 2026: find a checkpoint (inside All checkpoints) */
+.blsm-q{display:flex;align-items:center;gap:10px;min-height:48px;border-radius:14px;border:1.5px solid var(--br,#DCE4E1);background:#fff;padding:0 8px 0 12px;}
+.blsm-q:focus-within{border-color:var(--teal,#1E6B5E);}
+.blsm-q i{color:#5C706C;font-size:18px;} .blsm-q input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:14px;color:var(--t1,#10302B);min-height:44px;}
+.blsm-q input::-webkit-search-cancel-button{display:none;}
+.blsm-qx{width:32px;height:32px;border-radius:50%;border:0;background:#EEF2F1;color:#3E5551;font-size:13px;cursor:pointer;flex:none;}
+#blsm-res,#blsm-all{display:flex;flex-direction:column;gap:8px;} #blsm-all{gap:14px;} #blsm-res[hidden],#blsm-all[hidden]{display:none;}
+.blsm-rn{font-size:12px;color:var(--t3,#5C706C);}
+.blsm-r{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px;border-radius:14px;border:1px solid #E3EAE8;background:#fff;font:inherit;color:var(--t1,#10302B);cursor:pointer;width:100%;}
+.blsm-r.lock{background:#F7F9F8;cursor:default;} .blsm-r.lock .blsm-rt{opacity:.8;}
+.blsm-r .bls-mt{width:38px;height:38px;min-height:38px;flex:none;font-size:14px;}
+.blsm-rt{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;} .blsm-rt small{font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--teal,#1E6B5E);}
+.blsm-rt b{font-size:13.5px;line-height:1.35;font-weight:600;} .blsm-rt em{font-style:normal;font-size:12px;color:#5C706C;}
+.blsm-tag{align-self:flex-start;font-style:normal;font-size:11px;font-weight:600;padding:2px 9px;border-radius:10px;margin-top:2px;background:#EEF2F1;color:#3E5551;}
+.blsm-tag.a{background:#E6F2EF;color:#1E6B5E;} .blsm-tag.s{background:#FBEFD5;color:#8A5410;} .blsm-tag.cur{background:#10302B;color:#fff;} .blsm-tag.lock{background:#FBEFD5;color:#8A5410;}
+.blsm-r .bls-mt{display:flex;align-items:center;justify-content:center;}
+.blsm-sheet.q{height:86vh;}
 </style>
 <script id="nf-bls">// ══════════════════════════════════════════════════════════════
 // SIMPLE BASELINE (23 Nov 2026; canvas "Simple baseline", approved; question and split sheets reviewed by HealSol)
@@ -39368,12 +39408,53 @@ function blsMapOpen() {
   var tiles = mine.map(function (ci, k) { var t = blsCpState(di, ci, k, seen); n[t]++;
     return '<button type="button" class="bls-mt ' + t + (k === _bls.i && !_bls.review ? ' cur' : '') + '" onclick="blsJump(' + k + ')" aria-label="' + blsE(blsT('Checkpoint ', 'चेकपॉइंट ') + (k + 1)) + '">' + (k + 1) + '</button>'; }).join('');
   blsMapClose(); var o = document.createElement('div'); o.id = 'bls-map'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
-  o.innerHTML = '<div class="blsm-bg" onclick="blsMapClose()"></div><div class="blsm-sheet"><i class="blsm-grab"></i><div class="blsm-h"><div><b>' + blsE(blsT('Day ' + (di + 1) + ' · all checkpoints', 'दिन ' + (di + 1) + ' · सभी चेकपॉइंट')) + '</b><small>' + blsE(blsT('Tap a number to go straight to it', 'सीधे जाने के लिए नंबर छुएँ')) + '</small></div><button type="button" class="blsm-x" onclick="blsMapClose()" aria-label="' + blsE(blsT('Close', 'बंद करें')) + '"><i class="ti ti-x"></i></button></div>'
+  o.innerHTML = '<div class="blsm-bg" onclick="blsMapClose()"></div><div class="blsm-sheet"><i class="blsm-grab"></i><div class="blsm-h"><div><b>' + blsE(blsT('Day ' + (di + 1) + ' · all checkpoints', 'दिन ' + (di + 1) + ' · सभी चेकपॉइंट')) + '</b><small>' + blsE(blsT('Tap a number, or search by ID or words', 'नंबर छुएँ, या ID / शब्द से खोजें')) + '</small></div><button type="button" class="blsm-x" onclick="blsMapClose()" aria-label="' + blsE(blsT('Close', 'बंद करें')) + '"><i class="ti ti-x"></i></button></div>'
+    + '<label class="blsm-q"><i class="ti ti-search" aria-hidden="true"></i><input id="blsm-q" type="search" autocomplete="off" aria-label="' + blsE(blsT('Search checkpoints', 'चेकपॉइंट खोजें')) + '" placeholder="' + blsE(blsT('Search ID or words, e.g. E-135, ANC', 'ID या शब्द खोजें, जैसे E-135, ANC')) + '" oninput="blsFind(this.value)"><button type="button" class="blsm-qx" hidden onclick="var q=document.getElementById(\'blsm-q\');q.value=\'\';blsFind(\'\');q.focus()" aria-label="' + blsE(blsT('Clear', 'साफ़ करें')) + '">✕</button></label><div id="blsm-res" hidden></div><div id="blsm-all">'
     + '<div class="blsm-key"><span><i class="a"></i>' + blsE(blsT('Answered', 'उत्तर दिया')) + '</span><span><i class="s"></i>' + blsE(blsT('Skipped / part done', 'छोड़ा / अधूरा')) + '</span><span><i class="n"></i>' + blsE(blsT('Not seen yet', 'अभी नहीं देखा')) + '</span><span><i class="c"></i>' + blsE(blsT('You are here', 'आप यहाँ हैं')) + '</span></div>'
     + '<div class="blsm-grid">' + tiles + '</div>'
     + '<div class="blsm-n"><span><b>' + n.a + '</b> ' + blsE(blsT('answered', 'उत्तर दिए')) + '</span><span><b>' + n.s + '</b> ' + blsE(blsT('skipped', 'छोड़े')) + '</span><span><b>' + n.n + '</b> ' + blsE(blsT('to go', 'बाकी')) + '</span></div>'
-    + '<button type="button" class="blsm-rev" onclick="blsMapClose();blsToReview()">' + blsE(blsT('Go to review & submit', 'जाँचें और जमा करें पर जाएँ')) + '</button><small class="blsm-f">' + blsE(blsT('Submit unlocks when every checkpoint is answered', 'सभी चेकपॉइंट का उत्तर देने पर जमा खुलेगा')) + '</small></div>';
+    + '<button type="button" class="blsm-rev" onclick="blsMapClose();blsToReview()">' + blsE(blsT('Go to review & submit', 'जाँचें और जमा करें पर जाएँ')) + '</button><small class="blsm-f">' + blsE(blsT('Submit unlocks when every checkpoint is answered', 'सभी चेकपॉइंट का उत्तर देने पर जमा खुलेगा')) + '</small></div></div>';
   document.body.appendChild(o);
+}
+// 26 Nov 2026: find a checkpoint — inside "All checkpoints". Looks in the ID, title, question and the parts to tick,
+// across every baseline day (this day first). Open days jump straight to the card; days to come say when they open.
+function blsTxt(x) { return String(x == null ? '' : x).replace(/<[^>]*>/g, ' ').toLowerCase(); }
+function blsFindList(q) {
+  q = String(q || '').trim().toLowerCase(); if (q.length < 2) return [];
+  var words = q.split(/\s+/), res = words.map(function (w) { return new RegExp('(^|[^a-z0-9])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); }), has = function (t) { return res.every(function (r) { return r.test(t); }); }, cur = _bls.di, out = [], N = blsBaseN(), order = [cur];
+  for (var d = 0; d < N; d++) if (d !== cur) order.push(d);
+  order.forEach(function (di) { var day = getDay(di); if (!day || !day.cps) return; var mine = blsMine(di);
+    mine.forEach(function (ci, k) { var cp = day.cps[ci]; if (!cp) return; var S = blsSlotsMine(cp), parts = [];
+      var hay = [cp.id, cp.t, typeof getCPText === 'function' ? getCPText(cp) : ''].concat(S.map(function (sl) { return [sl.t, sl.h, sl.q && (sl.q.q || sl.q.t)].join(' '); })).map(blsTxt).join(' ');
+      S.forEach(function (sl) { (sl.items || []).forEach(function (it) { var n = String(it.n || ''); if (has(n.toLowerCase())) parts.push(n); }); });
+      var all = hay + ' ' + S.map(function (sl) { return (sl.items || []).map(function (it) { return blsTxt(it.n); }).join(' '); }).join(' ');
+      if (has(all)) out.push({ di: di, ci: ci, k: k, cp: cp, parts: parts, idHit: String(cp.id || '').toLowerCase().indexOf(q) === 0 }); }); });
+  out.sort(function (a, b) { return (b.idHit - a.idHit) || ((a.di === cur ? 0 : 1) - (b.di === cur ? 0 : 1)) || (a.di - b.di) || (a.k - b.k); });
+  return out;
+}
+function blsFind(q) {
+  var res = document.getElementById('blsm-res'), all = document.getElementById('blsm-all'), x = document.querySelector('#bls-map .blsm-qx'); if (!res || !all) return;
+  var on = String(q || '').trim().length >= 2; res.hidden = !on; all.hidden = on; var sh = res.closest && res.closest('.blsm-sheet'); if (sh) sh.classList.toggle('q', !!String(q || '').length); if (x) x.hidden = !String(q || '').length; if (!on) { res.innerHTML = ''; return; }
+  var L = blsFindList(q), cur = _bls.di, nCur = L.filter(function (r) { return r.di === cur; }).length, shown = L.slice(0, 30);
+  var esc = function (t) { return blsE(t); };
+  var row = function (r) {
+    var c = getCHOCard(r.di), open = scDayUnlocked(r.di), seen = blsMem(r.di).seen, st = blsCpState(r.di, r.ci, r.k, seen == null ? -1 : seen);
+    var here = r.di === cur && r.k === _bls.i && !_bls.review, tile = here ? 'cur' : st;
+    var tag = here ? [blsT('You are here', 'आप यहाँ हैं'), 'cur'] : !open ? [blsT('Opens', 'खुलेगा') + ' ' + (typeof scb2DayShort === 'function' && scb2DayShort(r.di) ? scb2DayShort(r.di) : blsT('on Day ', 'दिन ') + (r.di + 1)), 'lock']
+      : c.taskDone ? [blsT('Answered · Day ' + (r.di + 1) + ' submitted', 'उत्तर दिया · दिन ' + (r.di + 1) + ' जमा'), 'a'] : st === 'a' ? [blsT('Answered', 'उत्तर दिया'), 'a'] : st === 's' ? [blsT('Skipped / part done', 'छोड़ा / अधूरा'), 's'] : [blsT('Not seen yet', 'अभी नहीं देखा'), 'n'];
+    var title = typeof getCPText === 'function' ? blsTxt(getCPText(r.cp)) && getCPText(r.cp) : esc(r.cp.t);
+    return '<button type="button" class="blsm-r' + (open ? '' : ' lock') + '"' + (open ? ' onclick="blsFindGo(' + r.di + ',' + r.ci + ')"' : ' aria-disabled="true"') + '><span class="bls-mt ' + tile + '">' + (r.k + 1) + '</span><span class="blsm-rt"><small>' + esc(r.cp.id || '') + ' · ' + esc(blsT('Day ' + (r.di + 1) + ' · no. ' + (r.k + 1), 'दिन ' + (r.di + 1) + ' · क्र. ' + (r.k + 1))) + '</small><b>' + title + '</b>'
+      + (r.parts.length ? '<em>' + esc(blsT('Part: ', 'भाग: ')) + r.parts.slice(0, 3).map(esc).join(' · ') + '</em>' : '') + '<i class="blsm-tag ' + tag[1] + '">' + esc(tag[0]) + '</i></span></button>';
+  };
+  res.innerHTML = '<small class="blsm-rn">' + esc(L.length ? blsT(L.length + ' checkpoint' + (L.length === 1 ? '' : 's') + ' match' + (L.length === 1 ? 'es' : '') + ' “' + String(q).trim() + '”' + (nCur && nCur < L.length ? ' · this day first' : ''), '“' + String(q).trim() + '” से ' + L.length + ' चेकपॉइंट मिले') : blsT('Nothing matches “' + String(q).trim() + '”. Try a checkpoint ID like E-135, or one word.', '“' + String(q).trim() + '” से कुछ नहीं मिला। E-135 जैसी ID या एक शब्द आज़माएँ।')) + '</small>'
+    + shown.map(row).join('') + (L.length > shown.length ? '<small class="blsm-rn">' + esc(blsT('Showing the first 30 — type more to narrow down.', 'पहले 30 दिखाए — और लिखकर छाँटें।')) + '</small>' : '');
+}
+function blsFindGo(di, ci) {
+  blsMapClose(); if (!scDayUnlocked(di)) return;
+  if (di !== _bls.di) { try { if (typeof renderCard === 'function') renderCard(di); else blsRender(di); } catch (e) { blsRender(di); } }
+  var mine = blsMine(di), k = mine.indexOf(ci); if (k < 0) return;
+  if (getCHOCard(di).taskDone) return;   // a submitted day opens on its summary
+  blsJump(k);
 }
 // a simple line drawing for each day's theme (baseline day d, or implementation week d) — original drawings, no emblems
 function blsArt(d) {
@@ -39492,8 +39573,9 @@ function blsSet(di, ci, id, val) {
   if (!scDayUnlocked(di)) return; var c = getCHOCard(di); if (c.taskDone) return;
   var A = blsAns(c, ci); A[id] = val;
   blsApply(di, ci); saveCHOState();
-  var done = blsSlideDone(di, ci); blsRender(di);
-  if (done && _bls.di === di && !_bls.review) { var mine = blsMine(di); if (mine[_bls.i] === ci) blsTick(); if (mine[_bls.i] === ci) setTimeout(function () { if (_bls.di === di && !_bls.review && blsMine(di)[_bls.i] === ci && blsSlideDone(di, ci)) blsGo(1); }, 450); }
+  var done = blsSlideDone(di, ci), y = window.scrollY; _bls.dir = 0; blsRender(di);   // 26 Nov: an answer never replays the slide-in
+  try { if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); } catch (e) {}
+  if (done && !_bls.hold && _bls.di === di && !_bls.review) { var mine = blsMine(di); if (mine[_bls.i] === ci) blsTick(); if (mine[_bls.i] === ci) setTimeout(function () { if (_bls.di === di && !_bls.review && blsMine(di)[_bls.i] === ci && blsSlideDone(di, ci)) blsGo(1); }, 450); }
 }
 function blsGo(step) {
   var di = _bls.di; if (di == null) return; var mine = blsMine(di);
@@ -39913,6 +39995,15 @@ function blsItemState(s, str, i) {
   };
 })();
 
+// 26 Nov 2026: a chip tap (a drug form, or one part of a list) keeps the card still — no slide replay, no jump to the
+// next checkpoint while staff are still ticking. It moves on by itself only when every part of a list is ticked.
+function blsPartTap(di, ci, id, n, len, val) {
+  var c = getCHOCard(di), str = String(((c.blAns || {})[ci] || {})[id] || ''); while (str.length < len) str += '-';
+  var after = str.slice(0, n) + val + str.slice(n + 1), sl = blsSlots(getDay(di).cps[ci]).filter(function (x) { return x.id === id; })[0];
+  _bls.hold = !(sl && (sl.ty === 'some' || sl.ty === 'somerec') && /^1+$/.test(after.slice(0, len)));
+  try { blsSetItem(di, ci, id, n, len, val); } finally { _bls.hold = false; }
+}
+
 // set several items at once (Not available for a drug, All there, Some missing)
 function blsSetRange(di, ci, id, len, from, to, val) {
   var c = getCHOCard(di); if (c.taskDone || !scDayUnlocked(di)) return; var A = blsAns(c, ci), str = String(A[id] || '');
@@ -39938,7 +40029,7 @@ function blsItemGap(s, str, i) {
     var q = function (x) { return '\'' + String(x).replace(/\\/g, '\\\\').replace(/'/g, '\\\'') + '\''; };
     var one = function (n, val, lab, extra) { var on = str.charAt(n) === val; return '<button type="button" aria-pressed="' + on + '" class="bls-ib' + (on ? ' on' : '') + (extra || '') + '" onclick="blsSetItem(' + di + ',' + ci + ',' + q(s.id) + ',' + n + ',' + len + ',' + q(val) + ')">' + (on ? '✓ ' : '') + blsE(blsT(lab[0], lab[1])) + '</button>'; };
     var range = function (from, to, val, lab, on, keep) { return '<button type="button" aria-pressed="' + on + '" class="bls-ib' + (on ? ' on' : '') + '" onclick="' + (keep ? 'void(0)' : 'blsSetRange(' + di + ',' + ci + ',' + q(s.id) + ',' + len + ',' + from + ',' + to + ',' + q(val) + ')') + '">' + (on ? '✓ ' : '') + blsE(blsT(lab[0], lab[1])) + '</button>'; };
-    var chip = function (n, val, label, on, cls) { return '<button type="button" aria-pressed="' + on + '" class="bls-chp' + (on ? ' on' : '') + (cls || '') + '" onclick="blsSetItem(' + di + ',' + ci + ',' + q(s.id) + ',' + n + ',' + len + ',' + q(val) + ')">' + (on ? (cls ? '✕ ' : '✓ ') : '') + blsE(label) + '</button>'; };
+    var chip = function (n, val, label, on, cls) { return '<button type="button" aria-pressed="' + on + '" class="bls-chp' + (on ? ' on' : '') + (cls || '') + '" onclick="blsPartTap(' + di + ',' + ci + ',' + q(s.id) + ',' + n + ',' + len + ',' + q(val) + ')">' + blsE(label) + '</button>'; };
     var body = '';
     if (s.ty === 'train') {
       body = s.items.map(function (it, n) {
@@ -40306,7 +40397,7 @@ function imfFixHTML(it, ctx) {
 }
 function imfCheckHTML(it) {
   var acc = BLS_ACC[_imf.i % BLS_ACC.length], rest = it.own.filter(function (s) { return it.gap.indexOf(s) < 0; }), show = _imf.more ? it.gap.concat(rest) : it.gap;
-  var rows = show.map(function (s) { var v = _imf.tmp[s.id]; var h = blsRowHTML(it.di, it.ci, s, v, show.length === 1); return h.replace(/blsSetItem\(/g, 'imfSetItem(').replace(/blsSetRange\(/g, 'imfSetRange(').replace(/blsSetInd\(/g, 'imfSetInd(').replace(/blsSet\(/g, 'imfSet('); }).join('');
+  var rows = show.map(function (s) { var v = _imf.tmp[s.id]; var h = blsRowHTML(it.di, it.ci, s, v, show.length === 1); return h.replace(/blsSetItem\(|blsPartTap\(/g, 'imfSetItem(').replace(/blsSetRange\(/g, 'imfSetRange(').replace(/blsSetInd\(/g, 'imfSetInd(').replace(/blsSet\(/g, 'imfSet('); }).join('');
   var valNow = function (s) { if (_imf.tmp[s.id] !== undefined) { var v = blsVal(s, _imf.tmp[s.id]); if (v !== null) return v; } return it.L.st[s.id].now; };
   var seg = function (fn) { return it.own.map(function (s) { var v = fn(s); return '<i class="' + (v !== null && v >= 0.9999 ? 'ok' : '') + '"></i>'; }).join(''); };
   var nb = it.own.filter(function (s) { var v = it.L.st[s.id].base; return v !== null && v >= 0.9999; }).length, nn = it.own.filter(function (s) { var v = valNow(s); return v !== null && v >= 0.9999; }).length;
