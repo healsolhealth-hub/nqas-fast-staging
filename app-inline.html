@@ -42583,7 +42583,7 @@ async function sclLoadDrafts() {
   if (typeof sccImpHTML !== 'function') return; var o = sccImpHTML;
   sccImpHTML = function () { var h = o.apply(this, arguments); try { var C = sclDraftCount(); if (!C.qs) return h;
     h += '<section class="ce-card scl-sug"><b>Suggested knowledge questions · one per topic</b><p>' + C.qs + ' new questions for ' + C.lines + ' knowledge lines that cover several topics (e.g. A-001 line 3: diet, calcium, birth preparedness, danger signs), in English and Hindi. They go into the draft, marked <em>New</em>, for you to review, edit or remove in each checkpoint before publishing.</p>'
-      + (C.done >= C.qs ? '<p class="scl-note">All ' + C.qs + ' are already in the content.</p>' : '<button type="button" class="nm-btn pri" onclick="sclLoadDrafts()">Put ' + (C.qs - C.done) + ' suggested questions in the draft</button>') + '</section>'; } catch (e) { console.warn('[SCL] sug', e); } return h; };
+      + (C.done >= C.qs ? '<p class="scl-note">All ' + C.qs + ' are already in the content.</p>' : '<button type="button" class="scl-btn pri" onclick="sclLoadDrafts()">Put ' + (C.qs - C.done) + ' suggested questions in the draft</button>') + '</section>'; } catch (e) { console.warn('[SCL] sug', e); } return h; };
 })();
 </script>
 <style id="nf-pkg-css">/* One service package at a time · team's fixes (27 Nov 2026) */
