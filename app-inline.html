@@ -8732,7 +8732,16 @@ buildDaySelector=function(){
     div.onclick=function(){ scb2DayTap(m.di,'strip'); };
     scroll.appendChild(div);
   });
+  scb2StripTo(sel,false);   // 27 Nov: a rebuilt strip stays on the day being shown (it used to jump back)
 };
+// keep the strip on the day whose card is shown — not always today
+function scb2StripTo(di,smooth){
+  try{ var sc=document.getElementById('ds-scroll'), el=sc&&sc.children[di]; if(!el) return;
+    var left=sc.scrollLeft+(el.getBoundingClientRect().left-sc.getBoundingClientRect().left)-(sc.clientWidth-el.offsetWidth)/2; if(left<0) left=0;
+    if(Math.abs(sc.scrollLeft-left)<4) return;
+    if(smooth&&sc.scrollTo) sc.scrollTo({left:left,behavior:'smooth'}); else sc.scrollLeft=left; }catch(e){}
+}
+scrollToToday=function(){ var di=(typeof window._scLastDi==='number')?window._scLastDi:(choState.currentDay-1); scb2StripTo(di,false); };   // instant: a slow glide could carry the strip past a day picked right after
 
 // ══════════════════════════════════════════════════════════════
 // TIMELINE VIEW
@@ -8845,7 +8854,7 @@ function scb2OpenCardDay(di){
   if(ws&&ws.classList.contains('vis')){ try{ wsMarkSeen(); }catch(e){} ws.classList.remove('vis'); showCHOMain(); }
   if(choState.view!=='cards') switchView('cards');
   selectDay(di+1);
-  try{ var el=document.getElementById('ds-scroll'); el=el&&el.children[di]; if(el) el.scrollIntoView({inline:'center',behavior:'smooth'}); }catch(e){}
+  scb2StripTo(di,true);   // 27 Nov: sideways only — scrollIntoView also moved the page up and down
 }
 function scb2Overlay(inner){
   var ov=document.createElement('div'); ov.className='scx-ov scb2-ov';
@@ -40353,7 +40362,7 @@ function imfChoCheckHTML(ctx) {
 // ── the fix flow (Cards tab) ──
 function imfOpen(di, cpId) {
   var t = scb1TodayIdx(); di = di == null ? t : di; _imf.di = di; _imf.flow = di; _imf.want = cpId || null; _imf.mode = 'fix'; _imf.tmp = {}; _imf.more = false; _imf.end = false; _imf.dir = 0;
-  try { if (typeof nfTab === 'function') nfTab('cards'); } catch (e) {}
+  try { var onCards = typeof _nfTab !== 'undefined' && _nfTab === 'cards' && typeof choState !== 'undefined' && choState.view === 'cards'; if (!onCards && typeof nfTab === 'function') nfTab('cards'); } catch (e) {}
   // 26 Nov 2026: selectDay keeps the date strip on the fix's own day (renderCard alone left the strip on today)
   try { if (typeof selectDay === 'function') selectDay(di + 1); else if (typeof renderCard === 'function') renderCard(di); } catch (e) { try { renderCard(di); } catch (e2) {} }
 }
@@ -40371,7 +40380,7 @@ function imfRender(di) {
   if (di > today || (di < today && (_imf.flow !== di || !L.length))) { if (_imf.di !== di) _imf.flow = null; _imf.di = di; cont.innerHTML = '<div class="bls imf">' + head + imfDayListHTML(ctx, di, F.items) + '</div>'; return; }
   if (!L.length) { cont.innerHTML = '<div class="bls imf">' + head + '<div class="bls-done"><span aria-hidden="true">✅</span><b>' + imfE(imfT('Nothing to fix today', 'आज सुधारने को कुछ नहीं')) + '</b><small>' + imfE(imfT('Your fixes for this week are done or come later in the week.', 'इस सप्ताह के आपके सुधार पूरे हैं या सप्ताह में आगे हैं।')) + '</small></div>' + imfDayListHTML(ctx, di, F.items) + '</div>'; imfMaybeCloseDay(di, L); return; }
   _imf.ids = L.map(function (it) { return it.cp.id; });
-  if (_imf.want) { var w = _imf.ids.indexOf(_imf.want); if (w >= 0) { _imf.i = w; _imf.end = false; } _imf.want = null; }
+  if (_imf.want && (_imf.flow == null || _imf.flow === di)) { var w = _imf.ids.indexOf(_imf.want); if (w >= 0) { _imf.i = w; _imf.end = false; } _imf.want = null; }   // 27 Nov: a render of another day no longer eats the tapped fix
   else if (_imf.di !== di || _imf.i == null || _imf.i >= L.length) { var f0 = L.findIndex(function (it) { return !imfAddressed(it); }); _imf.i = f0 < 0 ? 0 : f0; if (f0 < 0) _imf.end = true; }
   _imf.di = di;
   if (_imf.end) { cont.innerHTML = '<div class="bls imf">' + head + (di < today ? '<button type="button" class="imf-back" onclick="imfBackToDay(' + di + ')">‹ ' + imfE(imfT('Day ' + (di + 1) + ' fixes', 'दिन ' + (di + 1) + ' के सुधार')) + '</button>' : '') + imfEndHTML(L) + '</div>'; imfMaybeCloseDay(di, L); return; }
