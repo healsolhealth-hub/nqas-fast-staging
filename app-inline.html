@@ -40990,7 +40990,7 @@ function blaMyLine(x) {
 }
 function blaNext(D) { for (var i = 0; i < D.length; i++) if (!D[i].done && D[i].tot) return D[i]; return null; }
 function blaOpenDay(d) {
-  try { if (typeof nfTab === 'function' && choState.view !== 'cards') nfTab('cards'); } catch (e) {}
+  try { var onCards = typeof _nfTab !== 'undefined' && _nfTab === 'cards' && choState.view === 'cards'; if (typeof nfTab === 'function' && !onCards) nfTab('cards'); } catch (e) {}   // the shown tab is _nfTab (choState.view can say cards behind Today)
   try { selectDay(d + 1); } catch (e) {}
   try { window.scrollTo(0, 0); } catch (e) {}
 }
