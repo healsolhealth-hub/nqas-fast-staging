@@ -28734,7 +28734,8 @@ function scdItems() {
       var flds = {}; Object.keys(was).concat(Object.keys(now || {})).forEach(function (f) { if (JSON.stringify(was[f] == null ? '' : was[f]) !== JSON.stringify((now || {})[f] == null ? '' : now[f])) flds[f] = 1; });
       var c = null; try { c = scCpmGet(id); } catch (e) {}
       it.kind = isAdd ? 'New' : flds.retired && now && now.retired ? 'Retired' : (flds.blDay || flds.implDay) ? 'Moved' : 'Edited';
-      it.title = id + ' · ' + ((c && c.t) || (now && now.t) || ''); it.what = isAdd ? [(now && now.me) || '', (now && now.svc) || '', ((now && now.pk) || []).join(' + ')].filter(Boolean).join(' · ') : 'Changed: ' + (Object.keys(flds).map(function (f) { return SCD_FN[f] || f; }).join(', ') || 'no difference'); }
+      it.title = id + ' · ' + ((c && c.t) || (now && now.t) || ''); it.what = isAdd ? [(now && now.me) || '', (now && now.svc) || '', ((now && now.pk) || []).join(' + ')].filter(Boolean).join(' · ') : 'Changed: ' + (Object.keys(flds).map(function (f) { return SCD_FN[f] || f; }).join(', ') || 'no difference');
+      if (!isAdd && flds.own && typeof SC_LC !== 'undefined') { var wo = (was && was.own) || {}, no = (now && now.own) || {}, ch = []; Object.keys(wo).concat(Object.keys(no)).filter(function (x, i, a) { return a.indexOf(x) === i; }).forEach(function (l) { var b = (SC_LC[id + '.' + l.slice(1)] || {}).o, f = wo[l] || b, t = no[l] || b; if (f !== t) ch.push(l.replace('l', 'line ') + ': ' + (f === 'ALL' ? 'All' : f) + ' → ' + (t === 'ALL' ? 'All' : t)); }); if (ch.length) it.what += ' (' + ch.join(', ') + ')'; } }
     else if (k === 'days' || k === 'olddays') { var aeL = k === 'days' ? (L.ae || {}) : (L.ed || {}), aeN = scdApply(k === 'days' ? 'admin_edits' : 'edits', aeL, it.ops) || {}, keys = {};
       Object.keys(aeL).concat(Object.keys(aeN)).forEach(function (x) { if (JSON.stringify(aeL[x] || null) !== JSON.stringify(aeN[x] || null)) keys[x] = 1; });
       it.kind = 'Day cards'; it.title = 'Day card title, task or checkpoints'; it.what = Object.keys(keys).slice(0, 12).map(function (x) { var m = /^([A-Z])_(\d+)$/.exec(x); return m ? (m[1] === 'D' ? '12B' : '12A') + ' Day ' + (+m[2] + 1) : x; }).join(', ') || 'no difference'; }
@@ -28743,7 +28744,7 @@ function scdItems() {
     else { it.kind = 'Other'; it.title = it.ops.map(function (o) { return o.p; }).join(', '); it.what = ''; }
     return it; }).sort(function (a, b) { return String(a.title).localeCompare(String(b.title)); });
 }
-var SCD_FN = { t: 'wording', hi: 'Hindi', me: 'ME', aoc: 'Area of Concern', svc: 'service package', r: 'best filled by', method: 'method', video: 'English video', videoHi: 'Hindi video', faq: 'assessor FAQ video', faqHi: 'assessor FAQ video (Hindi)', pk: '12A / 12B', kind: 'kind', retired: 'retired', items: 'things to tick', fix: 'How to fix', cc: 'cross-cutting areas', blDay: 'baseline day', implDay: 'implementation day', mov: 'means of verification' };
+var SCD_FN = { own: 'owner', t: 'wording', hi: 'Hindi', me: 'ME', aoc: 'Area of Concern', svc: 'service package', r: 'best filled by', method: 'method', video: 'English video', videoHi: 'Hindi video', faq: 'assessor FAQ video', faqHi: 'assessor FAQ video (Hindi)', pk: '12A / 12B', kind: 'kind', retired: 'retired', items: 'things to tick', fix: 'How to fix', cc: 'cross-cutting areas', blDay: 'baseline day', implDay: 'implementation day', mov: 'means of verification' };
 function scdCount() { return scdItems().length; }
 
 // ── screens ──
@@ -29404,6 +29405,12 @@ function sccOpenDayCard(di) {
 }
 
 // ── Import / export ──
+if (typeof SC_CPM_FIELDS !== 'undefined' && SC_CPM_FIELDS.indexOf('own') < 0) SC_CPM_FIELDS.push('own');   // 27 Nov: owner per thing to check
+var SCC_OWN = { CHO: 'CHO', ANM: 'ANM', ASHA: 'ASHA', MPW: 'MPW', ALL: 'ALL', 'ALL STAFF': 'ALL' };
+var SCC_OH = ['ID', 'Line', 'Thing to check', 'Owner (CHO / ANM / ASHA / MPW / All)'];
+function sccOwnRows() { var out = [SCC_OH]; if (typeof SC_LC === 'undefined') return out;
+  Object.keys(SC_LC).sort(function (a, b) { var x = a.split('.'), y = b.split('.'); return x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : (+x[1]) - (+y[1]); }).forEach(function (k) { var L = blsLC(k), p = k.lastIndexOf('.'); out.push([k.slice(0, p), +k.slice(p + 1), L.q || '', L.o === 'ALL' ? 'All' : L.o]); });
+  return out; }
 var SCC_XH = ['ID', 'Area of Concern', 'Standard', 'ME', 'Checkpoint', 'Checkpoint (Hindi)', 'Service package / area', 'Who', 'How it is checked', 'Packages', 'Baseline day (moved)', 'Implementation day (moved)', 'Days now', 'Video', 'Video (Hindi)', 'Assessor FAQ video', 'Assessor FAQ video (Hindi)', 'Retired'];
 var SCC_TH = ['ID', 'No.', 'Thing to tick', 'Thing to tick (Hindi)', 'How it is checked'];
 function sccImpHTML() {
@@ -29436,8 +29443,9 @@ async function sccExport() {
     var X = await nfLoadXlsx(), wb = X.utils.book_new(), R = sccRows();
     var ws = X.utils.aoa_to_sheet(R.rows); ws['!cols'] = [8, 6, 8, 9, 60, 50, 26, 16, 26, 10, 10, 10, 34, 30, 30, 8].map(function (w) { return { wch: w }; }); X.utils.book_append_sheet(wb, ws, 'Checkpoints');
     var wt = X.utils.aoa_to_sheet(R.tick); wt['!cols'] = [8, 5, 60, 50, 26].map(function (w) { return { wch: w }; }); X.utils.book_append_sheet(wb, wt, 'Things to tick');
+    var wo = X.utils.aoa_to_sheet(sccOwnRows()); wo['!cols'] = [8, 5, 80, 22].map(function (w) { return { wch: w }; }); X.utils.book_append_sheet(wb, wo, 'Lines & owners');
     X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([['NQAS FAST · Sub-Centre checkpoints'], ['You can change: Checkpoint, Checkpoint (Hindi), Service package / area, Who (CHO, ANM, ASHA, MPW, MO, General), How it is checked (Staff interview, Record review, Observation, Client interview), Packages (12A, 12B), Baseline day (moved, 1–7), Implementation day (moved, 8–49), Video, Video (Hindi), Retired (yes / blank) and the Things to tick sheet.'],
-      ['Do not change: ID, Area of Concern, Standard, ME, Days now. To add a checkpoint, leave ID blank and fill ME (for example "ME A1.1") and Checkpoint.'], ['Upload the file in Content → Sub-Centre → Import / export. Every change is shown before it goes into the draft; nothing reaches facilities until you publish.']]), 'Read me');
+      ['Lines & owners sheet: one row per thing to check. Change only the Owner column (CHO, ANM, ASHA, MPW or All) — it decides who answers that line in the baseline and who gets its fix.'], ['Do not change: ID, Area of Concern, Standard, ME, Days now. To add a checkpoint, leave ID blank and fill ME (for example "ME A1.1") and Checkpoint.'], ['Upload the file in Content → Sub-Centre → Import / export. Every change is shown before it goes into the draft; nothing reaches facilities until you publish.']]), 'Read me');
     var name = 'NQAS-FAST-SC-checkpoints-' + new Date().toISOString().slice(0, 10) + '.xlsx';
     if (typeof nfSaveWb === 'function') await nfSaveWb(X, wb, name); else X.writeFile(wb, name);
     showToast('Excel downloaded.', 'ok');
@@ -29462,7 +29470,7 @@ function sccImportWb(X, wb) {
   if (col('ID') < 0 || col('Checkpoint') < 0) { scAlert('This is not the Sub-Centre checkpoints Excel. Download it from this tab, edit it, and upload it here — or upload the revised NQAS checklist as a CSV file.', 'Upload', '⚠️'); return null; }
   var tick = {}, wt = wb.Sheets['Things to tick'];
   if (wt) X.utils.sheet_to_json(wt, { header: 1, defval: '' }).slice(1).forEach(function (r) { var id = sccNorm(r[0]); if (!id || !sccNorm(r[2])) return; (tick[id] = tick[id] || []).push({ t: sccNorm(r[2]), h: sccNorm(r[3]), m: sccMethods(r[4]) }); });
-  var rep = { changed: [], added: [], bad: [], same: 0 };
+  var rep = { changed: [], added: [], bad: [], same: 0, own: [] };
   A.slice(1).forEach(function (r, i) {
     var g = function (n) { var k = col(n); return k < 0 ? undefined : sccNorm(r[k]); }, id = g('ID'), t = g('Checkpoint');
     if (!id && !t) return;
@@ -29489,6 +29497,19 @@ function sccImportWb(X, wb) {
     var diff = {}; Object.keys(v).forEach(function (k) { if (JSON.stringify(sccCanon(k, v[k])) !== JSON.stringify(sccCanon(k, cur[k]))) diff[k] = v[k]; });
     if (Object.keys(diff).length) rep.changed.push({ id: id, t: c.t, diff: diff }); else rep.same++;
   });
+  var wo = wb.Sheets['Lines & owners'];
+  if (wo && typeof SC_LC !== 'undefined') { var byId = {};
+    X.utils.sheet_to_json(wo, { header: 1, defval: '' }).slice(1).forEach(function (r, i) {
+      var id = sccNorm(r[0]), ln = sccNorm(r[1]), ow = sccNorm(r[3]).toUpperCase(); if (!id && !ln) return;
+      var key = id + '.' + ln, L = SC_LC[key]; if (!L) { rep.bad.push('Lines & owners row ' + (i + 2) + ': ' + key + ' is not a line in the checklist'); return; }
+      var v = SCC_OWN[ow]; if (!v) { rep.bad.push(id + ' line ' + ln + ': owner must be CHO, ANM, ASHA, MPW or All — kept as it was'); return; }
+      var cur = blsLC(key).o; if (v === cur) return;
+      (byId[id] = byId[id] || []).push({ ln: ln, from: cur, to: v, base: L.o }); });
+    Object.keys(byId).forEach(function (id) { var c = scCpmGet(id); if (!c) { rep.bad.push(id + ': not in the checklist'); return; }
+      var m = Object.assign({}, c.own || {}); byId[id].forEach(function (x) { if (x.to === x.base) delete m['l' + x.ln]; else m['l' + x.ln] = x.to; rep.own.push(id + ' line ' + x.ln + ': ' + (x.from === 'ALL' ? 'All' : x.from) + ' → ' + (x.to === 'ALL' ? 'All' : x.to)); });
+      var own = Object.keys(m).length ? m : null, ex = rep.changed.filter(function (y) { return y.id === id; })[0];
+      if (ex) ex.diff.own = own; else { rep.changed.push({ id: id, t: c.t, diff: { own: own } }); if (rep.same > 0) rep.same--; } });
+  }
   _scc.imp = rep; scCpmRender();
   return rep;
 }
@@ -29500,16 +29521,17 @@ function sccCanon(k, v) {
   if (k === 'pk') return ['12A', '12B'].filter(function (p) { return v.indexOf(p) >= 0; });
   if (k === 'items') return v.map(function (x) { return [sccNorm(x.t), sccNorm(x.h), sccCanonM(x.m)]; });
   if (k === 'retired') return v ? true : null;
+  if (k === 'own') { if (!v || typeof v !== 'object') return null; var ks = Object.keys(v).sort(); return ks.length ? ks.map(function (x) { return [x, v[x]]; }) : null; }
   if (typeof v === 'string') return sccNorm(v) || null;
   return v;
 }
-var SCC_FN = { t: 'wording', hi: 'Hindi', svc: 'service package / area', r: 'who', method: 'method', pk: 'packages', blDay: 'baseline day', implDay: 'implementation day', video: 'video', videoHi: 'Hindi video', faq: 'assessor FAQ video', faqHi: 'assessor FAQ video (Hindi)', retired: 'retired', items: 'things to tick' };
+var SCC_FN = { t: 'wording', hi: 'Hindi', svc: 'service package / area', r: 'who', method: 'method', pk: 'packages', blDay: 'baseline day', implDay: 'implementation day', video: 'video', videoHi: 'Hindi video', faq: 'assessor FAQ video', faqHi: 'assessor FAQ video (Hindi)', retired: 'retired', items: 'things to tick', own: 'owner' };
 function sccImpPreviewHTML(I) {
   var n = I.changed.length + I.added.length;
   return '<div class="scc-prev"><b>' + (n ? I.changed.length + ' changed · ' + I.added.length + ' new' : 'No changes found') + '</b> <small>· ' + I.same + ' the same' + (I.bad.length ? ' · ' + I.bad.length + ' skipped' : '') + '</small>'
     + '<ul>' + I.changed.slice(0, 60).map(function (x) { return '<li><b>' + sccE(x.id) + '</b> ' + sccE(String(x.t).slice(0, 70)) + ' — <em>' + Object.keys(x.diff).map(function (k) { return SCC_FN[k] || k; }).join(', ') + '</em></li>'; }).join('')
     + I.added.slice(0, 20).map(function (x) { return '<li><b>New</b> ' + sccE(x.v.me) + ' · ' + sccE(String(x.v.t).slice(0, 70)) + '</li>'; }).join('')
-    + (n > 80 ? '<li>… and ' + (n - 80) + ' more</li>' : '') + I.bad.slice(0, 10).map(function (b) { return '<li class="bad">' + sccE(b) + '</li>'; }).join('') + '</ul>'
+    + (n > 80 ? '<li>… and ' + (n - 80) + ' more</li>' : '') + ((I.own || []).length ? '<li><b>' + I.own.length + ' owner change' + (I.own.length === 1 ? '' : 's') + '</b> · ' + sccE(I.own.slice(0, 12).join(' · ')) + (I.own.length > 12 ? ' …' : '') + '</li>' : '') + I.bad.slice(0, 10).map(function (b) { return '<li class="bad">' + sccE(b) + '</li>'; }).join('') + '</ul>'
     + '<div class="nm-acts"><button type="button" class="nm-btn" onclick="_scc.imp=null;scCpmRender()">Cancel</button>' + (n ? '<button type="button" class="nm-btn pri" id="scc-apply" onclick="sccImportApply()">Put ' + n + ' change' + (n === 1 ? '' : 's') + ' in the draft</button>' : '') + '</div></div>';
 }
 async function sccImportApply() {
@@ -39308,7 +39330,15 @@ function blsOrder(seed) { var o = [0, 1, 2, 3], x = blsHash(seed) || 1; for (var
 var BLS_LISTS = { stock: 1, equip: 1, tests: 1, yn: 1 };
 function blsFlags() { try { return (choState.facility || {}).clFlags || {}; } catch (e) { return {}; } }
 function blsApplies(code, F) { F = F || blsFlags(); if (!code || code === '12B') return true; if (code === 'elderly') return F.elderly !== false; if (code === 'maleCHO') return !!F.maleCHO; return !!F[code]; }
-function blsLC(key) { return (typeof SC_LC !== 'undefined' && SC_LC[key]) || null; }
+function blsLC(key) { var L = (typeof SC_LC !== 'undefined' && SC_LC[key]) || null; if (!L) return null; var o = blsOwnFor(key); return o && o !== L.o ? Object.assign({}, L, { o: o }) : L; }
+// 27 Nov 2026: who owns each thing to check can be changed in the content master ("Lines & owners" sheet → draft → publish).
+// Stored on the checkpoint as own: {l1: 'CHO', l2: 'ALL'} — only the lines that differ from the built-in sheet.
+var _blsOwn = { ver: -1, map: {} };
+function blsOwnFor(key) {
+  try { if (typeof _scCpm === 'undefined') return null;
+    if (_blsOwn.ver !== _scCpm.ver) { var m = {}; [_scCpm.edits || {}, _scCpm.added || {}].forEach(function (E) { Object.keys(E).forEach(function (id) { if (E[id] && E[id].own) m[id] = E[id].own; }); }); _blsOwn = { ver: _scCpm.ver, map: m }; }
+    var p = String(key).lastIndexOf('.'), o = _blsOwn.map[String(key).slice(0, p)]; return o ? (o['l' + String(key).slice(p + 1)] || null) : null; } catch (e) { return null; }
+}
 function blsSlots(cp, F) {
   var items = cp.items || [], out = [];
   var add = function (key, k, txt, txh, meth) {
@@ -39879,7 +39909,7 @@ function blsFacMerge(progId, progressByMob, staffMap, A) {
       Object.keys(progressByMob || {}).forEach(function (mob) {
         var rec = (progressByMob[mob] || {})['day_' + di]; if (!rec || !rec.taskDone) return;
         var own = typeof nfSelfRec === 'function' && rec.blRev ? rec : rec, Ans = (own.blAns || {})['c' + ci] || {}, role = roleOf(mob);
-        S.forEach(function (s) { if (!blsOwnerOK(s.own, role, present)) return; var v = blsVal(s, Ans[s.id]); if (v === null) return; best[s.id] = best[s.id] === undefined ? v : Math.min(best[s.id], v); });
+        S.forEach(function (s) { var v = blsVal(s, Ans[s.id]); if (v === null) return; best[s.id] = best[s.id] === undefined ? v : Math.min(best[s.id], v); });
         // the Champion's change on a MoV (blRev) overrides that MoV for everyone
         var R = rec.blRev && rec.blRev['c' + ci]; if (R) Object.keys(R).forEach(function (k) { var e = R[k] || {}; if (e.v == null || e.r === 'ok') return; var kk = k === 's' ? 0 : +k, met = k === 's' ? +e.v === 2 : +e.v === 1; S.forEach(function (s) { if (s.k === kk) best[s.id] = met ? 1 : 0; }); });
       });
@@ -40162,6 +40192,22 @@ body.imf-day #scb1-today-none, body.imf-day #nf-tt { display: none !important; }
 
 /* 26 Nov 2026: back to the day's fixes (earlier days) */
 .imf-back{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 14px;margin:2px 0 6px;border-radius:20px;border:1.5px solid var(--br,#DCE4E1);background:#fff;color:var(--teal,#1E6B5E);font:600 13px Poppins,sans-serif;cursor:pointer;}
+
+/* 27 Nov 2026: Full at baseline — re-check */
+.imf-full{margin-top:14px;background:#fff;border:1.5px dashed #B9CBC6;border-radius:16px;overflow:hidden;}
+.imf-full[open]{border-style:solid;}
+.imf-full>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;}
+.imf-full>summary::-webkit-details-marker{display:none;}
+.imf-full[open]>summary{background:#F3F8F6;border-bottom:1px solid #E3EAE8;}
+.imf-fi{width:28px;height:28px;border-radius:50%;background:#E6F2EF;color:#1E6B5E;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none;}
+.imf-ft{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;} .imf-ft b{font-size:14px;} .imf-ft small{font-size:12px;color:var(--t3,#5C706C);line-height:1.4;}
+.imf-fc{width:10px;height:10px;border-right:2px solid #1E6B5E;border-bottom:2px solid #1E6B5E;transform:rotate(45deg);margin:0 4px 4px;flex:none;}
+.imf-full[open] .imf-fc{transform:rotate(-135deg);margin:4px 4px 0;}
+.imf-fr{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #EEF2F1;} .imf-fr:last-child{border-bottom:0;}
+.imf-fr>span{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;} .imf-fr b{font-size:13.5px;font-weight:500;line-height:1.35;} .imf-fr small{font-size:11.5px;color:var(--t3,#5C706C);}
+.imf-fr button{flex:none;min-height:36px;padding:0 12px;border-radius:12px;border:1.5px solid #1E6B5E;background:#fff;color:#1E6B5E;font:600 12.5px Poppins,sans-serif;cursor:pointer;}
+.imf-fnote{background:#F5F7F6;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:#3E5551;margin-bottom:10px;} .imf-fnote b{color:#1E6B5E;}
+.bls-back.imf-still{border-color:#1E6B5E;color:#1E6B5E;}
 </style>
 <script id="nf-imf">// ══════════════════════════════════════════════════════════════
 // IMPLEMENTATION AS FIX → RE-CHECK (24 Nov 2026, HealSol: canvas I1–I5 approved)
@@ -40222,7 +40268,8 @@ function imfLines(ctx, cp) {
     var role = imfRoleOf(ctx, mob), nm = imfNameOf(ctx, mob);
     if (b) { var r = imfRec(ctx, mob, b.di);
       if (r && r.taskDone) { var A = cOf(r.blAns, b.ci) || {};
-        S.forEach(function (s) { if (!blsOwnerOK(s.own, role, ctx.present)) return; var v = blsVal(s, A[s.id]); if (v === null) return; var x = st[s.id]; if (x.base === null || v < x.base) { x.base = v; x.raw = A[s.id]; x.by = nm; x.byRole = role; } });
+        S.forEach(function (s) { var v = blsVal(s, A[s.id]); if (v === null) return;   // 27 Nov: a baseline answer counts even if the line has since moved to another owner
+ var x = st[s.id]; if (x.base === null || v < x.base) { x.base = v; x.raw = A[s.id]; x.by = nm; x.byRole = role; } });
         var R = r.blRev && cOf(r.blRev, b.ci); if (R) Object.keys(R).forEach(function (k) { var e = R[k] || {}; if (e.v == null || e.r === 'ok') return; var kk = k === 's' ? 0 : +k, met = k === 's' ? +e.v === 2 : +e.v === 1; S.forEach(function (s) { if (s.k === kk) { st[s.id].base = met ? 1 : 0; st[s.id].by = e.by || st[s.id].by; st[s.id].byRole = e.role || 'Quality Champion'; } }); }); } }
     if (im) { var r2 = imfRec(ctx, mob, im.di), fx = r2 && cOf(r2.fx, im.ci);
       if (fx && fx.st === 'done') { var vf = cOf(r2.fxv, im.ci); if (vf && vf.ok === false && String(vf.at || '') >= String(fx.at || '')) return;
@@ -40242,24 +40289,33 @@ function imfScoreOf(S, valOf) {   // the NQAS rule on a set of lines: each MoV =
 function imfWeekStart(di) { return 7 + Math.floor((di - 7) / 7) * 7; }
 function imfItems(ctx, di, mob, role) {
   mob = mob || ctx.me; role = role || ctx.role;
-  var start = imfWeekStart(di), plan = scImplPlan(ctx.progId), items = [], today = imfToday();
+  var start = imfWeekStart(di), plan = scImplPlan(ctx.progId), items = [], full = [], today = imfToday();
   for (var dd = start; dd < start + 7; dd++) { var day = scImplDay(ctx.progId, dd); if (!day) continue;
     day.cps.forEach(function (cp, ci) {
       var own = blsSlots(cp, ctx.flags).filter(function (s) { return blsOwnerOK(s.own, role, ctx.present); }); if (!own.length) return;
-      var L = imfLines(ctx, cp); if (!own.some(function (s) { var b = L.st[s.id].base; return b === null || b < 0.9999; })) return;
-      items.push({ cp: cp, di: dd, ci: ci, own: own, L: L });
+      var L = imfLines(ctx, cp), it = { cp: cp, di: dd, ci: ci, own: own, L: L };
+      if (own.some(function (s) { var b = L.st[s.id].base; return b === null || b < 0.9999; })) items.push(it); else full.push(it);
     }); }
-  var n = items.length;
+  // 27 Nov 2026: checkpoints that were Full at baseline, spread over the week the same way, for a re-check if anything changed.
+  // A re-check that finds a gap turns it into a fix on that same day.
+  var m = full.length, still = [];
+  full.forEach(function (it, j) { it.k = Math.floor(j * 7 / Math.max(1, m)); it.isFull = true;
+    var r = imfRec(ctx, mob, it.di); it.fx = (r && cOf(r.fx, it.ci)) || null;
+    var gapNow = it.own.some(function (s) { var x = it.L.st[s.id]; return x.now !== null && x.now < 0.9999; });
+    if (gapNow) { it.turned = true; items.push(it); } else still.push(it); });
+  var n = items.filter(function (it) { return !it.turned; }).length, gi = 0;
   items.forEach(function (it, i) {
-    it.k = Math.floor(i * 7 / Math.max(1, n));
+    if (!it.turned) it.k = Math.floor((gi++) * 7 / Math.max(1, n));
     var r = imfRec(ctx, mob, it.di), fx = r && cOf(r.fx, it.ci), vf = r && cOf(r.fxv, it.ci);
     var doubt = !!(fx && vf && vf.ok === false && String(vf.at || '') >= String(fx.at || ''));
     var ok = it.own.every(function (s) { var x = it.L.st[s.id]; return x.now !== null && x.now >= 0.9999; });
     it.fx = fx || null; it.vf = vf || null; it.doubt = doubt;
-    it.st = doubt ? 'doubt' : (fx && fx.st === 'done' && ok) ? 'fixed' : (fx && fx.st === 'done') ? 'partial' : (fx && fx.st === 'later') ? 'later' : 'open';
+    it.st = doubt ? 'doubt' : (fx && fx.st === 'done' && ok) ? 'fixed' : (fx && fx.st === 'done' && !fx.full) ? 'partial' : (fx && fx.st === 'later') ? 'later' : 'open';
     it.touched = !!(fx && fx.at && imfIst(fx.at) === today && !doubt);
     it.gap = it.own.filter(function (s) { var x = it.L.st[s.id]; return x.now === null || x.now < 0.9999; });
+    if (it.turned && fx && fx.full) it.touched = false;   // a gap found at a Full re-check is a new fix, not one already worked on
   });
+  items.full = still;
   return items;
 }
 function imfQuota(items) { return Math.min(6, Math.max(3, Math.ceil(items.length / 7))); }
@@ -40326,7 +40382,7 @@ function imfToCheck(ctx, who) {   // who(mob, role) → may I check this person'
   var out = [];
   imfMobs(ctx).forEach(function (mob) { var role = imfRoleOf(ctx, mob); if (!who(mob, role)) return; var nm = imfNameOf(ctx, mob);
     for (var di = 7; di <= 48; di++) { var r = ((ctx.P[mob] || {})['day_' + di]); if (!r || !r.fx) continue; var day = scImplDay(ctx.progId, di); if (!day) continue;
-      Object.keys(r.fx).forEach(function (k) { var ci = +String(k).replace(/^c/, ''), fx = r.fx[k] || {}, vf = cOf(r.fxv, ci); if (fx.st !== 'done') return; if (vf && String(vf.at || '') >= String(fx.at || '')) return;
+      Object.keys(r.fx).forEach(function (k) { var ci = +String(k).replace(/^c/, ''), fx = r.fx[k] || {}, vf = cOf(r.fxv, ci); if (fx.st !== 'done' || fx.full) return; if (vf && String(vf.at || '') >= String(fx.at || '')) return;
         var cp = day.cps[ci]; if (!cp) return; var A = cOf(r.fxAns, ci) || {}, S = blsSlots(cp, ctx.flags).filter(function (s) { return A[s.id] !== undefined; });
         var ok = S.length && S.every(function (s) { var v = blsVal(s, A[s.id]); return v !== null && v >= 0.9999; }); if (!ok) return;
         var ev = ''; S.some(function (s) { var lc = blsLC(s.key); if (lc && lc.ev) { ev = lc.ev; return true; } return false; });
@@ -40377,13 +40433,16 @@ function imfRender(di) {
     if (typeof nfLoadFacility === 'function') nfLoadFacility().then(function () { if (_imf.di === di || _imf.di == null) imfRender(di); }); return; }
   var today = scb1TodayIdx(), F = imfFlowList(ctx, di), L = F.list;
   var head = '<div class="bls-hd"><small>' + imfE(imfT('IMPLEMENTATION · WEEK ' + (Math.floor((di - 7) / 7) + 2) + ' · DAY ' + (di + 1), 'क्रियान्वयन · सप्ताह ' + (Math.floor((di - 7) / 7) + 2) + ' · दिन ' + (di + 1))) + '</small><b>' + imfE(typeof blsTheme === 'function' ? (function () { var w = SC_IMPL_WEEKS[Math.floor((di - 7) / 7)]; return w ? imfT(w.title, w.hi) : ''; })() : '') + '</b></div>';
+  if (_imf.mode === 'full' && _imf.fullDi === di) { var fi = (F.items.full || []).filter(function (x) { return x.cp.id === _imf.fullId; })[0];
+    if (fi) { cont.innerHTML = '<div class="bls imf">' + head + '<button type="button" class="imf-back" onclick="imfFullClose()">‹ ' + imfE(di < today ? imfT('Day ' + (di + 1) + ' fixes', 'दिन ' + (di + 1) + ' के सुधार') : imfT('Back', 'वापस')) + '</button>' + imfFullHTML(fi, ctx) + '</div>'; return; }
+    _imf.mode = 'fix'; _imf.fullId = null; }
   if (di > today || (di < today && (_imf.flow !== di || !L.length))) { if (_imf.di !== di) _imf.flow = null; _imf.di = di; cont.innerHTML = '<div class="bls imf">' + head + imfDayListHTML(ctx, di, F.items) + '</div>'; return; }
   if (!L.length) { cont.innerHTML = '<div class="bls imf">' + head + '<div class="bls-done"><span aria-hidden="true">✅</span><b>' + imfE(imfT('Nothing to fix today', 'आज सुधारने को कुछ नहीं')) + '</b><small>' + imfE(imfT('Your fixes for this week are done or come later in the week.', 'इस सप्ताह के आपके सुधार पूरे हैं या सप्ताह में आगे हैं।')) + '</small></div>' + imfDayListHTML(ctx, di, F.items) + '</div>'; imfMaybeCloseDay(di, L); return; }
   _imf.ids = L.map(function (it) { return it.cp.id; });
   if (_imf.want && (_imf.flow == null || _imf.flow === di)) { var w = _imf.ids.indexOf(_imf.want); if (w >= 0) { _imf.i = w; _imf.end = false; } _imf.want = null; }   // 27 Nov: a render of another day no longer eats the tapped fix
   else if (_imf.di !== di || _imf.i == null || _imf.i >= L.length) { var f0 = L.findIndex(function (it) { return !imfAddressed(it); }); _imf.i = f0 < 0 ? 0 : f0; if (f0 < 0) _imf.end = true; }
   _imf.di = di;
-  if (_imf.end) { cont.innerHTML = '<div class="bls imf">' + head + (di < today ? '<button type="button" class="imf-back" onclick="imfBackToDay(' + di + ')">‹ ' + imfE(imfT('Day ' + (di + 1) + ' fixes', 'दिन ' + (di + 1) + ' के सुधार')) + '</button>' : '') + imfEndHTML(L) + '</div>'; imfMaybeCloseDay(di, L); return; }
+  if (_imf.end) { cont.innerHTML = '<div class="bls imf">' + head + (di < today ? '<button type="button" class="imf-back" onclick="imfBackToDay(' + di + ')">‹ ' + imfE(imfT('Day ' + (di + 1) + ' fixes', 'दिन ' + (di + 1) + ' के सुधार')) + '</button>' : '') + imfEndHTML(L) + imfFullFoldHTML(di, F.items) + '</div>'; imfMaybeCloseDay(di, L); return; }
   var it = L[_imf.i];
   var back = di < today ? '<button type="button" class="imf-back" onclick="imfBackToDay(' + di + ')">‹ ' + imfE(imfT('Day ' + (di + 1) + ' fixes', 'दिन ' + (di + 1) + ' के सुधार')) + '</button>' : '';
   cont.innerHTML = '<div class="bls imf">' + head + back + imfDotsHTML(L) + (_imf.mode === 'check' ? imfCheckHTML(it) : imfFixHTML(it, ctx)) + '</div>';
@@ -40452,11 +40511,58 @@ function imfEndHTML(L) {
 }
 function imfDayListHTML(ctx, di, items) {
   var k = di - imfWeekStart(di), L = items.filter(function (it) { return it.k === k; }), today = scb1TodayIdx();
-  if (!L.length) return '<p class="bls-dim">' + imfE(imfT('No fixes were planned for this day.', 'इस दिन कोई सुधार तय नहीं था।')) + '</p>';
+  if (!L.length) return '<p class="bls-dim">' + imfE(imfT('No fixes were planned for this day.', 'इस दिन कोई सुधार तय नहीं था।')) + '</p>' + imfFullFoldHTML(di, items);
   var open = L.filter(function (it) { return it.st !== 'fixed'; }).length;
   return (di <= today && open ? '<p class="imf-how">' + imfE(imfT('Tap a fix to work on it: read what the baseline found and what to do, do it at the facility, then tap “Done — check it now” and answer the same question again.', 'किसी सुधार पर टैप करें: बेसलाइन में क्या मिला और क्या करना है पढ़ें, केंद्र पर करें, फिर “हो गया — अभी जाँचें” दबाकर वही सवाल फिर से उत्तर दें।')) + '</p>' : '') + '<div class="bls-card bls-list">' + L.map(function (it, i) { var st = it.st === 'fixed' ? imfT('Fixed', 'सुधरा') : it.st === 'partial' ? imfT('Re-checked — not all in place', 'दोबारा जाँचा — सब ठीक नहीं') : it.st === 'doubt' ? imfT('Sent back', 'वापस भेजा') : imfT('To do', 'करना है');
     return '<button type="button" class="bls-li' + (it.st === 'fixed' ? '' : ' open') + '"' + (di <= today ? ' onclick="imfOpen(' + di + ',\'' + imfE(it.cp.id) + '\')"' : ' disabled') + '><span class="bls-n">' + (i + 1) + '</span><span class="bls-lt">' + imfE(imfTitle(it.cp)) + '</span><span class="bls-ls"><span class="bls-pill ' + (it.st === 'fixed' ? 'y' : 'o') + '">' + imfE(st) + '</span></span></button>'; }).join('') + '</div>'
-    + (di > today ? '<p class="bls-dim">' + imfE(imfT('These come on their day. Anything not finished carries on to the next day.', 'ये अपने दिन आएँगे। जो पूरा न हो, अगले दिन आता है।')) + '</p>' : '');
+    + (di > today ? '<p class="bls-dim">' + imfE(imfT('These come on their day. Anything not finished carries on to the next day.', 'ये अपने दिन आएँगे। जो पूरा न हो, अगले दिन आता है।')) + '</p>' : '')
+    + imfFullFoldHTML(di, items);
+}
+// ── 27 Nov 2026: Full at baseline — re-check if anything has changed ──
+function imfFullWhen(it) {
+  var fx = it.fx; if (fx && fx.full && fx.at) return imfT('Full · re-checked ', 'पूरा · दोबारा जाँचा ') + (typeof scFmtDate === 'function' ? scFmtDate(imfIst(fx.at)) : imfIst(fx.at));
+  var x = it.L.st[it.own[0].id] || {}, b = imfBaseLoc((imfCtxMine() || {}).progId, it.cp.id), me = x.by && x.by === (choState.staffName || '');
+  var day = b ? b.di + 1 : null;
+  return me || !x.by ? imfT('Full · your baseline' + (day ? ', Day ' + day : ''), 'पूरा · आपकी बेसलाइन' + (day ? ', दिन ' + day : ''))
+    : imfT('Full · ' + x.by + (x.byRole ? ' (' + x.byRole + ')' : '') + (day ? ', Day ' + day : ''), 'पूरा · ' + x.by + (day ? ', दिन ' + day : ''));
+}
+function imfFullFoldHTML(di, items) {
+  var k = di - imfWeekStart(di), F = ((items && items.full) || []).filter(function (it) { return it.k === k; }), today = scb1TodayIdx(); if (!F.length) return '';
+  var open = _imf.fold === di;
+  return '<details class="imf-full"' + (open ? ' open' : '') + ' ontoggle="_imf.fold=this.open?' + di + ':null"><summary><span class="imf-fi">✓</span><span class="imf-ft"><b>' + imfE(imfT('Full at baseline (' + F.length + ')', 'बेसलाइन में पूरे (' + F.length + ')')) + '</b><small>'
+    + imfE(imfT('Re-check if anything has changed. Not counted in the day\'s fixes.', 'कुछ बदला हो तो दोबारा जाँचें। दिन के सुधारों में नहीं गिने जाते।')) + '</small></span><i class="imf-fc" aria-hidden="true"></i></summary>'
+    + F.map(function (it) { return '<div class="imf-fr"><span><b>' + imfE(imfTitle(it.cp)) + '</b><small>' + imfE(imfFullWhen(it)) + '</small></span>'
+      + (di <= today ? '<button type="button" onclick="imfFullOpen(' + di + ',\'' + imfE(it.cp.id) + '\')">' + imfE(imfT('Re-check', 'दोबारा जाँचें')) + '</button>' : '') + '</div>'; }).join('') + '</details>';
+}
+function imfFullOpen(di, id) { _imf.di = di; _imf.mode = 'full'; _imf.fullDi = di; _imf.fullId = id; _imf.tmp = {}; _imf.fold = di; imfRender(di); try { window.scrollTo(0, 0); } catch (e) {} }
+function imfFullClose() { var di = _imf.fullDi; _imf.mode = 'fix'; _imf.fullId = null; _imf.tmp = {}; imfRender(di == null ? _imf.di : di); }
+function imfFullCur() { var di = _imf.fullDi; if (di == null) return null; return ((imfItems(imfCtxMine(), di).full) || []).filter(function (x) { return x.cp.id === _imf.fullId; })[0] || null; }
+function imfFullHTML(it, ctx) {
+  var acc = BLS_ACC[0];
+  var rows = it.own.map(function (s) { var h = blsRowHTML(it.di, it.ci, s, _imf.tmp[s.id], it.own.length === 1); return h.replace(/blsSetItem\(|blsPartTap\(/g, 'imfSetItem(').replace(/blsSetRange\(/g, 'imfSetRange(').replace(/blsSetInd\(/g, 'imfSetInd(').replace(/blsSet\(/g, 'imfSet('); }).join('');
+  var ready = it.own.every(function (s) { return _imf.tmp[s.id] !== undefined && blsDone1(s, _imf.tmp[s.id]); });
+  return '<div class="bls-slide"><div class="bls-card bls-acc" style="--acc:' + acc[0] + ';--acc-t:' + acc[1] + '"><i class="bls-band"></i><div class="bls-chd"><div class="bls-chm"><span class="bls-k">' + imfE((it.cp.id || '') + ' · ' + imfT('FULL AT BASELINE · RE-CHECK', 'बेसलाइन में पूरा · दोबारा जाँच')) + '</span><div class="bls-cpt">' + imfE(imfTitle(it.cp)) + '</div></div></div>'
+    + '<div class="bls-cbody"><div class="imf-fnote"><b>' + imfE(imfFullWhen(it)) + '.</b> ' + imfE(imfT('If it is still the same, tap “Still full”. If anything has changed, answer what you see now — a gap becomes a fix.', 'अगर सब वैसा ही है तो “अब भी पूरा” दबाएँ। कुछ बदला हो तो अभी जो दिखे वह उत्तर दें — कमी सुधार बन जाएगी।')) + '</div>' + rows + '</div></div></div>'
+    + '<div class="bls-spacer"></div><div class="bls-nav bls-fixed"><button type="button" class="bls-back imf-still" onclick="imfFullStill()">' + imfE(imfT('Still full', 'अब भी पूरा')) + ' ✓</button><button type="button" class="bls-next imf-go" onclick="imfFullSave()"' + (ready ? '' : ' disabled') + '>' + imfE(imfT('Save what I see', 'जो दिखा वह सेव करें')) + '</button></div>';
+}
+function imfFullStill() {
+  var it = imfFullCur(); if (!it) { imfFullClose(); return; }
+  var c = getCHOCard(it.di), now = imfNow(); c.fx = c.fx || {}; c.fx[it.ci] = { st: 'done', at: now, full: true, still: true }; c.updatedAt = now; saveCHOState();
+  showToast(imfT('Kept as Full — thank you for checking.', 'पूरा ही रखा — जाँचने के लिए धन्यवाद।'), 'ok'); imfFullClose();
+}
+function imfFullSave() {
+  var it = imfFullCur(); if (!it) { imfFullClose(); return; }
+  if (!it.own.every(function (s) { return _imf.tmp[s.id] !== undefined && blsDone1(s, _imf.tmp[s.id]); })) { showToast(imfT('Answer every line first.', 'पहले हर पंक्ति का उत्तर दें।'), 'err'); return; }
+  var c = getCHOCard(it.di), now = imfNow(), prevC = (c.cpScores || [])[it.ci];
+  c.fxAns = c.fxAns || {}; var A = Object.assign({}, c.fxAns[it.ci] || {}); it.own.forEach(function (s) { A[s.id] = _imf.tmp[s.id]; }); c.fxAns[it.ci] = A;
+  var valNow = function (s) { var v = blsVal(s, _imf.tmp[s.id]); return v === null ? it.L.st[s.id].now : v; };
+  var full = it.own.every(function (s) { var v = valNow(s); return v !== null && v >= 0.9999; });
+  c.fx = c.fx || {}; c.fx[it.ci] = { st: 'done', at: now, full: true, prev: prevC != null && prevC >= 0 ? prevC : 2 };
+  c.cpScores = c.cpScores || []; c.cpScores[it.ci] = imfScoreOf(it.own, valNow);
+  c.updatedAt = now; c.role = choState.roleId || ''; saveCHOState();
+  try { if (typeof scCpRecord === 'function') scCpRecord(it.di, it.ci); } catch (e) {}
+  showToast(full ? imfT('Still Full — saved.', 'अब भी पूरा — सेव हुआ।') : imfT('Saved. It is now one of this day\'s fixes.', 'सेव हुआ। यह अब इस दिन का सुधार है।'), 'ok');
+  imfFullClose();
 }
 function imfGo(step) { var n = _imf.i + step; if (n < 0 || n >= _imf.ids.length) { if (n >= _imf.ids.length) { _imf.end = true; imfRender(_imf.di); } return; } _imf.i = n; _imf.mode = 'fix'; _imf.tmp = {}; _imf.more = false; _imf.dir = step; if (typeof blsBuzz === 'function') blsBuzz(); imfRender(_imf.di); imfTop(); }
 function imfTop() { try { var cc = document.getElementById('card-container'); if (cc && cc.scrollIntoView) cc.scrollIntoView({ block: 'start' }); } catch (e) {} }
