@@ -2463,7 +2463,7 @@ html.qm-lock,html.qm-lock body{overflow:hidden!important;}
 <link id="nf-bla-css" rel="stylesheet" href="assets/sc-bl-after.d13fc6ac6d.css" onerror="nfAssetFail(this)">
 <script id="nf-bla" src="assets/sc-bl-after.377501a542.js" onerror="nfAssetFail(this)"></script>
 <link id="nf-scl-css" rel="stylesheet" href="assets/shared-sc-lines.8614761492.css" onerror="nfAssetFail(this)">
-<script id="nf-scl" src="assets/shared-sc-lines.27cda973d6.js" onerror="nfAssetFail(this)"></script>
+<script id="nf-scl" src="assets/shared-sc-lines.acc0e5e845.js" onerror="nfAssetFail(this)"></script>
 <style id="nf-pkg-css">/* One service package at a time · team's fixes (27 Nov 2026) */
 .pkg-tiles{display:flex;gap:8px;margin:2px 0 8px}
 .pkg-t{flex:1;min-width:0;position:relative;border-radius:14px;padding:8px 0 6px;background:#fff;border:1.5px solid #DCE4E1;color:#3E5551;display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit;cursor:pointer}
@@ -2523,6 +2523,35 @@ html.qm-lock,html.qm-lock body{overflow:hidden!important;}
 body.nf-fadm #fpo-ov,body.nf-fadm #ax-ov{z-index:100001}
 </style>
 <script id="nf-scs" src="assets/sc-sc-screens.bbdd13e235.js" onerror="nfAssetFail(this)"></script>
+<style id="nf-sus-css">/* Before Day 1 (28 Nov 2026) */
+#nf-today.sus>:not(.sus-x){display:none!important}
+#nf-today.sus{display:flex;flex-direction:column;gap:12px}
+.sus-top small{display:block;font-size:12px;color:#5C706C}.sus-top h1{font-size:21px;font-weight:700;margin:2px 0 0;color:#10302B}
+.sus-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.sus-row .nfi-tag{display:block;margin-top:3px}
+.sus-chip{flex:none;font-size:12px;font-weight:600;color:#8A5410;background:#FBEFD5;padding:5px 11px;border-radius:20px;white-space:nowrap}
+.sus-hero{background:#1E6B5E;color:#fff;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.sus-hero .sus-k{font-size:11px;font-weight:600;letter-spacing:1.2px;opacity:.85}.sus-hero>b{font-size:17px}.sus-hero>small{font-size:12.5px;opacity:.9;line-height:1.45}
+.sus-bar{display:flex;gap:4px;margin-top:4px}.sus-bar i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.3)}.sus-bar i.on{background:#fff}
+.sus-cd{display:flex;align-items:center;gap:14px;margin:4px 0}.sus-cd>span:last-child{display:flex;flex-direction:column;gap:3px}.sus-cd>span:last-child b{font-size:18px}.sus-cd>span:last-child small{font-size:12px;opacity:.9}
+.sus-ring{flex:none;width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;flex-direction:column;align-items:center;justify-content:center}.sus-ring b{font-size:28px;line-height:1}.sus-ring small{font-size:10px;opacity:.85}
+.sus-steps{display:flex;flex-direction:column;gap:10px}
+.sus-st{background:#fff;border:1px solid #E3EAE8;border-radius:16px;padding:13px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer}
+.sus-st.now{border:2px solid #1E6B5E;cursor:default}
+.sus-sh{display:flex;gap:12px;align-items:flex-start}.sus-sh>.ti{color:#9AA8A5;font-size:18px;margin-top:4px}
+.sus-n{flex:none;width:28px;height:28px;border-radius:50%;background:#EEF2F0;color:#6B7D79;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.sus-st.now .sus-n{background:#1E6B5E;color:#fff}.sus-st.done .sus-n{background:#E3F3EA;color:#1F7A4A}
+.sus-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.sus-tx b{font-size:14.5px;font-weight:600;color:#10302B}.sus-tx b.done{color:#10302B}.sus-tx small{font-size:12px;color:#5C706C;line-height:1.45}
+.sus-card{padding:12px 14px;display:flex;flex-direction:column}.sus-k2{font-size:11px;font-weight:600;letter-spacing:1px;color:#5C706C;margin-bottom:2px}
+.sus-r{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EEF2F0;cursor:pointer}.sus-r:last-child{border-bottom:0}
+.sus-r>.ti:first-child{font-size:21px;color:#1E6B5E}.sus-r>.ti:last-child{font-size:18px;color:#9AA8A5}.sus-r .ti.ok{color:#1F7A4A;font-size:20px}.sus-r .sus-tx b{font-size:13.5px}
+.sus-chg{align-self:center;font:inherit;font-size:12.5px;font-weight:600;color:#1E6B5E;background:none;border:0;cursor:pointer;padding:6px}
+.sus-st:focus-visible,.sus-r:focus-visible{outline:2px solid #1E6B5E;outline-offset:2px}
+#sus-ov{position:fixed;inset:0;z-index:100000;background:rgba(16,48,43,.45);display:flex;align-items:flex-end;justify-content:center}
+.sus-sheet{width:100%;max-width:560px;background:#fff;border-radius:20px 20px 0 0;padding:18px 18px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px}.sus-sheet>b{font-size:17px}
+.sus-close{font:inherit;font-size:14px;font-weight:600;padding:11px 0;border-radius:12px;border:1.5px solid #DCE4E1;background:#fff;color:#1E6B5E;cursor:pointer}
+body.sus-on #ws-prestart-section{display:none!important}
+</style>
+<script id="nf-sus" src="assets/sc-setup-start.5b2cf96864.js" onerror="nfAssetFail(this)"></script>
 
 </body>
 </html>
