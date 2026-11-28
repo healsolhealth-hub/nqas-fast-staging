@@ -20689,6 +20689,11 @@ async function nfLxExport(){
 .nfg-banner.g{background:#ECFDF5;color:#065F46;border-color:#A7F3D0;} .nfg-banner.b{background:#EFF6FF;color:#1E40AF;border-color:#BFDBFE;} .nfg-banner b{display:block;font-size:13.5px;margin-bottom:2px;}
 .nfg-banner button{margin-top:6px;}
 .master-fac-card .nfg-row{margin:6px 0 0;}
+/* 28 Nov 2026 (D3): On track? — fix by fix */
+.nfg-ms3{display:flex;flex-direction:column;gap:2px}
+.nfg-d3{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:3px 0}
+.nfg-d3>span:first-child{flex:none;width:14px;color:#8A9896}.nfg-d3>span.ok{color:#1F7A4A}.nfg-d3>span.now{color:#E9963A}
+.nfg-d3>span:nth-child(2){flex:1}.nfg-d3 small{color:var(--t3,#6B7D79);font-size:11px;white-space:nowrap}
 </style>
 <script id="nf-grad">
 // ══════════════════════════════════════════════════════════════
@@ -20848,9 +20853,23 @@ function nfgCompHTML(st,c){
   c=c||nfgComp(st); var f=st.fac||{}, hi=nfgHi();
   if(c.state==='notstarted') return '';
   var msIc={done:'✓',late:'✓',overdue:'⚠️',upcoming:'·'}, msTx={done:hi?'समय पर':'on time',late:hi?'देर से':'late',overdue:hi?'देर हो गई':'overdue',upcoming:hi?'बाकी':'due'};
-  var h='<div class="nfg-box nfg-comp" data-code="'+scEsc(st.code||'')+'"><h4>⏱ '+scEsc(hi?'समय पर हैं?':'On track?')+' <span class="nfg-st '+nfgStateCls(c.state)+'">'+scEsc(nfgStateLabel(c.state))+'</span> <small>'+scEsc(nfgDayLine(f))+'</small></h4>'
-    +'<div class="nfg-grid"><div><b style="color:var(--green-dk,#166534)">'+c.onTime+'</b><small>'+scEsc(hi?'समय पर':'cards on time')+'</small></div><div><b style="color:var(--amber-dk,#92400E)">'+c.late+'</b><small>'+scEsc(hi?'देर से':'done late')+'</small></div><div><b style="color:var(--red-dk,#991B1B)">'+c.missing+'</b><small>'+scEsc(hi?'बाकी':'missing')+'</small></div></div>'
-    +(c.pct!=null?'<div class="nfg-note">'+c.pct+'% '+scEsc(hi?'कार्ड अपने दिन पर पूरे':'of cards done on their day')+(c.oldMiss>NF_GRAD.missDays?' · '+scEsc(hi?'सबसे पुराना बाकी कार्ड '+c.oldMiss+' दिन पहले का':'oldest missing card is '+c.oldMiss+' days old'):'')+'</div>':'')
+  var d3=!!f.blDoneOn&&c.idx>=7;   // 28 Nov 2026 (D3): fix by fix — baseline · implementation · checks · actions · end-line
+  var h='<div class="nfg-box nfg-comp" data-code="'+scEsc(st.code||'')+'"><h4>'+(d3?'':'⏱ ')+scEsc(hi?'समय पर हैं?':'On track?')+' <span class="nfg-st '+nfgStateCls(c.state)+'">'+scEsc(nfgStateLabel(c.state))+'</span>'+(d3?'':' <small>'+scEsc(nfgDayLine(f))+'</small>')+'</h4>'
+    +'<div class="nfg-grid"><div><b style="color:var(--green-dk,#166534)">'+c.onTime+'</b><small>'+scEsc(hi?'अपने दिन पर':(d3?'cards on their day':'cards on time'))+'</small></div><div><b style="color:var(--amber-dk,#92400E)">'+c.late+'</b><small>'+scEsc(hi?'देर से':'done late')+'</small></div><div><b style="color:var(--red-dk,#991B1B)">'+c.missing+'</b><small>'+scEsc(hi?'बाकी':(d3?'not done':'missing'))+'</small></div></div>';
+  if(d3){
+    var M={}, fx=c.fixes||{done:0,checked:0}, ln=function(ic,t,sub){ return '<div class="nfg-d3"><span class="'+ic+'">'+(ic==='ok'?'✓':ic==='now'?'●':'○')+'</span><span>'+scEsc(t)+'</span>'+(sub?'<small>'+scEsc(sub)+'</small>':'')+'</div>'; };
+    c.ms.forEach(function(m){ M[m.key]=m; });
+    var bl=M.baseline||{}, en=M.endline||{}, vf=M.verify||{};
+    h+='<div class="nfg-ms nfg-ms3">'
+      +ln(bl.s==='overdue'?'now':'ok',hi?'बेसलाइन पूरी — परिणाम तैयार':'Baseline complete — result ready',(f.blDoneOn?nfgFmt(f.blDoneOn)+' · ':'')+(hi?'दिन ':'Day ')+(bl.dueDay||8))
+      +ln(c.idx>48?'ok':'now',hi?'सुधार: '+fx.done+' पूरे':'Implementation: '+fx.done+' fix'+(fx.done===1?'':'es')+' done',hi?'दिन 49 तक':'to Day 49')
+      +ln(fx.done&&fx.checked>=fx.done?'ok':'now',hi?'सुधार जाँचे: '+fx.done+' में से '+fx.checked:'Fixes checked: '+fx.checked+' of '+fx.done,'CHO · Champion')
+      +(c.hasActs?ln(c.acts.od?'now':'ok',hi?'पर्यवेक्षक के कार्य: '+c.acts.open+' खुले, '+c.acts.od+' समय से पीछे':'Actions from the supervisor: '+c.acts.open+' open, '+c.acts.od+' overdue',''):'')
+      +ln(en.s==='done'||en.s==='late'?'ok':c.idx>=49?'now':'',hi?'एंड-लाइन':'End-line',hi?'दिन 50–56':'Days 50–56')
+      +ln(vf.s==='done'?'ok':c.idx>=56?'now':'',hi?'क्वालिटी चैंपियन द्वारा एंड-लाइन जाँच':'End-line checked by the Quality Champion',hi?'दिन 58':'Day 58')+'</div>';
+    if(typeof faDual==='function'&&faDual()&&typeof faOn==='function'&&faOn()) return h+'</div>';   // each person's numbers are on the Staff tab
+  } else
+  h+=(c.pct!=null?'<div class="nfg-note">'+c.pct+'% '+scEsc(hi?'कार्ड अपने दिन पर पूरे':'of cards done on their day')+(c.oldMiss>NF_GRAD.missDays?' · '+scEsc(hi?'सबसे पुराना बाकी कार्ड '+c.oldMiss+' दिन पहले का':'oldest missing card is '+c.oldMiss+' days old'):'')+'</div>':'')
     +'<div class="nfg-ms">'+(c.fixes&&c.fixes.done?'<div><span>●</span> '+scEsc(hi?'सुधार पूरे: '+c.fixes.done:'Fixes done: '+c.fixes.done)+' <small style="color:var(--t3)">'+scEsc(hi?'(दिन 49 तक)':'(to Day 49)')+'</small></div><div><span>'+(c.fixes.checked>=c.fixes.done?'✓':'●')+'</span> '+scEsc(hi?'सुधार जाँचे: '+c.fixes.checked+' / '+c.fixes.done:'Fixes checked: '+c.fixes.checked+' of '+c.fixes.done)+' <small style="color:var(--t3)">CHO · Champion</small></div>':'')+c.ms.map(function(m){ return '<div><span>'+msIc[m.s]+'</span> '+scEsc(m.label)+' — '+scEsc(msTx[m.s])+' <small style="color:var(--t3)">('+(hi?'दिन ':'Day ')+m.dueDay+')</small></div>'; }).join('')
     +(c.hasActs?'<div><span>'+(c.acts.od?'⚠️':'✓')+'</span> '+scEsc(hi?'कार्य':'Actions')+': '+c.acts.open+' '+scEsc(hi?'खुले':'open')+' · '+c.acts.od+' '+scEsc(hi?'समय से पीछे':'overdue')+'</div>'
       +(c.plans.due&&!f.blDoneOn?'<div><span>'+(c.plans.made>=c.plans.due?'✓':'⚠️')+'</span> '+scEsc(hi?'साप्ताहिक फ़ोकस योजना':'Weekly focus plans')+': '+c.plans.made+' / '+c.plans.due+'</div>':''):'')+'</div>';
@@ -21037,7 +21056,7 @@ function nfgProgHTML(st){
   var oR=scInsRender;
   scInsRender=function(hostId){ var r=oR.apply(this,arguments);
     try{ var st=_scIns[hostId], host=document.getElementById(hostId); if(!st||!host||st.tab!=='readiness') return r;
-      host.insertAdjacentHTML('afterbegin',nfgProgHTML(st)+nfgCompHTML(st));
+      var dual=typeof faDual==='function'&&faDual()&&typeof faOn==='function'&&faOn()&&!st.fac.graduation; host.insertAdjacentHTML('afterbegin',(dual?'':nfgProgHTML(st))+nfgCompHTML(st));   // 28 Nov 2026 (D3)
       nfgMaybeGraduate(st).then(function(g){ if(g){ st.fac.graduation=g; scInsRender(hostId); } });
     }catch(e){ console.warn('[SC] programme block',e); }
     return r; };
